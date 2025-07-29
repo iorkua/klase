@@ -1,0 +1,33 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Scanning extends Model
+{
+    protected $connection = 'sqlsrv';
+    protected $table = 'scannings';
+    
+    protected $fillable = [
+        'file_indexing_id',
+        'document_path',
+        'uploaded_by',
+        'status',
+    ];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
+    public function fileIndexing()
+    {
+        return $this->belongsTo(FileIndexing::class, 'file_indexing_id');
+    }
+
+    public function uploader()
+    {
+        return $this->belongsTo(User::class, 'uploaded_by');
+    }
+}
