@@ -81,7 +81,7 @@ class  AttributionController extends Controller
             // Additional Information
             'tpreport' => 'nullable|string',
             // Survey Plan Upload
-            'survey_plan_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png,dwg,dxf|max:10240', // 10MB max
+            'survey_plan_path' => 'nullable|file|max:10240', // 10MB max, all file types allowed
             // Existing fields
             'plot_no' => 'required|string|max:255',
             'block_no' => 'required|string|max:255',
@@ -167,7 +167,7 @@ class  AttributionController extends Controller
             // Additional Information
             'tpreport' => 'nullable|string',
             // Survey Plan Upload (optional for updates)
-            'survey_plan_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png,dwg,dxf|max:10240', // 10MB max
+            'survey_plan_path' => 'nullable|file|max:10240', // 10MB max, all file types allowed
             // Existing fields
             'plot_no' => 'nullable|string|max:255',
             'block_no' => 'nullable|string|max:255',
@@ -451,7 +451,7 @@ class  AttributionController extends Controller
             // Additional Information
             'tpreport' => 'nullable|string',
             // Survey Plan Upload (optional for updates)
-            'survey_plan_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png,dwg,dxf|max:10240', // 10MB max
+            'survey_plan_path' => 'nullable|file|max:10240', // 10MB max, all file types allowed
             // Existing fields
             'plot_no' => 'nullable|string|max:255',
             'block_no' => 'nullable|string|max:255',

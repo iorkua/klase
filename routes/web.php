@@ -86,6 +86,14 @@ Route::resource('users', UserController::class)->middleware(
     ]
 );
 
+// User levels API endpoint
+Route::get('users/get-levels/{userTypeId}', [UserController::class, 'getUserLevels'])->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
+);
+
 
 //-------------------------------Subscription-------------------------------------------
 
@@ -682,6 +690,33 @@ Route::group(['middleware' => ['auth', 'XSS']], function () {
 Route::prefix('debug')->group(function() {
     Route::get('/check-roles', 'App\Http\Controllers\DebugController@checkUserRoles');
     Route::get('/add-sample-roles', 'App\Http\Controllers\DebugController@addSampleRoles');
+    
+    // Test user types and levels connection
+    Route::get('/test-user-types', function() {
+        try {
+            // Test connection
+            $userTypes = \App\Models\UserType::on('sqlsrv')->get();
+            $userLevels = \App\Models\UserLevel::on('sqlsrv')->get();
+            
+            return response()->json([
+                'status' => 'success',
+                'user_types_count' => $userTypes->count(),
+                'user_levels_count' => $userLevels->count(),
+                'user_types' => $userTypes->toArray(),
+                'user_levels' => $userLevels->toArray(),
+                'operations_levels' => \App\Models\UserLevel::on('sqlsrv')
+                    ->whereHas('userType', function($query) {
+                        $query->where('name', 'Operations');
+                    })->get()->toArray()
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    });
 });
 
 Route::get('/print_buyer_list', [ProgrammeController::class, 'printBuyerList']);

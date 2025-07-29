@@ -237,13 +237,43 @@
         // Set the active tab value based on the database field names, not tab IDs
         if (tabName === "mlsFNoTab") {
             document.getElementById('activeFileTab').value = "mlsFNo";
+        updateMainFilenoField();
         } else if (tabName === "kangisFileNoTab") {
             document.getElementById('activeFileTab').value = "kangisFileNo";
+        updateMainFilenoField();
         } else if (tabName === "NewKANGISFilenoTab") {
             document.getElementById('activeFileTab').value = "NewKANGISFileno";
+        updateMainFilenoField();
         }
     }
 
+
+    // Function to update the main fileno field based on active tab
+    function updateMainFilenoField() {
+        const activeTab = document.getElementById('activeFileTab').value;
+        const mainFilenoField = document.getElementById('fileno');
+        
+        if (!mainFilenoField) return; // Exit if main fileno field doesn't exist
+        
+        let fileNumber = '';
+        
+        // Get the file number based on active tab
+        if (activeTab === 'mlsFNo') {
+            fileNumber = document.getElementById('mlsFNo').value;
+        } else if (activeTab === 'kangisFileNo') {
+            fileNumber = document.getElementById('kangisFileNo').value;
+        } else if (activeTab === 'NewKANGISFileno') {
+            fileNumber = document.getElementById('NewKANGISFileno').value;
+        }
+        
+        // Update the main fileno field
+        mainFilenoField.value = fileNumber;
+        
+        // Trigger validation if the function exists
+        if (typeof validateSurveyForm === 'function') {
+            validateSurveyForm();
+        }
+    }
     // Format MLS file number preview
     function updateMlsFileNumberPreview() {
         const prefixEl = document.getElementById('mlsFileNoPrefix');
@@ -258,15 +288,19 @@
             const formatted = prefix + '-' + number;
             previewEl.value = formatted;
             dbFieldEl.value = formatted; // Set the database field directly
+            updateMainFilenoField(); // Update main fileno field
         } else if (prefix) {
             previewEl.value = prefix;
             dbFieldEl.value = prefix;
+            updateMainFilenoField();
         } else if (number) {
             previewEl.value = number;
             dbFieldEl.value = number;
+            updateMainFilenoField();
         } else {
             previewEl.value = '';
             dbFieldEl.value = '';
+            updateMainFilenoField();
         }
     }
 
@@ -287,15 +321,19 @@
             const formatted = prefix + ' ' + number;
             previewEl.value = formatted;
             dbFieldEl.value = formatted; // Set the database field directly
+            updateMainFilenoField(); // Update main fileno field
         } else if (prefix) {
             previewEl.value = prefix;
             dbFieldEl.value = prefix;
+            updateMainFilenoField();
         } else if (number) {
             previewEl.value = number;
             dbFieldEl.value = number;
+            updateMainFilenoField();
         } else {
             previewEl.value = '';
             dbFieldEl.value = '';
+            updateMainFilenoField();
         }
     }
 
@@ -313,15 +351,19 @@
             const formatted = prefix + number;
             previewEl.value = formatted;
             dbFieldEl.value = formatted; // Set the database field directly
+            updateMainFilenoField(); // Update main fileno field
         } else if (prefix) {
             previewEl.value = prefix;
             dbFieldEl.value = prefix;
+            updateMainFilenoField();
         } else if (number) {
             previewEl.value = number;
             dbFieldEl.value = number;
+            updateMainFilenoField();
         } else {
             previewEl.value = '';
             dbFieldEl.value = '';
+            updateMainFilenoField();
         }
     }
 

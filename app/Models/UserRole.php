@@ -18,6 +18,7 @@ class UserRole extends Model
         'description',
         'department_id',
         'level',
+        'user_type',
         'is_active',
     ];
     

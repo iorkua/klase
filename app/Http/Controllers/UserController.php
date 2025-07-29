@@ -9,6 +9,8 @@ use App\Models\PackageTransaction;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Models\UserRole;
+use App\Models\UserType;
+use App\Models\UserLevel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -32,9 +34,62 @@ class UserController extends Controller
 
     public function create()
     {
-        $departments = Department::where('is_active', 1)->pluck('name', 'id');
-        $userRoles = UserRole::where('is_active', 1)->get(['id', 'name', 'department_id']);
-        return view('user.create', compact('departments', 'userRoles'));
+        try {
+            // Get departments using the default connection
+            $departments = Department::where('is_active', 1)->pluck('name', 'id');
+            
+            // Get user types using sqlsrv connection
+            $userTypes = UserType::on('sqlsrv')
+                                ->active()
+                                ->orderByPriority()
+                                ->get(['id', 'name', 'code', 'description']);
+            
+            // Get user roles using sqlsrv connection
+            $userRoles = UserRole::on('sqlsrv')
+                               ->where('is_active', 1)
+                               ->get(['id', 'name', 'department_id', 'level', 'user_type']);
+            
+            return view('user.create', compact('departments', 'userTypes', 'userRoles'));
+        } catch (\Exception $e) {
+            \Log::error('Error in UserController@create', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->back()->with('error', 'Error loading user creation form: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get user levels for a specific user type
+     */
+    public function getUserLevels($userTypeId)
+    {
+        try {
+            $userLevels = UserLevel::on('sqlsrv')
+                                  ->forUserType($userTypeId)
+                                  ->active()
+                                  ->orderByPriority()
+                                  ->get(['id', 'name', 'code', 'description']);
+            
+            \Log::info('User levels fetched', [
+                'user_type_id' => $userTypeId,
+                'levels_count' => $userLevels->count(),
+                'levels' => $userLevels->toArray()
+            ]);
+            
+            return response()->json($userLevels);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching user levels', [
+                'user_type_id' => $userTypeId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'error' => 'Failed to load user levels: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
 
@@ -104,7 +159,8 @@ class UserController extends Controller
                         'email' => 'required|email|unique:users',
                         'password' => 'required|min:6',
                         'department_id' => 'required',
-                        'user_level' => 'required|string|in:Administrative,Technical,Finance,Lowest,Highest,High',
+                        'user_type' => 'required|string|in:Management,Operations,ALL,User,System',
+                        'user_level' => 'required|string|in:Administrative,Technical,Finance,Lowest,High,Highest',
                         'user_role' => 'required|array',
                     ]
                 );
@@ -125,10 +181,6 @@ class UserController extends Controller
                     }
                 }
                 
-                // Get the first selected role to set as the user type
-                $firstRoleName = $request->user_role[0];
-                $userRole = UserRole::where('name', $firstRoleName)->first();
-                
                 $user = new User();
                 $user->first_name = $request->first_name;
                 $user->last_name = $request->last_name;
@@ -138,7 +190,7 @@ class UserController extends Controller
                 $user->password = \Hash::make($request->password);
                 $user->department_id = $request->department_id;
                 $user->user_level = $request->user_level;
-                $user->type = $userRole ? $userRole->name : null;
+                $user->type = $request->user_type; // Use the selected user type
                 $user->email_verified_at = now();
                 $user->profile = 'avatar.png';
                 $user->lang = 'english';

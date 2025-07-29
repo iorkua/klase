@@ -860,45 +860,31 @@
     @if($hasRole('ST - Approvals'))
     <div class="sidebar-submodule-header flex items-center justify-between py-1.5 px-3 cursor-pointer rounded-md" data-section="stApprovals">
       <div class="flex items-center gap-2">
-        <i data-lucide="check-circle" class="h-4 w-4"></i>
-        <span>Approvals (Other Departments)</span>
+      <i data-lucide="check-circle" class="h-4 w-4"></i>
+      <span>Approvals (Other Departments)</span>
       </div>
       <i data-lucide="chevron-right" class="h-4 w-4 transition-transform duration-200" data-chevron="stApprovals"></i>
     </div>
     
     <div class="pl-4 mt-1 mb-1 space-y-0.5 hidden" data-content="stApprovals">
       <a href="{{route('st_deeds.index')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('st_deeds.index') ? 'active' : '' }}">
-        <i data-lucide="file-check" class="h-3.5 w-3.5"></i>
-        <span>ST Deeds Registration View</span>
+      <i data-lucide="file-check" class="h-3.5 w-3.5"></i>
+      <span>ST Deeds Registration View</span>
       </a>
       
       <a href="{{route('other_departments.survey_primary')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('other_departments.survey_primary') ? 'active' : '' }}">
-        <i data-lucide="building-2" class="h-3.5 w-3.5"></i>
-        <span>Other Departments</span>
+      <i data-lucide="building-2" class="h-3.5 w-3.5"></i>
+      <span>Other Departments</span>
       </a>
       
-      <div class="sidebar-submodule-header flex items-center justify-between py-1.5 px-3 cursor-pointer rounded-md" data-section="physicalPlanningApprovals">
-        <div class="flex items-center gap-2">
-          <i data-lucide="ruler" class="h-3.5 w-3.5"></i>
-          <span>Physical Planning</span>
-        </div>
-        <i data-lucide="chevron-right" class="h-4 w-4 transition-transform duration-200" data-chevron="physicalPlanningApprovals"></i>
-      </div>
+      <a href="{{ route('programmes.approvals.planning_recomm', ['url' => 'view']) }}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('programmes.approvals.planning_recomm') && request()->query('url') === 'view' ? 'active' : '' }}">
+      <i data-lucide="ruler" class="h-3.5 w-3.5"></i>
+      <span>Planning Recommendation</span>
+      </a>
       
-      <div class="pl-4 mt-1 mb-1 space-y-0.5 hidden" data-content="physicalPlanningApprovals">
-        <a href="{{ route('programmes.approvals.planning_recomm', ['url' => 'view']) }}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('programmes.approvals.planning_recomm') && request()->query('url') === 'view' ? 'active' : '' }}">
-          <i data-lucide="clipboard-check" class="h-3.5 w-3.5"></i>
-          <span>Planning Recommendation</span>
-        </a>
-        
-        <a href="{{route('programmes.memo')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('programmes.memo') ? 'active' : '' }}">
-          <i data-lucide="clipboard-list" class="h-3.5 w-3.5"></i>
-          <span>ST Memo</span>
-        </a>
-      </div>
-      
-     
+   
     </div>
+
     <a href="{{route('programmes.approvals.director')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('programmes.approvals.director') ? 'active' : '' }}">
       <i data-lucide="stamp" class="h-3.5 w-3.5"></i>
       <span>Director's Approval</span>
@@ -911,7 +897,12 @@
       <span>ST Memo</span>
     </a>
     @endif --}}
-
+    @if($hasRole('ST - ST Memo'))
+    <a href="{{route('programmes.memo')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('programmes.memo') ? 'active' : '' }}">
+    <i data-lucide="clipboard-list" class="h-3.5 w-3.5"></i>
+    <span>ST Memo</span>
+    </a>
+    @endif
     @if($hasRole('ST - Certificate'))
     <div class="sidebar-submodule-header flex items-center justify-between py-1.5 px-3 cursor-pointer rounded-md" data-section="certificate">
       <div class="flex items-center gap-2">

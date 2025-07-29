@@ -1,5 +1,5 @@
 <div class="modal-dialog shadow-none" role="document">
-    <div class="max-w-4xl mx-auto">
+    <div class="max-w-6xl mx-auto">
         <div class="bg-white rounded-lg overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                 <h3 class="text-lg font-medium text-gray-900">
@@ -19,7 +19,128 @@
 
             {{ Form::open(['url' => 'users', 'method' => 'post']) }}
 
-            <div class="p-6 overflow-y-auto max-h-[60vh]">
+            <div class="p-6 overflow-y-auto max-h-[80vh]" x-data="{
+                selectedDept: '',
+                showAll: false,
+                userTypeId: '',
+                userTypeName: '',
+                userLevelId: '',
+                userLevelName: '',
+                availableLevels: [],
+                
+                async fetchUserLevels(userTypeId) {
+                    if (!userTypeId) {
+                        this.availableLevels = [];
+                        return;
+                    }
+                    
+                    try {
+                        const response = await fetch(`/users/get-levels/${userTypeId}`);
+                        const levels = await response.json();
+                        this.availableLevels = levels;
+                        
+                        // Auto-select if only one level available
+                        if (levels.length === 1) {
+                            this.userLevelId = levels[0].id;
+                            this.userLevelName = levels[0].name;
+                        } else {
+                            this.userLevelId = '';
+                            this.userLevelName = '';
+                        }
+                    } catch (error) {
+                        console.error('Error fetching user levels:', error);
+                        this.availableLevels = [];
+                    }
+                },
+                
+                // Only check/uncheck visible roles
+                checkAll() {
+                    document.querySelectorAll('#roles_grid > div').forEach(el => {
+                        const isVisible = el.style.display !== 'none' && !el.hasAttribute('x-show') || 
+                                         (el.hasAttribute('x-show') && el.offsetParent !== null);
+                        if (isVisible) {
+                            const checkbox = el.querySelector('input[type=checkbox]');
+                            if (checkbox) checkbox.checked = true;
+                        }
+                    });
+                },
+                
+                uncheckAll() {
+                    document.querySelectorAll('#roles_grid > div').forEach(el => {
+                        const isVisible = el.style.display !== 'none' && !el.hasAttribute('x-show') || 
+                                         (el.hasAttribute('x-show') && el.offsetParent !== null);
+                        if (isVisible) {
+                            const checkbox = el.querySelector('input[type=checkbox]');
+                            if (checkbox) checkbox.checked = false;
+                        }
+                    });
+                },
+                
+                filterByDept() {
+                    this.selectedDept = document.getElementById('department_id').value;
+                    this.showAll = false;
+                },
+                
+                showAllRoles() {
+                    this.showAll = true;
+                    this.selectedDept = '';
+                },
+                
+                // Enhanced role filtering based on exact SQL structure and database tables
+                shouldShowRole(roleUserType, roleLevel, roleName, roleDeptId) {
+                    // If no user type selected, show all roles
+                    if (!this.userTypeName) {
+                        return true;
+                    }
+                    
+                    // Department filtering first
+                    if (!this.showAll && this.selectedDept) {
+                        if (roleDeptId && roleDeptId != 'null' && roleDeptId != this.selectedDept) {
+                            return false;
+                        }
+                    }
+                    
+                    // Always show ALL user_type roles to everyone
+                    if (roleUserType === 'ALL') {
+                        return true;
+                    }
+                    
+                    // Exact user type and level matching based on database structure
+                    // Check if the role's user_type matches the selected user type
+                    if (roleUserType === this.userTypeName) {
+                        // For exact matches, also check if the level matches
+                        if (this.userLevelName && roleLevel === this.userLevelName) {
+                            return true;
+                        }
+                        // If no specific level set, show all roles for this user type
+                        if (!this.userLevelName) {
+                            return true;
+                        }
+                    }
+                    
+                    // Hierarchical access: higher levels can access lower level roles
+                    if (this.userTypeName === 'Management') {
+                        // Management can access Operations and User roles
+                        if (roleUserType === 'Operations' || roleUserType === 'User') {
+                            return true;
+                        }
+                    }
+                    
+                    if (this.userTypeName === 'Operations') {
+                        // Operations can access User roles
+                        if (roleUserType === 'User') {
+                            return true;
+                        }
+                    }
+                    
+                    if (this.userTypeName === 'System') {
+                        // System can access all role types
+                        return true;
+                    }
+                    
+                    return false;
+                }
+            }">
                 <div class="flex flex-wrap -mx-2">
                     @if (\Auth::user()->type != 'super admin')
                         <div class="w-full px-3">
@@ -108,230 +229,93 @@
                                             'required' => 'required',
                                             'id' => 'department_id',
                                             'placeholder' => 'Select Department',
-                                            '@change' => 'selectedDept = $event.target.value; showAll = false;'
+                                            '@change' => 'selectedDept = $event.target.value; showAll = !$event.target.value;'
                                         ]) }}
                                     </div>
                                 </div>
                                 {{-- 8. User Type --}}
-                                <div class="w-full md:w-1/2 px-2 mb-4"
-                                     x-data="{
-                                        userType: '',
-                                        userLevel: '',
-                                        get availableLevels() {
-                                            switch(this.userType) {
-                                                case 'Management':
-                                                    return [{ value: 'Highest', label: 'Highest' }];
-                                                case 'Operations':
-                                                    return [
-                                                        { value: 'Administrative', label: 'Administrative' },
-                                                        { value: 'Technical', label: 'Technical' },
-                                                        { value: 'Finance', label: 'Finance' }
-                                                    ];
-                                                case 'ALL':
-                                                case 'User':
-                                                    return [{ value: 'Lowest', label: 'Lowest' }];
-                                                case 'System_Highest':
-                                                    return [{ value: 'Highest', label: 'Highest' }];
-                                                case 'System_High':
-                                                    return [{ value: 'High', label: 'High' }];
-                                                default:
-                                                    return [];
-                                            }
-                                        },
-                                        updateUserLevel() {
-                                            const levels = this.availableLevels;
-                                            if (levels.length === 1) {
-                                                this.userLevel = levels[0].value;
-                                            } else {
-                                                this.userLevel = '';
-                                            }
-                                        }
-                                     }" x-init="init()">
+                                <div class="w-full md:w-1/2 px-2 mb-4">
                                     <div>
                                         {{ Form::label('user_type', __('User Type'), ['class' => 'block text-sm font-medium text-gray-700 mb-1']) }}
                                         <select name="user_type" id="user_type"
                                             class="w-full p-2 border border-gray-300 rounded-md text-sm"
-                                            required
-                                            x-model="userType"
-                                            @change="updateUserLevel()">
+                                            @change="userTypeId = $event.target.value; userTypeName = $event.target.selectedOptions[0].text; fetchUserLevels(userTypeId);"
+                                            required>
                                             <option value="">Select User Type</option>
-                                            <option value="ALL">ALL</option>
-                                            <option value="Management">Management</option>
-                                            <option value="Operations">Operations</option>
-                                            <option value="User">User</option>
-                                            <option value="System_Highest">System (Highest)</option>
-                                            <option value="System_High">System (High)</option>
+                                            @foreach($userTypes as $userType)
+                                                <option value="{{ $userType->id }}">{{ $userType->name }}</option>
+                                            @endforeach
                                         </select>
                                     </div>
                                 </div>
                             </div>
                             <div class="flex flex-wrap -mx-2 mb-4">
-                            {{-- 9. User Level --}}
-                            <div class="w-full md:w-1/2 px-2 mb-4"
-                                 x-data="{
-                                    userType: '',
-                                    userLevel: '',
-                                    get availableLevels() {
-                                        switch(this.userType) {
-                                            case 'Management':
-                                                return [{ value: 'Highest', label: 'Highest' }];
-                                            case 'Operations':
-                                                return [
-                                                    { value: 'Administrative', label: 'Administrative' },
-                                                    { value: 'Technical', label: 'Technical' },
-                                                    { value: 'Finance', label: 'Finance' }
-                                                ];
-                                            case 'ALL':
-                                            case 'User':
-                                                return [{ value: 'Lowest', label: 'Lowest' }];
-                                            case 'System_Highest':
-                                                return [{ value: 'Highest', label: 'Highest' }];
-                                            case 'System_High':
-                                                return [{ value: 'High', label: 'High' }];
-                                            default:
-                                                return [];
-                                        }
-                                    },
-                                    init() {
-                                        // Watch for user type changes from the other component
-                                        this.$watch('$store.userType', (value) => {
-                                            this.userType = value;
-                                            const levels = this.availableLevels;
-                                            if (levels.length === 1) {
-                                                this.userLevel = levels[0].value;
-                                            } else {
-                                                this.userLevel = '';
-                                            }
-                                        });
-                                        
-                                        // Listen for changes from the user type select
-                                        const userTypeSelect = document.getElementById('user_type');
-                                        if (userTypeSelect) {
-                                            userTypeSelect.addEventListener('change', (e) => {
-                                                this.userType = e.target.value;
-                                                const levels = this.availableLevels;
-                                                if (levels.length === 1) {
-                                                    this.userLevel = levels[0].value;
-                                                } else {
-                                                    this.userLevel = '';
-                                                }
-                                            });
-                                        }
-                                    }
-                                 }">
-                                <div>
-                                    {{ Form::label('user_level', __('User Level'), ['class' => 'block text-sm font-medium text-gray-700 mb-1']) }}
-                                    <template x-if="availableLevels.length === 1">
-                                        <input type="text" name="user_level" id="user_level"
-                                            class="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-100"
-                                            x-bind:value="userLevel"
-                                            readonly>
-                                    </template>
-                                    <template x-if="availableLevels.length > 1">
-                                        <select name="user_level" id="user_level"
-                                            class="w-full p-2 border border-gray-300 rounded-md text-sm"
-                                            x-model="userLevel"
-                                            required>
-                                            <option value="">Select User Level</option>
-                                            <template x-for="level in availableLevels" :key="level.value">
-                                                <option :value="level.value" x-text="level.label"></option>
-                                            </template>
-                                        </select>
-                                    </template>
-                                     
+                                {{-- 9. User Level --}}
+                                <div class="w-full md:w-1/2 px-2 mb-4">
+                                    <div>
+                                        {{ Form::label('user_level', __('User Level'), ['class' => 'block text-sm font-medium text-gray-700 mb-1']) }}
+                                        <div x-show="!userTypeId">
+                                            <select name="user_level" id="user_level"
+                                                class="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-100"
+                                                disabled>
+                                                <option value="">Select User Type First</option>
+                                            </select>
+                                        </div>
+                                        <div x-show="availableLevels.length === 1 && userTypeId">
+                                            <input type="text" id="user_level_display"
+                                                class="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-100"
+                                                x-bind:value="userLevelName"
+                                                readonly>
+                                            <input type="hidden" name="user_level" x-bind:value="userLevelName">
+                                        </div>
+                                        <div x-show="availableLevels.length > 1 && userTypeId">
+                                            <select name="user_level" id="user_level"
+                                                class="w-full p-2 border border-gray-300 rounded-md text-sm"
+                                                @change="userLevelId = $event.target.value; userLevelName = $event.target.selectedOptions[0].text;"
+                                                required>
+                                                <option value="">Select User Level</option>
+                                                <template x-for="level in availableLevels" :key="level.id">
+                                                    <option :value="level.id" x-text="level.name"></option>
+                                                </template>
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
                         {{-- 10. Select role(s) --}}
-                        <div class="mt-6" id="roles_container" x-data="{
-                            selectedDept: (function() {
-                                const dept = document.getElementById('department_id');
-                                return dept ? dept.value : null;
-                            })(),
-                            showAll: true,
-                            userType: '',
-                            // Only check/uncheck visible roles
-                            checkAll() {
-                                document.querySelectorAll('#roles_grid > div[x-show]').forEach(el => {
-                                    if (el.offsetParent !== null) {
-                                        el.querySelector('input[type=checkbox]').checked = true;
-                                    }
-                                });
-                            },
-                            uncheckAll() {
-                                document.querySelectorAll('#roles_grid > div[x-show]').forEach(el => {
-                                    if (el.offsetParent !== null) {
-                                        el.querySelector('input[type=checkbox]').checked = false;
-                                    }
-                                });
-                            },
-                            filterByDept() {
-                                this.selectedDept = document.getElementById('department_id').value;
-                                this.showAll = false;
-                            },
-                            showAllRoles() {
-                                this.showAll = true;
-                            },
-                            // Hide certain roles for Operations and User user types
-                            shouldShowRole(roleName) {
-                                const hideForOpsOrUser = [
-                                    'Approvals',
-                                    'Director\'s Approval',
-                                    'Director SLTR',
-                                    'Planning Recommendation',
-                                    'Reports'
-                                ];
-                                // Normalize for easier matching
-                                const normalized = roleName.toLowerCase();
-                                if (['Operations', 'User'].includes(this.userType)) {
-                                    // Hide if role name contains any of the keywords above
-                                    return !hideForOpsOrUser.some(keyword => normalized.includes(keyword.toLowerCase()));
-                                }
-                                return true;
-                            },
-                            init() {
-                                const ut = document.getElementById('user_type');
-                                this.userType = ut ? ut.value : '';
-                                if (ut) {
-                                    ut.addEventListener('change', e => this.userType = e.target.value);
-                                }
-                                // Check for initial department value
-                                this.$nextTick(() => {
-                                    const deptId = document.getElementById('department_id').value;
-                                    if (deptId) {
-                                        this.selectedDept = deptId;
-                                        this.showAll = false;
-                                    }
-                                });
-                                // Add a mutation observer to watch for department changes
-                                const deptSelect = document.getElementById('department_id');
-                                if (deptSelect) {
-                                    deptSelect.addEventListener('change', () => {
-                                        this.selectedDept = deptSelect.value;
-                                        this.showAll = deptSelect.value ? false : true;
-                                    });
-                                }
-                            }
-                        }">
+                        <div class="mt-6" id="roles_container">
                             {{ Form::label('user_role', __('Select role(s)'), ['class' => 'block text-sm font-medium text-gray-700 mb-2']) }}
+                            
+                            <!-- User Type and Level Summary -->
+                            <div class="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md text-sm" x-show="userTypeName">
+                                <div class="font-medium text-blue-800 mb-1">Access Level Summary:</div>
+                                <div class="text-blue-700">
+                                    <span class="font-medium">User Type:</span> <span x-text="userTypeName"></span> |
+                                    <span class="font-medium">Level:</span> <span x-text="userLevelName || 'Not Set'"></span>
+                                </div>
+                                <div class="text-xs text-blue-600 mt-1">
+                                    <strong>Access Rules:</strong><br>
+                                    <span x-show="userTypeName === 'Management'">• Can access Management, Operations, and User roles</span>
+                                    <span x-show="userTypeName === 'Operations'">• Can access Operations and User roles</span>
+                                    <span x-show="userTypeName === 'User'">• Can access User roles only</span>
+                                    <span x-show="userTypeName === 'ALL'">• Can access ALL and User roles</span>
+                                    <span x-show="userTypeName === 'System'">• Can access all role types</span>
+                                    <br>• ALL user_type roles are always visible to everyone
+                                </div>
+                            </div>
+                            
                             <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
                                 <div class="mb-3 flex gap-2">
-                                    <button type="button" @click="checkAll" class="text-xs py-1 px-2 rounded bg-green-500 text-white hover:bg-green-600">Check All</button>
+                                    <button type="button" @click="checkAll" class="text-xs py-1 px-2 rounded bg-green-500 text-white hover:bg-green-600">Check All Visible</button>
                                     <button type="button" @click="uncheckAll" class="text-xs py-1 px-2 rounded bg-red-500 text-white hover:bg-red-600">Uncheck All</button>
                                 </div>
                                 <div class="grid grid-cols-3 gap-3" id="roles_grid">
                                     @foreach ($userRoles as $role)
                                         <div class="flex items-start role-item" 
-                                            x-show="
-                                                (
-                                                    '{{ $role->user_type ?? '' }}' === 'ALL' ||
-                                                    showAll ||
-                                                    '{{ $role->department_id ?? 'null' }}' == selectedDept ||
-                                                    '{{ $role->department_id ?? 'null' }}' == 'null'
-                                                )
-                                                && shouldShowRole(`{{ $role->name }}`)
-                                            "
-                                            data-dept-id="{{ $role->department_id ?? 'null' }}">
+                                            x-show="shouldShowRole('{{ $role->user_type ?? '' }}', '{{ $role->level ?? '' }}', '{{ $role->name }}', '{{ $role->department_id ?? 'null' }}')"
+                                            data-dept-id="{{ $role->department_id ?? 'null' }}"
+                                            data-user-type="{{ $role->user_type ?? '' }}"
+                                            data-level="{{ $role->level ?? '' }}">
                                             <div class="flex items-center h-5">
                                                 <input type="checkbox" name="user_role[]" value="{{ $role->name }}" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
                                             </div>

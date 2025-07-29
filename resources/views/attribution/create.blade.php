@@ -9,11 +9,11 @@
     @include('admin.header')
     <!-- Update Survey Form -->
     <div class="p-6">
-        <form id="update-survey-form" method="POST" action="{{ route('attribution.store') }}">
+        <form id="update-survey-form" method="POST" action="{{ route('attribution.store') }}" enctype="multipart/form-data">
             @csrf
             <input type="hidden" name="application_id" id="application_id" value="">
             <input type="hidden" name="sub_application_id" id="sub_application_id" value="">
-            <input type="hidden" name="fileno" id="fileno" value="">
+            
             <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-6 space-y-6">
                 <div id="application-info" class="hidden">
                     <!-- Application header will be rendered dynamically -->
@@ -257,19 +257,19 @@
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                         </svg>
-                        Survey Plan Upload <span class="text-red-600">*</span>
+                        Survey Plan Upload (Optional)
                     </h4>
                     <div class="space-y-4">
                         <div class="relative">
-                            <input type="file" id="surveyPlan" name="survey_plan_path" accept=".pdf,.jpg,.jpeg,.png,.dwg,.dxf" 
-                                   class="hidden" required onchange="handleSurveyPlanUpload(this)">
+                            <input type="file" id="surveyPlan" name="survey_plan_path"  
+                                   class="hidden" onchange="handleSurveyPlanUpload(this)">
                             <label for="surveyPlan" class="flex flex-col items-center justify-center w-full h-32 border-2 border-blue-300 border-dashed rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors duration-200">
                                 <div class="flex flex-col items-center justify-center pt-5 pb-6">
                                     <svg class="w-8 h-8 mb-4 text-blue-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
                                         <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
                                     </svg>
                                     <p class="mb-2 text-sm text-blue-600"><span class="font-semibold">Click to upload</span> survey plan</p>
-                                    <p class="text-xs text-blue-500">PDF, JPG, PNG, DWG, DXF (MAX. 10MB)</p>
+                                    <p class="text-xs text-blue-500">All file types accepted (MAX. 10MB)</p>
                                 </div>
                             </label>
                         </div>
@@ -428,8 +428,16 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedApplication = data.application;
         
         if (selectedApplication) {
-            // Set the fileno field
-            document.getElementById('fileno').value = selectedApplication.fileno || '';
+            // Set the fileno field - check if smart selector exists (for primary surveys)
+            const filenoInput = document.getElementById('fileno');
+            if (filenoInput) {
+                filenoInput.value = selectedApplication.fileno || '';
+            }
+            
+            // If smart selector exists, also call its handler
+            if (typeof window.handleDropdownSelection === 'function') {
+                window.handleDropdownSelection(selectedApplication);
+            }
             
             // Populate hidden fields based on survey type
             if (isSecondary) {
@@ -1009,16 +1017,7 @@ function handleSurveyPlanUpload(input) {
         return;
     }
     
-    // Validate file type
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'application/dwg', 'application/dxf'];
-    const fileExtension = file.name.split('.').pop().toLowerCase();
-    const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'dwg', 'dxf'];
-    
-    if (!allowedExtensions.includes(fileExtension)) {
-        alert('Please upload a valid file type: PDF, JPG, PNG, DWG, or DXF');
-        input.value = '';
-        return;
-    }
+    // File type validation removed - all file types are now allowed
     
     surveyPlanUploaded = true;
     showSurveyPlanPreview(file);
@@ -1097,6 +1096,7 @@ function validateSurveyForm() {
     const form = document.getElementById('update-survey-form');
     const saveButton = document.getElementById('save-survey-btn');
     const requiredFields = form.querySelectorAll('input[required], select[required], textarea[required]');
+    const surveyPlanInput = document.getElementById('surveyPlan');
     
     let allFieldsFilled = true;
     
@@ -1112,16 +1112,11 @@ function validateSurveyForm() {
                          document.getElementById('fileno').value.trim() || 
                          document.getElementById('fileno-select').value.trim();
     
-    // Check if survey plan is uploaded
-    const formValid = allFieldsFilled && surveyPlanUploaded && hasFileNumber;
+    // Validate survey plan file
+    const hasSurveyPlan = surveyPlanInput && surveyPlanInput.files && surveyPlanInput.files.length > 0;
     
-    console.log('Form Validation:', {
-        allFieldsFilled,
-        surveyPlanUploaded,
-        hasFileNumber,
-        selectedApplication,
-        formValid
-    });
+    // Update formValid condition to use hasSurveyPlan
+    const formValid = allFieldsFilled && hasFileNumber && hasSurveyPlan;
     
     if (formValid) {
         saveButton.disabled = false;
@@ -1132,7 +1127,11 @@ function validateSurveyForm() {
         saveButton.disabled = true;
         saveButton.classList.add('bg-gray-400', 'cursor-not-allowed');
         saveButton.classList.remove('bg-green-600', 'hover:bg-green-700');
-        saveButton.textContent = 'Save Survey (Complete all fields)';
+        let message = 'Save Survey (';
+        if (!allFieldsFilled) message += 'Complete all fields';
+        if (!hasSurveyPlan) message += (allFieldsFilled ? '' : ' and ') + 'Upload survey plan';
+        message += ')';
+        saveButton.textContent = message;
     }
 }
 
@@ -1168,17 +1167,18 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Override form submission to check survey plan
+    // Override form submission to check required fields
     form.addEventListener('submit', function(e) {
-        if (!surveyPlanUploaded) {
-            e.preventDefault();
-            alert('Please upload a survey plan before submitting the form.');
-            return false;
-        }
-        
         if (!selectedApplication) {
             e.preventDefault();
             alert('Please select a file number before submitting the form.');
+            return false;
+        }
+        
+        const surveyPlanInput = document.getElementById('surveyPlan');
+        if (!surveyPlanInput || !surveyPlanInput.files || surveyPlanInput.files.length === 0) {
+            e.preventDefault();
+            alert('Please upload a survey plan file before submitting.');
             return false;
         }
         
