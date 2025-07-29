@@ -133,235 +133,235 @@
 
         </div>
 
-        <!-- Transaction Details Section -->
-        <div class="form-section">
-            <h4 class="form-section-title">Instrument Type</h4>
-            <div class="space-y-3">
-                <!-- Transaction Type and Date -->
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="space-y-1">
-                        <label for="transactionType-record" class="text-sm">Transaction Type</label>
-                        <select id="transactionType-record" x-model="selectedTransactionType" class="form-select text-sm transaction-type-select">
-                            <option value="">Select type</option>
-                            <option value="Deed of Transfer">Deed of Transfer</option>
-                            <option value="Certificate of Occupancy">Certificate of Occupancy</option>
-                            <option value="ST Certificate of Occupancy">ST Certificate of Occupancy</option>
-                            <option value="SLTR Certificate of Occupancy">SLTR Certificate of Occupancy</option>
-                            <option value="Irrevocable Power of Attorney">Irrevocable Power of Attorney</option>
-                            <option value="Deed of Release">Deed of Release</option>
-                            <option value="Deed of Assignment">Deed of Assignment</option>
-                            <option value="ST Assignment">ST Assignment</option>
-                            <option value="Deed of Mortgage">Deed of Mortgage</option>
-                            <option value="Tripartite Mortgage">Tripartite Mortgage</option>
-                            <option value="Deed of Sub Lease">Deed of Sub Lease</option>
-                            <option value="Deed of Sub Under Lease">Deed of Sub Under Lease</option>
-                            <option value="Power of Attorney">Power of Attorney</option>
-                            <option value="Deed of Surrender">Deed of Surrender</option>
-                            <option value="Indenture of Lease">Indenture of Lease</option>
-                            <option value="Deed of Variation">Deed of Variation</option>
-                            <option value="Customary Right of Occupancy">Customary Right of Occupancy</option>
-                            <option value="Vesting Assent">Vesting Assent</option>
-                            <option value="Court Judgement">Court Judgement</option>
-                            <option value="Exchange of Letters">Exchange of Letters</option>
-                            <option value="Tenancy Agreement">Tenancy Agreement</option>
-                            <option value="Revocation of Power of Attorney">Revocation of Power of Attorney</option>
-                            <option value="Deed of Convenyence">Deed of Convenyence</option>
-                            <option value="Memorandom of Agreement">Memorandom of Agreement</option>
-                            <option value="Quarry Lease">Quarry Lease</option>
-                            <option value="Private Lease">Private Lease</option>
-                            <option value="Deed of Gift">Deed of Gift</option>
-                            <option value="Deed of Partition">Deed of Partition</option>
-                            <option value="Non-European Occupational Lease">Non-European Occupational Lease</option>
-                            <option value="Deed of Revocation">Deed of Revocation</option>
-                            <option value="Deed of lease">Deed of lease</option>
-                            <option value="Deed of Reconveyance">Deed of Reconveyance</option>
-                            <option value="Letter of Administration">Letter of Administration</option>
-                            <option value="Customary Inhertitance">Customary Inhertitance</option>
-                            <option value="Certificate of Purchase">Certificate of Purchase</option>
-                            <option value="Deed of Rectification">Deed of Rectification</option>
-                            <option value="Building Lease">Building Lease</option>
-                            <option value="Memorandum of Loss">Memorandum of Loss</option>
-                            <option value="Vesting Deed">Vesting Deed</option>
-                            <option value="ST Fragmentation">ST Fragmentation</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                    <div class="space-y-1">
-                        <label for="transactionDate" class="text-sm">Transaction/Certificate Date</label>
-                        <input type="date" id="transactionDate" class="form-input text-sm">
-                    </div>
-                </div>
-
-                <!-- Registration Number Components -->
-                <div class="space-y-1" x-data="{ serialNo: '', pageNo: '', volumeNo: '', showPreview: false, get regNoDisplay() { return [this.serialNo, this.pageNo, this.volumeNo].filter(Boolean).join('/') || 'Not set'; } }">
-                    <label class="text-sm">Registration Number  </label>
-                    <div class="grid grid-cols-5 gap-2">
-                        <div>
-                            <label for="serialNo" class="text-xs">Serial No.</label>
-                            <input id="serialNo" name="serialNo" x-model="serialNo" @input="showPreview = serialNo || pageNo || volumeNo" class="form-input text-xs py-1" placeholder="e.g. 1">
-                        </div>
-                        <div>
-                            <label for="pageNo" class="text-xs">Page No.</label>
-                            <input id="pageNo" name="pageNo" x-model="pageNo" @input="showPreview = serialNo || pageNo || volumeNo" class="form-input text-xs py-1" placeholder="e.g. 1">
-                        </div>
-                        <div>
-                            <label for="volumeNo" class="text-xs">Volume No.</label>
-                            <input id="volumeNo" name="volumeNo" x-model="volumeNo" @input="showPreview = serialNo || pageNo || volumeNo" class="form-input text-xs py-1" placeholder="e.g. 2">
-                        </div>
-                        <div>
-                            <label for="regDate" class="text-xs">Registration Date</label>
-                            <input id="regDate" name="regDate" type="date" class="form-input text-xs py-1">
-                        </div>
-                        <div>
-                            <label for="regTime" class="text-xs">Registration Time</label>
-                            <input id="regTime" name="regTime" type="time" class="form-input text-xs py-1">
-                        </div>
-                    </div>
-                    <div x-show="showPreview" x-transition class="mt-2 p-3 bg-blue-50 border-2 border-blue-200 rounded-lg shadow-sm">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                                </svg>
-                                <span class="text-sm font-semibold text-blue-700">Registration Number:</span>
-                            </div>
-                            <span class="text-lg font-bold text-blue-800 tracking-wider" x-text="regNoDisplay"></span>
-                        </div>
-                        <div class="mt-1.5 flex justify-between items-center">
-                            <div class="text-xs text-blue-600">Format: Serial No/Page No/Volume No</div>
-                            <div x-show="serialNo && pageNo && volumeNo" class="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">Complete</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Instrument Type and Period -->
-                <div class="grid grid-cols-2 gap-3">
-                           <!-- Land Use Type -->
-                    <div class="space-y-1">
-                        <label for="landUse" class="text-sm">Land Use</label>
-                        <select id="landUse" name="landUse" class="form-select text-sm">
-                            <option value="">Select land use</option>
-                            <option value="RESIDENTIAL">RESIDENTIAL</option>
-                            <option value="AGRICULTURAL">AGRICULTURAL</option>
-                            <option value="COMMERCIAL">COMMERCIAL</option>
-                            <option value="COMMERCIAL ( WARE HOUSE)">COMMERCIAL ( WARE HOUSE)</option>
-                            <option value="COMMERCIAL (OFFICES)">COMMERCIAL (OFFICES)</option>
-                            <option value="COMMERCIAL (PETROL FILLING STATION)">COMMERCIAL (PETROL FILLING STATION)</option>
-                            <option value="COMMERCIAL (RICE PROCESSING)">COMMERCIAL (RICE PROCESSING)</option>
-                            <option value="COMMERCIAL (SCHOOL)">COMMERCIAL (SCHOOL)</option>
-                            <option value="COMMERCIAL (SHOPS & PUBLIC CONVINIENCE)">COMMERCIAL (SHOPS & PUBLIC CONVINIENCE)</option>
-                            <option value="COMMERCIAL (SHOPS AND OFFICES)">COMMERCIAL (SHOPS AND OFFICES)</option>
-                            <option value="COMMERCIAL (SHOPS)">COMMERCIAL (SHOPS)</option>
-                            <option value="COMMERCIAL (WAREHOUSE)">COMMERCIAL (WAREHOUSE)</option>
-                            <option value="COMMERCIAL (WORKSHOP AND OFFICES)">COMMERCIAL (WORKSHOP AND OFFICES)</option>
-                            <option value="COMMERCIAL AND RESIDENTIAL">COMMERCIAL AND RESIDENTIAL</option>
-                            <option value="INDUSTRIAL">INDUSTRIAL</option>
-                            <option value="INDUSTRIAL (SMALL SCALE)">INDUSTRIAL (SMALL SCALE)</option>
-                            <option value="RESIDENTIAL AND COMMERCIAL">RESIDENTIAL AND COMMERCIAL</option>
-                            <option value="RESIDENTIAL/COMMERCIAL">RESIDENTIAL/COMMERCIAL</option>
-                            <option value="RESIDENTIAL/COMMERCIAL LAYOUT">RESIDENTIAL/COMMERCIAL LAYOUT</option>
-                        </select>
-                    </div>
-
-                    <div class="space-y-1">
-                        <label for="period" class="text-sm">Period/Tenancy</label>
-                        <div class="flex space-x-1">
-                            <input id="period" type="number" class="form-input text-sm" placeholder="Period">
-                            <select id="periodUnit" class="form-select text-sm w-[90px]">
-                                <option value="Days">Days</option>
-                                <option value="Months">Months</option>
-                                <option value="Years" selected>Years</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Transaction-specific fields (will be shown/hidden based on transaction type) -->
-        <div id="transaction-specific-fields-record" class="form-section" x-show="selectedTransactionType" x-transition>
-            <h3 class="form-section-title">Transaction Details</h3>
-            
-            <!-- Other Transaction Type Input -->
-            <div id="other-transaction-type" class="space-y-1 mb-3" x-show="selectedTransactionType === 'Other'" x-transition>
-                <label for="otherTransactionType" class="text-sm">Specify Other Transaction Type</label>
-                <input type="text" id="otherTransactionType" name="otherTransactionType" class="form-input text-sm" placeholder="Enter transaction type">
-            </div>
-            
-            <!-- Assignment fields -->
-            <div id="assignment-fields-record" class="transaction-fields" x-show="selectedTransactionType === 'Assignment'" x-transition>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div class="space-y-1">
-                        <label for="trans-assignor-record" class="text-sm" x-text="partyLabels.firstParty"></label>
-                        <input id="trans-assignor-record" name="Assignor" class="form-input text-sm" :placeholder="`Enter ${partyLabels.firstParty.toLowerCase()} name`">
-                    </div>
-                    <div class="space-y-1">
-                        <label for="trans-assignee-record" class="text-sm" x-text="partyLabels.secondParty"></label>
-                        <input id="trans-assignee-record" name="Assignee" class="form-input text-sm" :placeholder="`Enter ${partyLabels.secondParty.toLowerCase()} name`">
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Mortgage fields -->
-            <div id="mortgage-fields-record" class="transaction-fields" x-show="selectedTransactionType === 'Mortgage'" x-transition>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div class="space-y-1">
-                        <label for="mortgagor-record" class="text-sm" x-text="partyLabels.firstParty"></label>
-                        <input id="mortgagor-record" name="Mortgagor" class="form-input text-sm" :placeholder="`Enter ${partyLabels.firstParty.toLowerCase()} name`">
-                    </div>
-                    <div class="space-y-1">
-                        <label for="mortgagee-record" class="text-sm" x-text="partyLabels.secondParty"></label>
-                        <input id="mortgagee-record" name="Mortgagee" class="form-input text-sm" :placeholder="`Enter ${partyLabels.secondParty.toLowerCase()} name`">
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Surrender fields -->
-            <div id="surrender-fields-record" class="transaction-fields" x-show="selectedTransactionType === 'Surrender'" x-transition>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div class="space-y-1">
-                        <label for="surrenderor-record" class="text-sm" x-text="partyLabels.firstParty"></label>
-                        <input id="surrenderor-record" name="Surrenderor" class="form-input text-sm" :placeholder="`Enter ${partyLabels.firstParty.toLowerCase()} name`">
-                    </div>
-                    <div class="space-y-1">
-                        <label for="surrenderee-record" class="text-sm" x-text="partyLabels.secondParty"></label>
-                        <input id="surrenderee-record" name="Surrenderee" class="form-input text-sm" :placeholder="`Enter ${partyLabels.secondParty.toLowerCase()} name`">
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Lease fields -->
-            <div id="lease-fields-record" class="transaction-fields" x-show="selectedTransactionType === 'Sub-Lease'" x-transition>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div class="space-y-1">
-                        <label for="lessor-record" class="text-sm" x-text="partyLabels.firstParty"></label>
-                        <input id="lessor-record" name="Lessor" class="form-input text-sm" :placeholder="`Enter ${partyLabels.firstParty.toLowerCase()} name`">
-                    </div>
-                    <div class="space-y-1">
-                        <label for="lessee-record" class="text-sm" x-text="partyLabels.secondParty"></label>
-                        <input id="lessee-record" name="Lessee" class="form-input text-sm" :placeholder="`Enter ${partyLabels.secondParty.toLowerCase()} name`">
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Default/Grant fields -->
-            <div id="default-fields-record" class="transaction-fields" x-show="shouldShowDefaultFields" x-transition>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div class="space-y-1">
-                        <label for="grantor-record" class="text-sm" x-text="partyLabels.firstParty"></label>
-                        <input id="grantor-record" name="Grantor" class="form-input text-sm" :placeholder="`Enter ${partyLabels.firstParty.toLowerCase()} name`" :value="autoFilledGrantor" :readonly="isGrantorReadonly" :class="isGrantorReadonly ? 'bg-gray-100' : ''">
-                    </div>
-                    <div class="space-y-1">
-                        <label for="grantee-record" class="text-sm" x-text="partyLabels.secondParty"></label>
-                        <input id="grantee-record" name="Grantee" class="form-input text-sm" :placeholder="`Enter ${partyLabels.secondParty.toLowerCase()} name`">
-                    </div>
-                </div>
-            </div>
-
-        </div>
+      
 
          </div>
+  <!-- Instrument Type Section -->
+  <div class="form-section">
+    <h4 class="form-section-title">Instrument Type</h4>
+    <div class="space-y-3">
+        <!-- Transaction Type and Date -->
+        <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-1">
+                <label for="transactionType-record" class="text-sm">Transaction Type</label>
+                <select id="transactionType-record" x-model="selectedTransactionType" class="form-select text-sm transaction-type-select">
+                    <option value="">Select type</option>
+                    <option value="Deed of Transfer">Deed of Transfer</option>
+                    <option value="Certificate of Occupancy">Certificate of Occupancy</option>
+                    <option value="ST Certificate of Occupancy">ST Certificate of Occupancy</option>
+                    <option value="SLTR Certificate of Occupancy">SLTR Certificate of Occupancy</option>
+                    <option value="Irrevocable Power of Attorney">Irrevocable Power of Attorney</option>
+                    <option value="Deed of Release">Deed of Release</option>
+                    <option value="Deed of Assignment">Deed of Assignment</option>
+                    <option value="ST Assignment">ST Assignment</option>
+                    <option value="Deed of Mortgage">Deed of Mortgage</option>
+                    <option value="Tripartite Mortgage">Tripartite Mortgage</option>
+                    <option value="Deed of Sub Lease">Deed of Sub Lease</option>
+                    <option value="Deed of Sub Under Lease">Deed of Sub Under Lease</option>
+                    <option value="Power of Attorney">Power of Attorney</option>
+                    <option value="Deed of Surrender">Deed of Surrender</option>
+                    <option value="Indenture of Lease">Indenture of Lease</option>
+                    <option value="Deed of Variation">Deed of Variation</option>
+                    <option value="Customary Right of Occupancy">Customary Right of Occupancy</option>
+                    <option value="Vesting Assent">Vesting Assent</option>
+                    <option value="Court Judgement">Court Judgement</option>
+                    <option value="Exchange of Letters">Exchange of Letters</option>
+                    <option value="Tenancy Agreement">Tenancy Agreement</option>
+                    <option value="Revocation of Power of Attorney">Revocation of Power of Attorney</option>
+                    <option value="Deed of Convenyence">Deed of Convenyence</option>
+                    <option value="Memorandom of Agreement">Memorandom of Agreement</option>
+                    <option value="Quarry Lease">Quarry Lease</option>
+                    <option value="Private Lease">Private Lease</option>
+                    <option value="Deed of Gift">Deed of Gift</option>
+                    <option value="Deed of Partition">Deed of Partition</option>
+                    <option value="Non-European Occupational Lease">Non-European Occupational Lease</option>
+                    <option value="Deed of Revocation">Deed of Revocation</option>
+                    <option value="Deed of lease">Deed of lease</option>
+                    <option value="Deed of Reconveyance">Deed of Reconveyance</option>
+                    <option value="Letter of Administration">Letter of Administration</option>
+                    <option value="Customary Inhertitance">Customary Inhertitance</option>
+                    <option value="Certificate of Purchase">Certificate of Purchase</option>
+                    <option value="Deed of Rectification">Deed of Rectification</option>
+                    <option value="Building Lease">Building Lease</option>
+                    <option value="Memorandum of Loss">Memorandum of Loss</option>
+                    <option value="Vesting Deed">Vesting Deed</option>
+                    <option value="ST Fragmentation">ST Fragmentation</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="space-y-1">
+                <label for="transactionDate" class="text-sm">Transaction/Certificate Date</label>
+                <input type="date" id="transactionDate" class="form-input text-sm">
+            </div>
+        </div>
 
+        <!-- Registration Number Components -->
+        <div class="space-y-1" x-data="{ serialNo: '', pageNo: '', volumeNo: '', showPreview: false, get regNoDisplay() { return [this.serialNo, this.pageNo, this.volumeNo].filter(Boolean).join('/') || 'Not set'; } }">
+            <label class="text-sm">Registration Number  </label>
+            <div class="grid grid-cols-5 gap-2">
+                <div>
+                    <label for="serialNo" class="text-xs">Serial No.</label>
+                    <input id="serialNo" name="serialNo" x-model="serialNo" @input="showPreview = serialNo || pageNo || volumeNo" class="form-input text-xs py-1" placeholder="e.g. 1">
+                </div>
+                <div>
+                    <label for="pageNo" class="text-xs">Page No.</label>
+                    <input id="pageNo" name="pageNo" x-model="pageNo" @input="showPreview = serialNo || pageNo || volumeNo" class="form-input text-xs py-1" placeholder="e.g. 1">
+                </div>
+                <div>
+                    <label for="volumeNo" class="text-xs">Volume No.</label>
+                    <input id="volumeNo" name="volumeNo" x-model="volumeNo" @input="showPreview = serialNo || pageNo || volumeNo" class="form-input text-xs py-1" placeholder="e.g. 2">
+                </div>
+                <div>
+                    <label for="regDate" class="text-xs">Reg Date</label>
+                    <input id="regDate" name="regDate" type="date" class="form-input text-xs py-1">
+                </div>
+                <div>
+                    <label for="regTime" class="text-xs">Reg Time</label>
+                    <input id="regTime" name="regTime" type="time" class="form-input text-xs py-1">
+                </div>
+            </div>
+            <div x-show="showPreview" x-transition class="mt-2 p-3 bg-blue-50 border-2 border-blue-200 rounded-lg shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                        </svg>
+                        <span class="text-sm font-semibold text-blue-700">Registration Number:</span>
+                    </div>
+                    <span class="text-lg font-bold text-blue-800 tracking-wider" x-text="regNoDisplay"></span>
+                </div>
+                <div class="mt-1.5 flex justify-between items-center">
+                    <div class="text-xs text-blue-600">Format: Serial No/Page No/Volume No</div>
+                    <div x-show="serialNo && pageNo && volumeNo" class="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">Complete</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instrument Type and Period -->
+        <div >
+                   <!-- Land Use Type -->
+            <div class="space-y-1">
+                <label for="landUse" class="text-sm">Land Use</label>
+                <select id="landUse" name="landUse" class="form-select text-sm">
+                    <option value="">Select land use</option>
+                    <option value="RESIDENTIAL">RESIDENTIAL</option>
+                    <option value="AGRICULTURAL">AGRICULTURAL</option>
+                    <option value="COMMERCIAL">COMMERCIAL</option>
+                    <option value="COMMERCIAL ( WARE HOUSE)">COMMERCIAL ( WARE HOUSE)</option>
+                    <option value="COMMERCIAL (OFFICES)">COMMERCIAL (OFFICES)</option>
+                    <option value="COMMERCIAL (PETROL FILLING STATION)">COMMERCIAL (PETROL FILLING STATION)</option>
+                    <option value="COMMERCIAL (RICE PROCESSING)">COMMERCIAL (RICE PROCESSING)</option>
+                    <option value="COMMERCIAL (SCHOOL)">COMMERCIAL (SCHOOL)</option>
+                    <option value="COMMERCIAL (SHOPS & PUBLIC CONVINIENCE)">COMMERCIAL (SHOPS & PUBLIC CONVINIENCE)</option>
+                    <option value="COMMERCIAL (SHOPS AND OFFICES)">COMMERCIAL (SHOPS AND OFFICES)</option>
+                    <option value="COMMERCIAL (SHOPS)">COMMERCIAL (SHOPS)</option>
+                    <option value="COMMERCIAL (WAREHOUSE)">COMMERCIAL (WAREHOUSE)</option>
+                    <option value="COMMERCIAL (WORKSHOP AND OFFICES)">COMMERCIAL (WORKSHOP AND OFFICES)</option>
+                    <option value="COMMERCIAL AND RESIDENTIAL">COMMERCIAL AND RESIDENTIAL</option>
+                    <option value="INDUSTRIAL">INDUSTRIAL</option>
+                    <option value="INDUSTRIAL (SMALL SCALE)">INDUSTRIAL (SMALL SCALE)</option>
+                    <option value="RESIDENTIAL AND COMMERCIAL">RESIDENTIAL AND COMMERCIAL</option>
+                    <option value="RESIDENTIAL/COMMERCIAL">RESIDENTIAL/COMMERCIAL</option>
+                    <option value="RESIDENTIAL/COMMERCIAL LAYOUT">RESIDENTIAL/COMMERCIAL LAYOUT</option>
+                </select>
+            </div>
+
+            <div class="space-y-1">
+                <label for="period" class="text-sm">Period/Tenancy</label>
+                <div class="flex space-x-1">
+                    <input id="period" type="number" class="form-input text-sm" placeholder="Period">
+                    <select id="periodUnit" class="form-select text-sm w-[90px]">
+                        <option value="Days">Days</option>
+                        <option value="Months">Months</option>
+                        <option value="Years" selected>Years</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transaction Details Section -->
+<div id="transaction-specific-fields-record" class="form-section" x-show="selectedTransactionType" x-transition  >
+    <h4 class="form-section-title">Transaction Details</h4>
+    
+    <!-- Other Transaction Type Input -->
+    <div id="other-transaction-type" class="space-y-1 mb-3" x-show="selectedTransactionType === 'Other'" x-transition>
+        <label for="otherTransactionType" class="text-sm">Specify Other Transaction Type</label>
+        <input type="text" id="otherTransactionType" name="otherTransactionType" class="form-input text-sm" placeholder="Enter transaction type">
+    </div>
+    
+    <!-- Assignment fields -->
+    <div id="assignment-fields-record" class="transaction-fields" x-show="selectedTransactionType === 'Assignment'" x-transition>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="space-y-1">
+                <label for="trans-assignor-record" class="text-sm" x-text="partyLabels.firstParty"></label>
+                <input id="trans-assignor-record" name="Assignor" class="form-input text-sm" :placeholder="`Enter ${partyLabels.firstParty.toLowerCase()} name`">
+            </div>
+            <div class="space-y-1">
+                <label for="trans-assignee-record" class="text-sm" x-text="partyLabels.secondParty"></label>
+                <input id="trans-assignee-record" name="Assignee" class="form-input text-sm" :placeholder="`Enter ${partyLabels.secondParty.toLowerCase()} name`">
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mortgage fields -->
+    <div id="mortgage-fields-record" class="transaction-fields" x-show="selectedTransactionType === 'Mortgage'" x-transition>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="space-y-1">
+                <label for="mortgagor-record" class="text-sm" x-text="partyLabels.firstParty"></label>
+                <input id="mortgagor-record" name="Mortgagor" class="form-input text-sm" :placeholder="`Enter ${partyLabels.firstParty.toLowerCase()} name`">
+            </div>
+            <div class="space-y-1">
+                <label for="mortgagee-record" class="text-sm" x-text="partyLabels.secondParty"></label>
+                <input id="mortgagee-record" name="Mortgagee" class="form-input text-sm" :placeholder="`Enter ${partyLabels.secondParty.toLowerCase()} name`">
+            </div>
+        </div>
+    </div>
+    
+    <!-- Surrender fields -->
+    <div id="surrender-fields-record" class="transaction-fields" x-show="selectedTransactionType === 'Surrender'" x-transition>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="space-y-1">
+                <label for="surrenderor-record" class="text-sm" x-text="partyLabels.firstParty"></label>
+                <input id="surrenderor-record" name="Surrenderor" class="form-input text-sm" :placeholder="`Enter ${partyLabels.firstParty.toLowerCase()} name`">
+            </div>
+            <div class="space-y-1">
+                <label for="surrenderee-record" class="text-sm" x-text="partyLabels.secondParty"></label>
+                <input id="surrenderee-record" name="Surrenderee" class="form-input text-sm" :placeholder="`Enter ${partyLabels.secondParty.toLowerCase()} name`">
+            </div>
+        </div>
+    </div>
+    
+    <!-- Lease fields -->
+    <div id="lease-fields-record" class="transaction-fields" x-show="selectedTransactionType === 'Sub-Lease'" x-transition>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="space-y-1">
+                <label for="lessor-record" class="text-sm" x-text="partyLabels.firstParty"></label>
+                <input id="lessor-record" name="Lessor" class="form-input text-sm" :placeholder="`Enter ${partyLabels.firstParty.toLowerCase()} name`">
+            </div>
+            <div class="space-y-1">
+                <label for="lessee-record" class="text-sm" x-text="partyLabels.secondParty"></label>
+                <input id="lessee-record" name="Lessee" class="form-input text-sm" :placeholder="`Enter ${partyLabels.secondParty.toLowerCase()} name`">
+            </div>
+        </div>
+    </div>
+    
+    <!-- Default/Grant fields -->
+    <div id="default-fields-record" class="transaction-fields" x-show="shouldShowDefaultFields" x-transition>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="space-y-1">
+                <label for="grantor-record" class="text-sm" x-text="partyLabels.firstParty"></label>
+                <input id="grantor-record" name="Grantor" class="form-input text-sm" :placeholder="`Enter ${partyLabels.firstParty.toLowerCase()} name`" :value="autoFilledGrantor" :readonly="isGrantorReadonly" :class="isGrantorReadonly ? 'bg-gray-100' : ''">
+            </div>
+            <div class="space-y-1">
+                <label for="grantee-record" class="text-sm" x-text="partyLabels.secondParty"></label>
+                <input id="grantee-record" name="Grantee" class="form-input text-sm" :placeholder="`Enter ${partyLabels.secondParty.toLowerCase()} name`">
+            </div>
+        </div>
+    </div>
+
+</div>
          <div class="space-y-1">
             <label class="text-sm">Description</label>
             <textarea id="property-description" name="property_description" rows="4" class="form-input text-sm" readonly x-text="description"></textarea>
@@ -614,7 +614,7 @@ function propertyRecordForm() {
             'Certificate of Occupancy': { firstParty: 'Grantor', secondParty: 'Grantee' },
             'ST Certificate of Occupancy': { firstParty: 'Grantor', secondParty: 'Grantee' },
             'SLTR Certificate of Occupancy': { firstParty: 'Grantor', secondParty: 'Grantee' },
-            'Irrevocable Power of Attorney': { firstParty: 'Grantor', secondParty: 'Attorney' },
+            'Irrevocable Power of Attorney': { firstParty: 'Grantor', secondParty: 'Grantee' },
             'Deed of Release': { firstParty: 'Releasor', secondParty: 'Releasee' },
             'Deed of Assignment': { firstParty: 'Assignor', secondParty: 'Assignee' },
             'ST Assignment': { firstParty: 'Assignor', secondParty: 'Assignee' },
@@ -622,7 +622,7 @@ function propertyRecordForm() {
             'Tripartite Mortgage': { firstParty: 'Mortgagor', secondParty: 'Mortgagee' },
             'Deed of Sub Lease': { firstParty: 'Lessor', secondParty: 'Lessee' },
             'Deed of Sub Under Lease': { firstParty: 'Lessor', secondParty: 'Lessee' },
-            'Power of Attorney': { firstParty: 'Grantor', secondParty: 'Attorney' },
+            'Power of Attorney': { firstParty: 'Grantor', secondParty: 'Grantee' },
             'Deed of Surrender': { firstParty: 'Surrenderor', secondParty: 'Surrenderee' },
             'Indenture of Lease': { firstParty: 'Lessor', secondParty: 'Lessee' },
             'Deed of Variation': { firstParty: 'Grantor', secondParty: 'Grantee' },

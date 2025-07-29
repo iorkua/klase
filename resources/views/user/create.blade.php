@@ -35,11 +35,10 @@
                     }
                     
                     try {
-                        const response = await fetch(`/users/get-levels/${userTypeId}`);
+                        const response = await fetch('/users/get-levels/' + userTypeId);
                         const levels = await response.json();
                         this.availableLevels = levels;
                         
-                        // Auto-select if only one level available
                         if (levels.length === 1) {
                             this.userLevelId = levels[0].id;
                             this.userLevelName = levels[0].name;
@@ -53,7 +52,6 @@
                     }
                 },
                 
-                // Only check/uncheck visible roles
                 checkAll() {
                     document.querySelectorAll('#roles_grid > div').forEach(el => {
                         const isVisible = el.style.display !== 'none' && !el.hasAttribute('x-show') || 
@@ -86,59 +84,93 @@
                     this.selectedDept = '';
                 },
                 
-                // Enhanced role filtering based on exact SQL structure and database tables
                 shouldShowRole(roleUserType, roleLevel, roleName, roleDeptId) {
-                    // If no user type selected, show all roles
-                    if (!this.userTypeName) {
+                    // If showing all roles, show everything
+                    if (this.showAll) {
                         return true;
                     }
                     
-                    // Department filtering first
-                    if (!this.showAll && this.selectedDept) {
-                        if (roleDeptId && roleDeptId != 'null' && roleDeptId != this.selectedDept) {
+                    // Department filtering
+                    if (this.selectedDept) {
+                        const roleDepId = String(roleDeptId);
+                        const selectedDepId = String(this.selectedDept);
+                        
+                        // Hide roles that belong to other departments (unless they're universal)
+                        if (roleDepId !== 'null' && roleDepId !== '' && roleDepId !== 'undefined' && roleDepId !== selectedDepId) {
                             return false;
                         }
                     }
                     
-                    // Always show ALL user_type roles to everyone
-                    if (roleUserType === 'ALL') {
-                        return true;
-                    }
-                    
-                    // Exact user type and level matching based on database structure
-                    // Check if the role's user_type matches the selected user type
-                    if (roleUserType === this.userTypeName) {
-                        // For exact matches, also check if the level matches
-                        if (this.userLevelName && roleLevel === this.userLevelName) {
+                    // User Type and Level filtering
+                    if (this.userTypeName && this.userLevelName) {
+                        // Always show ALL user_type roles
+                        if (roleUserType === 'ALL') {
                             return true;
                         }
-                        // If no specific level set, show all roles for this user type
-                        if (!this.userLevelName) {
+                        
+                        // Show roles that match the selected user type and level
+                        if (roleUserType === this.userTypeName && roleLevel === this.userLevelName) {
                             return true;
                         }
-                    }
-                    
-                    // Hierarchical access: higher levels can access lower level roles
-                    if (this.userTypeName === 'Management') {
-                        // Management can access Operations and User roles
-                        if (roleUserType === 'Operations' || roleUserType === 'User') {
+                        
+                        // Hierarchical access: higher levels can access lower level roles
+                        if (this.userTypeName === 'Management') {
+                            // Management can access Operations and User roles
+                            if (roleUserType === 'Operations' || roleUserType === 'User') {
+                                return true;
+                            }
+                        }
+                        
+                        if (this.userTypeName === 'Operations') {
+                            // Operations can access User roles
+                            if (roleUserType === 'User') {
+                                return true;
+                            }
+                        }
+                        
+                        if (this.userTypeName === 'System') {
+                            // System can access all role types
                             return true;
                         }
+                        
+                        // If we reach here and user type/level are selected, hide roles that don't match
+                        return false;
                     }
                     
-                    if (this.userTypeName === 'Operations') {
-                        // Operations can access User roles
-                        if (roleUserType === 'User') {
+                    // If only user type is selected (no level yet)
+                    if (this.userTypeName && !this.userLevelName) {
+                        // Always show ALL user_type roles
+                        if (roleUserType === 'ALL') {
                             return true;
                         }
+                        
+                        // Show roles that match the selected user type (any level)
+                        if (roleUserType === this.userTypeName) {
+                            return true;
+                        }
+                        
+                        // Apply hierarchical access rules
+                        if (this.userTypeName === 'Management') {
+                            if (roleUserType === 'Operations' || roleUserType === 'User') {
+                                return true;
+                            }
+                        }
+                        
+                        if (this.userTypeName === 'Operations') {
+                            if (roleUserType === 'User') {
+                                return true;
+                            }
+                        }
+                        
+                        if (this.userTypeName === 'System') {
+                            return true;
+                        }
+                        
+                        return false;
                     }
                     
-                    if (this.userTypeName === 'System') {
-                        // System can access all role types
-                        return true;
-                    }
-                    
-                    return false;
+                    // If no user type/level selected, show all roles (filtered by department only)
+                    return true;
                 }
             }">
                 <div class="flex flex-wrap -mx-2">
@@ -288,19 +320,19 @@
                             
                             <!-- User Type and Level Summary -->
                             <div class="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md text-sm" x-show="userTypeName">
-                                <div class="font-medium text-blue-800 mb-1">Access Level Summary:</div>
+                                <div class="font-medium text-blue-800 mb-1">Role Filtering Active:</div>
                                 <div class="text-blue-700">
                                     <span class="font-medium">User Type:</span> <span x-text="userTypeName"></span> |
-                                    <span class="font-medium">Level:</span> <span x-text="userLevelName || 'Not Set'"></span>
+                                    <span class="font-medium">Level:</span> <span x-text="userLevelName || 'Not Set'"></span> |
+                                    <span class="font-medium">Department:</span> <span x-text="selectedDept ? 'Selected' : 'All'"></span>
                                 </div>
                                 <div class="text-xs text-blue-600 mt-1">
                                     <strong>Access Rules:</strong><br>
                                     <span x-show="userTypeName === 'Management'">• Can access Management, Operations, and User roles</span>
                                     <span x-show="userTypeName === 'Operations'">• Can access Operations and User roles</span>
                                     <span x-show="userTypeName === 'User'">• Can access User roles only</span>
-                                    <span x-show="userTypeName === 'ALL'">• Can access ALL and User roles</span>
                                     <span x-show="userTypeName === 'System'">• Can access all role types</span>
-                                    <br>• ALL user_type roles are always visible to everyone
+                                    <br>• ALL user_type roles are always visible
                                 </div>
                             </div>
                             
@@ -312,7 +344,7 @@
                                 <div class="grid grid-cols-3 gap-3" id="roles_grid">
                                     @foreach ($userRoles as $role)
                                         <div class="flex items-start role-item" 
-                                            x-show="shouldShowRole('{{ $role->user_type ?? '' }}', '{{ $role->level ?? '' }}', '{{ $role->name }}', '{{ $role->department_id ?? 'null' }}')"
+                                            x-show="shouldShowRole('{{ $role->user_type ?? '' }}', '{{ $role->level ?? '' }}', {{ json_encode($role->name) }}, '{{ $role->department_id ?? 'null' }}')"
                                             data-dept-id="{{ $role->department_id ?? 'null' }}"
                                             data-user-type="{{ $role->user_type ?? '' }}"
                                             data-level="{{ $role->level ?? '' }}">
@@ -321,6 +353,7 @@
                                             </div>
                                             <div class="ml-3 text-sm">
                                                 <label class="font-medium text-gray-700">{{ $role->name }}</label>
+                                                <small class="text-gray-500 block">{{ $role->user_type ?? 'N/A' }} - {{ $role->level ?? 'N/A' }}</small>
                                             </div>
                                         </div>
                                     @endforeach
@@ -336,12 +369,12 @@
                                 <button type="button" id="filterRolesBtn" @click="filterByDept()" 
                                     :class="{'bg-indigo-600 text-white': !showAll, 'text-indigo-600 border border-indigo-600 bg-white': showAll}"
                                     class="text-sm py-1 px-2 rounded ml-2">
-                                    Filter by Department
+                                    Apply Filters
                                 </button>
                             </div>
                             <!-- Department Filter Status Message -->
-                            <div class="mt-2 text-sm" x-show="!showAll && selectedDept">
-                                <span class="text-green-600">Showing roles for selected department</span>
+                            <div class="mt-2 text-sm" x-show="!showAll && (selectedDept || userTypeName)">
+                                <span class="text-green-600">Filters applied - showing relevant roles only</span>
                             </div>
                         </div>
                     </div>

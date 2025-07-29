@@ -871,16 +871,16 @@
       <i data-lucide="file-check" class="h-3.5 w-3.5"></i>
       <span>ST Deeds Registration View</span>
       </a>
-      
+      <a href="{{ route('programmes.approvals.planning_recomm', ['url' => 'view']) }}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('programmes.approvals.planning_recomm') && request()->query('url') === 'view' ? 'active' : '' }}">
+        <i data-lucide="ruler" class="h-3.5 w-3.5"></i>
+        <span>Planning Recommendation</span>
+        </a>
       <a href="{{route('other_departments.survey_primary')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('other_departments.survey_primary') ? 'active' : '' }}">
       <i data-lucide="building-2" class="h-3.5 w-3.5"></i>
       <span>Other Departments</span>
       </a>
       
-      <a href="{{ route('programmes.approvals.planning_recomm', ['url' => 'view']) }}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('programmes.approvals.planning_recomm') && request()->query('url') === 'view' ? 'active' : '' }}">
-      <i data-lucide="ruler" class="h-3.5 w-3.5"></i>
-      <span>Planning Recommendation</span>
-      </a>
+     
       
    
     </div>
