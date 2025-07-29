@@ -10,24 +10,53 @@
     .dropdown-wrapper { 
         position: static; 
     }
+    
     .dropdown-menu { 
-        position: fixed;
-        z-index: 9999;
-        min-width: 12rem;
+        position: fixed !important;
+        z-index: 10000 !important;
+        min-width: 10rem;
         margin-top: 0.25rem;
+        white-space: nowrap;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.375rem;
     }
-    /* Ensure table doesn't expand due to dropdown */
+    
+    /* Ensure table container allows overflow */
     .overflow-x-auto { 
         overflow-x: auto;
-        overflow-y: visible;
-    }
-    /* Prevent table cell from expanding */
-    .action-cell {
-        width: 60px;
-        min-width: 60px;
-        max-width: 60px;
+        overflow-y: visible !important;
         position: relative;
     }
+    
+    /* Table positioning */
+    .table-container {
+        position: relative;
+        overflow: visible;
+    }
+    
+    /* Prevent table cell from expanding */
+    .action-cell {
+        width: 80px;
+        min-width: 80px;
+        max-width: 80px;
+        position: relative;
+    }
+    
+    /* Responsive dropdown adjustments */
+    @media (max-width: 768px) {
+        .dropdown-menu {
+            min-width: 8rem;
+            font-size: 0.75rem;
+        }
+        .action-cell {
+            width: 60px;
+            min-width: 60px;
+            max-width: 60px;
+        }
+    }
+    
     /* Tab styling */
     .tab-nav { 
         border-bottom: 2px solid #e5e7eb; 
@@ -278,117 +307,127 @@
             <div class="tab-content">
                 <!-- Primary Surveys Tab -->
                 <div id="primary-surveys" class="active">
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr class="text-xs">
-                                    <th class="table-header text-green-500">File No</th>
-                                    <th class="table-header text-green-500">Plot No</th>
-                                    <th class="table-header text-green-500">Block No</th>
-                                    <th class="table-header text-green-500">Approved Plan No</th>
-                                    <th class="table-header text-green-500">TP Plan No</th>
-                                    <th class="table-header text-green-500">Survey Type</th>
-                                    <th class="table-header text-green-500">Control Beacon Name</th>
-                                    <th class="table-header text-green-500">Control Beacon X</th>
-                                    <th class="table-header text-green-500">Control Beacon Y</th>
-                                    <th class="table-header text-green-500">Layout Name</th>
-                                    <th class="table-header text-green-500">District Name</th>
-                                    <th class="table-header text-green-500">LGA Name</th>
-                                    <th class="table-header text-green-500">Survey By</th>
-                                    <th class="table-header text-green-500">Survey Date</th>
-                                    <th class="table-header text-green-500">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @foreach($surveys as $survey)
-                                    @if(!empty($survey->application_id))
-                                        <tr class="text-xs table-row">
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->fileno ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->plot_no ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->block_no ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->approved_plan_no ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->tp_plan_no ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2">
-                                                <span class="status-badge status-primary">Primary</span>
-                                            </td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->beacon_control_name ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->Control_Beacon_Coordinate_X ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->Control_Beacon_Coordinate_Y ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->layout_name ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->district_name ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->lga_name ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->survey_by ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->survey_by_date ?? 'N/A' }}</td>
-                                            <td class="table-cell action-cell px-2 py-2">
-                                                <a href="{{ url('attribution/update-survey/' . $survey->ID) }}" 
-                                                   class="flex items-center px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-                                                    <i data-lucide="edit" class="w-4 h-4 mr-1"></i> 
-                                                    Update
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    @endif
-                                @endforeach
-                            </tbody>
-                        </table>
+                    <div class="table-container">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr class="text-xs">
+                                        <th class="table-header text-green-500">File No</th>
+                                        <th class="table-header text-green-500">Plot No</th>
+                                        <th class="table-header text-green-500">Block No</th>
+                                        <th class="table-header text-green-500">Approved Plan No</th>
+                                        <th class="table-header text-green-500">TP Plan No</th>
+                                        <th class="table-header text-green-500">Survey Type</th>
+                                        <th class="table-header text-green-500">Control Beacon Name</th>
+                                        <th class="table-header text-green-500">Control Beacon X</th>
+                                        <th class="table-header text-green-500">Control Beacon Y</th>
+                                        <th class="table-header text-green-500">Layout Name</th>
+                                        <th class="table-header text-green-500">District Name</th>
+                                        <th class="table-header text-green-500">LGA Name</th>
+                                        <th class="table-header text-green-500">Survey By</th>
+                                        <th class="table-header text-green-500">Survey Date</th>
+                                        <th class="table-header text-green-500">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    @foreach($surveys as $survey)
+                                        @if(!empty($survey->application_id))
+                                            <tr class="text-xs table-row">
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->fileno ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->plot_no ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->block_no ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->approved_plan_no ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->tp_plan_no ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2">
+                                                    <span class="status-badge status-primary">Primary</span>
+                                                </td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->beacon_control_name ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->Control_Beacon_Coordinate_X ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->Control_Beacon_Coordinate_Y ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->layout_name ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->district_name ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->lga_name ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->survey_by ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->survey_by_date ?? 'N/A' }}</td>
+                                                <td class="table-cell action-cell px-2 py-2">
+                                                    <div class="dropdown-wrapper">
+                                                        <button class="flex items-center px-3 py-1 text-xs bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors dropdown-toggle" 
+                                                                type="button" 
+                                                                data-survey-id="{{ $survey->ID }}"
+                                                                onclick="toggleDropdown({{ $survey->ID }})">
+                                                            <i data-lucide="more-vertical" class="w-4 h-4"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endif
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Unit Surveys Tab -->
                 <div id="unit-surveys">
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr class="text-xs">
-                                    <th class="table-header text-green-500">File No</th>
-                                    <th class="table-header text-green-500">Plot No</th>
-                                    <th class="table-header text-green-500">Block No</th>
-                                    <th class="table-header text-green-500">Approved Plan No</th>
-                                    <th class="table-header text-green-500">TP Plan No</th>
-                                    <th class="table-header text-green-500">Survey Type</th>
-                                    <th class="table-header text-green-500">Control Beacon Name</th>
-                                    <th class="table-header text-green-500">Control Beacon X</th>
-                                    <th class="table-header text-green-500">Control Beacon Y</th>
-                                    <th class="table-header text-green-500">Layout Name</th>
-                                    <th class="table-header text-green-500">District Name</th>
-                                    <th class="table-header text-green-500">LGA Name</th>
-                                    <th class="table-header text-green-500">Survey By</th>
-                                    <th class="table-header text-green-500">Survey Date</th>
-                                    <th class="table-header text-green-500">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @foreach($surveys as $survey)
-                                    @if(!empty($survey->sub_application_id))
-                                        <tr class="text-xs table-row">
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->fileno ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->plot_no ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->block_no ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->approved_plan_no ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->tp_plan_no ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2">
-                                                <span class="status-badge status-unit">Unit</span>
-                                            </td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->beacon_control_name ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->Control_Beacon_Coordinate_X ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->Control_Beacon_Coordinate_Y ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->layout_name ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->district_name ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->lga_name ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->survey_by ?? 'N/A' }}</td>
-                                            <td class="table-cell px-2 py-2 truncate">{{ $survey->survey_by_date ?? 'N/A' }}</td>
-                                            <td class="table-cell action-cell px-2 py-2">
-                                                <a href="{{ url('attribution/update-survey/' . $survey->ID) }}" 
-                                                   class="flex items-center px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-                                                    <i data-lucide="edit" class="w-4 h-4 mr-1"></i> 
-                                                    Update
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    @endif
-                                @endforeach
-                            </tbody>
-                        </table>
+                    <div class="table-container">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr class="text-xs">
+                                        <th class="table-header text-green-500">File No</th>
+                                        <th class="table-header text-green-500">Plot No</th>
+                                        <th class="table-header text-green-500">Block No</th>
+                                        <th class="table-header text-green-500">Approved Plan No</th>
+                                        <th class="table-header text-green-500">TP Plan No</th>
+                                        <th class="table-header text-green-500">Survey Type</th>
+                                        <th class="table-header text-green-500">Control Beacon Name</th>
+                                        <th class="table-header text-green-500">Control Beacon X</th>
+                                        <th class="table-header text-green-500">Control Beacon Y</th>
+                                        <th class="table-header text-green-500">Layout Name</th>
+                                        <th class="table-header text-green-500">District Name</th>
+                                        <th class="table-header text-green-500">LGA Name</th>
+                                        <th class="table-header text-green-500">Survey By</th>
+                                        <th class="table-header text-green-500">Survey Date</th>
+                                        <th class="table-header text-green-500">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    @foreach($surveys as $survey)
+                                        @if(!empty($survey->sub_application_id))
+                                            <tr class="text-xs table-row">
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->fileno ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->plot_no ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->block_no ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->approved_plan_no ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->tp_plan_no ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2">
+                                                    <span class="status-badge status-unit">Unit</span>
+                                                </td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->beacon_control_name ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->Control_Beacon_Coordinate_X ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->Control_Beacon_Coordinate_Y ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->layout_name ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->district_name ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->lga_name ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->survey_by ?? 'N/A' }}</td>
+                                                <td class="table-cell px-2 py-2 truncate">{{ $survey->survey_by_date ?? 'N/A' }}</td>
+                                                <td class="table-cell action-cell px-2 py-2">
+                                                    <div class="dropdown-wrapper">
+                                                        <button class="flex items-center px-3 py-1 text-xs bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors dropdown-toggle" 
+                                                                type="button" 
+                                                                data-survey-id="{{ $survey->ID }}"
+                                                                onclick="toggleDropdown({{ $survey->ID }})">
+                                                            <i data-lucide="more-vertical" class="w-4 h-4"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endif
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -396,6 +435,11 @@
     </div>
     <!-- Footer -->
     @include('admin.footer')
+</div>
+
+<!-- Dynamic Dropdown Container (will be positioned absolutely) -->
+<div id="dynamicDropdown" class="dropdown-menu hidden bg-white border border-gray-200 rounded-md shadow-lg py-1" style="position: fixed; z-index: 10000;">
+    <!-- Content will be dynamically populated -->
 </div>
 
 <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.8.2/dist/alpine.min.js" defer></script>
@@ -607,6 +651,168 @@
             total: {{ count($surveys) }},
             recent: {{ collect($surveys)->filter(function($survey) { return $survey->created_at && \Carbon\Carbon::parse($survey->created_at)->isCurrentMonth(); })->count() }}
         };
+    });
+
+    // New Dropdown functionality using external dropdown (same as survey_record/index)
+    let currentDropdownSurveyId = null;
+    
+    window.toggleDropdown = function(surveyId) {
+        const dropdown = document.getElementById('dynamicDropdown');
+        const button = document.querySelector(`[data-survey-id="${surveyId}"]`);
+        
+        // If clicking the same button, close dropdown
+        if (currentDropdownSurveyId === surveyId && !dropdown.classList.contains('hidden')) {
+            dropdown.classList.add('hidden');
+            currentDropdownSurveyId = null;
+            return;
+        }
+        
+        // Get survey data for this row
+        const surveyData = getSurveyData(surveyId);
+        
+        // Populate dropdown content
+        dropdown.innerHTML = `
+            <a href="{{ url('attribution/edit') }}/${surveyId}" 
+               class="flex items-center px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 transition-colors">
+                <i data-lucide="edit" class="w-4 h-4 mr-2 text-blue-500"></i>
+                Edit
+            </a>
+            <button onclick="confirmDelete(${surveyId})" 
+                    class="flex items-center w-full px-4 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors">
+                <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i>
+                Delete
+            </button>
+            <button onclick="viewSurveyPlan(${surveyId}, '${surveyData.fileno}', '${surveyData.planPath}')" 
+                    class="flex items-center w-full px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 transition-colors">
+                <i data-lucide="file-text" class="w-4 h-4 mr-2 text-green-500"></i>
+                View Survey Plan
+            </button>
+        `;
+        
+        // Position dropdown
+        const rect = button.getBoundingClientRect();
+        const dropdownWidth = 160;
+        const dropdownHeight = 120;
+        
+        let left = rect.right - dropdownWidth;
+        let top = rect.bottom + window.scrollY;
+        
+        // Ensure dropdown doesn't go off screen
+        if (left < 10) {
+            left = rect.left;
+        }
+        if (left + dropdownWidth > window.innerWidth - 10) {
+            left = window.innerWidth - dropdownWidth - 10;
+        }
+        
+        // Check if dropdown would go below viewport
+        if (rect.bottom + dropdownHeight > window.innerHeight) {
+            top = rect.top + window.scrollY - dropdownHeight;
+        }
+        
+        // Apply positioning and show
+        dropdown.style.left = `${left}px`;
+        dropdown.style.top = `${top}px`;
+        dropdown.classList.remove('hidden');
+        
+        currentDropdownSurveyId = surveyId;
+        
+        // Recreate icons
+        setTimeout(() => {
+            lucide.createIcons();
+        }, 10);
+    }
+    
+    // Helper function to get survey data from the row
+    function getSurveyData(surveyId) {
+        const surveys = @json($surveys);
+        const survey = surveys.find(s => s.ID == surveyId);
+        return {
+            fileno: survey ? (survey.fileno || 'N/A') : 'N/A',
+            planPath: survey ? (survey.survey_plan_path || '') : ''
+        };
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('dynamicDropdown');
+        if (!event.target.closest('.dropdown-wrapper') && !event.target.closest('#dynamicDropdown')) {
+            dropdown.classList.add('hidden');
+            currentDropdownSurveyId = null;
+        }
+    });
+
+    // Delete confirmation function
+    window.confirmDelete = function(surveyId) {
+        // Close dropdown first
+        document.getElementById('dynamicDropdown').classList.add('hidden');
+        currentDropdownSurveyId = null;
+        
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Create a form and submit it for deletion
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `{{ url('attribution') }}/${surveyId}`;
+                
+                // Add CSRF token
+                const csrfToken = document.createElement('input');
+                csrfToken.type = 'hidden';
+                csrfToken.name = '_token';
+                csrfToken.value = '{{ csrf_token() }}';
+                form.appendChild(csrfToken);
+                
+                // Add method spoofing for DELETE
+                const methodInput = document.createElement('input');
+                methodInput.type = 'hidden';
+                methodInput.name = '_method';
+                methodInput.value = 'DELETE';
+                form.appendChild(methodInput);
+                
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    }
+
+    // View Survey Plan function
+    window.viewSurveyPlan = function(surveyId, fileNo, planPath) {
+        // Close dropdown first
+        document.getElementById('dynamicDropdown').classList.add('hidden');
+        currentDropdownSurveyId = null;
+        
+        if (planPath && planPath !== '') {
+            const fullPath = `{{ asset('storage') }}/${planPath}`;
+            window.open(fullPath, '_blank');
+        } else {
+            Swal.fire({
+                title: 'No Survey Plan',
+                text: 'No survey plan has been uploaded for this record.',
+                icon: 'info',
+                confirmButtonText: 'OK'
+            });
+        }
+    }
+
+    // Close dropdown with Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            // Close dropdown
+            const dropdown = document.getElementById('dynamicDropdown');
+            if (!dropdown.classList.contains('hidden')) {
+                dropdown.classList.add('hidden');
+                currentDropdownSurveyId = null;
+            }
+        }
     });
 
     // Legacy functions for backward compatibility

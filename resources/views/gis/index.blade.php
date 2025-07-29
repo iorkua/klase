@@ -10,23 +10,51 @@
     .dropdown-wrapper { 
         position: static; 
     }
+    
     .dropdown-menu { 
-        position: fixed;
-        z-index: 9999;
-        min-width: 12rem;
+        position: fixed !important;
+        z-index: 10000 !important;
+        min-width: 10rem;
         margin-top: 0.25rem;
+        white-space: nowrap;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.375rem;
     }
-    /* Ensure table doesn't expand due to dropdown */
+    
+    /* Ensure table container allows overflow */
     .overflow-x-auto { 
         overflow-x: auto;
-        overflow-y: visible;
+        overflow-y: visible !important;
+        position: relative;
     }
+    
+    /* Table positioning */
+    .table-container {
+        position: relative;
+        overflow: visible;
+    }
+    
     /* Prevent table cell from expanding */
     .action-cell {
-        width: 60px;
-        min-width: 60px;
-        max-width: 60px;
+        width: 80px;
+        min-width: 80px;
+        max-width: 80px;
         position: relative;
+    }
+    
+    /* Responsive dropdown adjustments */
+    @media (max-width: 768px) {
+        .dropdown-menu {
+            min-width: 8rem;
+            font-size: 0.75rem;
+        }
+        .action-cell {
+            width: 60px;
+            min-width: 60px;
+            max-width: 60px;
+        }
     }
     /* Tab styling */
     .tab-nav { 
@@ -306,48 +334,14 @@
                                     <td class="table-cell px-1 py-1 truncate">{{ $data->oldTitleVolumeNo ?? 'N/A' }}</td>
                                     <td class="table-cell px-1 py-1 truncate">{{ $data->created_at ? date('d M, Y', strtotime($data->created_at)) : 'N/A' }}</td>
                                     <td class="table-cell action-cell px-1 py-1">
-                                        <div class="dropdown-wrapper" x-data="{ 
-                                            open: false, 
-                                            toggle() { 
-                                                this.open = !this.open; 
-                                                if (this.open) {
-                                                    this.$nextTick(() => {
-                                                        const button = this.$refs.button;
-                                                        const dropdown = this.$refs.dropdown;
-                                                        const rect = button.getBoundingClientRect();
-                                                        dropdown.style.top = (rect.bottom + 4) + 'px';
-                                                        dropdown.style.left = (rect.right - dropdown.offsetWidth) + 'px';
-                                                    });
-                                                }
-                                            } 
-                                        }">
-                                            <button x-ref="button" @click.prevent="toggle()" class="text-gray-600 hover:text-blue-600 p-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ml-auto block">
-                                                <i data-lucide="more-vertical" class="h-5 w-5"></i>
+                                        <div class="dropdown-wrapper">
+                                            <button class="flex items-center px-3 py-1 text-xs bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors dropdown-toggle" 
+                                                    type="button" 
+                                                    data-gis-id="{{ $data->id }}"
+                                                    data-gis-type="primary"
+                                                    onclick="toggleGisDropdown({{ $data->id }}, 'primary')">
+                                                <i data-lucide="more-vertical" class="w-4 h-4"></i>
                                             </button>
-                                            
-                                            <div x-ref="dropdown" x-show="open" @click.away="open = false" x-transition
-                                                class="dropdown-menu w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
-                                                style="display: none; z-index: 9999;">
-                                                <div class="py-1">
-                                                    <a href="{{ route('gis.view', $data->id) }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                        <i data-lucide="eye" class="h-4 w-4 mr-2 text-gray-500"></i>
-                                                        View
-                                                    </a>
-                                                    <a href="{{ route('gis.edit', $data->id) }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                        <i data-lucide="edit" class="h-4 w-4 mr-2 text-gray-500"></i>
-                                                        Edit
-                                                    </a>
-                                                    <form action="{{ route('gis.destroy', $data->id) }}" method="POST">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" onclick="return confirm('Are you sure you want to delete this record?')" 
-                                                            class="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                                                            <i data-lucide="trash" class="h-4 w-4 mr-2 text-red-500"></i>
-                                                            Delete
-                                                        </button>
-                                                    </form>
-                                                </div>
-                                            </div>
                                         </div>
                                     </td>
                                 </tr>
@@ -390,48 +384,14 @@
                                     <td class="table-cell px-1 py-1 truncate">{{ $data->plotNo ?? 'N/A' }}</td>
                                     <td class="table-cell px-1 py-1 truncate">{{ $data->created_at ? date('d M, Y', strtotime($data->created_at)) : 'N/A' }}</td>
                                     <td class="table-cell action-cell px-1 py-1">
-                                        <div class="dropdown-wrapper" x-data="{ 
-                                            open: false, 
-                                            toggle() { 
-                                                this.open = !this.open; 
-                                                if (this.open) {
-                                                    this.$nextTick(() => {
-                                                        const button = this.$refs.button;
-                                                        const dropdown = this.$refs.dropdown;
-                                                        const rect = button.getBoundingClientRect();
-                                                        dropdown.style.top = (rect.bottom + 4) + 'px';
-                                                        dropdown.style.left = (rect.right - dropdown.offsetWidth) + 'px';
-                                                    });
-                                                }
-                                            } 
-                                        }">
-                                            <button x-ref="button" @click.prevent="toggle()" class="text-gray-600 hover:text-blue-600 p-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ml-auto block">
-                                                <i data-lucide="more-vertical" class="h-5 w-5"></i>
+                                        <div class="dropdown-wrapper">
+                                            <button class="flex items-center px-3 py-1 text-xs bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors dropdown-toggle" 
+                                                    type="button" 
+                                                    data-gis-id="{{ $data->id }}"
+                                                    data-gis-type="unit"
+                                                    onclick="toggleGisDropdown({{ $data->id }}, 'unit')">
+                                                <i data-lucide="more-vertical" class="w-4 h-4"></i>
                                             </button>
-                                            
-                                            <div x-ref="dropdown" x-show="open" @click.away="open = false" x-transition
-                                                class="dropdown-menu w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
-                                                style="display: none; z-index: 9999;">
-                                                <div class="py-1">
-                                                    <a href="{{ route('gis.view', $data->id) }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                        <i data-lucide="eye" class="h-4 w-4 mr-2 text-gray-500"></i>
-                                                        View
-                                                    </a>
-                                                    <a href="{{ route('gis.edit', $data->id) }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                        <i data-lucide="edit" class="h-4 w-4 mr-2 text-gray-500"></i>
-                                                        Edit
-                                                    </a>
-                                                    <form action="{{ route('gis.destroy', $data->id) }}" method="POST">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" onclick="return confirm('Are you sure you want to delete this record?')" 
-                                                            class="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                                                            <i data-lucide="trash" class="h-4 w-4 mr-2 text-red-500"></i>
-                                                            Delete
-                                                        </button>
-                                                    </form>
-                                                </div>
-                                            </div>
                                         </div>
                                     </td>
                                 </tr>
@@ -446,9 +406,15 @@
     <!-- Footer -->
     @include('admin.footer')
 </div>
- 
+
+<!-- Dynamic Dropdown Container (will be positioned absolutely) -->
+<div id="dynamicGisDropdown" class="dropdown-menu hidden bg-white border border-gray-200 rounded-md shadow-lg py-1" style="position: fixed; z-index: 10000;">
+    <!-- Content will be dynamically populated -->
+</div>
+
 <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.8.2/dist/alpine.min.js" defer></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         lucide.createIcons();
@@ -672,6 +638,142 @@
         
         // Store original values for reset
         window.originalCounters = originalCounters;
+    });
+
+    // New GIS Dropdown functionality using external dropdown
+    let currentDropdownGisId = null;
+    let currentDropdownGisType = null;
+    
+    window.toggleGisDropdown = function(gisId, gisType) {
+        const dropdown = document.getElementById('dynamicGisDropdown');
+        const button = document.querySelector(`[data-gis-id="${gisId}"][data-gis-type="${gisType}"]`);
+        
+        // If clicking the same button, close dropdown
+        if (currentDropdownGisId === gisId && currentDropdownGisType === gisType && !dropdown.classList.contains('hidden')) {
+            dropdown.classList.add('hidden');
+            currentDropdownGisId = null;
+            currentDropdownGisType = null;
+            return;
+        }
+        
+        // Populate dropdown content
+        dropdown.innerHTML = `
+            <a href="{{ url('gis/edit') }}/${gisId}" 
+               class="flex items-center px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 transition-colors">
+                <i data-lucide="edit" class="w-4 h-4 mr-2"></i>
+                Edit
+            </a>
+            <a href="{{ url('gis/view') }}/${gisId}" 
+               class="flex items-center px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 transition-colors">
+                <i data-lucide="eye" class="w-4 h-4 mr-2"></i>
+                View
+            </a>
+            <button onclick="confirmGisDelete(${gisId})" 
+                    class="flex items-center w-full px-4 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors">
+                <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i>
+                Delete
+            </button>
+        `;
+        
+        // Position dropdown
+        const rect = button.getBoundingClientRect();
+        const dropdownWidth = 160;
+        const dropdownHeight = 120;
+        
+        let left = rect.right - dropdownWidth;
+        let top = rect.bottom + window.scrollY;
+        
+        // Ensure dropdown doesn't go off screen
+        if (left < 10) {
+            left = rect.left;
+        }
+        if (left + dropdownWidth > window.innerWidth - 10) {
+            left = window.innerWidth - dropdownWidth - 10;
+        }
+        
+        // Check if dropdown would go below viewport
+        if (rect.bottom + dropdownHeight > window.innerHeight) {
+            top = rect.top + window.scrollY - dropdownHeight;
+        }
+        
+        // Apply positioning and show
+        dropdown.style.left = `${left}px`;
+        dropdown.style.top = `${top}px`;
+        dropdown.classList.remove('hidden');
+        
+        currentDropdownGisId = gisId;
+        currentDropdownGisType = gisType;
+        
+        // Recreate icons
+        setTimeout(() => {
+            lucide.createIcons();
+        }, 10);
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('dynamicGisDropdown');
+        if (!event.target.closest('.dropdown-wrapper') && !event.target.closest('#dynamicGisDropdown')) {
+            dropdown.classList.add('hidden');
+            currentDropdownGisId = null;
+            currentDropdownGisType = null;
+        }
+    });
+
+    // Delete confirmation function
+    window.confirmGisDelete = function(gisId) {
+        // Close dropdown first
+        document.getElementById('dynamicGisDropdown').classList.add('hidden');
+        currentDropdownGisId = null;
+        currentDropdownGisType = null;
+        
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Create a form and submit it for deletion
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `{{ url('gis') }}/${gisId}`;
+                
+                // Add CSRF token
+                const csrfToken = document.createElement('input');
+                csrfToken.type = 'hidden';
+                csrfToken.name = '_token';
+                csrfToken.value = '{{ csrf_token() }}';
+                form.appendChild(csrfToken);
+                
+                // Add method spoofing for DELETE
+                const methodInput = document.createElement('input');
+                methodInput.type = 'hidden';
+                methodInput.name = '_method';
+                methodInput.value = 'DELETE';
+                form.appendChild(methodInput);
+                
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    }
+
+    // Close dropdown with Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            // Close dropdown
+            const dropdown = document.getElementById('dynamicGisDropdown');
+            if (!dropdown.classList.contains('hidden')) {
+                dropdown.classList.add('hidden');
+                currentDropdownGisId = null;
+                currentDropdownGisType = null;
+            }
+        }
     });
 </script>
 @endsection

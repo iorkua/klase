@@ -281,3 +281,8 @@ Route::middleware(['auth'])->group(function () {
     });
 
 });
+// Additional attribution routes
+Route::get('/attribution/edit/{id}', [App\Http\Controllers\AttributionController::class, 'edit'])->name('attribution.edit');
+Route::put('/attribution/update/{id}', [App\Http\Controllers\AttributionController::class, 'update'])->name('attribution.update');
+Route::get('/attribution/view-plan/{id}', [App\Http\Controllers\AttributionController::class, 'viewPlan'])->name('attribution.view-plan');
+Route::delete('/attribution/{id}', [App\Http\Controllers\AttributionController::class, 'destroy'])->name('attribution.destroy');

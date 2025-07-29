@@ -398,4 +398,158 @@ class  AttributionController extends Controller
             'message' => 'Survey not found'
         ]);
     }
+
+    /**
+     * Show the form for editing the specified survey.
+     */
+    public function edit($id)
+    {
+        $PageTitle = 'Edit Survey';
+        $PageDescription = 'Edit survey record details';
+        $survey = DB::connection('sqlsrv')->table('surveyCadastralRecord')->where('ID', $id)->first();
+
+        if (!$survey) {
+            abort(404, 'Survey record not found');
+        }
+
+        return view('attribution.edit', compact(
+            'PageTitle',
+            'PageDescription',
+            'survey'
+        ));
+    }
+
+    /**
+     * Update the specified survey in storage.
+     */
+    public function update(Request $request, $id)
+    {
+        $validatedData = $request->validate([
+            'fileno' => 'nullable|string|max:255',
+            // Primary Survey ID fields for unit surveys
+            'PrimarysurveyId' => 'nullable|string|max:255',
+            'STFileNo' => 'nullable|string|max:255',
+            // Unit Information
+            'scheme_no' => 'nullable|string|max:255',
+            'section_no' => 'nullable|string|max:255',
+            'unit_number' => 'nullable|string|max:255',
+            'unit_id' => 'nullable|string|max:255',
+            'height' => 'nullable|string|max:255',
+            'app_id' => 'nullable|string|max:255',
+            'landuse' => 'nullable|string|max:255',
+            'section_attribute' => 'nullable|string|max:255',
+            'base' => 'nullable|string|max:255',
+            'floor' => 'nullable|string|max:255',
+            // Unit Control Beacon Information
+            'UnitControlBeaconNo' => 'nullable|string|max:255',
+            'UnitControlBeaconX' => 'nullable|string|max:255',
+            'UnitControlBeaconY' => 'nullable|string|max:255',
+            // Unit Dimensions and Position
+            'UnitSize' => 'nullable|string|max:255',
+            'UnitDemsion' => 'nullable|string|max:255',
+            'UnitPosition' => 'nullable|string|max:255',
+            // Additional Information
+            'tpreport' => 'nullable|string',
+            // Survey Plan Upload (optional for updates)
+            'survey_plan_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png,dwg,dxf|max:10240', // 10MB max
+            // Existing fields
+            'plot_no' => 'nullable|string|max:255',
+            'block_no' => 'nullable|string|max:255',
+            'approved_plan_no' => 'nullable|string|max:255',
+            'tp_plan_no' => 'nullable|string|max:255',
+            'beacon_control_name' => 'nullable|string|max:255',
+            'Control_Beacon_Coordinate_X' => 'nullable|string|max:255',
+            'Control_Beacon_Coordinate_Y' => 'nullable|string|max:255',
+            'Metric_Sheet_Index' => 'nullable|string|max:255',
+            'Metric_Sheet_No' => 'nullable|string|max:255',
+            'floor_number' => 'nullable|string|max:255',
+            'Imperial_Sheet' => 'nullable|string|max:255',
+            'Imperial_Sheet_No' => 'nullable|string|max:255',
+            'layout_name' => 'nullable|string|max:255',
+            'district_name' => 'nullable|string|max:255',
+            'lga_name' => 'nullable|string|max:255',
+            'survey_by' => 'nullable|string|max:255',
+            'survey_by_date' => 'nullable|date',
+            'drawn_by' => 'nullable|string|max:255',
+            'drawn_by_date' => 'nullable|date',
+            'checked_by' => 'nullable|string|max:255',
+            'checked_by_date' => 'nullable|date',
+            'approved_by' => 'nullable|string|max:255',
+            'approved_by_date' => 'nullable|date',
+        ]);
+
+        // Handle survey plan file upload for updates
+        if ($request->hasFile('survey_plan_path')) {
+            $file = $request->file('survey_plan_path');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $filePath = $file->storeAs('survey_plans', $fileName, 'public');
+            $validatedData['survey_plan_path'] = $filePath;
+        }
+
+        // Use STFileNo as fileno for unit surveys if provided
+        if (!empty($validatedData['STFileNo'])) {
+            $validatedData['fileno'] = $validatedData['STFileNo'];
+        }
+
+        $updated = DB::connection('sqlsrv')
+            ->table('surveyCadastralRecord')
+            ->where('ID', $id)
+            ->update($validatedData);
+
+        if ($updated) {
+            return redirect()->route('attribution.index')->with('success', 'Survey updated successfully.');
+        } else {
+            return redirect()->back()->with('error', 'Failed to update survey. Please try again.');
+        }
+    }
+
+    /**
+     * View the survey plan for the specified survey.
+     */
+    public function viewPlan($id)
+    {
+        $PageTitle = 'View Survey Plan';
+        $PageDescription = 'View survey plan document';
+        $survey = DB::connection('sqlsrv')->table('surveyCadastralRecord')->where('ID', $id)->first();
+
+        if (!$survey) {
+            abort(404, 'Survey record not found');
+        }
+
+        return view('attribution.view_plan', compact(
+            'PageTitle',
+            'PageDescription',
+            'survey'
+        ));
+    }
+
+    /**
+     * Remove the specified survey from storage.
+     */
+    public function destroy($id)
+    {
+        try {
+            $survey = DB::connection('sqlsrv')->table('surveyCadastralRecord')->where('ID', $id)->first();
+            
+            if (!$survey) {
+                return redirect()->route('attribution.index')->with('error', 'Survey record not found.');
+            }
+
+            // Delete the survey plan file if it exists
+            if (!empty($survey->survey_plan_path)) {
+                Storage::disk('public')->delete($survey->survey_plan_path);
+            }
+
+            // Delete the survey record
+            $deleted = DB::connection('sqlsrv')->table('surveyCadastralRecord')->where('ID', $id)->delete();
+
+            if ($deleted) {
+                return redirect()->route('attribution.index')->with('success', 'Survey record deleted successfully.');
+            } else {
+                return redirect()->route('attribution.index')->with('error', 'Failed to delete survey record.');
+            }
+        } catch (\Exception $e) {
+            return redirect()->route('attribution.index')->with('error', 'An error occurred while deleting the survey record.');
+        }
+    }
 }

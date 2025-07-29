@@ -13,6 +13,7 @@
             @csrf
             <input type="hidden" name="application_id" id="application_id" value="">
             <input type="hidden" name="sub_application_id" id="sub_application_id" value="">
+            <input type="hidden" name="fileno" id="fileno" value="">
             <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-6 space-y-6">
                 <div id="application-info" class="hidden">
                     <!-- Application header will be rendered dynamically -->
@@ -427,6 +428,9 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedApplication = data.application;
         
         if (selectedApplication) {
+            // Set the fileno field
+            document.getElementById('fileno').value = selectedApplication.fileno || '';
+            
             // Populate hidden fields based on survey type
             if (isSecondary) {
                 // For secondary survey, use the sub_application_id only
@@ -1103,17 +1107,32 @@ function validateSurveyForm() {
         }
     });
     
-    // Check if survey plan is uploaded and application is selected
-    const formValid = allFieldsFilled && surveyPlanUploaded && selectedApplication;
+    // Check if application/file number is selected
+    const hasFileNumber = selectedApplication || 
+                         document.getElementById('fileno').value.trim() || 
+                         document.getElementById('fileno-select').value.trim();
+    
+    // Check if survey plan is uploaded
+    const formValid = allFieldsFilled && surveyPlanUploaded && hasFileNumber;
+    
+    console.log('Form Validation:', {
+        allFieldsFilled,
+        surveyPlanUploaded,
+        hasFileNumber,
+        selectedApplication,
+        formValid
+    });
     
     if (formValid) {
         saveButton.disabled = false;
         saveButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
-        saveButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
+        saveButton.classList.add('bg-green-600', 'hover:bg-green-700');
+        saveButton.textContent = 'Save Survey';
     } else {
         saveButton.disabled = true;
         saveButton.classList.add('bg-gray-400', 'cursor-not-allowed');
-        saveButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        saveButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+        saveButton.textContent = 'Save Survey (Complete all fields)';
     }
 }
 
