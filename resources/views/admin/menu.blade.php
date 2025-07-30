@@ -628,12 +628,12 @@
           <span>Records</span>
         </a>
         @endif
-        @if($hasRole('Survey - GIS'))
+        {{-- @if($hasRole('Survey - GIS'))
         <a href="/survey/gis" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
           <i data-lucide="map" class="h-4 w-4"></i>
           <span>GIS Reports</span>
         </a>
-        @endif
+        @endif --}}
         @if($hasRole('Survey - Approvals'))
         <a href="/survey/approvals" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
           <i data-lucide="check-circle" class="h-4 w-4"></i>
@@ -686,12 +686,12 @@
           <span>Records</span>
         </a>
         @endif
-        @if($hasRole('Cad - GIS'))
+        {{-- @if($hasRole('Cad - GIS'))
         <a href="/cadastral/gis" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
           <i data-lucide="map" class="h-4 w-4"></i>
           <span>GIS Reports</span>
         </a>
-        @endif
+        @endif --}}
         @if($hasRole('Cad - Approvals'))
         <a href="/cadastral/approvals" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
           <i data-lucide="check-circle" class="h-4 w-4"></i>

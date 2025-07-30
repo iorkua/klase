@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 @section('page-title')
 {{ __('Secondary Application Form') }}
 @endsection
@@ -635,26 +635,26 @@
                           <div>
                           <label class="flex items-center text-sm mb-1">
                             <i data-lucide="file-text" class="w-4 h-4 mr-1 text-green-600"></i>
-                            Application fee (₦)
+                            Application fee (â‚¦)
                           </label>
                           <input type="text" name="application_fee" class="w-full p-2 border border-gray-300 rounded-md fee-input bg-blue-50" placeholder="Enter application fee" value="{{ number_format($applicationFee, 2) }}" readonly>
                           </div>
                           <div>
                           <label class="flex items-center text-sm mb-1">
                             <i data-lucide="file-check" class="w-4 h-4 mr-1 text-green-600"></i>
-                            Processing fee (₦)
+                            Processing fee (â‚¦)
                           </label>
                           <input type="text" name="processing_fee" class="w-full p-2 border border-gray-300 rounded-md fee-input bg-blue-50" placeholder="Enter processing fee" value="{{ number_format($processingFee, 2) }}" readonly>
                           </div>
                           <div>
                           <label class="flex items-center text-sm mb-1">
                             <i data-lucide="map" class="w-4 h-4 mr-1 text-green-600"></i>
-                           Survey Fee (₦)
+                           Survey Fee (â‚¦)
                           </label>
                           @if($landUse === 'Residential')
                             <select name="site_plan_fee" class="w-full p-2 border border-gray-300 rounded-md fee-input bg-blue-50" onchange="updateSurveyFee(this)">
-                              <option value="50000.00">Block of Flat - ₦50,000.00</option>
-                              <option value="70000.00">Apartment - ₦70,000.00</option>
+                              <option value="50000.00">Block of Flat - â‚¦50,000.00</option>
+                              <option value="70000.00">Apartment - â‚¦70,000.00</option>
                             </select>
                           @else
                             <input type="text" name="site_plan_fee" class="w-full p-2 border border-gray-300 rounded-md fee-input bg-blue-50" placeholder="Enter survey fee" value="{{ number_format($surveyFee, 2) }}" readonly>
@@ -667,7 +667,7 @@
                           <i data-lucide="file-text" class="w-4 h-4 mr-1 text-green-600"></i>
                           <span>Total:</span>
                           </div>
-                          <span class="font-bold" id="total-amount">₦{{ number_format($totalFee, 2) }}</span>
+                          <span class="font-bold" id="total-amount">â‚¦{{ number_format($totalFee, 2) }}</span>
                         </div>
                         
                         <div class="grid grid-cols-2 gap-4">
@@ -689,7 +689,7 @@
                         </div> 
                       
                       <div class="flex justify-between mt-8">
-                        <button class="px-4 py-2 bg-white border border-gray-300 rounded-md" onclick="window.history.back()">>Cancel</button>
+                        <button type="button" class="px-4 py-2 bg-white border border-gray-300 rounded-md" onclick="window.history.back()">Cancel</button>
                         <div class="flex items-center">
                           <span class="text-sm text-gray-500 mr-4">Step 1 of 4</span>
                           <button class="px-4 py-2 bg-black text-white rounded-md" id="nextStep1">Next</button>
@@ -719,1212 +719,220 @@
 <!-- Footer -->
 @include('admin.footer')
 </div>
-
+</div>
 {{-- Move the navigation script here, after all HTML content --}}
 <script>
 function toggleOtherAreasTextarea() {
-const checkbox = document.getElementById('other_areas');
-const container = document.getElementById('other_areas_container');
-
-if (checkbox.checked) {
-container.style.display = 'block';
-} else {
-container.style.display = 'none';
-// Clear the textarea when unchecked
-document.getElementById('other_areas_detail').value = '';
+  const checkbox = document.getElementById('other_areas');
+  const container = document.getElementById('other_areas_container');
+  if (checkbox && container) {
+    if (checkbox.checked) {
+      container.style.display = 'block';
+    } else {
+      container.style.display = 'none';
+      const detail = document.getElementById('other_areas_detail');
+      if (detail) detail.value = '';
+    }
+  }
 }
-}
-
-// Initialize on page load to handle pre-filled forms
 document.addEventListener('DOMContentLoaded', function() {
-toggleOtherAreasTextarea();
+  toggleOtherAreasTextarea();
 });
-</script>
 
-<script>
 // Initialize Lucide icons
-lucide.createIcons();
+document.addEventListener('DOMContentLoaded', function() {
+  if (window.lucide) lucide.createIcons();
+});
 
-// Global function to navigate to specific step with validation
+// Step navigation and validation
 function goToStep(stepNumber) {
-    console.log('Navigating to step:', stepNumber);
-    
-    // Get current active step
-    const currentActiveStep = document.querySelector('.form-section.active-tab');
-    let currentStepNumber = 1;
-    if (currentActiveStep) {
-        const stepId = currentActiveStep.id;
-        currentStepNumber = parseInt(stepId.replace('step', ''));
-    }
-    
-    // If trying to go to the same step, do nothing
-    if (currentStepNumber === stepNumber) {
-        return;
-    }
-    
-    // If trying to go forward, validate current step first
-    if (stepNumber > currentStepNumber) {
-        let canProceed = true;
-        let errors = [];
-        
-        // Validate based on current step
-        switch (currentStepNumber) {
-            case 1:
-                errors = validateStep1();
-                if (errors.length === 0) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Step 1 Complete!',
-                        text: 'Basic information has been validated successfully.',
-                        timer: 1500,
-                        showConfirmButton: false,
-                        toast: true,
-                        position: 'top-end'
-                    });
-                }
-                break;
-            case 2:
-                errors = validateStep2();
-                if (errors.length === 0) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Step 2 Complete!',
-                        text: 'Shared areas have been selected successfully.',
-                        timer: 1500,
-                        showConfirmButton: false,
-                        toast: true,
-                        position: 'top-end'
-                    });
-                }
-                break;
-            case 3:
-                errors = validateStep3();
-                if (errors.length === 0) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Documents Validated!',
-                        text: 'All required documents have been uploaded successfully.',
-                        timer: 1500,
-                        showConfirmButton: false,
-                        toast: true,
-                        position: 'top-end'
-                    });
-                }
-                break;
-        }
-        
-        // If validation failed, don't proceed
-        if (errors.length > 0) {
-            showValidationErrors(errors);
-            return;
-        }
-    }
-    
-    // Hide all steps
-    const allSteps = document.querySelectorAll('.form-section');
-    allSteps.forEach(step => step.classList.remove('active-tab'));
-    
-    // Show target step
-    const targetStep = document.getElementById(`step${stepNumber}`);
-    if (targetStep) {
-        targetStep.classList.add('active-tab');
-    }
-    
-    // Update step circles
-    updateStepCircles(stepNumber);
-    
-    // Update step text
-    updateStepText(stepNumber);
-}
+  // Get current active step
+  const currentActiveStep = document.querySelector('.form-section.active-tab');
+  let currentStepNumber = 1;
+  if (currentActiveStep) {
+    const stepId = currentActiveStep.id;
+    currentStepNumber = parseInt(stepId.replace('step', ''));
+  }
+  if (currentStepNumber === stepNumber) return;
 
-// Function to update step circles visual state
-function updateStepCircles(currentStep) {
-    const stepCircles = document.querySelectorAll('.step-circle');
-    stepCircles.forEach((circle, index) => {
-        const stepNum = index + 1;
-        circle.classList.remove('active-tab', 'inactive-tab');
-        
-        if (stepNum === currentStep) {
-            circle.classList.add('active-tab');
-        } else {
-            circle.classList.add('inactive-tab');
-        }
-    });
-}
+  // If going forward, validate current step
+  if (stepNumber > currentStepNumber) {
+    let errors = [];
+    switch (currentStepNumber) {
+      case 1: errors = validateStep1(); break;
+      case 2: errors = validateStep2(); break;
+      case 3: errors = validateStep3(); break;
+    }
+    if (errors.length > 0) {
+      showValidationErrors(errors);
+      return;
+    } else {
+      Swal.fire({
+        icon: 'success',
+        title: `Step ${currentStepNumber} Complete!`,
+        text: 'Validated successfully.',
+        timer: 1200,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+    }
+  }
 
-// Function to update step text
-function updateStepText(currentStep) {
-    const stepTexts = document.querySelectorAll('[class*="Step"][class*="of"]');
-    stepTexts.forEach(text => {
-        text.textContent = `Step ${currentStep} of 4`;
-    });
+  // Hide all steps
+  document.querySelectorAll('.form-section').forEach(step => step.classList.remove('active-tab'));
+  // Show target step
+  const targetStep = document.getElementById(`step${stepNumber}`);
+  if (targetStep) targetStep.classList.add('active-tab');
+  updateStepCircles(stepNumber);
+  updateStepText(stepNumber);
 }
-
-// Make goToStep globally accessible
 window.goToStep = goToStep;
 
-// Form navigation
-document.addEventListener('DOMContentLoaded', function() {
-const step1 = document.getElementById('step1');
-const step2 = document.getElementById('step2');
-const step3 = document.getElementById('step3');
-const step4 = document.getElementById('step4');
-const step5 = document.getElementById('step5');
-
-const nextStep1 = document.getElementById('nextStep1');
-const nextStep2 = document.getElementById('nextStep2');
-const nextStep3 = document.getElementById('nextStep3');
-const nextStep4 = document.getElementById('nextStep4');
-const backStep2 = document.getElementById('backStep2');
-const backStep3 = document.getElementById('backStep3');
-const backStep4 = document.getElementById('backStep4');
-const backStep5 = document.getElementById('backStep5');
-
-// Function to safely add event listeners
-function addSafeEventListener(element, event, callback) {
-if (element) {
-element.addEventListener(event, callback);
+function updateStepCircles(currentStep) {
+  document.querySelectorAll('.step-circle').forEach((circle, idx) => {
+    circle.classList.remove('active-tab', 'inactive-tab');
+    circle.classList.add(idx + 1 === currentStep ? 'active-tab' : 'inactive-tab');
+  });
 }
-}
-
-// Form Validation Functions
-function validateStep1() {
-    const errors = [];
-    
-    // Check if applicant type is selected
-    const applicantType = document.querySelector('input[name="applicantType"]:checked');
-    if (!applicantType) {
-        errors.push('Please select an applicant type');
-    } else {
-        const type = applicantType.value;
-        
-        // Validate based on applicant type
-        if (type === 'individual') {
-            // Individual validation
-            const title = document.getElementById('applicantTitle')?.value;
-            const firstName = document.getElementById('applicantName')?.value;
-            const surname = document.getElementById('applicantSurname')?.value;
-            
-            if (!title) errors.push('Please select a title');
-            if (!firstName || firstName.trim() === '') errors.push('Please enter first name');
-            if (!surname || surname.trim() === '') errors.push('Please enter surname');
-            
-            // Validate passport photo
-            const passport = document.getElementById('photoUpload')?.files[0];
-            if (!passport) errors.push('Please upload a passport photo');
-            
-        } else if (type === 'corporate') {
-            // Corporate validation
-            const corporateName = document.getElementById('corporateName')?.value;
-            const rcNumber = document.getElementById('rcNumber')?.value;
-            const rcDocument = document.getElementById('subCorporateDocumentUpload')?.files[0];
-            
-            if (!corporateName || corporateName.trim() === '') errors.push('Please enter corporate body name');
-            if (!rcNumber || rcNumber.trim() === '') errors.push('Please enter RC number');
-            if (!rcDocument) errors.push('Please upload RC document');
-            
-        } else if (type === 'multiple') {
-            // Multiple owners validation
-            const ownerRows = document.querySelectorAll('#ownersContainer > div');
-            if (ownerRows.length === 0) {
-                errors.push('Please add at least one owner');
-            } else {
-                ownerRows.forEach((row, index) => {
-                    const nameInput = row.querySelector('input[name="multiple_owners_names[]"]');
-                    const addressInput = row.querySelector('textarea[name="multiple_owners_address[]"]');
-                    const identificationInput = row.querySelector('input[name="multiple_owners_identification_image[]"]');
-                    
-                    if (!nameInput?.value || nameInput.value.trim() === '') {
-                        errors.push(`Please enter name for owner ${index + 1}`);
-                    }
-                    if (!addressInput?.value || addressInput.value.trim() === '') {
-                        errors.push(`Please enter address for owner ${index + 1}`);
-                    }
-                    if (!identificationInput?.files[0]) {
-                        errors.push(`Please upload identification for owner ${index + 1}`);
-                    }
-                });
-            }
-        }
-    }
-    
-    // Validate address fields (only for individual and corporate)
-    if (applicantType && applicantType.value !== 'multiple') {
-        const state = document.getElementById('ownerState')?.value;
-        const lga = document.getElementById('ownerLga')?.value;
-        const district = document.getElementById('ownerDistrict')?.value;
-        
-        if (!state) errors.push('Please select a state');
-        if (!lga) errors.push('Please select an LGA');
-        if (!district || district.trim() === '') errors.push('Please enter district');
-        
-        // Validate phone number
-        const phoneInputs = document.querySelectorAll('input[name="phone_number[]"]');
-        let hasValidPhone = false;
-        phoneInputs.forEach(input => {
-            if (input.value && input.value.trim() !== '') {
-                hasValidPhone = true;
-                // Basic phone validation
-                const phoneRegex = /^[\d\s\-\+\(\)]{10,}$/;
-                if (!phoneRegex.test(input.value.replace(/\s/g, ''))) {
-                    errors.push('Please enter a valid phone number');
-                }
-            }
-        });
-        if (!hasValidPhone) errors.push('Please enter at least one phone number');
-        
-        // Validate email
-        const email = document.querySelector('input[name="owner_email"]')?.value;
-        if (email && email.trim() !== '') {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
-                errors.push('Please enter a valid email address');
-            }
-        }
-    }
-    
-    // Validate identification (only for individual and corporate) - removed validation requirement
-    // if (applicantType && applicantType.value !== 'multiple') {
-    //     const identificationFile = document.getElementById('identification_image')?.files[0];
-    //     if (!identificationFile) {
-    //         errors.push('Please upload means of identification');
-    //     }
-    // }
-    
-    // Validate unit details
-    const blockNumber = document.querySelector('input[name="block_number"]')?.value;
-    const floorNumber = document.querySelector('input[name="floor_number"]')?.value;
-    const unitNumber = document.querySelector('input[name="unit_number"]')?.value;
-    
-    if (!blockNumber || blockNumber.trim() === '') errors.push('Please enter block number');
-    if (!floorNumber || floorNumber.trim() === '') errors.push('Please enter floor number');
-    if (!unitNumber || unitNumber.trim() === '') errors.push('Please enter unit number');
-    
-    // Validate scheme number
-    const schemeNo = document.getElementById('schemeName')?.value;
-    if (!schemeNo || schemeNo.trim() === '') errors.push('Please enter scheme number');
-    
-    return errors;
-}
-
-function validateStep2() {
-    const errors = [];
-    
-    // Check if at least one shared area is selected
-    const sharedAreas = document.querySelectorAll('input[name="shared_areas[]"]:checked');
-    if (sharedAreas.length === 0) {
-        errors.push('Please select at least one shared area');
-    }
-    
-    // If "Other" is selected, check if details are provided
-    const otherCheckbox = document.getElementById('other_areas');
-    if (otherCheckbox && otherCheckbox.checked) {
-        const otherDetails = document.getElementById('other_areas_detail')?.value;
-        if (!otherDetails || otherDetails.trim() === '') {
-            errors.push('Please specify other shared areas');
-        }
-    }
-    
-    return errors;
-}
-
-function validateStep3() {
-    const errors = [];
-    
-    // Check required documents
-    const requiredDocs = [
-        { name: 'application_letter', label: 'Application Letter' },
-        { name: 'building_plan', label: 'Building Plan' },
-        { name: 'architectural_design', label: 'Architectural Design' },
-        { name: 'ownership_document', label: 'Ownership Document' }
-    ];
-    
-    requiredDocs.forEach(doc => {
-        const fileInput = document.getElementById(doc.name);
-        if (!fileInput || !fileInput.files[0]) {
-            errors.push(`Please upload ${doc.label}`);
-        } else {
-            // Validate file size (5MB limit)
-            const file = fileInput.files[0];
-            if (file.size > 5 * 1024 * 1024) {
-                errors.push(`${doc.label} file size must be less than 5MB`);
-            }
-            
-            // Validate file type
-            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-            if (!allowedTypes.includes(file.type)) {
-                errors.push(`${doc.label} must be a JPG, PNG, or PDF file`);
-            }
-        }
-    });
-    
-    return errors;
-}
-
-function showValidationErrors(errors) {
-    if (errors.length > 0) {
-        // Create formatted error list for SweetAlert
-        const errorList = errors.map(error => `• ${error}`).join('<br>');
-        
-        // Show SweetAlert with validation errors
-        Swal.fire({
-            icon: 'error',
-            title: 'Please correct the following errors:',
-            html: `<div style="text-align: left; font-size: 14px; line-height: 1.6;">${errorList}</div>`,
-            confirmButtonText: 'OK',
-            confirmButtonColor: '#dc2626',
-            customClass: {
-                popup: 'swal-validation-popup',
-                title: 'swal-validation-title',
-                htmlContainer: 'swal-validation-content'
-            },
-            showClass: {
-                popup: 'animate__animated animate__fadeInDown animate__faster'
-            },
-            hideClass: {
-                popup: 'animate__animated animate__fadeOutUp animate__faster'
-            }
-        });
-        
-        return false;
-    }
-    
-    return true;
-}
-
-// Next from Step 1 to Step 2
-addSafeEventListener(nextStep1, 'click', function(e) {
-    e.preventDefault();
-    goToStep(2);
-});
-
-// Next from Step 2 to Step 3
-addSafeEventListener(nextStep2, 'click', function(e) {
-    e.preventDefault();
-    goToStep(3);
-});
-
-// Next from Step 3 to Step 4
-addSafeEventListener(nextStep3, 'click', function(e) {
-    e.preventDefault();
-    goToStep(4);
-});
-
-// Back from Step 2 to Step 1
-addSafeEventListener(backStep2, 'click', function(e) {
-    e.preventDefault();
-    goToStep(1);
-});
-
-// Back from Step 3 to Step 2
-addSafeEventListener(backStep3, 'click', function(e) {
-    e.preventDefault();
-    goToStep(2);
-});
-
-// Back from Step 4 to Step 3
-addSafeEventListener(backStep4, 'click', function(e) {
-    e.preventDefault();
-    goToStep(3);
-});
-
-// Submit form from Step 4
-const submitBtn = document.getElementById('submitApplication');
-if (submitBtn) {
-  submitBtn.addEventListener('click', function(e) {
-    // Submit the form
-    document.getElementById('subApplicationForm').submit();
+function updateStepText(currentStep) {
+  document.querySelectorAll('.ml-4').forEach(el => {
+    if (el.textContent.includes('Step')) el.textContent = `Step ${currentStep} of 4`;
   });
 }
 
-// Close modal buttons
-addSafeEventListener(document.getElementById('closeModal'), 'click', function() {
-  alert('Application process canceled');
-});
-addSafeEventListener(document.getElementById('closeModal2'), 'click', function() {
-  alert('Application process canceled');
-});
-addSafeEventListener(document.getElementById('closeModal3'), 'click', function() {
-  alert('Application process canceled');
-});
-addSafeEventListener(document.getElementById('closeModal4'), 'click', function() {
-  alert('Application process canceled');
-});
-});  
-</script>
-
-<script>
-// Improved Amount Input Functionality
+// Navigation buttons
 document.addEventListener('DOMContentLoaded', function() {
-    const feeInputs = document.querySelectorAll('.fee-input');
-    const totalDisplay = document.getElementById('total-amount');
-    
-    // Function to calculate and update the total
-    function updateTotal() {
-        let total = 0;
-        feeInputs.forEach(input => {
-            // Remove commas and parse the value correctly
-            const cleanValue = input.value.replace(/,/g, '');
-            const value = parseFloat(cleanValue) || 0;
-            total += value;
-        });
-        
-        // Format the total with 2 decimal places and the Naira symbol
-        if (totalDisplay) {
-            totalDisplay.textContent = '₦' + total.toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
-        }
-    }
-
-    // Function to format amount as user types
-    function formatAmountInput(input, newDigit) {
-        // Get current value without decimal point
-        let currentValue = input.value.replace(/[^\d]/g, '');
-        
-        // Add the new digit
-        currentValue += newDigit;
-        
-        // Convert to number and divide by 100 to get proper decimal places
-        let numericValue = parseInt(currentValue) / 100;
-        
-        // Format to 2 decimal places
-        input.value = numericValue.toFixed(2);
-        
-        updateTotal();
-    }
-
-    // Add event listeners to all fee inputs
-    feeInputs.forEach(input => {
-        // Store original input type and change to text for better control
-        input.type = 'text';
-        input.setAttribute('inputmode', 'numeric');
-        
-        // Handle keydown events for number input
-        input.addEventListener('keydown', function(e) {
-            // Allow: backspace, delete, tab, escape, enter
-            if ([8, 9, 27, 13, 46].indexOf(e.keyCode) !== -1 ||
-                // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
-                (e.keyCode === 65 && e.ctrlKey === true) ||
-                (e.keyCode === 67 && e.ctrlKey === true) ||
-                (e.keyCode === 86 && e.ctrlKey === true) ||
-                (e.keyCode === 88 && e.ctrlKey === true)) {
-                return;
-            }
-            
-            // Ensure that it is a number and stop the keypress
-            if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
-                e.preventDefault();
-                return;
-            }
-            
-            e.preventDefault();
-            
-            // Handle backspace
-            if (e.keyCode === 8) {
-                let currentValue = input.value.replace(/[^\d]/g, '');
-                if (currentValue.length > 0) {
-                    currentValue = currentValue.slice(0, -1);
-                    if (currentValue.length === 0) {
-                        input.value = '0.00';
-                    } else {
-                        let numericValue = parseInt(currentValue) / 100;
-                        input.value = numericValue.toFixed(2);
-                    }
-                    updateTotal();
-                }
-                return;
-            }
-            
-            // Get the pressed digit
-            let digit;
-            if (e.keyCode >= 48 && e.keyCode <= 57) {
-                digit = String.fromCharCode(e.keyCode);
-            } else if (e.keyCode >= 96 && e.keyCode <= 105) {
-                digit = String.fromCharCode(e.keyCode - 48);
-            }
-            
-            if (digit !== undefined) {
-                formatAmountInput(input, digit);
-            }
-        });
-
-        // Handle focus event
-        input.addEventListener('focus', function() {
-            // Select all text for easy replacement
-            input.select();
-        });
-
-        // Handle blur event
-        input.addEventListener('blur', function() {
-            if (input.value === "" || isNaN(parseFloat(input.value))) {
-                input.value = "0.00";
-            } else {
-                // Always format to 2 decimal places
-                input.value = parseFloat(input.value).toFixed(2);
-            }
-            updateTotal();
-        });
-
-        // Handle paste events
-        input.addEventListener('paste', function(e) {
-            e.preventDefault();
-            let paste = (e.clipboardData || window.clipboardData).getData('text');
-            let numericValue = parseFloat(paste.replace(/[^\d.]/g, ''));
-            if (!isNaN(numericValue)) {
-                input.value = numericValue.toFixed(2);
-                updateTotal();
-            }
-        });
+  const navs = [
+    { btn: 'nextStep1', step: 2 },
+    { btn: 'nextStep2', step: 3 },
+    { btn: 'nextStep3', step: 4 },
+    { btn: 'backStep2', step: 1 },
+    { btn: 'backStep3', step: 2 },
+    { btn: 'backStep4', step: 3 }
+  ];
+  navs.forEach(({ btn, step }) => {
+    const el = document.getElementById(btn);
+    if (el) el.addEventListener('click', function(e) {
+      e.preventDefault();
+      goToStep(step);
     });
-    
-    // Calculate initial total
-    updateTotal();
+  });
 });
 
-// Fetch all States for Unit Owner's Address
-fetch('https://nga-states-lga.onrender.com/fetch')
-    .then((res) => {
-        if (!res.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return res.json();
-    })
-    .then((data) => {
-        var x = document.getElementById("ownerState");
-        if (!x) return;
-        
-        // Clear existing options except the first one
-        while (x.options.length > 1) {
-            x.remove(1);
-        }
-        
-        // Add states to dropdown (uppercase)
-        if (Array.isArray(data)) {
-            data.forEach(state => {
-                var option = document.createElement("option");
-                option.text = state.toUpperCase();
-                option.value = state;
-                x.add(option);
-            });
-        } else {
-            console.error('Expected array but got:', typeof data);
-        }
-    })
-    .catch((error) => {
-        console.error('Error fetching states:', error);
-    });
-
-// Fetch Local Governments based on selected state
-function selectLGA(target) {
-    var state = target.value;
-    var lgaSelect = document.getElementById("ownerLga");
-    if (!lgaSelect) return;
-
-    // Always clear LGA dropdown except first option
-    while (lgaSelect.options.length > 1) {
-        lgaSelect.remove(1);
+// Validation functions
+function validateStep1() {
+  const errors = [];
+  const applicantType = document.querySelector('input[name="applicantType"]:checked');
+  if (!applicantType) {
+    errors.push('Please select an applicant type');
+  } else {
+    const type = applicantType.value;
+    if (type === 'individual') {
+      if (!document.getElementById('applicantTitle')?.value) errors.push('Please select a title');
+      if (!document.getElementById('applicantName')?.value?.trim()) errors.push('Please enter first name');
+      if (!document.getElementById('applicantSurname')?.value?.trim()) errors.push('Please enter surname');
+      if (!document.getElementById('photoUpload')?.files[0]) errors.push('Please upload a passport photo');
+    } else if (type === 'corporate') {
+      if (!document.getElementById('corporateName')?.value?.trim()) errors.push('Please enter corporate body name');
+      if (!document.getElementById('rcNumber')?.value?.trim()) errors.push('Please enter RC number');
+      if (!document.getElementById('subCorporateDocumentUpload')?.files[0]) errors.push('Please upload RC document');
+    } else if (type === 'multiple') {
+      const ownerRows = document.querySelectorAll('#ownersContainer > div');
+      if (ownerRows.length === 0) errors.push('Please add at least one owner');
+      ownerRows.forEach((row, idx) => {
+        if (!row.querySelector('input[name="multiple_owners_names[]"]')?.value?.trim())
+          errors.push(`Please enter name for owner ${idx + 1}`);
+        if (!row.querySelector('textarea[name="multiple_owners_address[]"]')?.value?.trim())
+          errors.push(`Please enter address for owner ${idx + 1}`);
+        if (!row.querySelector('input[name="multiple_owners_identification_image[]"]')?.files[0])
+          errors.push(`Please upload identification for owner ${idx + 1}`);
+      });
     }
-    lgaSelect.selectedIndex = 0;
-    lgaSelect.disabled = true;
-
-    // No state selected, keep LGA disabled
-    if (!state) return;
-
-    // Trigger address update
-    if (typeof updateAddressDisplay === "function") updateAddressDisplay();
-
-    fetch('https://nga-states-lga.onrender.com/?state=' + encodeURIComponent(state))
-        .then((res) => {
-            if (!res.ok) throw new Error('Network response was not ok');
-            return res.json();
-        })
-        .then((data) => {
-            if (Array.isArray(data)) {
-                data.forEach(lga => {
-                    var option = document.createElement("option");
-                    option.text = lga.toUpperCase();
-                    option.value = lga;
-                    lgaSelect.add(option);
-                });
-                lgaSelect.disabled = false;
-            } else {
-                console.error('Expected array but got:', typeof data);
-            }
-        })
-        .catch((error) => {
-            console.error('Error fetching LGAs for state ' + state + ':', error);
-        });
+  }
+  // Address validation (individual/corporate)
+  if (applicantType && applicantType.value !== 'multiple') {
+    if (!document.getElementById('ownerState')?.value) errors.push('Please select a state');
+    if (!document.getElementById('ownerLga')?.value) errors.push('Please select an LGA');
+    if (!document.getElementById('ownerDistrict')?.value?.trim()) errors.push('Please enter district');
+    // Phone validation
+    const phoneInputs = document.querySelectorAll('input[name="phone_number[]"]');
+    let hasValidPhone = false;
+    phoneInputs.forEach(input => {
+      if (input.value?.trim()) {
+        hasValidPhone = true;
+        if (!/^[\d\s\-\+\(\)]{10,}$/.test(input.value.replace(/\s/g, '')))
+          errors.push('Please enter a valid phone number');
+      }
+    });
+    if (!hasValidPhone) errors.push('Please enter at least one phone number');
+    // Email validation
+    const email = document.querySelector('input[name="owner_email"]')?.value;
+    if (email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('Please enter a valid email address');
+  }
+  // Unit details
+  if (!document.querySelector('input[name="block_number"]')?.value?.trim()) errors.push('Please enter block number');
+  if (!document.querySelector('input[name="floor_number"]')?.value?.trim()) errors.push('Please enter floor number');
+  return errors;
 }
-
-// Ensure selected value is always displayed in uppercase for State and LGA
-document.addEventListener('DOMContentLoaded', function() {
-    var ownerState = document.getElementById('ownerState');
-    var ownerLga = document.getElementById('ownerLga');
-    if (ownerState) {
-        ownerState.addEventListener('change', function() {
-            // Update selected option text to uppercase
-            if (ownerState.selectedIndex > 0) {
-                ownerState.options[ownerState.selectedIndex].text = ownerState.options[ownerState.selectedIndex].text.toUpperCase();
-            }
-            selectLGA(ownerState);
-        });
-    }
-    if (ownerLga) {
-        ownerLga.addEventListener('change', function() {
-            if (ownerLga.selectedIndex > 0) {
-                ownerLga.options[ownerLga.selectedIndex].text = ownerLga.options[ownerLga.selectedIndex].text.toUpperCase();
-            }
-        });
-    }
-});
-
-// Function to update UI based on applicant type for sub-application
-function updateSubApplicationIdentificationSection() {
-    const applicantType = document.querySelector('input[name="applicantType"]:checked')?.value;
-    const identificationSection = document.getElementById('mainIdentificationSection');
-
-    if (applicantType === 'corporate') {
-        // Hide the entire identification section for corporate body
-        if (identificationSection) {
-            identificationSection.style.display = 'none';
-        }
+function validateStep2() {
+  const errors = [];
+  if (document.querySelectorAll('input[name="shared_areas[]"]:checked').length === 0)
+    errors.push('Please select at least one shared area');
+  const otherCheckbox = document.getElementById('other_areas');
+  if (otherCheckbox?.checked) {
+    const otherDetails = document.getElementById('other_areas_detail')?.value;
+    if (!otherDetails?.trim()) errors.push('Please specify other shared areas');
+  }
+  return errors;
+}
+function validateStep3() {
+  const errors = [];
+  const requiredDocs = [
+    { name: 'application_letter', label: 'Application Letter' },
+    { name: 'building_plan', label: 'Building Plan' },
+    { name: 'architectural_design', label: 'Architectural Design' },
+    { name: 'ownership_document', label: 'Ownership Document' }
+  ];
+  requiredDocs.forEach(doc => {
+    const fileInput = document.getElementById(doc.name);
+    if (!fileInput?.files[0]) {
+      errors.push(`Please upload ${doc.label}`);
     } else {
-        // Show identification section for individual and multiple owners
-        if (identificationSection) {
-            identificationSection.style.display = 'grid';
-        }
+      const file = fileInput.files[0];
+      if (file.size > 5 * 1024 * 1024) errors.push(`${doc.label} file size must be less than 5MB`);
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) errors.push(`${doc.label} must be a JPG, PNG, or PDF file`);
     }
+  });
+  return errors;
 }
-
-// Add event listeners for applicant type changes in sub-application
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('input[name="applicantType"]').forEach(function(radio) {
-        radio.addEventListener('change', function() {
-            updateSubApplicationIdentificationSection();
-        });
-    });
-    // Initial update on page load
-    updateSubApplicationIdentificationSection();
-    
-    // Add event listeners for address fields to update address display in real-time
-    const addressFields = ['ownerHouseNo', 'ownerStreetName', 'ownerDistrict', 'ownerLga', 'ownerState'];
-    addressFields.forEach(fieldId => {
-        const field = document.getElementById(fieldId);
-        if (field) {
-            field.addEventListener('input', updateAddressDisplay);
-            field.addEventListener('change', updateAddressDisplay);
-        }
-    });
-    
-    function updateAddressDisplay() {
-        const houseNo = document.getElementById('ownerHouseNo')?.value || '';
-        const streetName = document.getElementById('ownerStreetName')?.value || '';
-        const district = document.getElementById('ownerDistrict')?.value || '';
-        const lga = document.getElementById('ownerLga')?.value || '';
-        const state = document.getElementById('ownerState')?.value || '';
-        
-        const parts = [houseNo, streetName, district, lga, state].filter(part => part);
-        const fullAddress = parts.join(', ');
-        
-        const fullContactAddressEl = document.getElementById('fullContactAddress');
-        const contactAddressHiddenEl = document.getElementById('contactAddressHidden');
-        
-        if (fullContactAddressEl) fullContactAddressEl.textContent = fullAddress;
-        if (contactAddressHiddenEl) contactAddressHiddenEl.value = fullAddress;
-    }
-    
-    // Initialize Buyer Select2 Dropdown
-    initializeBuyerSelect2();
-});
-
-// Buyer Select2 Functionality
-function initializeBuyerSelect2() {
-    const buyerSelect = $('#buyerSelect');
-    
-    if (!buyerSelect.length) {
-        console.log('Buyer select element not found');
-        return;
-    }
-    
-    // Initialize Select2 with static data
-    buyerSelect.select2({
-        placeholder: 'Search for buyer name...',
-        allowClear: true,
-        templateResult: function(option) {
-            if (option.loading) {
-                return option.text;
-            }
-            
-            if (option.element && option.element.dataset) {
-                const buyerTitle = option.element.dataset.buyerTitle || '';
-                const buyerName = option.element.dataset.buyerName || '';
-                const unitNo = option.element.dataset.unitNo || '';
-                const measurement = option.element.dataset.measurement || '';
-                
-                const $container = $(
-                    '<div class="select2-result-buyer clearfix">' +
-                        '<div class="select2-result-buyer__meta">' +
-                            '<div class="select2-result-buyer__title">' + buyerTitle + ' ' + buyerName + '</div>' +
-                            '<div class="select2-result-buyer__description">Unit: ' + unitNo + 
-                            (measurement ? ' | Size: ' + measurement : '') + '</div>' +
-                        '</div>' +
-                    '</div>'
-                );
-                return $container;
-            }
-            
-            return option.text;
-        },
-        templateSelection: function(option) {
-            if (option.element && option.element.dataset) {
-                const buyerTitle = option.element.dataset.buyerTitle || '';
-                const buyerName = option.element.dataset.buyerName || '';
-                const unitNo = option.element.dataset.unitNo || '';
-                return buyerTitle + ' ' + buyerName + ' (Unit: ' + unitNo + ')';
-            }
-            return option.text;
-        }
-    });
-    
-    // Handle buyer selection
-    buyerSelect.on('select2:select', function(e) {
-        const selectedOption = e.params.data.element;
-        if (selectedOption && selectedOption.dataset) {
-            const buyerData = {
-                buyer_title: selectedOption.dataset.buyerTitle,
-                buyer_name: selectedOption.dataset.buyerName,
-                unit_no: selectedOption.dataset.unitNo,
-                measurement: selectedOption.dataset.measurement
-            };
-            fillBuyerData(buyerData);
-            showSelectedBuyerInfo(buyerData);
-            document.getElementById('clearBuyerSelection').style.display = 'inline-block';
-        }
-    });
-    
-    // Handle buyer clear
-    buyerSelect.on('select2:clear', function(e) {
-        clearBuyerData();
-        hideSelectedBuyerInfo();
-        document.getElementById('clearBuyerSelection').style.display = 'none';
-    });
-    
-    // Clear button functionality
-    document.getElementById('clearBuyerSelection').addEventListener('click', function() {
-        buyerSelect.val(null).trigger('change');
-        clearBuyerData();
-        hideSelectedBuyerInfo();
-        this.style.display = 'none';
-    });
-}
-
-// Function to fill form with buyer data
-function fillBuyerData(buyer) {
-    // Fill unit size in the Unit Details section
-    const unitSizeField = document.querySelector('input[name="unit_size"]');
-    if (unitSizeField && buyer.measurement) {
-        unitSizeField.value = buyer.measurement;
-    }
-    
-    // Auto-fill unit number if available
-    const unitNumberField = document.querySelector('input[name="unit_number"]');
-    if (unitNumberField && buyer.unit_no) {
-        unitNumberField.value = buyer.unit_no;
-    }
-    
-    // Auto-select Individual applicant type and fill name fields
-    const individualRadio = document.querySelector('input[name="applicantType"][value="individual"]');
-    if (individualRadio) {
-        individualRadio.checked = true;
-        
-        // Trigger the applicant type change
-        if (typeof setApplicantType === 'function') {
-            setApplicantType('individual');
-        }
-        if (typeof showIndividualFields === 'function') {
-            showIndividualFields();
-        }
-        
-        // Fill name fields after a short delay to ensure fields are visible
-        setTimeout(function() {
-            // Parse buyer name (assuming format: "Title FirstName LastName")
-            const nameParts = buyer.buyer_name.trim().split(' ');
-            
-            // Fill title
-            const titleField = document.getElementById('applicantTitle');
-            if (titleField && buyer.buyer_title) {
-                titleField.value = buyer.buyer_title.toUpperCase();
-            }
-            
-            // Fill first name and surname
-            if (nameParts.length >= 2) {
-                const firstNameField = document.getElementById('applicantName');
-                const surnameField = document.getElementById('applicantSurname');
-                
-                if (firstNameField) {
-                    firstNameField.value = nameParts[0].toUpperCase();
-                }
-                
-                if (surnameField) {
-                    // Join remaining parts as surname
-                    surnameField.value = nameParts.slice(1).join(' ').toUpperCase();
-                }
-            } else if (nameParts.length === 1) {
-                const firstNameField = document.getElementById('applicantName');
-                if (firstNameField) {
-                    firstNameField.value = nameParts[0].toUpperCase();
-                }
-            }
-        }, 100);
-    }
-    
-    // Show success message
+function showValidationErrors(errors) {
+  if (errors.length > 0) {
     Swal.fire({
-        icon: 'success',
-        title: 'Buyer Selected',
-        text: 'Buyer information has been auto-filled. You can modify the details as needed.',
-        timer: 2000,
-        showConfirmButton: false
+      icon: 'error',
+      title: 'Please correct the following errors:',
+      html: `<div style="text-align: left; font-size: 14px; line-height: 1.6;">${errors.map(e => `• ${e}`).join('<br>')}</div>`,
+      confirmButtonText: 'OK',
+      confirmButtonColor: '#dc2626',
+      customClass: {
+        popup: 'swal-validation-popup',
+        title: 'swal-validation-title',
+        htmlContainer: 'swal-validation-content'
+      },
+      showClass: {
+        popup: 'animate__animated animate__fadeInDown animate__faster'
+      },
+      hideClass: {
+        popup: 'animate__animated animate__fadeOutUp animate__faster'
+      }
     });
+    return false;
+  }
+  return true;
 }
-
-// Function to clear buyer data
-function clearBuyerData() {
-    // Note: We don't clear the form fields as user might want to keep the data
-    // Just show a message that selection was cleared
-    console.log('Buyer selection cleared');
-}
-
-// Function to show selected buyer information
-function showSelectedBuyerInfo(buyer) {
-    const selectedBuyerInfo = document.getElementById('selectedBuyerInfo');
-    const selectedBuyerDetails = document.getElementById('selectedBuyerDetails');
-    
-    if (selectedBuyerInfo && selectedBuyerDetails) {
-        const buyerText = `${buyer.buyer_title} ${buyer.buyer_name} - Unit: ${buyer.unit_no}${buyer.measurement ? ' (' + buyer.measurement + ')' : ''}`;
-        selectedBuyerDetails.textContent = buyerText;
-        selectedBuyerInfo.style.display = 'block';
-    }
-}
-
-// Function to hide selected buyer information
-function hideSelectedBuyerInfo() {
-    const selectedBuyerInfo = document.getElementById('selectedBuyerInfo');
-    if (selectedBuyerInfo) {
-        selectedBuyerInfo.style.display = 'none';
-    }
-}
-
-// Function to update survey fee and recalculate total for residential applications
-function updateSurveyFee(selectElement) {
-    const totalDisplay = document.getElementById('total-amount');
-    const applicationFeeInput = document.querySelector('input[name="application_fee"]');
-    const processingFeeInput = document.querySelector('input[name="processing_fee"]');
-    
-    if (totalDisplay && applicationFeeInput && processingFeeInput) {
-        const applicationFee = parseFloat(applicationFeeInput.value.replace(/,/g, '')) || 0;
-        const processingFee = parseFloat(processingFeeInput.value.replace(/,/g, '')) || 0;
-        const surveyFee = parseFloat(selectElement.value) || 0;
-        
-        const newTotal = applicationFee + processingFee + surveyFee;
-        
-        totalDisplay.textContent = '₦' + newTotal.toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        });
-    }
-}
-</script>
-
-
-<script>
-// Fix for sub-application navigation - override validation functions
-document.addEventListener('DOMContentLoaded', function() {
-    // Override the validation functions with corrected versions
-    window.validateStep1 = function() {
-        const errors = [];
-        
-        // Check if applicant type is selected
-        const applicantType = document.querySelector('input[name="applicantType"]:checked');
-        if (!applicantType) {
-            errors.push('Please select an applicant type');
-            return errors;
-        }
-        
-        const type = applicantType.value;
-        
-        // Validate based on applicant type
-        if (type === 'individual') {
-            const individualFields = document.getElementById('individualFields');
-            if (individualFields && individualFields.style.display !== 'none') {
-                const title = document.getElementById('applicantTitle')?.value;
-                const firstName = document.getElementById('applicantName')?.value;
-                const surname = document.getElementById('applicantSurname')?.value;
-                
-                if (!title) errors.push('Please select a title');
-                if (!firstName || firstName.trim() === '') errors.push('Please enter first name');
-                if (!surname || surname.trim() === '') errors.push('Please enter surname');
-                
-                const passport = document.getElementById('photoUpload')?.files[0];
-                if (!passport) errors.push('Please upload a passport photo');
-            }
-            
-        } else if (type === 'corporate') {
-            const corporateFields = document.getElementById('corporateFields');
-            if (corporateFields && corporateFields.style.display !== 'none') {
-                const corporateName = document.getElementById('corporateName')?.value;
-                const rcNumber = document.getElementById('rcNumber')?.value;
-                const rcDocument = document.getElementById('subCorporateDocumentUpload')?.files[0];
-                
-                if (!corporateName || corporateName.trim() === '') errors.push('Please enter corporate body name');
-                if (!rcNumber || rcNumber.trim() === '') errors.push('Please enter RC number');
-                if (!rcDocument) errors.push('Please upload RC document');
-            }
-            
-        } else if (type === 'multiple') {
-            const multipleOwnersFields = document.getElementById('multipleOwnersFields');
-            if (multipleOwnersFields && multipleOwnersFields.style.display !== 'none') {
-                const ownerRows = document.querySelectorAll('#ownersContainer > div');
-                if (ownerRows.length === 0) {
-                    errors.push('Please add at least one owner');
-                } else {
-                    ownerRows.forEach((row, index) => {
-                        const nameInput = row.querySelector('input[name="multiple_owners_names[]"]');
-                        const addressInput = row.querySelector('textarea[name="multiple_owners_address[]"]');
-                        const identificationInput = row.querySelector('input[name="multiple_owners_identification_image[]"]');
-                        
-                        if (!nameInput?.value || nameInput.value.trim() === '') {
-                            errors.push(`Please enter name for owner ${index + 1}`);
-                        }
-                        if (!addressInput?.value || addressInput.value.trim() === '') {
-                            errors.push(`Please enter address for owner ${index + 1}`);
-                        }
-                        if (!identificationInput?.files[0]) {
-                            errors.push(`Please upload identification for owner ${index + 1}`);
-                        }
-                    });
-                }
-            }
-        }
-        
-        // Validate address fields (only for individual and corporate)
-        if (type !== 'multiple') {
-            const houseNo = document.getElementById('ownerHouseNo')?.value;
-            const streetName = document.getElementById('ownerStreetName')?.value;
-            const state = document.getElementById('ownerState')?.value;
-            const lga = document.getElementById('ownerLga')?.value;
-            const district = document.getElementById('ownerDistrict')?.value;
-            
-            if (!houseNo || houseNo.trim() === '') errors.push('Please enter house number');
-            if (!streetName || streetName.trim() === '') errors.push('Please enter street name');
-            if (!state) errors.push('Please select a state');
-            if (!lga) errors.push('Please select an LGA');
-            if (!district || district.trim() === '') errors.push('Please enter district');
-            
-            const phoneInputs = document.querySelectorAll('input[name="phone_number[]"]');
-            let hasValidPhone = false;
-            phoneInputs.forEach(input => {
-                if (input.value && input.value.trim() !== '') {
-                    hasValidPhone = true;
-                    const phoneRegex = /^[\d\s\-\+\(\)]{10,}$/;
-                    if (!phoneRegex.test(input.value.replace(/\s/g, ''))) {
-                        errors.push('Please enter a valid phone number');
-                    }
-                }
-            });
-            if (!hasValidPhone) errors.push('Please enter at least one phone number');
-            
-            const email = document.querySelector('input[name="owner_email"]')?.value;
-            if (email && email.trim() !== '') {
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(email)) {
-                    errors.push('Please enter a valid email address');
-                }
-            }
-        }
-        
-        // Validate unit details
-        const blockNumber = document.querySelector('input[name="block_number"]')?.value;
-        const floorNumber = document.querySelector('input[name="floor_number"]')?.value;
-        const unitNumber = document.querySelector('input[name="unit_number"]')?.value;
-        
-        if (!blockNumber || blockNumber.trim() === '') errors.push('Please enter block number');
-        if (!floorNumber || floorNumber.trim() === '') errors.push('Please enter floor number');
-        if (!unitNumber || unitNumber.trim() === '') errors.push('Please enter unit number');
-        
-        const schemeNo = document.getElementById('schemeName')?.value;
-        if (!schemeNo || schemeNo.trim() === '') errors.push('Please enter scheme number');
-        
-        const receiptNumber = document.querySelector('input[name="receipt_number"]')?.value;
-        const paymentDate = document.querySelector('input[name="payment_date"]')?.value;
-        
-        if (!receiptNumber || receiptNumber.trim() === '') errors.push('Please enter receipt number');
-        if (!paymentDate) errors.push('Please select payment date');
-        
-        return errors;
-    };
-
-    window.validateStep2 = function() {
-        const errors = [];
-        
-        const sharedAreas = document.querySelectorAll('input[name="shared_areas[]"]:checked');
-        if (sharedAreas.length === 0) {
-            errors.push('Please select at least one shared area');
-        }
-        
-        const otherCheckbox = document.getElementById('other_areas');
-        if (otherCheckbox && otherCheckbox.checked) {
-            const otherDetails = document.getElementById('other_areas_detail')?.value;
-            if (!otherDetails || otherDetails.trim() === '') {
-                errors.push('Please specify other shared areas');
-            }
-        }
-        
-        return errors;
-    };
-
-    window.validateStep3 = function() {
-        const errors = [];
-        
-        const requiredDocs = [
-            { name: 'application_letter', label: 'Application Letter' },
-            { name: 'building_plan', label: 'Building Plan' },
-            { name: 'architectural_design', label: 'Architectural Design' },
-            { name: 'ownership_document', label: 'Ownership Document' }
-        ];
-        
-        requiredDocs.forEach(doc => {
-            const fileInput = document.getElementById(doc.name);
-            if (!fileInput || !fileInput.files[0]) {
-                errors.push(`Please upload ${doc.label}`);
-            } else {
-                const file = fileInput.files[0];
-                if (file.size > 5 * 1024 * 1024) {
-                    errors.push(`${doc.label} file size must be less than 5MB`);
-                }
-                
-                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-                if (!allowedTypes.includes(file.type)) {
-                    errors.push(`${doc.label} must be a JPG, PNG, or PDF file`);
-                }
-            }
-        });
-        
-        return errors;
-    };
-
-    console.log('Sub-application validation functions fixed successfully');
-});
+window.validateStep2 = validateStep2;
+window.validateStep3 = validateStep3;
+window.showValidationErrors = showValidationErrors;
 </script>
 @endsection
-
-<script>
-// Emergency fix for sub-application navigation
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Emergency navigation fix loading...');
-    
-    // Wait a bit for other scripts to load
-    setTimeout(function() {
-        console.log('Applying emergency navigation fixes...');
-        
-        // Create a working goToStep function
-        window.goToStep = function(stepNumber) {
-            console.log('Emergency goToStep called with step:', stepNumber);
-            
-            // Hide all steps
-            const allSteps = document.querySelectorAll('.form-section');
-            console.log('Found steps:', allSteps.length);
-            allSteps.forEach(step => {
-                step.classList.remove('active-tab');
-                step.style.display = 'none';
-            });
-            
-            // Show target step
-            const targetStep = document.getElementById(`step${stepNumber}`);
-            console.log('Target step element:', targetStep);
-            if (targetStep) {
-                targetStep.classList.add('active-tab');
-                targetStep.style.display = 'block';
-                console.log('Successfully navigated to step', stepNumber);
-            } else {
-                console.error('Target step not found:', `step${stepNumber}`);
-            }
-            
-            // Update step circles
-            const stepCircles = document.querySelectorAll('.step-circle');
-            console.log('Found step circles:', stepCircles.length);
-            stepCircles.forEach((circle, index) => {
-                const stepNum = index + 1;
-                circle.classList.remove('active-tab', 'inactive-tab');
-                
-                if (stepNum === stepNumber) {
-                    circle.classList.add('active-tab');
-                } else {
-                    circle.classList.add('inactive-tab');
-                }
-            });
-            
-            // Update step text
-            const stepTexts = document.querySelectorAll('[class*="Step"][class*="of"]');
-            stepTexts.forEach(text => {
-                text.textContent = `Step ${stepNumber} of 4`;
-            });
-        };
-        
-        // Re-attach event listeners to step circles
-        const stepCircles = document.querySelectorAll('.step-circle');
-        stepCircles.forEach((circle, index) => {
-            const stepNumber = index + 1;
-            
-            // Remove existing onclick attribute
-            circle.removeAttribute('onclick');
-            
-            // Add new click listener
-            circle.addEventListener('click', function(e) {
-                console.log('Step circle clicked:', stepNumber);
-                e.preventDefault();
-                e.stopPropagation();
-                window.goToStep(stepNumber);
-            });
-            
-            // Ensure it looks clickable
-            circle.style.cursor = 'pointer';
-            console.log('Attached listener to step circle', stepNumber);
-        });
-        
-        // Re-attach event listeners to next buttons
-        const nextButtons = [
-            { id: 'nextStep1', target: 2 },
-            { id: 'nextStep2', target: 3 },
-            { id: 'nextStep3', target: 4 }
-        ];
-        
-        nextButtons.forEach(btn => {
-            const element = document.getElementById(btn.id);
-            if (element) {
-                // Remove existing listeners
-                element.replaceWith(element.cloneNode(true));
-                const newElement = document.getElementById(btn.id);
-                
-                newElement.addEventListener('click', function(e) {
-                    console.log(`${btn.id} clicked, going to step ${btn.target}`);
-                    e.preventDefault();
-                    window.goToStep(btn.target);
-                });
-                console.log('Attached listener to', btn.id);
-            } else {
-                console.log('Button not found:', btn.id);
-            }
-        });
-        
-        console.log('Emergency navigation fixes applied successfully');
-        
-        // Test the navigation
-        console.log('Testing navigation...');
-        console.log('goToStep function available:', typeof window.goToStep === 'function');
-        
-    }, 2000); // Wait 2 seconds for everything to load
-});
-</script>

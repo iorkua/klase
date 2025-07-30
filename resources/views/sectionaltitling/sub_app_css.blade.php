@@ -72,10 +72,10 @@
     color: #6b7280;
     }
     .form-section {
-    display: none;
+    display: none !important;
     }
     .form-section.active-tab {
-    display: block;
+    display: block !important;
     }
     .upload-box {
     border: 2px dashed #e5e7eb;
@@ -88,4 +88,4 @@
     .upload-box:hover {
     border-color: #3b82f6;
     }
-    </style>
+    </style> 

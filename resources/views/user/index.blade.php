@@ -335,7 +335,7 @@
                                                 <span class="text-sm text-gray-700 user-email">{{ $user->email }}</span>
                                             </div>
                                         </td>
-                                        
+                                         
                                         {{-- <td class="px-6 py-5 whitespace-nowrap">
                                             @php
                                                 $typeColors = [

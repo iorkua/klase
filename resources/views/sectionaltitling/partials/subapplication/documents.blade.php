@@ -52,7 +52,6 @@
         </div>
         
         <div class="grid grid-cols-2 gap-6 mb-6">
-          <div class="grid grid-cols-2 gap-6 mb-6">
             <div class="border border-gray-200 rounded-md p-4">
                 <h4 class="font-medium mb-2">Application Letter</h4>
                 <p class="text-sm text-gray-600 mb-4">Formal letter requesting sectional titling</p>
@@ -126,7 +125,6 @@
                     <p class="text-xs text-gray-500 mt-2" id="ownership_document_name">PDF, JPG or PNG (max. 5MB)</p>
                 </div>
             </div>
-        </div>
         </div>
         
  
