@@ -37,7 +37,7 @@
                 </h3>
                 
                 <!-- Selection Grid Layout -->
-                <div class="border border-gray-200 rounded-lg p-4 bg-white mb-4">
+                <div class="border border-gray-200 rounded-lg p-4 bg-gray-50 mb-4">
                     @if(request()->get('is') == 'secondary')
                         <!-- Grid for Unit GIS: Primary Survey + File Number -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

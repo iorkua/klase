@@ -288,6 +288,320 @@ function toggleSurveyPlanSection() {
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get all form inputs and disable them initially
+    const formInputs = document.querySelectorAll('form input:not([type="hidden"]):not([type="submit"])');
+    
+    const filenoSelect = document.getElementById('fileno-select');
+    const saveButton = document.getElementById('saveButton');
+    
+    // IDs of dropdowns/fields to control
+    const controlledFields = [
+        'landUse',
+        'specifically',
+        'lgaName'
+    ];
+    let selectedApplication = null;
+    const isSecondary = '{{ request()->get('is') }}' === 'secondary';
+    
+    // Disable all form inputs initially for secondary surveys
+    if (isSecondary && filenoSelect) {
+        formInputs.forEach(input => {
+            input.disabled = true;
+        });
+        // Explicitly disable the controlled dropdowns/fields
+        controlledFields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.disabled = true;
+        });
+    }
+
+    // Initialize Select2 for fileno selection (only for secondary surveys)
+    if (filenoSelect && isSecondary) {
+        $(filenoSelect).select2({
+            placeholder: "Search for a file number...",
+            allowClear: true,
+            minimumInputLength: 0,
+            ajax: {
+                url: '{{ route('attribution.search-fileno') }}',
+                dataType: 'json',
+                delay: 250,
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                data: function(params) {
+                    return {
+                        fileno: params.term || '',
+                        type: 'secondary',
+                        initial: params.term ? false : true
+                    };
+                },
+                processResults: function(data, params) {
+                    let results = [];
+                    
+                    if (data.success && data.application) {
+                        results.push({
+                            id: data.application.id,
+                            text: data.application.fileno,
+                            application: data.application
+                        });
+                    } else if (data.success && data.applications) {
+                        results = data.applications.map(app => {
+                            return {
+                                id: app.id,
+                                text: app.fileno + (app.applicant_type === 'individual' ? 
+                                       ' - ' + app.first_name + ' ' + app.surname : 
+                                       app.applicant_type === 'corporate' ? 
+                                       ' - ' + app.corporate_name : ''),
+                                application: app
+                            };
+                        });
+                    }
+                    
+                    return {
+                        results: results,
+                        pagination: {
+                            more: data.pagination && data.pagination.more
+                        }
+                    };
+                },
+                cache: true
+            }
+        });
+
+        // Trigger initial data load when dropdown is opened for the first time
+        $(filenoSelect).on('select2:open', function() {
+            if (!$(filenoSelect).data('initial-load-done')) {
+                const $search = $('.select2-search__field');
+                $search.val('');
+                $search.trigger('input');
+                $(filenoSelect).data('initial-load-done', true);
+            }
+        });
+
+        // Handle select change
+        $(filenoSelect).on('select2:select', function(e) {
+            const data = e.params.data;
+            selectedApplication = data.application;
+            
+            if (selectedApplication) {
+                // Enable all form inputs
+                formInputs.forEach(input => {
+                    input.disabled = false;
+                });
+                // Explicitly enable the controlled dropdowns/fields
+                controlledFields.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.disabled = false;
+                });
+                
+                // Populate form fields from selected application
+                populateGISFormFields(selectedApplication);
+                
+                // Show success message
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'Application Selected',
+                        text: 'The form has been unlocked. You can now enter GIS details.',
+                        icon: 'success',
+                        confirmButtonText: 'Continue'
+                    });
+                }
+            }
+        });
+
+        // Handle clear event
+        $(filenoSelect).on('select2:clear', function() {
+            // Disable all form inputs
+            formInputs.forEach(input => {
+                input.disabled = true;
+            });
+            // Explicitly disable the controlled dropdowns/fields
+            controlledFields.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.disabled = true;
+            });
+            
+            selectedApplication = null;
+        });
+    }
+
+    // Initialize Primary Survey Select2 (only for secondary/unit surveys)
+    if (isSecondary) {
+        const primarySurveySelect = document.getElementById('primary-survey-select');
+        
+        if (primarySurveySelect) {
+            $(primarySurveySelect).select2({
+                placeholder: "Search for a Primary Survey FileNo...",
+                allowClear: true,
+                minimumInputLength: 0,
+                ajax: {
+                    url: '{{ route('attribution.fetch-primary-surveys') }}',
+                    dataType: 'json',
+                    delay: 250,
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    data: function(params) {
+                        return {
+                            search: params.term || '',
+                            initial: params.term ? false : true
+                        };
+                    },
+                    processResults: function(data, params) {
+                        let results = [];
+                        
+                        if (data.success && data.surveys && data.surveys.length > 0) {
+                            results = data.surveys.map(survey => {
+                                let displayText = survey.fileno || 'No File No';
+                                
+                                if (survey.survey_type) {
+                                    displayText += ' | ' + survey.survey_type;
+                                }
+                                
+                                if (survey.layout_name) {
+                                    displayText += ' | ' + survey.layout_name;
+                                }
+                                
+                                displayText += ' | Plot: ' + (survey.plot_no || 'N/A');
+                                displayText += ' | Block: ' + (survey.block_no || 'N/A');
+                                
+                                return {
+                                    id: survey.ID,
+                                    text: displayText,
+                                    survey: survey
+                                };
+                            });
+                        }
+                        
+                        return {
+                            results: results,
+                            pagination: {
+                                more: data.pagination && data.pagination.more
+                            }
+                        };
+                    },
+                    cache: true
+                }
+            });
+            
+            // Trigger initial data load when dropdown is opened
+            $(primarySurveySelect).on('select2:open', function() {
+                if (!$(primarySurveySelect).data('initial-load-done')) {
+                    const $search = $('.select2-search__field');
+                    $search.val('');
+                    $search.trigger('input');
+                    $(primarySurveySelect).data('initial-load-done', true);
+                }
+            });
+            
+            // Handle Primary Survey selection
+            $(primarySurveySelect).on('select2:select', function(e) {
+                const data = e.params.data;
+                const surveyId = data.id;
+                
+                // Fetch detailed survey data
+                fetch(`{{ url('attribution/primary-survey-details') }}/${surveyId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.survey) {
+                            // Auto-populate form fields from Primary Survey
+                            populateFromPrimarySurvey(data.survey);
+                            
+                            // Show success message
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire({
+                                    title: 'Primary Survey Selected',
+                                    text: 'Form fields have been populated based on the selected Primary Survey.',
+                                    icon: 'success',
+                                    toast: true,
+                                    position: 'top-end',
+                                    showConfirmButton: false,
+                                    timer: 3000,
+                                    timerProgressBar: true
+                                });
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching survey details:', error);
+                    });
+            });
+        }
+    }
+
+    // Function to populate GIS form fields from selected application
+    function populateGISFormFields(application) {
+        // Populate basic information
+        if (application.land_use) {
+            const landUseInput = document.getElementById('landUse');
+            if (landUseInput) {
+                landUseInput.value = application.land_use;
+            }
+        }
+        
+        // Add more field mappings as needed based on your application structure
+    }
+
+    // Function to populate form fields from Primary Survey
+    function populateFromPrimarySurvey(survey) {
+        // Populate plot information
+        if (survey.plot_no) {
+            const plotNoInput = document.getElementById('plotNo');
+            if (plotNoInput) {
+                plotNoInput.value = survey.plot_no;
+            }
+        }
+        
+        if (survey.block_no) {
+            const blockNoInput = document.getElementById('blockNo');
+            if (blockNoInput) {
+                blockNoInput.value = survey.block_no;
+            }
+        }
+        
+        if (survey.approved_plan_no) {
+            const approvedPlanNoInput = document.getElementById('approvedPlanNo');
+            if (approvedPlanNoInput) {
+                approvedPlanNoInput.value = survey.approved_plan_no;
+            }
+        }
+        
+        if (survey.tp_plan_no) {
+            const tpPlanNoInput = document.getElementById('tpPlanNo');
+            if (tpPlanNoInput) {
+                tpPlanNoInput.value = survey.tp_plan_no;
+            }
+        }
+        
+        // Populate location information
+        if (survey.layout_name) {
+            const layoutNameInput = document.getElementById('layoutName');
+            if (layoutNameInput) {
+                layoutNameInput.value = survey.layout_name;
+            }
+        }
+        
+        if (survey.district_name) {
+            const districtNameInput = document.getElementById('districtName');
+            if (districtNameInput) {
+                districtNameInput.value = survey.district_name;
+            }
+        }
+        
+        if (survey.lga_name) {
+            const lgaNameInput = document.getElementById('lgaName');
+            if (lgaNameInput) {
+                lgaNameInput.value = survey.lga_name;
+            }
+        }
+    }
+});
+</script>
+
+<script>
 // Alpine.js Survey Plan Upload Component
 function surveyPlanUpload() {
     return {

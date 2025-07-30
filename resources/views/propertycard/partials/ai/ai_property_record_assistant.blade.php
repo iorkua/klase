@@ -172,7 +172,7 @@
           @drop.prevent="handleDrop($event)"
           @dragover.prevent="$event.currentTarget.classList.add('dragover')"
           @dragleave.prevent="$event.currentTarget.classList.remove('dragover')"
-          @click="$refs.fileInput.click()"
+          @click="triggerFileInput()"
         >
           <input
             x-ref="fileInput"
@@ -400,45 +400,101 @@ function aiAssistant() {
       });
     },
     
+    triggerFileInput() {
+      console.log('Triggering file input...');
+      const fileInput = this.$refs.fileInput;
+      if (fileInput) {
+        // Clear the file input first
+        fileInput.value = '';
+        // Force a click event
+        fileInput.click();
+      }
+    },
+    
     handleDrop(event) {
       event.currentTarget.classList.remove('dragover');
       const files = event.dataTransfer.files;
       if (files.length > 0) {
+        console.log('File dropped:', files[0].name);
         this.processFile(files[0]);
       }
     },
     
     handleFileChange(event) {
+      console.log('File change event triggered');
       const file = event.target.files[0];
+      console.log('Selected file:', file ? file.name : 'No file');
+      
+      // Prevent multiple processing of the same file
+      if (this.processing) {
+        console.log('Already processing, ignoring...');
+        return;
+      }
+      
       if (file) {
+        console.log('Processing file immediately...');
+        // Clear any previous errors immediately
+        this.error = null;
+        // Process the file immediately
         this.processFile(file);
+      } else {
+        console.log('No file selected, resetting...');
+        this.reset();
       }
     },
     
     async processFile(file) {
-      // Validate file
-      if (!this.validateFile(file)) return;
-      
-      this.selectedFile = file;
-      this.error = null;
-      this.extractedData = null;
-      this.rawText = '';
-      
-      // Set file info
-      this.fileInfo = `${this.formatFileSize(file.size)} • ${file.type}`;
-      
-      // Process based on file type
-      if (file.type.startsWith('image/')) {
-        this.fileType = 'image';
-        this.previewUrl = URL.createObjectURL(file);
-      } else if (file.type === 'application/pdf') {
-        this.fileType = 'pdf';
-        await this.processPDF(file);
+      try {
+        console.log('Starting file processing for:', file.name);
+        
+        // Prevent duplicate processing
+        if (this.selectedFile && this.selectedFile.name === file.name && this.selectedFile.size === file.size) {
+          console.log('File already processed, skipping...');
+          return true;
+        }
+        
+        // Validate file first
+        if (!this.validateFile(file)) {
+          return false;
+        }
+        
+        // Clear previous state
+        this.error = null;
+        this.extractedData = null;
+        this.rawText = '';
+        this.previewUrl = null;
+        this.pdfPages = [];
+        this.currentPdfPageIndex = 0;
+        
+        // Set the selected file
+        this.selectedFile = file;
+        
+        // Set file info
+        this.fileInfo = `${this.formatFileSize(file.size)} • ${file.type}`;
+        
+        // Process based on file type
+        if (file.type.startsWith('image/')) {
+          this.fileType = 'image';
+          this.previewUrl = URL.createObjectURL(file);
+          console.log('Image file processed successfully:', file.name);
+        } else if (file.type === 'application/pdf') {
+          this.fileType = 'pdf';
+          await this.processPDF(file);
+          console.log('PDF file processed successfully:', file.name);
+        }
+        
+        // Update UI
+        this.$nextTick(() => {
+          lucide.createIcons();
+        });
+        
+        console.log('File processing completed successfully');
+        return true;
+      } catch (error) {
+        console.error('Error processing file:', error);
+        this.error = `Failed to process file: ${error.message}`;
+        return false;
       }
-      
-      this.$nextTick(() => {
-        lucide.createIcons();
-      });
     },
     
     validateFile(file) {

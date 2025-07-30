@@ -69,8 +69,8 @@
       <li>
          @if($filenoExists)
             <a href="{{ route('coroi.index') }}?url=registered_instruments&fileno={{ $app->fileno }}" 
-               class="flex px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 items-center">
-                 <i class="fas fa-eye mr-2 text-gray-400"></i>
+               class="flex px-4 py-2 text-sm   hover:bg-gray-100 items-center">
+                 <i class="fas fa-eye mr-2 text-blue-400"></i>
                   <span class="whitespace-nowrap text-sm" style="font-size: 75%">View CoR for Assignment Transfer</span>
             </a> 
          @else

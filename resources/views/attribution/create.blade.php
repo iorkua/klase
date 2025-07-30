@@ -27,34 +27,31 @@
                     
                     <!-- Selection Grid - 2x2 layout -->
                     <div class="border border-gray-200 rounded-lg p-4 bg-gray-50 mb-4">
-                        <div >
-                        
-                            <!-- Primary Survey Selection (only for unit surveys) -->
-                            @if(request()->query('is') == 'secondary')
-                            <div>
-                                <label for="primary-survey-select" class="block text-sm font-medium text-gray-700 mb-1">Select Primary Survey</label>
-                                <select id="primary-survey-select" class="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">-- Select Primary Survey FileNo --</option>
-                                </select>
-                            </div>
-                            @endif
-
-
-                                <!-- Smart File Number Selection -->
-                            <div>
-                                @if(request()->query('is') == 'secondary')
-                                    <!-- For unit surveys, use simple dropdown without manual entry -->
+                        @if(request()->query('is') == 'secondary')
+                            <!-- Grid for Unit Survey: Primary Survey + File Number -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- Primary Survey Selection -->
+                                <div>
+                                    <label for="primary-survey-select" class="block text-sm font-medium text-gray-700 mb-1">Select Primary Survey</label>
+                                    <select id="primary-survey-select" class="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">-- Select Primary Survey FileNo --</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- File Number Selection -->
+                                <div>
                                     <label for="fileno-select" class="block text-sm font-medium text-gray-700 mb-1">Select File Number</label>
                                     <select id="fileno-select" class="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                         <option value="">-- Select File Number --</option>
                                     </select>
-                                @else
-                                    <!-- For primary surveys, use full smart selector with manual entry -->
-                                    @include('components.smart_fileno_selector')
-                                @endif
+                                </div>
                             </div>
-                            
-                        </div>
+                        @else
+                            <!-- Single column for Primary Survey: Smart File Number Selector -->
+                            <div>
+                                @include('components.smart_fileno_selector')
+                            </div>
+                        @endif
                     </div>
                 </div>
 

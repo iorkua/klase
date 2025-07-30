@@ -152,7 +152,7 @@
                                 <th class="table-header text-green-500">Owner</th>
                                 <th class="table-header text-green-500">Units</th>
                                 <th class="table-header text-green-500">Date</th>
-                                <th class="table-header text-green-500">Planning Recommendation Approval</th>
+                                {{-- <th class="table-header text-green-500">Planning Recommendation Approval</th> --}}
 
                                    @if(!request()->has('survey') && (!request()->has('url') || (request()->get('url') !== 'phy_planning' && request()->get('url') !== 'recommendation')))
                                 <th class="table-header text-green-500">Director's Approval</th>
@@ -296,7 +296,7 @@
                                     <td class="table-cell">
                                         {{ \Carbon\Carbon::parse($PrimaryApplication->created_at)->format('Y-m-d') }}
                                     </td>
-                                    <td class="table-cell uppercase" style="">
+                                    {{-- <td class="table-cell uppercase" style="">
                                         <div class="flex items-center">
                                             @php
                                                 $planningStatus = strtolower($PrimaryApplication->planning_recommendation_status ?? '');
@@ -317,7 +317,7 @@
                                                    onclick="showDeclinedInfo(event, 'Planning Recommendation', {{ json_encode($PrimaryApplication->recomm_comments) }}, {{ json_encode($PrimaryApplication->director_comments) }})"></i>
                                             @endif
                                         </div>
-                                    </td>  
+                                    </td>   --}}
                                     @if(!request()->has('survey') && (!request()->has('url') || (request()->get('url') !== 'phy_planning' && request()->get('url') !== 'recommendation')))
                                     <td class="table-cell">
                                         <div class="flex items-center">

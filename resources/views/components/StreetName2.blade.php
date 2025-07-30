@@ -896,28 +896,16 @@
         <option value="ZUBAIRU INUWA LINK">ZUBAIRU INUWA LINK</option>
         <option value="ZUMA ST">ZUMA ST</option>
         <option value="ZUNGERU ROAD">ZUNGERU ROAD</option>
-        <option value="ZUWA ST">ZUWA ST</option>
-          <option value="other">Other</option>
-                        </select>
-                        <input type="text" id="otherStreetName" name="otherStreetName" class="form-input text-sm property-input mt-2 hidden" placeholder="Please specify other street name" oninput="toggleotherStreetName()">
-                    </div>
-
-                    <script>
-                    function toggleotherStreetName() {
-                        const select = document.getElementById('streetName');
-                        const otherInput = document.getElementById('otherStreetName');
-                        
-                        if (select && otherInput) {
-                            if (select.value === 'other') {
-                                otherInput.classList.remove('hidden');
-                                otherInput.name = 'streetName';
-                                select.name = '';
-                            } else {
-                                otherInput.classList.add('hidden');
-                                otherInput.name = '';
-                                select.name = 'streetName';
-                            }
-                        }
-                    }
-                    document.addEventListener('DOMContentLoaded', toggleotherStreetName);
-                    </script>
+        <option value="other">Other</option>
+            </select>
+            <input 
+                type="text" 
+                id="otherStreetName" 
+                x-show="street === 'other'" 
+                x-model="otherStreetName" 
+                name="otherStreetName" 
+                class="form-input text-sm property-input mt-2" 
+                placeholder="Please specify other street name"
+                x-transition
+            >
+        </div>

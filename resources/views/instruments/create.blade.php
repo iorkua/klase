@@ -77,26 +77,26 @@
                         <h3 class="font-medium text-rose-800">Deed of Release</h3>
                         <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-rose-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">14</span>A document that discharges or releases a party from a previous claim, interest, or mortgage on a property.</p>
                     </button>
-                    <button class="instrument-type-btn p-2 border rounded-lg text-center bg-sky-50 border-sky-200 hover:bg-sky-100" data-type="right-of-occupancy">
+                    {{-- <button class="instrument-type-btn p-2 border rounded-lg text-center bg-sky-50 border-sky-200 hover:bg-sky-100" data-type="right-of-occupancy">
                         <h3 class="font-medium text-sky-800">Right of Occupancy (RofO)</h3>
                         <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-sky-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">15</span>A statutory land tenure instrument granting an individual or entity the right to occupy and use land in accordance with the Land Use Act.</p>
-                    </button>
-                    <button class="instrument-type-btn p-2 border rounded-lg text-center bg-amber-50 border-amber-200 hover:bg-amber-100" data-type="certificate-of-occupancy">
+                    </button> --}}
+                    {{-- <button class="instrument-type-btn p-2 border rounded-lg text-center bg-amber-50 border-amber-200 hover:bg-amber-100" data-type="certificate-of-occupancy">
                         <h3 class="font-medium text-amber-800">Certificate of Occupancy (CofO)</h3>
                         <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-amber-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">16</span>An official government-issued certificate that legally proves the right to occupy and use a specific parcel of land.</p>
-                    </button>
-                    <button class="instrument-type-btn p-2 border rounded-lg text-center bg-slate-50 border-slate-200 hover:bg-slate-100" data-type="sectional-titling-c-of-o">
+                    </button> --}}
+                    {{-- <button class="instrument-type-btn p-2 border rounded-lg text-center bg-slate-50 border-slate-200 hover:bg-slate-100" data-type="sectional-titling-c-of-o">
                         <h3 class="font-medium text-slate-800">Sectional Titling Certificate of Occupancy</h3>
                         <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-slate-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">17</span>A specialized CofO issued for individual units within a multi-unit development, such as apartments or condominiums, under the Sectional Titling framework.</p>
                     </button>
                     <button class="instrument-type-btn p-2 border rounded-lg text-center bg-gray-50 border-gray-200 hover:bg-gray-100" data-type="sltr-c-of-o">
                         <h3 class="font-medium text-gray-800">Systematic Land Titling and Registration (SLTR) Certificate of Occupancy</h3>
                         <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-gray-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">18</span>A CofO issued under the SLTR scheme to formalize land rights, especially in informal or previously undocumented settlements.</p>
-                    </button>
-                    <button class="instrument-type-btn p-2 border rounded-lg text-center bg-emerald-50 border-emerald-200 hover:bg-emerald-100" data-type="st-assignment">
+                    </button> --}}
+                    {{-- <button class="instrument-type-btn p-2 border rounded-lg text-center bg-emerald-50 border-emerald-200 hover:bg-emerald-100" data-type="st-assignment">
                         <h3 class="font-medium text-emerald-800">ST Assignment (Transfer of Title)</h3>
                         <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-emerald-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">19</span>A specialized assignment document for sectional title properties that transfers ownership from Kano State Government to the new title holder.</p>
-                    </button>
+                    </button> --}}
                 </div>
             </div>
         </div>

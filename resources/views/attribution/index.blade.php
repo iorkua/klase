@@ -677,15 +677,16 @@
                 <i data-lucide="edit" class="w-4 h-4 mr-2 text-blue-500"></i>
                 Edit
             </a>
-            <button onclick="confirmDelete(${surveyId})" 
-                    class="flex items-center w-full px-4 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors">
-                <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i>
-                Delete
-            </button>
+          
             <button onclick="viewSurveyPlan(${surveyId}, '${surveyData.fileno}', '${surveyData.planPath}')" 
                     class="flex items-center w-full px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 transition-colors">
                 <i data-lucide="file-text" class="w-4 h-4 mr-2 text-green-500"></i>
                 View Survey Plan
+            </button>
+              <button onclick="confirmDelete(${surveyId})" 
+                    class="flex items-center w-full px-4 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors">
+                <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i>
+                Delete
             </button>
         `;
         
