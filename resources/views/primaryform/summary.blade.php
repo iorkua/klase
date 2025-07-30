@@ -31,19 +31,19 @@
 
       <div class="flex items-center mb-8">
         <div class="flex items-center mr-4">
-          <div class="step-circle inactive">1</div>
+          <div class="step-circle inactive cursor-pointer" onclick="goToStep(1)">1</div>
         </div>
         <div class="flex items-center mr-4">
-          <div class="step-circle inactive">2</div>
+          <div class="step-circle inactive cursor-pointer" onclick="goToStep(2)">2</div>
         </div>
         <div class="flex items-center mr-4">
-          <div class="step-circle inactive">3</div>
+          <div class="step-circle inactive cursor-pointer" onclick="goToStep(3)">3</div>
         </div>
         <div class="flex items-center mr-4">
-          <div class="step-circle inactive">4</div>
+          <div class="step-circle inactive cursor-pointer" onclick="goToStep(4)">4</div>
         </div>
         <div class="flex items-center">
-          <div class="step-circle active">5</div>
+          <div class="step-circle active cursor-pointer" onclick="goToStep(5)">5</div>
         </div>
         <div class="ml-4">Step 5 - Summary</div>
       </div>
@@ -251,7 +251,7 @@
             </button>
           </div>
           <div class="flex items-center">
-            <span class="text-sm text-gray-500 mr-4"Step 5 of 5</span>
+            <span class="text-sm text-gray-500 mr-4">Step 5 of 5</span>
             <button type="button" class="px-4 py-2 bg-black text-white rounded-md" onclick="confirmSubmission()">Submit Application</button>
           </div>
         </div>
@@ -621,6 +621,8 @@
       <p>This is an official application receipt. Please keep for your records.</p>
       <p>Application submitted on: <span id="print-submission-date"></span></p>
     </div>
+
+    
   </div>
 </div>
 

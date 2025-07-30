@@ -20,6 +20,7 @@
       align-items: center;
       justify-content: center;
       font-weight: 500;
+      transition: all 0.2s ease;
     }
     .step-circle.active {
       background-color: #10b981;
@@ -28,6 +29,17 @@
     .step-circle.inactive {
       background-color: #f3f4f6;
       color: #6b7280;
+    }
+    .step-circle:hover {
+      transform: scale(1.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+    .step-circle.active:hover {
+      background-color: #059669;
+    }
+    .step-circle.inactive:hover {
+      background-color: #e5e7eb;
+      color: #374151;
     }
     .form-section {
       display: none;
@@ -137,21 +149,21 @@
             
                     <div class="flex items-center mb-6">
                       <div class="flex items-center mr-4">
-                        <div class="step-circle active flex items-center justify-center">1</div>
+                        <div class="step-circle active flex items-center justify-center cursor-pointer" onclick="goToStep(1)">1</div>
                       </div>
                       <div class="flex items-center mr-4">
-                        <div class="step-circle inactive flex items-center justify-center">2</div>
+                        <div class="step-circle inactive flex items-center justify-center cursor-pointer" onclick="goToStep(2)">2</div>
                       </div>
                       <div class="flex items-center mr-4">
-                        <div class="step-circle inactive flex items-center justify-center">3</div>
+                        <div class="step-circle inactive flex items-center justify-center cursor-pointer" onclick="goToStep(3)">3</div>
                       </div>
                       <div class="flex items-center mr-4">
-                        <div class="step-circle inactive flex items-center justify-center">4</div>
+                        <div class="step-circle inactive flex items-center justify-center cursor-pointer" onclick="goToStep(4)">4</div>
                       </div>
                        <div class="flex items-center">
-          <div class="step-circle inactive">5</div>
-        </div>
-                      <div class="ml-4">Step 1</div>
+                     <div class="step-circle inactive cursor-pointer" onclick="goToStep(5)">5</div>
+                   </div>
+                      <div class="ml-4">Step 1 0f 5</div>
                     </div>
             
                     <div class="mb-6">
@@ -464,7 +476,7 @@
                       <div class="flex justify-between mt-8">
                         <button type="button" onclick="window.history.back()" class="px-4 py-2 bg-white border border-gray-300 rounded-md">Cancel</button>
                         <div class="flex items-center">
-                          <span class="text-sm text-gray-500 mr-4">Step 1 of 4</span>
+                          <span class="text-sm text-gray-500 mr-4">Step 1 of 5</span>
                           <button class="px-4 py-2 bg-black text-white rounded-md" id="nextStep1">Next</button>
                         </div>
                       </div>

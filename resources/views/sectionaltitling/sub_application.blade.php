@@ -43,6 +43,27 @@
 .select2-container--default .select2-results__option--highlighted[aria-selected] {
     background-color: #3b82f6;
 }
+
+/* Enhanced Step Circle Styles */
+.step-circle {
+    transition: all 0.2s ease;
+}
+
+.step-circle.cursor-pointer:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.step-circle.active-tab.cursor-pointer:hover {
+    background-color: #059669;
+    border-color: #059669;
+}
+
+.step-circle.inactive-tab.cursor-pointer:hover {
+    background-color: #6b7280;
+    border-color: #6b7280;
+    color: white;
+}
 </style>
  
 <!-- SweetAlert2 JS -->
@@ -137,16 +158,16 @@
             
                     <div class="flex items-center mb-6">
                     <div class="flex items-center mr-4">
-                    <div class="step-circle active-tab flex items-center justify-center">1</div>
+                    <div class="step-circle active-tab flex items-center justify-center cursor-pointer" onclick="goToStep(1)">1</div>
                     </div>
                     <div class="flex items-center mr-4">
-                    <div class="step-circle inactive-tab flex items-center justify-center">2</div>
+                    <div class="step-circle inactive-tab flex items-center justify-center cursor-pointer" onclick="goToStep(2)">2</div>
                     </div>
                     <div class="flex items-center mr-4">
-                    <div class="step-circle inactive-tab flex items-center justify-center">3</div>
+                    <div class="step-circle inactive-tab flex items-center justify-center cursor-pointer" onclick="goToStep(3)">3</div>
                     </div>    
                     <div class="flex items-center mr-4">
-                    <div class="step-circle inactive-tab flex items-center justify-center">4</div>
+                    <div class="step-circle inactive-tab flex items-center justify-center cursor-pointer" onclick="goToStep(4)">4</div>
                     </div>
                     <div class="ml-4">Step 1</div>
                     </div>
@@ -693,7 +714,7 @@
             </form>
         </div>
     </div>
-</div>
+ 
 
 <!-- Footer -->
 @include('admin.footer')
@@ -723,6 +744,124 @@ toggleOtherAreasTextarea();
 <script>
 // Initialize Lucide icons
 lucide.createIcons();
+
+// Global function to navigate to specific step with validation
+function goToStep(stepNumber) {
+    console.log('Navigating to step:', stepNumber);
+    
+    // Get current active step
+    const currentActiveStep = document.querySelector('.form-section.active-tab');
+    let currentStepNumber = 1;
+    if (currentActiveStep) {
+        const stepId = currentActiveStep.id;
+        currentStepNumber = parseInt(stepId.replace('step', ''));
+    }
+    
+    // If trying to go to the same step, do nothing
+    if (currentStepNumber === stepNumber) {
+        return;
+    }
+    
+    // If trying to go forward, validate current step first
+    if (stepNumber > currentStepNumber) {
+        let canProceed = true;
+        let errors = [];
+        
+        // Validate based on current step
+        switch (currentStepNumber) {
+            case 1:
+                errors = validateStep1();
+                if (errors.length === 0) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Step 1 Complete!',
+                        text: 'Basic information has been validated successfully.',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        toast: true,
+                        position: 'top-end'
+                    });
+                }
+                break;
+            case 2:
+                errors = validateStep2();
+                if (errors.length === 0) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Step 2 Complete!',
+                        text: 'Shared areas have been selected successfully.',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        toast: true,
+                        position: 'top-end'
+                    });
+                }
+                break;
+            case 3:
+                errors = validateStep3();
+                if (errors.length === 0) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Documents Validated!',
+                        text: 'All required documents have been uploaded successfully.',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        toast: true,
+                        position: 'top-end'
+                    });
+                }
+                break;
+        }
+        
+        // If validation failed, don't proceed
+        if (errors.length > 0) {
+            showValidationErrors(errors);
+            return;
+        }
+    }
+    
+    // Hide all steps
+    const allSteps = document.querySelectorAll('.form-section');
+    allSteps.forEach(step => step.classList.remove('active-tab'));
+    
+    // Show target step
+    const targetStep = document.getElementById(`step${stepNumber}`);
+    if (targetStep) {
+        targetStep.classList.add('active-tab');
+    }
+    
+    // Update step circles
+    updateStepCircles(stepNumber);
+    
+    // Update step text
+    updateStepText(stepNumber);
+}
+
+// Function to update step circles visual state
+function updateStepCircles(currentStep) {
+    const stepCircles = document.querySelectorAll('.step-circle');
+    stepCircles.forEach((circle, index) => {
+        const stepNum = index + 1;
+        circle.classList.remove('active-tab', 'inactive-tab');
+        
+        if (stepNum === currentStep) {
+            circle.classList.add('active-tab');
+        } else {
+            circle.classList.add('inactive-tab');
+        }
+    });
+}
+
+// Function to update step text
+function updateStepText(currentStep) {
+    const stepTexts = document.querySelectorAll('[class*="Step"][class*="of"]');
+    stepTexts.forEach(text => {
+        text.textContent = `Step ${currentStep} of 4`;
+    });
+}
+
+// Make goToStep globally accessible
+window.goToStep = goToStep;
 
 // Form navigation
 document.addEventListener('DOMContentLoaded', function() {
@@ -956,125 +1095,37 @@ function showValidationErrors(errors) {
 // Next from Step 1 to Step 2
 addSafeEventListener(nextStep1, 'click', function(e) {
     e.preventDefault();
-    
-    const errors = validateStep1();
-    if (!showValidationErrors(errors)) {
-        return;
-    }
-    
-    step1.classList.remove('active-tab');
-    step2.classList.add('active-tab');
-
-    // Update step indicator
-    document.querySelectorAll('.step-circle')[0].classList.remove('active-tab');
-    document.querySelectorAll('.step-circle')[0].classList.add('inactive-tab');
-    document.querySelectorAll('.step-circle')[1].classList.remove('inactive-tab');
-    document.querySelectorAll('.step-circle')[1].classList.add('active-tab');
+    goToStep(2);
 });
 
 // Next from Step 2 to Step 3
 addSafeEventListener(nextStep2, 'click', function(e) {
     e.preventDefault();
-    
-    const errors = validateStep2();
-    if (!showValidationErrors(errors)) {
-        return;
-    }
-    
-    step2.classList.remove('active-tab');
-    step3.classList.add('active-tab');
-
-    // Update step indicator
-    document.querySelectorAll('.step-circle')[1].classList.remove('active-tab');
-    document.querySelectorAll('.step-circle')[1].classList.add('inactive-tab');
-    document.querySelectorAll('.step-circle')[2].classList.remove('inactive-tab');
-    document.querySelectorAll('.step-circle')[2].classList.add('active-tab');
+    goToStep(3);
 });
 
 // Next from Step 3 to Step 4
 addSafeEventListener(nextStep3, 'click', function(e) {
     e.preventDefault();
-    
-    const errors = validateStep3();
-    if (!showValidationErrors(errors)) {
-        return;
-    }
-    
-    step3.classList.remove('active-tab');
-    step4.classList.add('active-tab');
-
-    // Update step indicator
-    document.querySelectorAll('.step-circle')[2].classList.remove('active-tab');
-    document.querySelectorAll('.step-circle')[2].classList.add('inactive-tab');
-    document.querySelectorAll('.step-circle')[3].classList.remove('inactive-tab');
-    document.querySelectorAll('.step-circle')[3].classList.add('active-tab');
-});
-
-// Next from Step 4 to Step 5
-addSafeEventListener(nextStep4, 'click', function(e) {
-    e.preventDefault();
-    
-    // No validation needed for EDMS step - it's informational
-    step4.classList.remove('active-tab');
-    step5.classList.add('active-tab');
-
-    // Update step indicator
-    document.querySelectorAll('.step-circle')[3].classList.remove('active-tab');
-    document.querySelectorAll('.step-circle')[3].classList.add('inactive-tab');
-    document.querySelectorAll('.step-circle')[4].classList.remove('inactive-tab');
-    document.querySelectorAll('.step-circle')[4].classList.add('active-tab');
+    goToStep(4);
 });
 
 // Back from Step 2 to Step 1
 addSafeEventListener(backStep2, 'click', function(e) {
-e.preventDefault();
-step2.classList.remove('active-tab');
-step1.classList.add('active-tab');
-
-// Update step indicator (optional)
-document.querySelectorAll('.step-circle')[1].classList.remove('active-tab');
-document.querySelectorAll('.step-circle')[1].classList.add('inactive-tab');
-document.querySelectorAll('.step-circle')[0].classList.remove('inactive-tab');
-document.querySelectorAll('.step-circle')[0].classList.add('active-tab');
+    e.preventDefault();
+    goToStep(1);
 });
 
 // Back from Step 3 to Step 2
 addSafeEventListener(backStep3, 'click', function(e) {
-e.preventDefault();
-step3.classList.remove('active-tab');
-step2.classList.add('active-tab');
-
-// Update step indicator (optional)
-document.querySelectorAll('.step-circle')[2].classList.remove('active-tab');
-document.querySelectorAll('.step-circle')[2].classList.add('inactive-tab');
-document.querySelectorAll('.step-circle')[1].classList.remove('inactive-tab');
-document.querySelectorAll('.step-circle')[1].classList.add('active-tab');
+    e.preventDefault();
+    goToStep(2);
 });
 
 // Back from Step 4 to Step 3
 addSafeEventListener(backStep4, 'click', function(e) {
-e.preventDefault();
-step4.classList.remove('active-tab');
-step3.classList.add('active-tab');
-
-// Update step indicator (optional)
-document.querySelectorAll('.step-circle')[3].classList.remove('active-tab');
-document.querySelectorAll('.step-circle')[3].classList.add('inactive-tab');
-document.querySelectorAll('.step-circle')[2].classList.remove('inactive-tab');
-document.querySelectorAll('.step-circle')[2].classList.add('active-tab');
-});
-
-// Back from Step 5 to Step 4
-addSafeEventListener(backStep5, 'click', function(e) {
-e.preventDefault();
-step5.classList.remove('active-tab');
-step4.classList.add('active-tab');
-
-// Update step indicator (optional)
-document.querySelectorAll('.step-circle')[4].classList.remove('active-tab');
-document.querySelectorAll('.step-circle')[4].classList.add('inactive-tab');
-document.querySelectorAll('.step-circle')[3].classList.remove('inactive-tab');
-document.querySelectorAll('.step-circle')[3].classList.add('active-tab');
+    e.preventDefault();
+    goToStep(3);
 });
 
 // Submit form from Step 4
@@ -1586,4 +1637,294 @@ function updateSurveyFee(selectElement) {
     }
 }
 </script>
+
+
+<script>
+// Fix for sub-application navigation - override validation functions
+document.addEventListener('DOMContentLoaded', function() {
+    // Override the validation functions with corrected versions
+    window.validateStep1 = function() {
+        const errors = [];
+        
+        // Check if applicant type is selected
+        const applicantType = document.querySelector('input[name="applicantType"]:checked');
+        if (!applicantType) {
+            errors.push('Please select an applicant type');
+            return errors;
+        }
+        
+        const type = applicantType.value;
+        
+        // Validate based on applicant type
+        if (type === 'individual') {
+            const individualFields = document.getElementById('individualFields');
+            if (individualFields && individualFields.style.display !== 'none') {
+                const title = document.getElementById('applicantTitle')?.value;
+                const firstName = document.getElementById('applicantName')?.value;
+                const surname = document.getElementById('applicantSurname')?.value;
+                
+                if (!title) errors.push('Please select a title');
+                if (!firstName || firstName.trim() === '') errors.push('Please enter first name');
+                if (!surname || surname.trim() === '') errors.push('Please enter surname');
+                
+                const passport = document.getElementById('photoUpload')?.files[0];
+                if (!passport) errors.push('Please upload a passport photo');
+            }
+            
+        } else if (type === 'corporate') {
+            const corporateFields = document.getElementById('corporateFields');
+            if (corporateFields && corporateFields.style.display !== 'none') {
+                const corporateName = document.getElementById('corporateName')?.value;
+                const rcNumber = document.getElementById('rcNumber')?.value;
+                const rcDocument = document.getElementById('subCorporateDocumentUpload')?.files[0];
+                
+                if (!corporateName || corporateName.trim() === '') errors.push('Please enter corporate body name');
+                if (!rcNumber || rcNumber.trim() === '') errors.push('Please enter RC number');
+                if (!rcDocument) errors.push('Please upload RC document');
+            }
+            
+        } else if (type === 'multiple') {
+            const multipleOwnersFields = document.getElementById('multipleOwnersFields');
+            if (multipleOwnersFields && multipleOwnersFields.style.display !== 'none') {
+                const ownerRows = document.querySelectorAll('#ownersContainer > div');
+                if (ownerRows.length === 0) {
+                    errors.push('Please add at least one owner');
+                } else {
+                    ownerRows.forEach((row, index) => {
+                        const nameInput = row.querySelector('input[name="multiple_owners_names[]"]');
+                        const addressInput = row.querySelector('textarea[name="multiple_owners_address[]"]');
+                        const identificationInput = row.querySelector('input[name="multiple_owners_identification_image[]"]');
+                        
+                        if (!nameInput?.value || nameInput.value.trim() === '') {
+                            errors.push(`Please enter name for owner ${index + 1}`);
+                        }
+                        if (!addressInput?.value || addressInput.value.trim() === '') {
+                            errors.push(`Please enter address for owner ${index + 1}`);
+                        }
+                        if (!identificationInput?.files[0]) {
+                            errors.push(`Please upload identification for owner ${index + 1}`);
+                        }
+                    });
+                }
+            }
+        }
+        
+        // Validate address fields (only for individual and corporate)
+        if (type !== 'multiple') {
+            const houseNo = document.getElementById('ownerHouseNo')?.value;
+            const streetName = document.getElementById('ownerStreetName')?.value;
+            const state = document.getElementById('ownerState')?.value;
+            const lga = document.getElementById('ownerLga')?.value;
+            const district = document.getElementById('ownerDistrict')?.value;
+            
+            if (!houseNo || houseNo.trim() === '') errors.push('Please enter house number');
+            if (!streetName || streetName.trim() === '') errors.push('Please enter street name');
+            if (!state) errors.push('Please select a state');
+            if (!lga) errors.push('Please select an LGA');
+            if (!district || district.trim() === '') errors.push('Please enter district');
+            
+            const phoneInputs = document.querySelectorAll('input[name="phone_number[]"]');
+            let hasValidPhone = false;
+            phoneInputs.forEach(input => {
+                if (input.value && input.value.trim() !== '') {
+                    hasValidPhone = true;
+                    const phoneRegex = /^[\d\s\-\+\(\)]{10,}$/;
+                    if (!phoneRegex.test(input.value.replace(/\s/g, ''))) {
+                        errors.push('Please enter a valid phone number');
+                    }
+                }
+            });
+            if (!hasValidPhone) errors.push('Please enter at least one phone number');
+            
+            const email = document.querySelector('input[name="owner_email"]')?.value;
+            if (email && email.trim() !== '') {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    errors.push('Please enter a valid email address');
+                }
+            }
+        }
+        
+        // Validate unit details
+        const blockNumber = document.querySelector('input[name="block_number"]')?.value;
+        const floorNumber = document.querySelector('input[name="floor_number"]')?.value;
+        const unitNumber = document.querySelector('input[name="unit_number"]')?.value;
+        
+        if (!blockNumber || blockNumber.trim() === '') errors.push('Please enter block number');
+        if (!floorNumber || floorNumber.trim() === '') errors.push('Please enter floor number');
+        if (!unitNumber || unitNumber.trim() === '') errors.push('Please enter unit number');
+        
+        const schemeNo = document.getElementById('schemeName')?.value;
+        if (!schemeNo || schemeNo.trim() === '') errors.push('Please enter scheme number');
+        
+        const receiptNumber = document.querySelector('input[name="receipt_number"]')?.value;
+        const paymentDate = document.querySelector('input[name="payment_date"]')?.value;
+        
+        if (!receiptNumber || receiptNumber.trim() === '') errors.push('Please enter receipt number');
+        if (!paymentDate) errors.push('Please select payment date');
+        
+        return errors;
+    };
+
+    window.validateStep2 = function() {
+        const errors = [];
+        
+        const sharedAreas = document.querySelectorAll('input[name="shared_areas[]"]:checked');
+        if (sharedAreas.length === 0) {
+            errors.push('Please select at least one shared area');
+        }
+        
+        const otherCheckbox = document.getElementById('other_areas');
+        if (otherCheckbox && otherCheckbox.checked) {
+            const otherDetails = document.getElementById('other_areas_detail')?.value;
+            if (!otherDetails || otherDetails.trim() === '') {
+                errors.push('Please specify other shared areas');
+            }
+        }
+        
+        return errors;
+    };
+
+    window.validateStep3 = function() {
+        const errors = [];
+        
+        const requiredDocs = [
+            { name: 'application_letter', label: 'Application Letter' },
+            { name: 'building_plan', label: 'Building Plan' },
+            { name: 'architectural_design', label: 'Architectural Design' },
+            { name: 'ownership_document', label: 'Ownership Document' }
+        ];
+        
+        requiredDocs.forEach(doc => {
+            const fileInput = document.getElementById(doc.name);
+            if (!fileInput || !fileInput.files[0]) {
+                errors.push(`Please upload ${doc.label}`);
+            } else {
+                const file = fileInput.files[0];
+                if (file.size > 5 * 1024 * 1024) {
+                    errors.push(`${doc.label} file size must be less than 5MB`);
+                }
+                
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+                if (!allowedTypes.includes(file.type)) {
+                    errors.push(`${doc.label} must be a JPG, PNG, or PDF file`);
+                }
+            }
+        });
+        
+        return errors;
+    };
+
+    console.log('Sub-application validation functions fixed successfully');
+});
+</script>
 @endsection
+
+<script>
+// Emergency fix for sub-application navigation
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Emergency navigation fix loading...');
+    
+    // Wait a bit for other scripts to load
+    setTimeout(function() {
+        console.log('Applying emergency navigation fixes...');
+        
+        // Create a working goToStep function
+        window.goToStep = function(stepNumber) {
+            console.log('Emergency goToStep called with step:', stepNumber);
+            
+            // Hide all steps
+            const allSteps = document.querySelectorAll('.form-section');
+            console.log('Found steps:', allSteps.length);
+            allSteps.forEach(step => {
+                step.classList.remove('active-tab');
+                step.style.display = 'none';
+            });
+            
+            // Show target step
+            const targetStep = document.getElementById(`step${stepNumber}`);
+            console.log('Target step element:', targetStep);
+            if (targetStep) {
+                targetStep.classList.add('active-tab');
+                targetStep.style.display = 'block';
+                console.log('Successfully navigated to step', stepNumber);
+            } else {
+                console.error('Target step not found:', `step${stepNumber}`);
+            }
+            
+            // Update step circles
+            const stepCircles = document.querySelectorAll('.step-circle');
+            console.log('Found step circles:', stepCircles.length);
+            stepCircles.forEach((circle, index) => {
+                const stepNum = index + 1;
+                circle.classList.remove('active-tab', 'inactive-tab');
+                
+                if (stepNum === stepNumber) {
+                    circle.classList.add('active-tab');
+                } else {
+                    circle.classList.add('inactive-tab');
+                }
+            });
+            
+            // Update step text
+            const stepTexts = document.querySelectorAll('[class*="Step"][class*="of"]');
+            stepTexts.forEach(text => {
+                text.textContent = `Step ${stepNumber} of 4`;
+            });
+        };
+        
+        // Re-attach event listeners to step circles
+        const stepCircles = document.querySelectorAll('.step-circle');
+        stepCircles.forEach((circle, index) => {
+            const stepNumber = index + 1;
+            
+            // Remove existing onclick attribute
+            circle.removeAttribute('onclick');
+            
+            // Add new click listener
+            circle.addEventListener('click', function(e) {
+                console.log('Step circle clicked:', stepNumber);
+                e.preventDefault();
+                e.stopPropagation();
+                window.goToStep(stepNumber);
+            });
+            
+            // Ensure it looks clickable
+            circle.style.cursor = 'pointer';
+            console.log('Attached listener to step circle', stepNumber);
+        });
+        
+        // Re-attach event listeners to next buttons
+        const nextButtons = [
+            { id: 'nextStep1', target: 2 },
+            { id: 'nextStep2', target: 3 },
+            { id: 'nextStep3', target: 4 }
+        ];
+        
+        nextButtons.forEach(btn => {
+            const element = document.getElementById(btn.id);
+            if (element) {
+                // Remove existing listeners
+                element.replaceWith(element.cloneNode(true));
+                const newElement = document.getElementById(btn.id);
+                
+                newElement.addEventListener('click', function(e) {
+                    console.log(`${btn.id} clicked, going to step ${btn.target}`);
+                    e.preventDefault();
+                    window.goToStep(btn.target);
+                });
+                console.log('Attached listener to', btn.id);
+            } else {
+                console.log('Button not found:', btn.id);
+            }
+        });
+        
+        console.log('Emergency navigation fixes applied successfully');
+        
+        // Test the navigation
+        console.log('Testing navigation...');
+        console.log('goToStep function available:', typeof window.goToStep === 'function');
+        
+    }, 2000); // Wait 2 seconds for everything to load
+});
+</script>

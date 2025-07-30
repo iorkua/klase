@@ -2,6 +2,131 @@
     // Initialize Lucide icons
     lucide.createIcons();
 
+    // Global function to navigate to specific step
+    function goToStep(stepNumber) {
+        console.log('Navigating to step:', stepNumber);
+        
+        // Get current active step
+        const currentActiveStep = document.querySelector('.form-section.active');
+        let currentStepNumber = 1;
+        if (currentActiveStep) {
+            const stepId = currentActiveStep.id;
+            currentStepNumber = parseInt(stepId.replace('step', ''));
+        }
+        
+        // If trying to go to the same step, do nothing
+        if (currentStepNumber === stepNumber) {
+            return;
+        }
+        
+        // If trying to go forward, validate current step first
+        if (stepNumber > currentStepNumber) {
+            let canProceed = true;
+            
+            // Validate based on current step
+            switch (currentStepNumber) {
+                case 1:
+                    canProceed = validateStep1();
+                    if (canProceed) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Step 1 Complete!',
+                            text: 'Basic information has been validated successfully.',
+                            timer: 1500,
+                            showConfirmButton: false,
+                            toast: true,
+                            position: 'top-end'
+                        });
+                    }
+                    break;
+                case 2:
+                    // Step 2 (shared areas) doesn't require validation
+                    canProceed = true;
+                    break;
+                case 3:
+                    canProceed = validateStep3();
+                    if (canProceed) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Documents Validated!',
+                            text: 'All required documents have been uploaded successfully.',
+                            timer: 1500,
+                            showConfirmButton: false,
+                            toast: true,
+                            position: 'top-end'
+                        });
+                    }
+                    break;
+                case 4:
+                    canProceed = validateStep4();
+                    if (canProceed) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Buyers List Complete!',
+                            text: 'Buyer information has been validated successfully.',
+                            timer: 1500,
+                            showConfirmButton: false,
+                            toast: true,
+                            position: 'top-end'
+                        });
+                    }
+                    break;
+            }
+            
+            // If validation failed, don't proceed
+            if (!canProceed) {
+                return;
+            }
+        }
+        
+        // Hide all steps
+        const allSteps = document.querySelectorAll('.form-section');
+        allSteps.forEach(step => step.classList.remove('active'));
+        
+        // Show target step
+        const targetStep = document.getElementById(`step${stepNumber}`);
+        if (targetStep) {
+            targetStep.classList.add('active');
+        }
+        
+        // Update step circles
+        updateStepCircles(stepNumber);
+        
+        // Update step text
+        updateStepText(stepNumber);
+        
+        // If navigating to summary step, update the summary
+        if (stepNumber === 5) {
+            updateApplicationSummary();
+        }
+    }
+
+    // Function to update step circles visual state
+    function updateStepCircles(currentStep) {
+        const stepCircles = document.querySelectorAll('.step-circle');
+        stepCircles.forEach((circle, index) => {
+            const stepNum = index + 1;
+            circle.classList.remove('active', 'inactive');
+            
+            if (stepNum === currentStep) {
+                circle.classList.add('active');
+            } else {
+                circle.classList.add('inactive');
+            }
+        });
+    }
+
+    // Function to update step text
+    function updateStepText(currentStep) {
+        const stepTexts = document.querySelectorAll('[class*="Step"][class*="of"]');
+        stepTexts.forEach(text => {
+            text.textContent = `Step ${currentStep} of 5`;
+        });
+    }
+
+    // Make goToStep globally accessible
+    window.goToStep = goToStep;
+
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM loaded - initializing form handling');
 
@@ -39,8 +164,7 @@
                         position: 'top-end'
                     });
                     
-                    step1.classList.remove('active');
-                    step2.classList.add('active');
+                    goToStep(2);
                 }
             });
         }
@@ -48,8 +172,7 @@
         if (nextStep2) {
             nextStep2.addEventListener('click', function(e) {
                 e.preventDefault();
-                step2.classList.remove('active');
-                step3.classList.add('active');
+                goToStep(3);
             });
         }
 
@@ -70,8 +193,7 @@
                         position: 'top-end'
                     });
                     
-                    step3.classList.remove('active');
-                    step4.classList.add('active');
+                    goToStep(4);
                 }
             });
         }
@@ -94,9 +216,7 @@
                         position: 'top-end'
                     });
                     
-                    step4.classList.remove('active');
-                    step5.classList.add('active');
-                    updateApplicationSummary(); // Make sure summary is updated
+                    goToStep(5);
                 }
             });
         }
@@ -104,32 +224,28 @@
         if (backStep2) {
             backStep2.addEventListener('click', function(e) {
                 e.preventDefault();
-                step2.classList.remove('active');
-                step1.classList.add('active');
+                goToStep(1);
             });
         }
 
         if (backStep3) {
             backStep3.addEventListener('click', function(e) {
                 e.preventDefault();
-                step3.classList.remove('active');
-                step2.classList.add('active');
+                goToStep(2);
             });
         }
 
         if (backStep4) {
             backStep4.addEventListener('click', function(e) {
                 e.preventDefault();
-                step4.classList.remove('active');
-                step3.classList.add('active');
+                goToStep(3);
             });
         }
 
         if (backStep5) {
             backStep5.addEventListener('click', function(e) {
                 e.preventDefault();
-                step5.classList.remove('active');
-                step4.classList.add('active');
+                goToStep(4);
             });
         }
 

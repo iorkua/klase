@@ -21,16 +21,16 @@
 
     <div class="flex items-center mb-8">
       <div class="flex items-center mr-4">
-        <div class="step-circle inactive-tab">1</div>
+        <div class="step-circle inactive-tab cursor-pointer" onclick="goToStep(1)">1</div>
       </div>
       <div class="flex items-center mr-4">
-        <div class="step-circle active-tab">2</div>
+        <div class="step-circle active-tab cursor-pointer" onclick="goToStep(2)">2</div>
       </div>
       <div class="flex items-center mr-4">
-        <div class="step-circle inactive-tab">3</div>
+        <div class="step-circle inactive-tab cursor-pointer" onclick="goToStep(3)">3</div>
       </div> 
        <div class="flex items-center mr-4">
-        <div class="step-circle inactive-tab">4</div>
+        <div class="step-circle inactive-tab cursor-pointer" onclick="goToStep(4)">4</div>
       </div>
       <div class="ml-4">Step 2</div>
     </div>
