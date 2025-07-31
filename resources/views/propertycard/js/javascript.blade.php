@@ -412,18 +412,6 @@
                 setTimeout(() => {
                     console.log('Initializing manual file number component for property form...');
                     
-                    // Force initialize the manual file number component
-                    if (window.initManualFileno) {
-                        try {
-                            window.initManualFileno();
-                            console.log('Manual fileno component initialized successfully');
-                        } catch (error) {
-                            console.error('Error initializing manual fileno component:', error);
-                        }
-                    } else {
-                        console.warn('initManualFileno function not found');
-                    }
-                    
                     // Setup form validation when dialog opens
                     setupFormValidation('property-record-form', 'property-submit-btn');
                 }, 300);

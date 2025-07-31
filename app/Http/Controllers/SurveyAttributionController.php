@@ -250,17 +250,15 @@ class  SurveyAttributionController extends Controller
             
             // Apply pagination
             $applications = $query->skip($offset)->take($limit)->get();
-                
-            if ($applications && count($applications) > 0) {
-                return response()->json([
-                    'success' => true,
-                    'applications' => $applications,
-                    'pagination' => [
-                        'more' => ($offset + $limit) < $total
-                    ],
-                    'message' => 'Applications found'
-                ]);
-            }
+            
+            return response()->json([
+                'success' => true,
+                'applications' => $applications,
+                'pagination' => [
+                    'more' => ($offset + $limit) < $total
+                ],
+                'message' => count($applications) > 0 ? 'Applications found' : 'No applications found'
+            ]);
         } else {
             // Search in subapplications with more detailed information for units
             $query = DB::connection('sqlsrv')->table('subapplications')
@@ -286,8 +284,8 @@ class  SurveyAttributionController extends Controller
             
             // Apply pagination
             $applications = $query->skip($offset)->take($limit)->get();
-                
-            if ($applications && count($applications) > 0) {
+            
+            if (count($applications) > 0) {
                 // For each unit application, fetch the unit_id from st_unit_measurements
                 foreach ($applications as $app) {
                     // Find the unit_id from st_unit_measurements if unit_number exists
@@ -306,16 +304,16 @@ class  SurveyAttributionController extends Controller
                     // Set app_id as the subapplication id for clarity
                     $app->app_id = $app->id;
                 }
-                
-                return response()->json([
-                    'success' => true,
-                    'applications' => $applications,
-                    'pagination' => [
-                        'more' => ($offset + $limit) < $total
-                    ],
-                    'message' => 'Applications found'
-                ]);
             }
+            
+            return response()->json([
+                'success' => true,
+                'applications' => $applications,
+                'pagination' => [
+                    'more' => ($offset + $limit) < $total
+                ],
+                'message' => count($applications) > 0 ? 'Applications found' : 'No applications found'
+            ]);
         }
         
         return response()->json([

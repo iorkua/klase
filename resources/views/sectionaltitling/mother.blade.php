@@ -218,33 +218,26 @@
                                     <td class="table-cell">
                                         @if($PrimaryApplication->land_use)
                                             @php
-                                                $landUseIcon = '';
                                                 $landUseBadgeClass = '';
                                                 switch(strtolower($PrimaryApplication->land_use)) {
                                                     case 'residential':
-                                                        $landUseIcon = 'home';
                                                         $landUseBadgeClass = 'bg-blue-100 text-blue-800 border-blue-200';
                                                         break;
                                                     case 'commercial':
-                                                        $landUseIcon = 'briefcase';
                                                         $landUseBadgeClass = 'bg-green-100 text-green-800 border-green-200';
                                                         break;
                                                     case 'industrial':
-                                                        $landUseIcon = 'factory';
                                                         $landUseBadgeClass = 'bg-red-100 text-red-800 border-red-200';
                                                         break;
                                                     default:
-                                                        $landUseIcon = 'map-pin';
                                                         $landUseBadgeClass = 'bg-gray-100 text-gray-800 border-gray-200';
                                                 }
                                             @endphp
                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ $landUseBadgeClass }}">
-                                                <i data-lucide="{{ $landUseIcon }}" class="w-3 h-3 mr-1"></i>
                                                 {{ $PrimaryApplication->land_use }}
                                             </span>
                                         @else
                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-gray-100 text-gray-800 border-gray-200">
-                                                <i data-lucide="map-pin" class="w-3 h-3 mr-1"></i>
                                                 N/A
                                             </span>
                                         @endif

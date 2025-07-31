@@ -234,8 +234,8 @@ class  SurveyCadastralAttributionController extends Controller
         if ($type === 'primary') {
             // Search in mother_applications
             $query = DB::connection('sqlsrv')->table('mother_applications')
-                ->select('id', 'applicant_title', 'first_name', 'surname', 'fileno', 
-                         'corporate_name', 'multiple_owners_names', 'land_use', 'applicant_type');
+            ->select('id', 'applicant_title', 'first_name', 'surname', 'fileno', 
+            'corporate_name', 'multiple_owners_names', 'land_use', 'applicant_type');
             
             // Apply search filter or get initial records
             if (!empty($fileNo)) {
@@ -250,28 +250,26 @@ class  SurveyCadastralAttributionController extends Controller
             
             // Apply pagination
             $applications = $query->skip($offset)->take($limit)->get();
-                
-            if ($applications && count($applications) > 0) {
-                return response()->json([
-                    'success' => true,
-                    'applications' => $applications,
-                    'pagination' => [
-                        'more' => ($offset + $limit) < $total
-                    ],
-                    'message' => 'Applications found'
-                ]);
-            }
+            
+            return response()->json([
+                'success' => true,
+                'applications' => $applications,
+                'pagination' => [
+                    'more' => ($offset + $limit) < $total
+                ],
+                'message' => count($applications) > 0 ? 'Applications found' : 'No applications found'
+            ]);
         } else {
             // Search in subapplications with more detailed information for units
             $query = DB::connection('sqlsrv')->table('subapplications')
-                ->select('subapplications.id', 'subapplications.applicant_title', 'subapplications.first_name', 
-                         'subapplications.surname', 'subapplications.fileno', 'subapplications.corporate_name', 
-                         'subapplications.multiple_owners_names', 'subapplications.land_use', 
-                         'subapplications.main_application_id', 'subapplications.applicant_type',
-                         'mother_applications.fileno as primary_fileno', 
-                         'subapplications.scheme_no', 'subapplications.floor_number', 'subapplications.block_number', 
-                         'subapplications.unit_number')
-                ->leftJoin('mother_applications', 'subapplications.main_application_id', '=', 'mother_applications.id');
+            ->select('subapplications.id', 'subapplications.applicant_title', 'subapplications.first_name', 
+            'subapplications.surname', 'subapplications.fileno', 'subapplications.corporate_name', 
+            'subapplications.multiple_owners_names', 'subapplications.land_use', 
+            'subapplications.main_application_id', 'subapplications.applicant_type',
+            'mother_applications.fileno as primary_fileno', 
+            'subapplications.scheme_no', 'subapplications.floor_number', 'subapplications.block_number', 
+            'subapplications.unit_number')
+            ->leftJoin('mother_applications', 'subapplications.main_application_id', '=', 'mother_applications.id');
             
             // Apply search filter or get initial records
             if (!empty($fileNo)) {
@@ -286,17 +284,16 @@ class  SurveyCadastralAttributionController extends Controller
             
             // Apply pagination
             $applications = $query->skip($offset)->take($limit)->get();
-                
-            if ($applications && count($applications) > 0) {
+            
+            if (count($applications) > 0) {
                 // For each unit application, fetch the unit_id from st_unit_measurements
                 foreach ($applications as $app) {
                     // Find the unit_id from st_unit_measurements if unit_number exists
                     if (!empty($app->unit_number)) {
-                        $unitMeasurement = DB::connection('sqlsrv')
-                            ->table('st_unit_measurements')
-                            ->select('id')
-                            ->where('unit_no', $app->unit_number)
-                            ->first();
+                        $unitMeasurement = DB::connection('sqlsrv')->table('st_unit_measurements')
+                        ->select('id')
+                        ->where('unit_no', $app->unit_number)
+                        ->first();
                             
                         $app->unit_id = $unitMeasurement ? $unitMeasurement->id : null;
                     } else {
@@ -306,16 +303,16 @@ class  SurveyCadastralAttributionController extends Controller
                     // Set app_id as the subapplication id for clarity
                     $app->app_id = $app->id;
                 }
-                
-                return response()->json([
-                    'success' => true,
-                    'applications' => $applications,
-                    'pagination' => [
-                        'more' => ($offset + $limit) < $total
-                    ],
-                    'message' => 'Applications found'
-                ]);
             }
+            
+            return response()->json([
+                'success' => true,
+                'applications' => $applications,
+                'pagination' => [
+                    'more' => ($offset + $limit) < $total
+                ],
+                'message' => count($applications) > 0 ? 'Applications found' : 'No applications found'
+            ]);
         }
         
         return response()->json([
@@ -334,7 +331,7 @@ class  SurveyCadastralAttributionController extends Controller
         $limit = 20;
         $offset = ($page - 1) * $limit;
         
-        $query = DB::connection('sqlsrv')->table('surveyCadastral')
+        $query = DB::table('surveyCadastral')
             ->select('ID', 'fileno', 'plot_no', 'block_no', 'Scheme_Plan_No', 'layout_name', 
                     'district_name', 'lga_name', 'approved_plan_no', 'survey_type',
                     // Add Personnel Information fields
@@ -382,7 +379,7 @@ class  SurveyCadastralAttributionController extends Controller
      */
     public function getPrimarySurveyDetails($id)
     {
-        $survey = DB::connection('sqlsrv')->table('surveyCadastral')
+        $survey = DB::table('surveyCadastral')
             ->where('ID', $id)
             ->first();
             
@@ -406,7 +403,7 @@ class  SurveyCadastralAttributionController extends Controller
     {
         $PageTitle = 'Edit Cadastral Record';
         $PageDescription = 'Edit cadastral survey record details';
-        $survey = DB::connection('sqlsrv')->table('surveyCadastral')->where('ID', $id)->first();
+        $survey = DB::table('surveyCadastral')->where('ID', $id)->first();
 
         if (!$survey) {
             abort(404, 'Cadastral record not found');
@@ -426,7 +423,7 @@ class  SurveyCadastralAttributionController extends Controller
     {
         $PageTitle = 'View Cadastral Plan';
         $PageDescription = 'View cadastral plan document';
-        $survey = DB::connection('sqlsrv')->table('surveyCadastral')->where('ID', $id)->first();
+        $survey = DB::table('surveyCadastral')->where('ID', $id)->first();
 
         if (!$survey) {
             abort(404, 'Cadastral record not found');
@@ -445,7 +442,7 @@ class  SurveyCadastralAttributionController extends Controller
     public function destroy($id)
     {
         try {
-            $survey = DB::connection('sqlsrv')->table('surveyCadastral')->where('ID', $id)->first();
+            $survey = DB::table('surveyCadastral')->where('ID', $id)->first();
             
             if (!$survey) {
                 return redirect()->route('survey_cadastral.index')->with('error', 'Cadastral record not found.');
@@ -457,7 +454,7 @@ class  SurveyCadastralAttributionController extends Controller
             }
 
             // Delete the cadastral survey record
-            $deleted = DB::connection('sqlsrv')->table('surveyCadastral')->where('ID', $id)->delete();
+            $deleted = DB::table('surveyCadastral')->where('ID', $id)->delete();
 
             if ($deleted) {
                 return redirect()->route('survey_cadastral.index')->with('success', 'Cadastral record deleted successfully.');

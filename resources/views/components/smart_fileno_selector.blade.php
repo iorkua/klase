@@ -17,6 +17,27 @@
     <div id="dropdown-mode" class="fileno-mode">
         <select id="fileno-select" class="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option value="">-- Select File Number --</option>
+            @php
+                $ctApplications = DB::connection('sqlsrv')
+                    ->select("SELECT [fileno], [applicant_title], [first_name], [surname], [corporate_name], [rc_number], [multiple_owners_names] FROM [klas].[dbo].[mother_applications]");
+            @endphp
+            @foreach($ctApplications as $application)
+                <option value="{{ $application->fileno }}" 
+                        data-fileno="{{ $application->fileno }}"
+                        data-applicant-title="{{ $application->applicant_title ?? '' }}"
+                        data-first-name="{{ $application->first_name ?? '' }}"
+                        data-surname="{{ $application->surname ?? '' }}"
+                        data-corporate-name="{{ $application->corporate_name ?? '' }}"
+                        data-rc-number="{{ $application->rc_number ?? '' }}"
+                        data-multiple-owners="{{ $application->multiple_owners_names ?? '' }}">
+                    {{ $application->fileno }} - 
+                    @if($application->corporate_name)
+                        {{ $application->corporate_name }}
+                    @else
+                        {{ $application->applicant_title ?? '' }} {{ $application->first_name ?? '' }} {{ $application->surname ?? '' }}
+                    @endif
+                </option>
+            @endforeach
         </select>
         <p class="text-xs text-gray-500 mt-1">Can't find your file number? <button type="button" class="text-blue-600 hover:underline" onclick="toggleFilenoMode()">Enter it manually</button></p>
         
@@ -56,7 +77,7 @@
     </div>
     
     <!-- Manual Entry Mode -->
-    <div id="manual-mode" class="fileno-mode hidden">
+    <div id="manual-mode" class="fileno-mode hidden" style="display: none;">
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 w-full">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center">
@@ -96,7 +117,22 @@
 }
 
 .smart-fileno-selector .fileno-mode.hidden {
-    display: none;
+    display: none !important;
+}
+
+/* Ensure manual mode is completely hidden by default */
+.smart-fileno-selector #manual-mode {
+    display: none !important;
+}
+
+.smart-fileno-selector #manual-mode:not(.hidden) {
+    display: block !important;
+}
+
+/* Override any conflicting styles from the included component */
+.smart-fileno-selector #manual-mode.hidden,
+.smart-fileno-selector #manual-mode.hidden * {
+    display: none !important;
 }
 </style>
 
@@ -117,12 +153,20 @@ function initializeSmartFilenoSelector() {
     const filenoSelect = document.getElementById('fileno-select');
     const filenoInput = document.getElementById('fileno'); // Main fileno hidden input
     
+    // Ensure manual mode is hidden on initialization
+    if (manualMode) {
+        manualMode.style.display = 'none';
+        manualMode.classList.add('hidden');
+    }
+    
     // Toggle between dropdown and manual modes
     function toggleFilenoMode() {
         if (dropdownMode.classList.contains('hidden')) {
             // Switch to dropdown mode
             dropdownMode.classList.remove('hidden');
+            dropdownMode.style.display = 'block';
             manualMode.classList.add('hidden');
+            manualMode.style.display = 'none';
             toggleManualBtn.innerHTML = `
                 <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -132,7 +176,9 @@ function initializeSmartFilenoSelector() {
         } else {
             // Switch to manual mode
             dropdownMode.classList.add('hidden');
+            dropdownMode.style.display = 'none';
             manualMode.classList.remove('hidden');
+            manualMode.style.display = 'block';
             toggleManualBtn.innerHTML = `
                 <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -146,79 +192,95 @@ function initializeSmartFilenoSelector() {
     }
     
     // Event listeners
-    toggleManualBtn.addEventListener('click', toggleFilenoMode);
-    backToDropdownBtn.addEventListener('click', toggleFilenoMode);
+    if (toggleManualBtn) toggleManualBtn.addEventListener('click', toggleFilenoMode);
+    if (backToDropdownBtn) backToDropdownBtn.addEventListener('click', toggleFilenoMode);
     
     // Confirm manual entry
-    confirmManualBtn.addEventListener('click', function() {
-        const activeTab = document.getElementById('activeFileTab').value;
-        let fileNumber = '';
-        
-        // Get the file number based on active tab
-        if (activeTab === 'mlsFNo') {
-            fileNumber = document.getElementById('mlsFNo').value;
-        } else if (activeTab === 'kangisFileNo') {
-            fileNumber = document.getElementById('kangisFileNo').value;
-        } else if (activeTab === 'NewKANGISFileno') {
-            fileNumber = document.getElementById('NewKANGISFileno').value;
-        }
-        
-        if (fileNumber.trim()) {
-            // Set the main fileno field
-            filenoInput.value = fileNumber;
+    if (confirmManualBtn) {
+        confirmManualBtn.addEventListener('click', function() {
+            const activeTabEl = document.getElementById('activeFileTab');
+            if (!activeTabEl) return;
             
-            // Create a mock application object for manual entry
-            const manualApplication = {
-                id: 'manual_' + Date.now(),
-                fileno: fileNumber,
-                applicant_type: 'manual',
-                first_name: 'Manual',
-                surname: 'Entry',
-                isManual: true
-            };
+            const activeTab = activeTabEl.value;
+            let fileNumber = '';
             
-            // Show selected file number
-            selectedText.textContent = fileNumber;
-            selectedDisplay.classList.remove('hidden');
+            // Get the file number based on active tab
+            if (activeTab === 'mlsFNo') {
+                const mlsEl = document.getElementById('mlsFNo');
+                fileNumber = mlsEl ? mlsEl.value : '';
+            } else if (activeTab === 'kangisFileNo') {
+                const kangisEl = document.getElementById('kangisFileNo');
+                fileNumber = kangisEl ? kangisEl.value : '';
+            } else if (activeTab === 'NewKANGISFileno') {
+                const newKangisEl = document.getElementById('NewKANGISFileno');
+                fileNumber = newKangisEl ? newKangisEl.value : '';
+            }
             
-            // Switch back to dropdown mode
-            toggleFilenoMode();
-            
-            // Trigger the same logic as dropdown selection
-            handleFilenoSelection(manualApplication);
-            
-            // Show success message
-            Swal.fire({
-                title: 'File Number Set',
-                text: `File number "${fileNumber}" has been set. You can now enter survey details.`,
-                icon: 'success',
-                confirmButtonText: 'Continue'
-            });
-        } else {
-            Swal.fire({
-                title: 'Invalid File Number',
-                text: 'Please enter a valid file number.',
-                icon: 'error',
-                confirmButtonText: 'OK'
-            });
-        }
-    });
+            if (fileNumber.trim()) {
+                // Set the main fileno field
+                if (filenoInput) filenoInput.value = fileNumber;
+                
+                // Create a mock application object for manual entry
+                const manualApplication = {
+                    id: 'manual_' + Date.now(),
+                    fileno: fileNumber,
+                    applicant_type: 'manual',
+                    first_name: 'Manual',
+                    surname: 'Entry',
+                    isManual: true
+                };
+                
+                // Show selected file number
+                if (selectedText) selectedText.textContent = fileNumber;
+                if (selectedDisplay) selectedDisplay.classList.remove('hidden');
+                
+                // Switch back to dropdown mode
+                toggleFilenoMode();
+                
+                // Trigger the same logic as dropdown selection
+                handleFilenoSelection(manualApplication);
+                
+                // Show success message
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'File Number Set',
+                        text: `File number "${fileNumber}" has been set. You can now enter GIS data.`,
+                        icon: 'success',
+                        confirmButtonText: 'Continue'
+                    });
+                }
+            } else {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'Invalid File Number',
+                        text: 'Please enter a valid file number.',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            }
+        });
+    }
     
     // Clear selection
-    clearSelectionBtn.addEventListener('click', function() {
-        selectedDisplay.classList.add('hidden');
-        selectedText.textContent = '';
-        filenoInput.value = ''; // Clear main fileno field
-        
-        // Clear form and disable inputs
-        clearFormAndDisableInputs();
-        
-        // Clear dropdown selection
-        $(filenoSelect).val(null).trigger('change');
-        
-        // Reset manual entry form
-        resetManualEntryForm();
-    });
+    if (clearSelectionBtn) {
+        clearSelectionBtn.addEventListener('click', function() {
+            if (selectedDisplay) selectedDisplay.classList.add('hidden');
+            if (selectedText) selectedText.textContent = '';
+            if (filenoInput) filenoInput.value = ''; // Clear main fileno field
+            
+            // Clear form and disable inputs
+            clearFormAndDisableInputs();
+            
+            // Clear dropdown selection
+            if (typeof $ !== 'undefined' && filenoSelect) {
+                $(filenoSelect).val(null).trigger('change');
+            }
+            
+            // Reset manual entry form
+            resetManualEntryForm();
+        });
+    }
     
     // Function to handle file number selection (both dropdown and manual)
     function handleFilenoSelection(application) {
@@ -226,14 +288,17 @@ function initializeSmartFilenoSelector() {
         window.selectedApplication = application;
         
         // Set the main fileno field
-        filenoInput.value = application.fileno;
+        if (filenoInput) filenoInput.value = application.fileno;
         
         // Populate hidden fields based on survey type
         const isSecondary = '{{ request()->query('is') }}' === 'secondary';
         
+        const appIdEl = document.getElementById('application_id');
+        const subAppIdEl = document.getElementById('sub_application_id');
+        
         if (isSecondary) {
-            document.getElementById('sub_application_id').value = application.id;
-            document.getElementById('application_id').value = '';
+            if (subAppIdEl) subAppIdEl.value = application.id;
+            if (appIdEl) appIdEl.value = '';
             application.isSecondary = true;
             
             // Auto-populate unit information fields if available
@@ -241,8 +306,8 @@ function initializeSmartFilenoSelector() {
                 populateUnitInformation(application);
             }
         } else {
-            document.getElementById('application_id').value = application.id;
-            document.getElementById('sub_application_id').value = '';
+            if (appIdEl) appIdEl.value = application.id;
+            if (subAppIdEl) subAppIdEl.value = '';
             application.isSecondary = false;
         }
         
@@ -257,17 +322,37 @@ function initializeSmartFilenoSelector() {
     
     // Function to enable form inputs
     function enableFormInputs() {
-        const formInputs = document.querySelectorAll('#update-survey-form input:not([type="hidden"]):not([type="submit"])');
+        // Try different form selectors since we're in GIS record form
+        const formSelectors = [
+            '#update-survey-form input:not([type="hidden"]):not([type="submit"])',
+            'form input:not([type="hidden"]):not([type="submit"])',
+            'input:not([type="hidden"]):not([type="submit"])'
+        ];
+        
+        let formInputs = [];
+        for (const selector of formSelectors) {
+            formInputs = document.querySelectorAll(selector);
+            if (formInputs.length > 0) break;
+        }
+        
         const controlledFields = [
             'Imperial_Sheet',
             'Imperial_Sheet_No',
             'Metric_Sheet_No',
             'Metric_Sheet_Index',
-            'lga_name'
+            'lga_name',
+            'plotNo',
+            'blockNo',
+            'approvedPlanNo',
+            'tpPlanNo',
+            'layoutName',
+            'districtName'
         ];
         
         formInputs.forEach(input => {
-            input.disabled = false;
+            if (input.id !== 'fileno') { // Don't disable the main fileno input
+                input.disabled = false;
+            }
         });
         
         controlledFields.forEach(id => {
@@ -282,17 +367,37 @@ function initializeSmartFilenoSelector() {
     
     // Function to clear form and disable inputs
     function clearFormAndDisableInputs() {
-        const formInputs = document.querySelectorAll('#update-survey-form input:not([type="hidden"]):not([type="submit"])');
+        // Try different form selectors
+        const formSelectors = [
+            '#update-survey-form input:not([type="hidden"]):not([type="submit"])',
+            'form input:not([type="hidden"]):not([type="submit"])',
+            'input:not([type="hidden"]):not([type="submit"])'
+        ];
+        
+        let formInputs = [];
+        for (const selector of formSelectors) {
+            formInputs = document.querySelectorAll(selector);
+            if (formInputs.length > 0) break;
+        }
+        
         const controlledFields = [
             'Imperial_Sheet',
             'Imperial_Sheet_No',
             'Metric_Sheet_No',
             'Metric_Sheet_Index',
-            'lga_name'
+            'lga_name',
+            'plotNo',
+            'blockNo',
+            'approvedPlanNo',
+            'tpPlanNo',
+            'layoutName',
+            'districtName'
         ];
         
         formInputs.forEach(input => {
-            input.disabled = true;
+            if (input.id !== 'fileno') { // Don't disable the main fileno input
+                input.disabled = true;
+            }
         });
         
         controlledFields.forEach(id => {
@@ -309,8 +414,10 @@ function initializeSmartFilenoSelector() {
         if (applicationInfo) applicationInfo.classList.add('hidden');
         
         // Clear hidden fields
-        document.getElementById('application_id').value = '';
-        document.getElementById('sub_application_id').value = '';
+        const appIdEl = document.getElementById('application_id');
+        const subAppIdEl = document.getElementById('sub_application_id');
+        if (appIdEl) appIdEl.value = '';
+        if (subAppIdEl) subAppIdEl.value = '';
         
         window.selectedApplication = null;
     }
@@ -335,31 +442,25 @@ function initializeSmartFilenoSelector() {
     // Function to reset manual entry form
     function resetManualEntryForm() {
         // Reset all file number inputs
-        document.getElementById('mlsFNo').value = '';
-        document.getElementById('kangisFileNo').value = '';
-        document.getElementById('NewKANGISFileno').value = '';
+        const resetFields = [
+            'mlsFNo', 'kangisFileNo', 'NewKANGISFileno',
+            'mlsPreviewFileNumber', 'kangisPreviewFileNumber', 'newKangisPreviewFileNumber',
+            'mlsFileNumber', 'kangisFileNumber', 'newKangisFileNumber',
+            'mlsFileNoPrefix', 'kangisFileNoPrefix', 'newKangisFileNoPrefix'
+        ];
         
-        // Reset preview fields
-        document.getElementById('mlsPreviewFileNumber').value = '';
-        document.getElementById('kangisPreviewFileNumber').value = '';
-        document.getElementById('newKangisPreviewFileNumber').value = '';
-        
-        // Reset input fields
-        document.getElementById('mlsFileNumber').value = '';
-        document.getElementById('kangisFileNumber').value = '';
-        document.getElementById('newKangisFileNumber').value = '';
-        
-        // Reset dropdowns
-        document.getElementById('mlsFileNoPrefix').value = '';
-        document.getElementById('kangisFileNoPrefix').value = '';
-        document.getElementById('newKangisFileNoPrefix').value = '';
+        resetFields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
         
         // Reset to first tab
-        document.getElementById('activeFileTab').value = 'mlsFNo';
+        const activeTabEl = document.getElementById('activeFileTab');
+        if (activeTabEl) activeTabEl.value = 'mlsFNo';
         
         // Trigger tab switch to first tab
         const firstTabButton = document.querySelector('.tablinks');
-        if (firstTabButton) {
+        if (firstTabButton && typeof openFileTab === 'function') {
             const fakeEvent = { currentTarget: firstTabButton };
             openFileTab(fakeEvent, 'mlsFNoTab');
         }
@@ -371,11 +472,11 @@ function initializeSmartFilenoSelector() {
     // Handle dropdown selection from Select2
     window.handleDropdownSelection = function(application) {
         // Set the main fileno field
-        filenoInput.value = application.fileno;
+        if (filenoInput) filenoInput.value = application.fileno;
         
         // Show selected file number
-        selectedText.textContent = application.fileno;
-        selectedDisplay.classList.remove('hidden');
+        if (selectedText) selectedText.textContent = application.fileno;
+        if (selectedDisplay) selectedDisplay.classList.remove('hidden');
         
         // Handle the selection
         handleFilenoSelection(application);

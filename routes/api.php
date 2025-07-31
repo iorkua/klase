@@ -75,3 +75,34 @@ Route::get('/sub-final-bill/show/{id}', [App\Http\Controllers\SubFinalBillContro
 
 // Route for fetching application details
 Route::get('/application-details/{fileId}/{fileType}', [App\Http\Controllers\ProgrammesController::class, 'getApplicationDetails']);
+
+// Route for searching file numbers for property records
+Route::post('/search-file-numbers', [App\Http\Controllers\PropertyRecordController::class, 'searchFileNumbers']);
+
+// Test route to debug file number search
+Route::get('/test-file-numbers', function() {
+    return response()->json([
+        'success' => true,
+        'message' => 'API endpoint is working',
+        'sample_data' => [
+            [
+                'id' => 'test_1',
+                'fileno' => 'TEST-001',
+                'description' => 'Test File Number 1',
+                'plot_no' => '123',
+                'lga' => 'Test LGA',
+                'location' => 'Test Location',
+                'source' => 'test'
+            ],
+            [
+                'id' => 'test_2', 
+                'fileno' => 'TEST-002',
+                'description' => 'Test File Number 2',
+                'plot_no' => '456',
+                'lga' => 'Test LGA 2',
+                'location' => 'Test Location 2',
+                'source' => 'test'
+            ]
+        ]
+    ]);
+});

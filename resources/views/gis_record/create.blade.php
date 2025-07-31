@@ -26,23 +26,23 @@
         
         <form action="{{ route('gis_record.store') }}" method="POST" enctype="multipart/form-data" class="space-y-8">
             @csrf
+            <input type="hidden" name="application_id" id="application_id" value="">
+            <input type="hidden" name="sub_application_id" id="sub_application_id" value="">
             
             <!-- Include the file summary header -->
             @include('gis_record.file_summary_header')
             
-            <!-- File Information Section -->
-            @if(request()->get('is') == 'secondary')
-                <!-- Unit File Information Section -->
-                @include('gis_record.secondary_fileno')
-                <!-- Unit Form Section -->
-                @include('gis_record.unit_form')
-            @elseif(request()->get('is') == 'primary')
-                <!-- Primary File Information Section -->
-                @include('primaryform.gis_fileno')
-            @else
-                <!-- Default File Information Section -->
-                @include('gis_record.secondary_fileno')
-            @endif
+            <!-- Smart File Number Selection -->
+            <div class="border border-gray-200 rounded-lg p-4 bg-gray-50 mb-4">
+                <div>
+                    <!-- Smart File Number Selection -->
+                    <div>
+                        @include('components.smart_fileno_selector')
+                    </div>
+                </div>
+            </div>
+            
+           
             <!-- Plot Information Section -->
             <input type="hidden" name="gis_type" value="{{ request()->get('is') == 'secondary' ? 'Unit GIS' : 'Primary GIS' }}" class="">
             <div class="bg-gray-50 p-4 rounded-lg">
@@ -475,7 +475,311 @@
 </div>
  @include('gis_record.script')
 
+<!-- Include Select2 CSS and JS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get all form inputs and disable them initially
+    const formInputs = document.querySelectorAll('form input:not([type="hidden"]):not([type="submit"]), form select:not(#fileno-select), form textarea');
+    
+    const filenoSelect = document.getElementById('fileno-select');
+    const saveButton = document.getElementById('saveButton');
+    const filenoInput = document.getElementById('fileno'); // Manual file number input
+    
+    // IDs of dropdowns/fields to control
+    const controlledFields = [
+        'plotNo',
+        'blockNo',
+        'approvedPlanNo',
+        'tpPlanNo',
+        'layoutName',
+        'districtName',
+        'lga_name'
+    ];
+    
+    // Required fields for form validation
+    const requiredFields = [
+        'fileno',
+        'title', // Title is marked as required
+        'plotNo',
+        'blockNo',
+        'currentAllottee'
+    ];
+    
+    let selectedApplication = null;
+    let formUnlocked = false;
+    const isSecondary = '{{ request()->get('is') }}' === 'secondary';
+    
+    // Initially disable save button
+    if (saveButton) saveButton.disabled = true;
+    
+    // Function to enable/disable form inputs
+    function toggleFormInputs(enable) {
+        formInputs.forEach(input => {
+            if (input.id !== 'fileno') { // Don't disable the manual fileno input
+                input.disabled = !enable;
+            }
+        });
+        controlledFields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.disabled = !enable;
+        });
+        formUnlocked = enable;
+        
+        if (enable) {
+            checkFormValidity(); // Check if save button should be enabled
+        } else {
+            if (saveButton) saveButton.disabled = true;
+        }
+    }
+    
+    // Function to check if all required fields are filled
+    function checkFormValidity() {
+        if (!formUnlocked) {
+            if (saveButton) saveButton.disabled = true;
+            return;
+        }
+        
+        let allRequiredFilled = true;
+        
+        requiredFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                if (fieldId === 'title') {
+                    // Special handling for title field
+                    const titleSelect = document.getElementById('title');
+                    const otherTitleInput = document.getElementById('otherTitle');
+                    if (titleSelect && titleSelect.value === '') {
+                        allRequiredFilled = false;
+                    } else if (titleSelect && titleSelect.value === 'other' && otherTitleInput && otherTitleInput.value.trim() === '') {
+                        allRequiredFilled = false;
+                    }
+                } else if (field.value.trim() === '') {
+                    allRequiredFilled = false;
+                }
+            }
+        });
+        
+        if (saveButton) {
+            saveButton.disabled = !allRequiredFilled;
+        }
+    }
+    
+    // Monitor manual file number input
+    if (filenoInput) {
+        filenoInput.addEventListener('input', function() {
+            const value = this.value.trim();
+            if (value.length > 0) {
+                // Enable form when file number is manually entered
+                toggleFormInputs(true);
+            } else {
+                // Disable form when file number is cleared and no dropdown selection
+                if (!selectedApplication) {
+                    toggleFormInputs(false);
+                }
+            }
+        });
+    }
+    
+    // Monitor all form inputs for validation
+    formInputs.forEach(input => {
+        input.addEventListener('input', checkFormValidity);
+        input.addEventListener('change', checkFormValidity);
+    });
+    
+    // Initially disable all form inputs except fileno
+    toggleFormInputs(false);
+
+    // Initialize Select2 if filenoSelect exists
+    if (filenoSelect) {
+        $(filenoSelect).select2({
+            placeholder: "Search for a file number...",
+            allowClear: true,
+            minimumInputLength: 0,
+            ajax: {
+                url: '{{ route('survey_cadastral.search-fileno') }}',
+                dataType: 'json',
+                delay: 250,
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                data: function(params) {
+                    return {
+                        fileno: params.term || '',
+                        type: isSecondary ? 'secondary' : 'primary',
+                        initial: params.term ? false : true
+                    };
+                },
+                processResults: function(data, params) {
+                    let results = [];
+                    
+                    if (data.success && data.application) {
+                        results.push({
+                            id: data.application.id,
+                            text: data.application.fileno,
+                            application: data.application
+                        });
+                    } else if (data.success && data.applications) {
+                        results = data.applications.map(app => {
+                            return {
+                                id: app.id,
+                                text: app.fileno + (app.applicant_type === 'individual' ? 
+                                       ' - ' + app.first_name + ' ' + app.surname : 
+                                       app.applicant_type === 'corporate' ? 
+                                       ' - ' + app.corporate_name : ''),
+                                application: app
+                            };
+                        });
+                    }
+                    
+                    return {
+                        results: results,
+                        pagination: {
+                            more: data.pagination && data.pagination.more
+                        }
+                    };
+                },
+                cache: true
+            }
+        });
+
+        // Trigger initial data load when dropdown is opened for the first time
+        $(filenoSelect).on('select2:open', function() {
+            if (!$(filenoSelect).data('initial-load-done')) {
+                const $search = $('.select2-search__field');
+                $search.val('');
+                $search.trigger('input');
+                $(filenoSelect).data('initial-load-done', true);
+            }
+        });
+
+        // Handle select change
+        $(filenoSelect).on('select2:select', function(e) {
+            const data = e.params.data;
+            selectedApplication = data.application;
+            
+            if (selectedApplication) {
+                // Use the handleDropdownSelection function from smart fileno selector
+                if (typeof window.handleDropdownSelection === 'function') {
+                    window.handleDropdownSelection(selectedApplication);
+                }
+                
+                // Populate hidden fields based on type
+                if (isSecondary) {
+                    document.getElementById('sub_application_id').value = selectedApplication.id;
+                    document.getElementById('application_id').value = '';
+                    selectedApplication.isSecondary = true;
+                } else {
+                    document.getElementById('application_id').value = selectedApplication.id;
+                    document.getElementById('sub_application_id').value = '';
+                    selectedApplication.isSecondary = false;
+                }
+                
+                // Enable form
+                toggleFormInputs(true);
+                
+                // Auto-populate form fields from application data
+                populateFormFields(selectedApplication);
+                
+                // Show success message
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'Application Selected',
+                        text: 'The form has been unlocked. You can now enter GIS data.',
+                        icon: 'success',
+                        confirmButtonText: 'Continue'
+                    });
+                }
+            }
+        });
+
+        // Handle clear event
+        $(filenoSelect).on('select2:clear', function() {
+            // Disable form
+            toggleFormInputs(false);
+            
+            // Clear hidden fields
+            document.getElementById('application_id').value = '';
+            document.getElementById('sub_application_id').value = '';
+            
+            selectedApplication = null;
+        });
+    }
+    
+    // Function to populate form fields from application data
+    function populateFormFields(application) {
+        // Populate plot information if available
+        if (application.plot_no) {
+            const plotNoInput = document.getElementById('plotNo');
+            if (plotNoInput) plotNoInput.value = application.plot_no;
+        }
+        
+        if (application.block_no) {
+            const blockNoInput = document.getElementById('blockNo');
+            if (blockNoInput) blockNoInput.value = application.block_no;
+        }
+        
+        if (application.approved_plan_no) {
+            const approvedPlanNoInput = document.getElementById('approvedPlanNo');
+            if (approvedPlanNoInput) approvedPlanNoInput.value = application.approved_plan_no;
+        }
+        
+        if (application.tp_plan_no) {
+            const tpPlanNoInput = document.getElementById('tpPlanNo');
+            if (tpPlanNoInput) tpPlanNoInput.value = application.tp_plan_no;
+        }
+        
+        // Populate location information
+        if (application.layout_name) {
+            const layoutNameInput = document.getElementById('layoutName');
+            if (layoutNameInput) layoutNameInput.value = application.layout_name;
+        }
+        
+        if (application.district_name) {
+            const districtNameInput = document.getElementById('districtName');
+            if (districtNameInput) districtNameInput.value = application.district_name;
+        }
+        
+        if (application.lga_name) {
+            const lgaNameInput = document.getElementById('lga_name');
+            if (lgaNameInput) lgaNameInput.value = application.lga_name;
+        }
+        
+        // Populate land use if available
+        if (application.land_use) {
+            const landUseInput = document.getElementById('landuse');
+            if (landUseInput) landUseInput.value = application.land_use;
+        }
+        
+        // Populate applicant information
+        if (application.applicant_type === 'individual') {
+            const currentAllotteeInput = document.getElementById('currentAllottee');
+            if (currentAllotteeInput) {
+                currentAllotteeInput.value = `${application.applicant_title || ''} ${application.first_name || ''} ${application.surname || ''}`.trim();
+            }
+        } else if (application.applicant_type === 'corporate') {
+            const currentAllotteeInput = document.getElementById('currentAllottee');
+            if (currentAllotteeInput) {
+                currentAllotteeInput.value = application.corporate_name || '';
+            }
+        }
+        
+        // Populate contact information if available
+        if (application.phone_number) {
+            const phoneNoInput = document.getElementById('phoneNo');
+            if (phoneNoInput) phoneNoInput.value = application.phone_number;
+        }
+        
+        if (application.email) {
+            const emailInput = document.getElementById('emailAddress');
+            if (emailInput) emailInput.value = application.email;
+        }
+    }
+});
+
 // Survey Plan Upload Functions
 function toggleSurveyPlanSection() {
     const section = document.getElementById('surveyPlanSection');
@@ -520,9 +824,7 @@ function handleSurveyPlanUpload(input) {
     // Show preview
     showSurveyPlanPreview(file);
     
-    // Enable save button
-    const saveButton = document.getElementById('saveButton');
-    saveButton.disabled = false;
+    // Don't automatically enable save button here - let form validation handle it
 }
 
 function showSurveyPlanPreview(file) {
@@ -575,11 +877,9 @@ function showSurveyPlanPreview(file) {
 function removeSurveyPlan() {
     const input = document.getElementById('surveyPlan');
     const preview = document.getElementById('surveyPlanPreview');
-    const saveButton = document.getElementById('saveButton');
     
     input.value = '';
     preview.classList.add('hidden');
-    saveButton.disabled = true;
 }
 
 function formatFileSize(bytes) {
