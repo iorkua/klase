@@ -343,4 +343,34 @@ class CofoController  extends Controller
             return back()->with('error', 'An error occurred while fetching certificate data');
         }
     }
+
+    // Print CofO in new tab
+    public function PrintCofO($id)
+    {
+        $PageTitle = 'Certificate of Occupancy - Print';
+        $PageDescription = 'Sectional Title Certificate for Printing';
+
+        try {
+            // Check if a CofO record exists for this application
+            $cofo = DB::connection('sqlsrv')->table('st_cofo')
+                ->where('sub_application_id', $id)
+                ->where('is_active', 1)
+                ->first();
+                
+            // If CofO not found, redirect to generate
+            if (!$cofo) {
+                return back()->with('error', 'Certificate of Occupancy not found. Please generate it first.');
+            }
+
+            return view('programmes.cofo_print', compact(
+                'cofo',
+                'PageTitle',
+                'PageDescription'
+            ));
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            \Log::error('Error in PrintCofO: ' . $e->getMessage());
+            return back()->with('error', 'An error occurred while preparing certificate for printing');
+        }
+    }
 }

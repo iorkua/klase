@@ -1,6 +1,8 @@
- <div class="space-y-2">
+ <div class="space-y-2" x-data="{ streetName: '', showOther: false, customStreet: '' }">
     <label for="streetName" class="text-xs text-gray-600">Street Name</label>
-    <select id="streetName" name="streetName" x-model="street" class="form-input text-sm property-input" onchange="toggleotherStreetName()" >
+    <select id="streetName" x-model="streetName" class="form-input text-sm property-input" 
+            @change="showOther = streetName === 'other'; if(!showOther) customStreet = ''"
+            :name="showOther ? '' : 'streetName'">
         <option value="" selected>Select Street Name</option>
        
         <option value="10TH ST">10TH ST</option>
@@ -895,17 +897,18 @@
         <option value="ZOO ROAD">ZOO ROAD</option>
         <option value="ZUBAIRU INUWA LINK">ZUBAIRU INUWA LINK</option>
         <option value="ZUMA ST">ZUMA ST</option>
-        <option value="ZUNGERU ROAD">ZUNGERU ROAD</option>
+        <optio
+        n value="ZUNGERU ROAD">ZUNGERU ROAD</option>
         <option value="other">Other</option>
-            </select>
-            <input 
-                type="text" 
-                id="otherStreetName" 
-                x-show="street === 'other'" 
-                x-model="otherStreetName" 
-                name="otherStreetName" 
-                class="form-input text-sm property-input mt-2" 
-                placeholder="Please specify other street name"
-                x-transition
-            >
-        </div>
+    </select>
+    <input 
+        type="text" 
+        id="otherStreetName" 
+        x-show="showOther" 
+        x-model="customStreet" 
+        name="streetName" 
+        class="form-input text-sm property-input mt-2" 
+        placeholder="Please specify other street name"
+        x-transition
+    >
+</div>

@@ -1,6 +1,13 @@
  
     <style>
-       
+        /* CSS Variables */
+        :root {
+            --primary: #3b82f6;
+            --success: #10b981;
+            --border: #e5e7eb;
+            --muted: #6b7280;
+            --light-bg: #f8fafc;
+        }
         
         /* Clean Cards Design */
         .Cards {
@@ -70,17 +77,29 @@
         }
         
         .TableHeader {
-            background-color: var(--light-bg);
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-bottom: 2px solid var(--primary);
         }
         
         .TableHead {
-            padding: 0.75rem 1rem;
-            font-weight: 600;
-            color: var(--muted);
-            font-size: 0.75rem;
+            padding: 1rem 1rem;
+            font-weight: 700;
+            color: #374151;
+            font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            border-bottom: 1px solid var(--border);
+            border-bottom: none;
+            position: relative;
+        }
+        
+        .TableHead::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary);
         }
         
         .TableRow {
@@ -97,14 +116,22 @@
             display: inline-flex;
             align-items: center;
             border-radius: 9999px;
-            padding: 0.25rem 0.75rem;
+            padding: 0.375rem 0.875rem;
             font-size: 0.75rem;
-            font-weight: 500;
+            font-weight: 600;
+            gap: 0.375rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
         
         .Badge-success {
-            background-color: var(--success);
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
+            border: 1px solid #059669;
+        }
+        
+        .status-icon {
+            width: 12px;
+            height: 12px;
         }
         
         /* Simple Button */
@@ -373,6 +400,9 @@
                                     </td>
                                     <td class="TableCell">
                                         <div class="Badge Badge-success">
+                                            <svg class="status-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="20 6 9 17 4 12"></polyline>
+                                            </svg>
                                             {{ $file['status'] }}
                                         </div>
                                         <div class="progress-container">

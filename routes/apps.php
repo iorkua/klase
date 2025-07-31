@@ -135,6 +135,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/view_rofo/{id}', [RofoController::class, 'viewRofO'])->name('programmes.view_rofo');
 
         Route::get('/view_cofo/{id}', [CofoController::class, 'ViewCofO'])->name('programmes.view_cofo');
+        Route::get('/print_cofo/{id}', [CofoController::class, 'PrintCofO'])->name('programmes.print_cofo');
     });
 
     // Primary Application Final Bill Routes

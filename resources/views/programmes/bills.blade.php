@@ -228,8 +228,11 @@
         }
 
         .status-paid {
-            background-color: #dcfce7;
-            color: #166534;
+            background-color: #22c55e;
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 700;
+            padding: 0.5rem 1rem;
         }
 
         .status-pending {
@@ -238,8 +241,11 @@
         }
 
         .status-overdue {
-            background-color: #fee2e2;
-            color: #991b1b;
+            background-color: #22c55e;
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 700;
+            padding: 0.5rem 1rem;
         }
 
         /* Betterment and Balance Tab Button Styles */

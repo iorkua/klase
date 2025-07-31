@@ -66,10 +66,7 @@
                     <!-- Street Name and District/Neighbourhood -->
                     <div class="grid grid-cols-2 gap-3">
                         @include('components.StreetName2')
-                        <div>
-                            <label for="district" class="text-xs text-gray-600">District/Neighbourhood</label>
-                            <input id="district" name="district" x-model="district" type="text" class="form-input text-sm property-input" placeholder="Enter district or neighbourhood">
-                        </div>
+                        @include('components.District')
                     
                     <div>
                         <label for="lga" class="text-xs text-gray-600">LGA</label>
@@ -363,7 +360,7 @@
 
 </div>
          <div class="space-y-1">
-            <label class="text-sm">Description</label>
+            <label class="text-sm"> </label>
             <textarea id="property-description" name="property_description" rows="4" class="form-input text-sm" readonly x-text="description"></textarea>
             <div class="text-xs text-gray-500 italic">This field is auto-populated based on property details</div>
         </div>
@@ -600,7 +597,6 @@ function propertyRecordForm() {
         get description() {
             let desc = '';
             if (this.house) desc += `House ${this.house}`;
-            if (this.plot) desc += (desc ? ', ' : '') + `Plot ${this.plot}`;
             if (this.street) desc += (desc ? ', ' : '') + this.street;
             if (this.district) desc += (desc ? ', ' : '') + this.district;
             if (this.lga) desc += (desc ? ', ' : '') + `${this.lga} LGA`;
