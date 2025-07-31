@@ -215,27 +215,8 @@
 
     <!-- Indexed Files Tab Content -->
     <div class="tab-content hidden" id="indexed-tab">
-  <div class="card">
-    <div class="p-6">
-      <div class="flex justify-between items-center mb-4">
-        <div>
-          <h2 class="text-xl font-bold">Indexed Files</h2>
-          <p class="text-sm text-gray-500">Files that have been digitally indexed</p>
-        </div>
-        <div class="relative">
-          <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500"></i>
-          <input type="search" placeholder="Search indexed files..." class="input pl-10" id="search-indexed-files">
-        </div>
-      </div>
-
-      <div class="border rounded-md">
-        <div id="indexed-files-list">
-          <!-- Indexed file items will be populated here by JavaScript -->
-        </div>
-      </div>
+        @include('fileindexing.partial.IndexedFilesReport')
     </div>
-  </div>
-</div>
   </div>
 
   <!-- New File Index Dialog -->

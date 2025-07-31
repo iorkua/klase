@@ -60,7 +60,7 @@
                 <div class="tabs">
                     <div class="tabs-list grid w-full md:w-auto grid-cols-2">
                         <button class="tab" role="tab" aria-selected="true" data-tab="upload">Upload Indexed Scanned File</button>
-                        <button class="tab" role="tab" aria-selected="false" data-tab="uploaded-files">Uploaded File</button>
+                        <button class="tab" role="tab" aria-selected="false" data-tab="scanned-files">Scanned Files</button>
                     </div>
 
                     <!-- Upload Tab -->
@@ -178,76 +178,9 @@
                         </div>
                     </div>
 
-                    <!-- Uploaded Files Tab -->
-                    <div class="tab-content mt-6" role="tabpanel" aria-hidden="true" data-tab-content="uploaded-files">
-                        <div class="card">
-                            <div class="p-6 border-b">
-                                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                    <div>
-                                        <h2 class="text-lg font-semibold">Uploaded Files</h2>
-                                        <p class="text-sm text-muted-foreground">Documents uploaded and ready for page
-                                            typing</p>
-                                    </div>
-                                    <div class="flex flex-col md:flex-row items-end md:items-center gap-2">
-                                        <div class="flex items-center gap-2">
-                                            <label for="paper-size-filter"
-                                                class="text-sm font-medium whitespace-nowrap">Filter by Size:</label>
-                                            <select id="paper-size-filter" class="input w-[120px]">
-                                                <option value="All">All Sizes</option>
-                                                <option value="A4">A4</option>
-                                                <option value="A5">A5</option>
-                                                <option value="A3">A3</option>
-                                                <option value="Letter">Letter</option>
-                                                <option value="Legal">Legal</option>
-                                                <option value="Custom">Custom</option>
-                                            </select>
-                                        </div>
-                                        <div class="relative w-full md:w-64">
-                                            <i data-lucide="search"
-                                                class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"></i>
-                                            <input type="search" placeholder="Search files..."
-                                                class="input w-full pl-8">
-                                        </div>
-                                        <button class="btn btn-outline btn-sm whitespace-nowrap" id="toggle-view-btn">
-                                            Folder View
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="p-6">
-                                <!-- Empty state -->
-                                <div id="no-documents" class="rounded-md border p-8 text-center hidden">
-                                    <div
-                                        class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                                        <i data-lucide="file-text" class="h-6 w-6"></i>
-                                    </div>
-                                    <h3 class="mb-2 text-lg font-medium">No uploaded documents yet</h3>
-                                    <p class="mb-4 text-sm text-muted-foreground">Upload documents to see them listed here
-                                    </p>
-                                    <button class="btn btn-primary gap-2" id="go-to-upload-btn">
-                                        <i data-lucide="upload" class="h-4 w-4"></i>
-                                        Go to Upload
-                                    </button>
-                                </div>
-
-                                <!-- List view -->
-                                <div id="list-view" class="rounded-md border divide-y">
-                                    <!-- Batches will be added here dynamically -->
-                                </div>
-
-                                <!-- Folder view -->
-                                <div id="folder-view" class="space-y-6 hidden">
-                                    <!-- Folders will be added here dynamically -->
-                                </div>
-                            </div>
-                            <div id="batch-actions" class="flex justify-between border-t pt-4 p-6 hidden">
-                                <button class="btn btn-outline" id="upload-more-btn-2">Upload More</button>
-                                <a href="{{route('pagetyping.index')}}" class="btn btn-primary gap-2">
-                                    Proceed to Page Typing
-                                    <i data-lucide="arrow-right" class="h-4 w-4"></i>
-                                </a>
-                            </div>
-                        </div>
+                    <!-- Scanned Files Tab -->
+                    <div class="tab-content mt-6" role="tabpanel" aria-hidden="true" data-tab-content="scanned-files">
+                        @include('scanning.scannedfile')
                     </div>
                 </div>
 

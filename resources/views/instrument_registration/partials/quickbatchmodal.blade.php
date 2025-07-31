@@ -86,7 +86,7 @@
                 </tbody>
               </table>
             </div>
-          </div> 
+          </div>  
         </div>
 
         <div class="flex justify-end gap-2 mt-6">

@@ -397,14 +397,14 @@
                           floatval($payment->bill_balance ?? 0) +
                           floatval($payment->Penalty_Fees ?? 0);
 
-                  // Fix: Only show Complete if ALL required fields are present and > 0
+                  // For Unit Applications: Exclude Development Charges and Penalty from completion check
+                  // Payment is complete when core fees are paid (excluding dev_charges and penalty)
                   $mainPaid = (
                     floatval($payment->application_fee ?? 0) > 0 &&
                     floatval($payment->processing_fee ?? 0) > 0 &&
                     floatval($payment->site_plan_fee ?? 0) > 0 &&
                     floatval($payment->recertification_fee ?? 0) > 0 &&
-                    floatval($payment->assignment_fee ?? 0) > 0 &&
-                    floatval($payment->dev_charges ?? 0) > 0
+                    floatval($payment->assignment_fee ?? 0) > 0
                   );
                   $status = $mainPaid ? 'Complete' : ($payment->Payment_Status ?? 'Incomplete');
                   $statusClass = match(strtolower($status)) {

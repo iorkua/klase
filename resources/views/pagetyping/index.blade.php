@@ -112,25 +112,7 @@
 
       <!-- Completed Tab -->
       <div class="tab-content mt-6" role="tabpanel" aria-hidden="true" data-tab-content="completed">
-        <div class="card">
-          <div class="p-6 border-b">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h2 class="text-lg font-semibold">Completed Files</h2>
-                <p class="text-sm text-muted-foreground">Files that have been fully typed</p>
-              </div>
-              <div class="relative w-full md:w-64">
-                <i data-lucide="search" class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"></i>
-                <input type="search" placeholder="Search files..." class="input w-full pl-8">
-              </div>
-            </div>
-          </div>
-          <div class="p-6">
-            <div id="completed-files-list" class="space-y-4">
-              <!-- Completed files will be added here dynamically -->
-            </div>
-          </div>
-        </div>
+        @include('pagetyping.partial.completed_files')
       </div>
 
       <!-- Typing Tab -->
@@ -138,13 +120,8 @@
         <div class="card" id="typing-card">
           <!-- Typing content will be added here dynamically -->
         </div>
-      </div>
-    </div>
-  </div>
-
+      
    
- 
-        </div>
 
         <!-- Footer -->
         @include('admin.footer')

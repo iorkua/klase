@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -44,50 +44,6 @@ class InstrumentRegistrationController extends Controller
         return "STM-{$year}-" . str_pad($sequence, 4, '0', STR_PAD_LEFT);
     }
 
-    /**
-     * Format applicant name properly, handling multiple owners
-     */
-    private function formatApplicantName($record, $prefix = '')
-    {
-        $corporateField = $prefix ? $prefix . '_corporate_name' : 'corporate_name';
-        $multipleOwnersField = $prefix ? $prefix . '_multiple_owners_names' : 'multiple_owners_names';
-        $titleField = $prefix ? $prefix . '_applicant_title' : 'applicant_title';
-        $firstNameField = $prefix ? $prefix . '_first_name' : 'first_name';
-        $middleNameField = $prefix ? $prefix . '_middle_name' : 'middle_name';
-        $surnameField = $prefix ? $prefix . '_surname' : 'surname';
-
-        // Check if it's a corporate entity
-        if (!empty($record->$corporateField)) {
-            return $record->$corporateField;
-        }
-
-        // Check if it has multiple owners
-        if (!empty($record->$multipleOwnersField)) {
-            $multipleOwners = $record->$multipleOwnersField;
-            
-            // If it's a JSON string, try to decode it
-            if (is_string($multipleOwners) && (str_starts_with(trim($multipleOwners), '[') || str_starts_with(trim($multipleOwners), '{'))) {
-                $decoded = json_decode($multipleOwners, true);
-                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) && !empty($decoded)) {
-                    // Return the first name with indication of multiple owners
-                    return $decoded[0] . (count($decoded) > 1 ? ' +' . (count($decoded) - 1) . ' more' : '');
-                }
-            }
-            
-            // If it's not JSON or decoding failed, return "Multiple Owners"
-            return 'Multiple Owners';
-        }
-
-        // Build individual name
-        $nameParts = [];
-        if (!empty($record->$titleField)) $nameParts[] = $record->$titleField;
-        if (!empty($record->$firstNameField)) $nameParts[] = $record->$firstNameField;
-        if (!empty($record->$middleNameField)) $nameParts[] = $record->$middleNameField;
-        if (!empty($record->$surnameField)) $nameParts[] = $record->$surnameField;
-
-        return !empty($nameParts) ? implode(' ', $nameParts) : 'N/A';
-    }
-
     public function InstrumentRegistration()
     {
         $PageTitle = 'Instrument Registration ';
@@ -110,20 +66,8 @@ class InstrumentRegistrationController extends Controller
                     's.id',
                     's.fileno',
                     's.deeds_completion_status',
-                    's.multiple_owners_names as sub_multiple_owners_names',
-                    's.corporate_name as sub_corporate_name',
-                    DB::raw("CASE 
-                        WHEN s.corporate_name IS NOT NULL AND s.corporate_name != '' THEN s.corporate_name
-                        WHEN s.multiple_owners_names IS NOT NULL AND s.multiple_owners_names != '' THEN 'Multiple Owners'
-                        ELSE CONCAT(COALESCE(s.applicant_title,''), ' ', COALESCE(s.first_name,''), ' ', COALESCE(s.middle_name,''), ' ', COALESCE(s.surname,''))
-                    END as sub_applicant"),
-                    'm.multiple_owners_names as mother_multiple_owners_names',
-                    'm.corporate_name as mother_corporate_name',
-                    DB::raw("CASE 
-                        WHEN m.corporate_name IS NOT NULL AND m.corporate_name != '' THEN m.corporate_name
-                        WHEN m.multiple_owners_names IS NOT NULL AND m.multiple_owners_names != '' THEN 'Multiple Owners'
-                        ELSE CONCAT(COALESCE(m.applicant_title,''), ' ', COALESCE(m.first_name,''), ' ', COALESCE(m.middle_name,''), ' ', COALESCE(m.surname,''))
-                    END as mother_applicant"),
+                    DB::raw("CONCAT(COALESCE(s.applicant_title,''), ' ', COALESCE(s.first_name,''), ' ', COALESCE(s.middle_name,''), ' ', COALESCE(s.surname,''), COALESCE(s.corporate_name,''), COALESCE(s.rc_number,''), COALESCE(s.multiple_owners_names,'')) as sub_applicant"),
+                    DB::raw("CONCAT(COALESCE(m.applicant_title,''), ' ', COALESCE(m.first_name,''), ' ', COALESCE(m.middle_name,''), ' ', COALESCE(m.surname,''), COALESCE(m.corporate_name,''), COALESCE(m.rc_number,''), COALESCE(m.multiple_owners_names,'')) as mother_applicant"),
                     'm.property_lga as lga',
                     'm.property_district as district',
                     'm.plot_size as size',
@@ -1084,22 +1028,20 @@ class InstrumentRegistrationController extends Controller
                     $sourceTable = 'instrument_registration';
                 }
             } else {
-                // Only check subapplications if the ID is numeric
+                // Try to find the record in different tables based on numeric ID
                 if (is_numeric($applicationId)) {
                     $sourceRecord = DB::connection('sqlsrv')->table('subapplications')->where('id', $applicationId)->first();
                     if ($sourceRecord) {
                         $sourceTable = 'subapplications';
-                    }
-                }
-                
-                if (!isset($sourceRecord)) {
-                    $sourceRecord = DB::connection('sqlsrv')->table('instrument_registration')->where('id', $applicationId)->first();
-                    if ($sourceRecord) {
-                        $sourceTable = 'instrument_registration';
                     } else {
-                        $sourceRecord = DB::connection('sqlsrv')->table('mother_applications')->where('id', $applicationId)->first();
+                        $sourceRecord = DB::connection('sqlsrv')->table('instrument_registration')->where('id', $applicationId)->first();
                         if ($sourceRecord) {
-                            $sourceTable = 'mother_applications';
+                            $sourceTable = 'instrument_registration';
+                        } else {
+                            $sourceRecord = DB::connection('sqlsrv')->table('mother_applications')->where('id', $applicationId)->first();
+                            if ($sourceRecord) {
+                                $sourceTable = 'mother_applications';
+                            }
                         }
                     }
                 }
@@ -1117,12 +1059,6 @@ class InstrumentRegistrationController extends Controller
             
             // Update status using original ID if it's a composite ID
             $updateId = isset($sourceRecord->original_id) ? $sourceRecord->original_id : $applicationId;
-            
-            // For instrument_registration IDs, we need to extract the numeric part
-            if ($sourceTable === 'instrument_registration' && strpos($updateId, 'instr_reg_') === 0) {
-                $updateId = str_replace('instr_reg_', '', $updateId);
-            }
-            
             $this->updateSourceRecordStatus($updateId, $sourceTable);
             
             // Update instrument completion status for ST Assignment and Sectional Titling
@@ -1245,22 +1181,20 @@ class InstrumentRegistrationController extends Controller
                         $sourceTable = 'instrument_registration';
                     }
                 } else {
-                    // Only check subapplications if the ID is numeric
+                    // Try to find the record in different tables based on numeric ID
                     if (is_numeric($applicationId)) {
                         $sourceRecord = DB::connection('sqlsrv')->table('subapplications')->where('id', $applicationId)->first();
                         if ($sourceRecord) {
                             $sourceTable = 'subapplications';
-                        }
-                    }
-                    
-                    if (!isset($sourceRecord)) {
-                        $sourceRecord = DB::connection('sqlsrv')->table('instrument_registration')->where('id', $applicationId)->first();
-                        if ($sourceRecord) {
-                            $sourceTable = 'instrument_registration';
                         } else {
-                            $sourceRecord = DB::connection('sqlsrv')->table('mother_applications')->where('id', $applicationId)->first();
+                            $sourceRecord = DB::connection('sqlsrv')->table('instrument_registration')->where('id', $applicationId)->first();
                             if ($sourceRecord) {
-                                $sourceTable = 'mother_applications';
+                                $sourceTable = 'instrument_registration';
+                            } else {
+                                $sourceRecord = DB::connection('sqlsrv')->table('mother_applications')->where('id', $applicationId)->first();
+                                if ($sourceRecord) {
+                                    $sourceTable = 'mother_applications';
+                                }
                             }
                         }
                     }
@@ -1272,12 +1206,6 @@ class InstrumentRegistrationController extends Controller
                 }
                 
                 $updateId = isset($sourceRecord->original_id) ? $sourceRecord->original_id : $applicationId;
-                
-                // For instrument_registration IDs, we need to extract the numeric part
-                if ($sourceTable === 'instrument_registration' && strpos($updateId, 'instr_reg_') === 0) {
-                    $updateId = str_replace('instr_reg_', '', $updateId);
-                }
-                
                 $processedRecords[] = ['id' => $updateId, 'table' => $sourceTable];
                 $stmReference = $this->generateSTMReference();
                 
@@ -2070,81 +1998,3 @@ foreach ($approvedMotherApplications as $motherApp) {
                     'created_count' => $registeredCount
                 ]);
             }
-
-        } catch (\Exception $e) {
-            Log::error('Error creating missing ST Fragmentation records', [
-                'exception' => $e->getMessage()
-            ]);
-        }
-    }
-
-    /**
-     * Update the deeds_completion_status JSON field for a specific instrument type
-     */
-    private function updateInstrumentCompletionStatus($subApplicationId, $instrumentType, $status = 'Registered')
-    {
-        try {
-            // Get current completion status
-            $currentRecord = DB::connection('sqlsrv')->table('subapplications')
-                ->where('id', $subApplicationId)
-                ->select('deeds_completion_status')
-                ->first();
-
-            // Initialize or parse existing JSON
-            $completionStatus = [
-                'instruments' => [
-                    [
-                        'name' => 'ST Assignment (Transfer of Title)',
-                        'status' => 'Pending'
-                    ],
-                    [
-                        'name' => 'Sectional Titling CofO',
-                        'status' => 'Pending'
-                    ]
-                ]
-            ];
-
-            if ($currentRecord && !empty($currentRecord->deeds_completion_status)) {
-                $existingStatus = json_decode($currentRecord->deeds_completion_status, true);
-                if ($existingStatus && isset($existingStatus['instruments'])) {
-                    $completionStatus = $existingStatus;
-                }
-            }
-
-            // Update the specific instrument status
-            foreach ($completionStatus['instruments'] as &$instrument) {
-                if ($instrument['name'] === $instrumentType) {
-                    $instrument['status'] = $status;
-                    break;
-                }
-            }
-
-            // Update the database
-            DB::connection('sqlsrv')->table('subapplications')
-                ->where('id', $subApplicationId)
-                ->update([
-                    'deeds_completion_status' => json_encode($completionStatus),
-                    'updated_at' => now(),
-                    'updated_by' => Auth::id()
-                ]);
-
-            Log::info('Updated instrument completion status', [
-                'subapplication_id' => $subApplicationId,
-                'instrument_type' => $instrumentType,
-                'status' => $status,
-                'completion_status' => $completionStatus
-            ]);
-
-            return $completionStatus;
-
-        } catch (\Exception $e) {
-            Log::error('Error updating instrument completion status', [
-                'subapplication_id' => $subApplicationId,
-                'instrument_type' => $instrumentType,
-                'exception' => $e->getMessage()
-            ]);
-            return null;
-        }
-    }
-
-}

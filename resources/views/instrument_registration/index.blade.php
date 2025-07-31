@@ -173,7 +173,7 @@
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable(10)">
                   Plot Number
                   <span class="inline-block align-middle" id="sortIcon-10"></span>
-                </th>
+                </th> 
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable(11)">
                   Plot Size
                   <span class="inline-block align-middle" id="sortIcon-11"></span>
@@ -409,8 +409,40 @@
 </div>
 
 <script>
-  // Pass PHP data to JavaScript
-  const serverCofoData = @json($approvedApplications);
+  // Helper function to format multiple owner names
+  function formatMultipleOwners(ownerString) {
+    if (!ownerString) return 'N/A';
+    
+    // Check if it's a JSON array string
+    if (typeof ownerString === 'string' && ownerString.trim().startsWith('[')) {
+      try {
+        const owners = JSON.parse(ownerString);
+        if (Array.isArray(owners) && owners.length > 0) {
+          // Return first name with count if multiple
+          return owners.length > 1 
+            ? `${owners[0]} +${owners.length - 1} more`
+            : owners[0];
+        }
+      } catch (e) {
+        // If JSON parsing fails, return the original string
+        return ownerString;
+      }
+    }
+    
+    return ownerString;
+  }
+
+  // Pass PHP data to JavaScript and format multiple owners
+  const serverCofoData = @json($approvedApplications).map(item => {
+    // Format Grantor and Grantee if they contain JSON arrays
+    if (item.Grantor) {
+      item.Grantor = formatMultipleOwners(item.Grantor);
+    }
+    if (item.Grantee) {
+      item.Grantee = formatMultipleOwners(item.Grantee);
+    }
+    return item;
+  });
   console.log("Server data loaded:", serverCofoData.length, "records");
   
   // Add error tracking
@@ -768,3 +800,92 @@ function toggleSelectAll(checkbox) {
 </script>
 
 @endsection
+<!-- Enhanced Scrollbar Functionality -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tableContainer = document.getElementById('tableContainer');
+    const tableWrapper = document.getElementById('tableWrapper');
+    const scrollProgress = document.getElementById('scrollProgress');
+    const scrollHint = document.getElementById('scrollHint');
+    
+    if (!tableContainer || !tableWrapper || !scrollProgress || !scrollHint) {
+        console.warn('Scrollbar elements not found');
+        return;
+    }
+    
+    // Function to update scroll progress
+    function updateScrollProgress() {
+        const scrollLeft = tableContainer.scrollLeft;
+        const scrollWidth = tableContainer.scrollWidth;
+        const clientWidth = tableContainer.clientWidth;
+        const maxScroll = scrollWidth - clientWidth;
+        
+        if (maxScroll > 0) {
+            const progress = (scrollLeft / maxScroll) * 100;
+            scrollProgress.style.width = progress + '%';
+            
+            // Show/hide scroll hint based on scroll position
+            if (scrollLeft === 0 && maxScroll > 50) {
+                scrollHint.style.opacity = '0.7';
+            } else {
+                scrollHint.style.opacity = '0';
+            }
+        } else {
+            scrollProgress.style.width = '100%';
+            scrollHint.style.opacity = '0';
+        }
+    }
+    
+    // Function to check if table is scrollable
+    function checkScrollable() {
+        const isScrollable = tableContainer.scrollWidth > tableContainer.clientWidth;
+        
+        if (isScrollable) {
+            tableWrapper.classList.add('table-scrollable', 'has-overflow');
+            tableWrapper.classList.remove('table-not-scrollable');
+        } else {
+            tableWrapper.classList.add('table-not-scrollable');
+            tableWrapper.classList.remove('table-scrollable', 'has-overflow');
+            scrollProgress.style.width = '100%';
+        }
+        
+        updateScrollProgress();
+    }
+    
+    // Add scroll event listener
+    tableContainer.addEventListener('scroll', updateScrollProgress);
+    
+    // Add resize observer to check scrollability when window resizes
+    if (window.ResizeObserver) {
+        const resizeObserver = new ResizeObserver(checkScrollable);
+        resizeObserver.observe(tableContainer);
+    }
+    
+    // Initial check
+    setTimeout(checkScrollable, 100);
+    
+    // Smooth scrolling with arrow keys when table is focused
+    tableContainer.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            tableContainer.scrollBy({ left: -100, behavior: 'smooth' });
+        } else if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            tableContainer.scrollBy({ left: 100, behavior: 'smooth' });
+        }
+    });
+    
+    // Add mouse wheel horizontal scrolling (Shift + scroll)
+    tableContainer.addEventListener('wheel', function(e) {
+        if (e.shiftKey) {
+            e.preventDefault();
+            tableContainer.scrollBy({ left: e.deltaY, behavior: 'smooth' });
+        }
+    });
+    
+    // Make table container focusable for keyboard navigation
+    tableContainer.setAttribute('tabindex', '0');
+    
+    console.log('Enhanced scrollbar functionality initialized');
+});
+</script>

@@ -519,124 +519,7 @@
       });
     }
 
-    function renderCompletedFiles() {
-      elements.completedFilesList.innerHTML = '';
-      
-      if (completedFiles.length === 0) {
-        elements.completedFilesList.innerHTML = `
-          <div class="rounded-md border p-8 text-center">
-            <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <i data-lucide="file-text" class="h-6 w-6"></i>
-            </div>
-            <h3 class="mb-2 text-lg font-medium">No completed files</h3>
-            <p class="mb-4 text-sm text-muted-foreground">Complete typing files to see them here</p>
-          </div>
-        `;
-        lucide.createIcons();
-        return;
-      }
-      
-      completedFiles.forEach(file => {
-        const fileItem = document.createElement('div');
-        fileItem.className = 'rounded-md border overflow-hidden';
-        
-        // Header section
-        const header = document.createElement('div');
-        header.className = 'p-4 border-b bg-muted/20 cursor-pointer hover:bg-muted/30 transition-colors';
-        header.setAttribute('data-id', file.id);
-        header.innerHTML = `
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <i data-lucide="file-text" class="h-8 w-8 text-green-500"></i>
-              <div>
-                <p class="text-blue-600 font-medium">${file.fileNumber}</p>
-                <p class="text-sm text-gray-700 mt-0.5">
-                  ${file.name.includes(" - ") ? file.name.split(" - ")[1] : file.name}
-                </p>
-                <div class="flex items-center gap-2 mt-1">
-                  <span class="badge badge-secondary text-xs">
-                    ${file.pages} ${file.pages === 1 ? "page" : "pages"}
-                  </span>
-                  <span class="text-xs text-muted-foreground">${file.date}</span>
-                </div>
-              </div>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="badge bg-green-500 text-white">
-                <i data-lucide="check-circle" class="h-3 w-3 mr-1"></i>
-                Completed
-              </span>
-              <button class="btn btn-ghost btn-icon toggle-expand" data-id="${file.id}">
-                <i data-lucide="${state.expandedFiles.includes(file.id) ? 'arrow-up' : 'arrow-down'}" class="h-4 w-4"></i>
-              </button>
-            </div>
-          </div>
-        `;
-        
-        fileItem.appendChild(header);
-        
-        // Expanded content section (initially hidden)
-        if (state.expandedFiles.includes(file.id)) {
-          const content = document.createElement('div');
-          content.className = 'p-4';
-          content.innerHTML = `
-            <h4 class="text-sm font-medium mb-3">Processed Pages</h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              ${file.processedPages.map((page, index) => `
-                <div class="border rounded-md overflow-hidden">
-                  <div class="h-32 bg-muted flex items-center justify-center">
-                    ${samplePages[file.id] && samplePages[file.id][index] 
-                      ? `<img src="${samplePages[file.id][index]}" alt="Page ${page.pageNumber}" class="max-h-full max-w-full object-contain">`
-                      : `<i data-lucide="file-text" class="h-10 w-10 text-muted-foreground"></i>`
-                    }
-                  </div>
-                  <div class="p-2 bg-gray-50 border-t">
-                    <div class="flex justify-between items-center">
-                      <span class="text-xs font-medium">Page ${page.pageNumber}</span>
-                      <span class="badge badge-outline text-xs">${page.pageType}</span>
-                    </div>
-                    <div class="mt-1">
-                      <span class="badge bg-blue-500 text-white text-xs mt-1 w-full justify-center overflow-hidden text-ellipsis">
-                        ${page.pageCode}
-                      </span>
-                      <p class="text-xs text-muted-foreground mt-1 truncate" title="${page.pageSubType}">
-                        ${page.pageSubType}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          `;
-          
-          fileItem.appendChild(content);
-        }
-        
-        elements.completedFilesList.appendChild(fileItem);
-      });
-      
-      // Initialize icons for the new elements
-      lucide.createIcons();
-      
-      // Add event listeners
-      document.querySelectorAll('.toggle-expand').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const fileId = btn.getAttribute('data-id');
-          toggleFileExpansion(fileId);
-        });
-      });
-      
-      document.querySelectorAll('[data-id]').forEach(header => {
-        if (header.classList.contains('toggle-expand')) return;
-        
-        header.addEventListener('click', () => {
-          const fileId = header.getAttribute('data-id');
-          toggleFileExpansion(fileId);
-        });
-      });
-    }
-
+    
     function renderTypingView() {
       const file = getFileById(state.selectedFile);
       if (!file) return;
@@ -1341,4 +1224,10 @@
     
     // Initialize the page when DOM is loaded
     document.addEventListener('DOMContentLoaded', init);
+
+    function initCompletedFilesTable() {
+        renderCompletedFiles();
+    }
+
+    document.addEventListener('DOMContentLoaded', initCompletedFilesTable);
   </script>

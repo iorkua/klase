@@ -177,15 +177,15 @@
                             <label class="block mb-2 font-medium">Applicant Type</label>
                             <div class="flex space-x-6">
                               <label class="flex items-center">
-                                <input type="radio" name="applicantType" class="mr-2" value="individual" required onclick="setApplicantType('individual'); showIndividualFields()">
+                                <input type="radio" name="applicantType" class="mr-2" value="individual" required onchange="handleApplicantTypeChange('individual')">
                                 <span>Individual</span>
                               </label>
                               <label class="flex items-center">
-                                <input type="radio" name="applicantType" class="mr-2" value="corporate" onclick="setApplicantType('corporate'); showCorporateFields()">
+                                <input type="radio" name="applicantType" class="mr-2" value="corporate" onchange="handleApplicantTypeChange('corporate')">
                                 <span>Corporate Body</span>
                               </label>
                               <label class="flex items-center">
-                                <input type="radio" name="applicantType" class="mr-2" value="multiple" onclick="setApplicantType('multiple'); showMultipleOwnersFields()">
+                                <input type="radio" name="applicantType" class="mr-2" value="multiple" onchange="handleApplicantTypeChange('multiple')">
                                 <span>Multiple Owners</span>
                               </label>
                             </div>
@@ -1074,16 +1074,43 @@
         }
     }
 
+    // Main handler for applicant type changes
+    function handleApplicantTypeChange(type) {
+        // Set the applicant type in the hidden field
+        if (typeof setApplicantType === 'function') {
+            setApplicantType(type);
+        }
+        
+        // Show the appropriate fields from applicant.blade.php
+        if (type === 'individual' && typeof showIndividualFields === 'function') {
+            showIndividualFields();
+        } else if (type === 'corporate' && typeof showCorporateFields === 'function') {
+            showCorporateFields();
+        } else if (type === 'multiple' && typeof showMultipleOwnersFields === 'function') {
+            showMultipleOwnersFields();
+        }
+        
+        // Update main form sections
+        toggleMainOwnerSections();
+        updateIdentificationSection();
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('input[name="applicantType"]').forEach(function(radio) {
             radio.addEventListener('change', function() {
-                toggleMainOwnerSections();
-                updateIdentificationSection();
+                handleApplicantTypeChange(this.value);
             });
         });
+        
         // Initial toggle on page load
         toggleMainOwnerSections();
         updateIdentificationSection();
+        
+        // Check if there's a pre-selected applicant type and trigger the change
+        const selectedApplicantType = document.querySelector('input[name="applicantType"]:checked');
+        if (selectedApplicantType) {
+            handleApplicantTypeChange(selectedApplicantType.value);
+        }
     });
 </script>
 
