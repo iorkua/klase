@@ -538,7 +538,7 @@
 
         <!-- PageTyping -->
         @if($hasRole('EDMS - PageTyping'))
-        <a href="{{route('pagetyping.index')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('pagetyping.index') ? 'active' : '' }}">
+        <a href="#" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 cursor-not-allowed opacity-50">
         <i data-lucide="type" class="h-3.5 w-3.5 text-blue-400"></i>
         <span>PageTyping</span>
         </a>

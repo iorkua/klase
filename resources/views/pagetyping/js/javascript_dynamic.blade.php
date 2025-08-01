@@ -1,4 +1,5 @@
-<!-- Dynamic Page Typing JavaScript -->
+<!-- Enhanced Dynamic Page Typing JavaScript -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Lucide icons
@@ -8,9 +9,13 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedFileIndexing = @json($selectedFileIndexing ?? null);
     let currentDocuments = [];
     let currentDocumentIndex = 0;
+    let currentPdfPages = [];
+    let currentPdfPageIndex = 0;
     let currentPageNumber = 1;
     let savedPages = [];
     let totalPages = 0;
+    let zoomLevel = 1;
+    let isFullscreen = false;
     
     // DOM Elements
     const tabs = document.querySelectorAll('.tab');
@@ -18,10 +23,27 @@ document.addEventListener('DOMContentLoaded', function() {
     const pageTypingModal = document.getElementById('page-typing-modal');
     const closeTypingModal = document.getElementById('close-typing-modal');
     const typingModalTitle = document.getElementById('typing-modal-title');
+    const fileInfo = document.getElementById('file-info');
     const documentViewer = document.getElementById('document-viewer');
+    const documentViewerContainer = document.getElementById('document-viewer-container');
     const documentCounter = document.getElementById('document-counter');
+    const currentDocumentInfo = document.getElementById('current-document-info');
+    const currentPageInfo = document.getElementById('current-page-info');
     const prevDocumentBtn = document.getElementById('prev-document');
     const nextDocumentBtn = document.getElementById('next-document');
+    const toggleFullscreenBtn = document.getElementById('toggle-fullscreen');
+    
+    // PDF controls
+    const pdfPageControls = document.getElementById('pdf-page-controls');
+    const prevPdfPageBtn = document.getElementById('prev-pdf-page');
+    const nextPdfPageBtn = document.getElementById('next-pdf-page');
+    const pdfPageCounter = document.getElementById('pdf-page-counter');
+    
+    // Zoom controls
+    const zoomOutBtn = document.getElementById('zoom-out');
+    const zoomInBtn = document.getElementById('zoom-in');
+    const zoomFitBtn = document.getElementById('zoom-fit');
+    const zoomLevelSpan = document.getElementById('zoom-level');
     
     // Form elements
     const pageTypingForm = document.getElementById('page-typing-form');
@@ -30,16 +52,27 @@ document.addEventListener('DOMContentLoaded', function() {
     const pageSubtypeInput = document.getElementById('page-subtype');
     const serialNumberInput = document.getElementById('serial-number');
     const pageCodeInput = document.getElementById('page-code');
+    const pageNotesInput = document.getElementById('page-notes');
+    const isImportantInput = document.getElementById('is-important');
     const savePageBtn = document.getElementById('save-page');
     const saveAndNextBtn = document.getElementById('save-and-next');
     const completeTypingBtn = document.getElementById('complete-typing');
     const typingProgress = document.getElementById('typing-progress');
     const typingProgressBar = document.getElementById('typing-progress-bar');
     
+    // Quick type buttons
+    const quickTypeButtons = document.querySelectorAll('.quick-type-btn');
+    
     // Search elements
     const searchPendingFiles = document.getElementById('search-pending-files');
     const searchProgressFiles = document.getElementById('search-progress-files');
     const searchCompletedFiles = document.getElementById('search-completed-files');
+    
+    // PDF extraction modal
+    const pdfExtractionModal = document.getElementById('pdf-extraction-modal');
+    const closePdfModal = document.getElementById('close-pdf-modal');
+    const pdfExtractionProgress = document.getElementById('pdf-extraction-progress');
+    const pdfExtractionStatus = document.getElementById('pdf-extraction-status');
     
     // Tab switching functionality
     function switchTab(tabName) {
@@ -78,17 +111,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // View completed page typing
     function viewPageTyping(fileIndexingId) {
-        // Redirect to view page or show read-only modal
         window.open(`{{ route('fileindexing.show', '') }}/${fileIndexingId}`, '_blank');
     }
     
     // Load file for typing
     function loadFileForTyping(fileIndexingId) {
-        // Show loading state
         showPageTypingModal();
-        typingModalTitle.textContent = 'Loading...';
-        documentViewer.innerHTML = '<div class="flex items-center justify-center h-full"><i data-lucide="loader" class="h-8 w-8 animate-spin text-gray-400"></i></div>';
-        lucide.createIcons();
+        showLoadingState();
         
         // Fetch file data and documents
         fetch(`{{ route("scanning.list") }}?file_indexing_id=${fileIndexingId}`)
@@ -99,9 +128,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 selectedFileIndexing = { id: fileIndexingId };
                 
                 if (currentDocuments.length === 0) {
-                    documentViewer.innerHTML = '<div class="flex items-center justify-center h-full text-gray-500"><p>No scanned documents found</p></div>';
+                    showEmptyState();
                     return;
                 }
+                
+                // Update file info
+                const fileNumber = currentDocuments[0]?.file_indexing?.file_number || 'Unknown File';
+                const fileTitle = currentDocuments[0]?.file_indexing?.file_title || 'Unknown Title';
+                typingModalTitle.textContent = `Page Typing - ${fileNumber}`;
+                fileInfo.textContent = `${fileTitle} • ${currentDocuments.length} documents`;
                 
                 // Load existing page typings
                 loadExistingPageTypings(fileIndexingId);
@@ -111,10 +146,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadDocument(0);
                 updateDocumentCounter();
                 updateTypingProgress();
-                
-                // Set title safely
-                const fileNumber = currentDocuments[0]?.file_indexing?.file_number || 'Unknown File';
-                typingModalTitle.textContent = `Page Typing - ${fileNumber}`;
             } else {
                 throw new Error(data.message || 'Failed to load documents');
             }
@@ -124,6 +155,31 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Error loading file: ' + error.message);
             hidePageTypingModal();
         });
+    }
+    
+    // Show loading state
+    function showLoadingState() {
+        documentViewer.innerHTML = `
+            <div class="text-center text-gray-500">
+                <div class="loading-spinner mx-auto mb-4"></div>
+                <p class="text-lg">Loading documents...</p>
+                <p class="text-sm">Please wait while we prepare your files</p>
+            </div>
+        `;
+        currentDocumentInfo.textContent = 'Loading...';
+    }
+    
+    // Show empty state
+    function showEmptyState() {
+        documentViewer.innerHTML = `
+            <div class="text-center text-gray-500">
+                <i data-lucide="inbox" class="h-16 w-16 mx-auto mb-4 text-gray-300"></i>
+                <p class="text-lg">No documents found</p>
+                <p class="text-sm">Upload scanned documents first to begin page typing</p>
+            </div>
+        `;
+        lucide.createIcons();
+        currentDocumentInfo.textContent = 'No documents';
     }
     
     // Load existing page typings
@@ -160,46 +216,168 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Load document in viewer
-    function loadDocument(index) {
+    async function loadDocument(index) {
         if (index < 0 || index >= currentDocuments.length) return;
         
         currentDocumentIndex = index;
         const document = currentDocuments[index];
         
-        // Check if document and required properties exist
         if (!document || !document.file_url) {
-            documentViewer.innerHTML = '<div class="flex items-center justify-center h-full text-gray-500"><p>Document not available</p></div>';
+            showDocumentError('Document not available');
             return;
         }
         
-        // Display document
-        const fileUrl = document.file_url;
+        // Update document info
         const filename = document.filename || document.file_name || 'Unknown file';
-        const fileExtension = filename && typeof filename === 'string' ? filename.split('.').pop().toLowerCase() : '';
+        const fileExtension = filename.split('.').pop().toLowerCase();
+        currentDocumentInfo.textContent = `${filename} (${fileExtension.toUpperCase()})`;
         
-        if (['jpg', 'jpeg', 'png', 'gif', 'tiff'].includes(fileExtension)) {
-            documentViewer.innerHTML = `
-                <img src="${fileUrl}" alt="Document" class="max-w-full max-h-full object-contain">
-            `;
-        } else if (fileExtension === 'pdf') {
-            documentViewer.innerHTML = `
-                <iframe src="${fileUrl}" class="w-full h-full border-0"></iframe>
-            `;
-        } else {
-            documentViewer.innerHTML = `
-                <div class="flex flex-col items-center justify-center h-full text-gray-500">
-                    <i data-lucide="file-text" class="h-12 w-12 mb-4"></i>
-                    <p class="mb-2">${filename}</p>
-                    <a href="${fileUrl}" target="_blank" class="btn btn-outline btn-sm">
-                        <i data-lucide="external-link" class="h-4 w-4 mr-2"></i>
-                        Open Document
-                    </a>
-                </div>
-            `;
+        // Reset PDF state
+        currentPdfPages = [];
+        currentPdfPageIndex = 0;
+        pdfPageControls.style.display = 'none';
+        
+        try {
+            if (['jpg', 'jpeg', 'png', 'gif', 'tiff'].includes(fileExtension)) {
+                await loadImageDocument(document);
+            } else if (fileExtension === 'pdf') {
+                await loadPdfDocument(document);
+            } else {
+                loadGenericDocument(document);
+            }
+        } catch (error) {
+            console.error('Error loading document:', error);
+            showDocumentError('Failed to load document');
         }
         
-        lucide.createIcons();
         updateDocumentCounter();
+        updateCurrentPageInfo();
+    }
+    
+    // Load image document
+    async function loadImageDocument(document) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                documentViewer.innerHTML = `
+                    <div class="flex items-center justify-center min-h-full p-4">
+                        <img src="${document.file_url}" alt="Document" 
+                             class="max-w-full max-h-full object-contain shadow-lg rounded-lg"
+                             style="transform: scale(${zoomLevel})">
+                    </div>
+                `;
+                resolve();
+            };
+            img.onerror = () => reject(new Error('Failed to load image'));
+            img.src = document.file_url;
+        });
+    }
+    
+    // Load PDF document
+    async function loadPdfDocument(document) {
+        try {
+            showPdfExtractionModal();
+            updatePdfExtractionStatus('Loading PDF...', 10);
+            
+            const pdf = await pdfjsLib.getDocument(document.file_url).promise;
+            const numPages = pdf.numPages;
+            
+            updatePdfExtractionStatus(`Extracting ${numPages} pages...`, 30);
+            
+            currentPdfPages = [];
+            
+            for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                updatePdfExtractionStatus(`Processing page ${pageNum} of ${numPages}...`, 30 + (pageNum / numPages) * 60);
+                
+                const page = await pdf.getPage(pageNum);
+                const viewport = page.getViewport({ scale: 1.5 });
+                
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                await page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                }).promise;
+                
+                currentPdfPages.push({
+                    canvas: canvas,
+                    pageNumber: pageNum,
+                    width: viewport.width,
+                    height: viewport.height
+                });
+            }
+            
+            updatePdfExtractionStatus('Rendering pages...', 95);
+            
+            // Show PDF controls
+            pdfPageControls.style.display = 'flex';
+            currentPdfPageIndex = 0;
+            renderPdfPage(0);
+            updatePdfPageCounter();
+            
+            hidePdfExtractionModal();
+            
+        } catch (error) {
+            hidePdfExtractionModal();
+            throw error;
+        }
+    }
+    
+    // Render specific PDF page
+    function renderPdfPage(pageIndex) {
+        if (pageIndex < 0 || pageIndex >= currentPdfPages.length) return;
+        
+        currentPdfPageIndex = pageIndex;
+        const pdfPage = currentPdfPages[pageIndex];
+        
+        documentViewer.innerHTML = `
+            <div class="flex items-center justify-center min-h-full p-4">
+                <div class="pdf-page" style="transform: scale(${zoomLevel})">
+                    <canvas width="${pdfPage.width}" height="${pdfPage.height}"></canvas>
+                </div>
+            </div>
+        `;
+        
+        const canvas = documentViewer.querySelector('canvas');
+        const context = canvas.getContext('2d');
+        context.drawImage(pdfPage.canvas, 0, 0);
+        
+        updatePdfPageCounter();
+        updateCurrentPageInfo();
+    }
+    
+    // Load generic document
+    function loadGenericDocument(document) {
+        const filename = document.filename || document.file_name || 'Unknown file';
+        documentViewer.innerHTML = `
+            <div class="flex flex-col items-center justify-center h-full text-gray-500 p-8">
+                <i data-lucide="file-text" class="h-24 w-24 mb-6 text-gray-300"></i>
+                <h3 class="text-xl font-semibold mb-2">${filename}</h3>
+                <p class="text-sm text-gray-400 mb-6 text-center">
+                    This file type cannot be previewed directly.<br>
+                    Click the button below to open it in a new tab.
+                </p>
+                <a href="${document.file_url}" target="_blank" class="btn btn-primary">
+                    <i data-lucide="external-link" class="h-4 w-4 mr-2"></i>
+                    Open Document
+                </a>
+            </div>
+        `;
+        lucide.createIcons();
+    }
+    
+    // Show document error
+    function showDocumentError(message) {
+        documentViewer.innerHTML = `
+            <div class="flex flex-col items-center justify-center h-full text-gray-500 p-8">
+                <i data-lucide="alert-circle" class="h-16 w-16 mb-4 text-red-400"></i>
+                <p class="text-lg font-medium text-red-600">${message}</p>
+            </div>
+        `;
+        lucide.createIcons();
     }
     
     // Update document counter
@@ -217,12 +395,41 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Update PDF page counter
+    function updatePdfPageCounter() {
+        if (pdfPageCounter && currentPdfPages.length > 0) {
+            pdfPageCounter.textContent = `${currentPdfPageIndex + 1} / ${currentPdfPages.length}`;
+        }
+        
+        // Update PDF navigation buttons
+        if (prevPdfPageBtn) {
+            prevPdfPageBtn.disabled = currentPdfPageIndex === 0;
+        }
+        if (nextPdfPageBtn) {
+            nextPdfPageBtn.disabled = currentPdfPageIndex === currentPdfPages.length - 1;
+        }
+    }
+    
+    // Update current page info
+    function updateCurrentPageInfo() {
+        if (currentPageInfo) {
+            let pageInfo = `Page ${currentPageNumber}`;
+            if (currentPdfPages.length > 0) {
+                pageInfo += ` (PDF Page ${currentPdfPageIndex + 1})`;
+            }
+            pageInfo += ` of Document ${currentDocumentIndex + 1}`;
+            currentPageInfo.textContent = pageInfo;
+        }
+    }
+    
     // Update typing progress
     function updateTypingProgress() {
-        // Calculate total pages from all documents
-        totalPages = currentDocuments.reduce((total, doc) => {
-            // Estimate pages based on file size or use 1 as default
-            return total + 1; // Simplified - each document = 1 page
+        // Calculate total pages from all documents and PDF pages
+        totalPages = currentDocuments.reduce((total, doc, index) => {
+            if (index === currentDocumentIndex && currentPdfPages.length > 0) {
+                return total + currentPdfPages.length;
+            }
+            return total + 1; // Default 1 page per document
         }, 0);
         
         const completedPages = savedPages.length;
@@ -239,11 +446,92 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Zoom functions
+    function zoomIn() {
+        zoomLevel = Math.min(zoomLevel * 1.2, 3);
+        updateZoom();
+    }
+    
+    function zoomOut() {
+        zoomLevel = Math.max(zoomLevel / 1.2, 0.5);
+        updateZoom();
+    }
+    
+    function zoomFit() {
+        zoomLevel = 1;
+        updateZoom();
+    }
+    
+    function updateZoom() {
+        if (zoomLevelSpan) {
+            zoomLevelSpan.textContent = Math.round(zoomLevel * 100) + '%';
+        }
+        
+        // Re-render current document with new zoom
+        const img = documentViewer.querySelector('img');
+        const pdfPage = documentViewer.querySelector('.pdf-page');
+        
+        if (img) {
+            img.style.transform = `scale(${zoomLevel})`;
+        } else if (pdfPage) {
+            pdfPage.style.transform = `scale(${zoomLevel})`;
+        }
+    }
+    
+    // Toggle fullscreen
+    function toggleFullscreen() {
+        isFullscreen = !isFullscreen;
+        const dialogContent = pageTypingModal.querySelector('.dialog-content');
+        
+        if (isFullscreen) {
+            dialogContent.classList.add('dialog-fullscreen');
+            toggleFullscreenBtn.innerHTML = '<i data-lucide="minimize" class="h-4 w-4"></i><span>Exit Fullscreen</span>';
+        } else {
+            dialogContent.classList.remove('dialog-fullscreen');
+            toggleFullscreenBtn.innerHTML = '<i data-lucide="maximize" class="h-4 w-4"></i><span>Fullscreen</span>';
+        }
+        
+        lucide.createIcons();
+    }
+    
+    // Quick type button functionality
+    function setupQuickTypeButtons() {
+        quickTypeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const pageType = btn.getAttribute('data-type');
+                pageTypeSelect.value = pageType;
+                
+                // Update button states
+                quickTypeButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Auto-suggest subtype based on type
+                if (pageType === 'Certificate') {
+                    pageSubtypeInput.value = 'Certificate of Occupancy';
+                    pageCodeInput.value = 'COFO';
+                } else if (pageType === 'Deed') {
+                    pageSubtypeInput.value = 'Right of Occupancy';
+                    pageCodeInput.value = 'ROFO';
+                } else {
+                    pageSubtypeInput.value = '';
+                    pageCodeInput.value = '';
+                }
+            });
+        });
+    }
+    
     // Save page typing
     function savePage(moveToNext = false) {
         if (!validatePageForm()) return;
         
         const currentDocument = currentDocuments[currentDocumentIndex];
+        let filePath = currentDocument.document_path;
+        
+        // For PDF pages, append page number to path
+        if (currentPdfPages.length > 0) {
+            filePath += `#page=${currentPdfPageIndex + 1}`;
+        }
+        
         const pageData = {
             file_indexing_id: selectedFileIndexing.id,
             scanning_id: currentDocument.id,
@@ -252,7 +540,9 @@ document.addEventListener('DOMContentLoaded', function() {
             page_subtype: pageSubtypeInput.value,
             serial_number: parseInt(serialNumberInput.value),
             page_code: pageCodeInput.value,
-            file_path: currentDocument.document_path
+            file_path: filePath,
+            notes: pageNotesInput.value,
+            is_important: isImportantInput.checked
         };
         
         // Show loading state
@@ -283,7 +573,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (moveToNext) {
                     moveToNextPage();
                 } else {
-                    // Reset form for next page
                     resetFormForNextPage();
                 }
                 
@@ -339,11 +628,22 @@ document.addEventListener('DOMContentLoaded', function() {
         pageTypeSelect.value = '';
         pageSubtypeInput.value = '';
         pageCodeInput.value = '';
+        pageNotesInput.value = '';
+        isImportantInput.checked = false;
+        
+        // Reset quick type buttons
+        quickTypeButtons.forEach(btn => btn.classList.remove('active'));
+        
+        updateCurrentPageInfo();
     }
     
     // Move to next page/document
     function moveToNextPage() {
-        if (currentDocumentIndex < currentDocuments.length - 1) {
+        if (currentPdfPages.length > 0 && currentPdfPageIndex < currentPdfPages.length - 1) {
+            // Move to next PDF page
+            renderPdfPage(currentPdfPageIndex + 1);
+        } else if (currentDocumentIndex < currentDocuments.length - 1) {
+            // Move to next document
             loadDocument(currentDocumentIndex + 1);
         }
         resetFormForNextPage();
@@ -379,7 +679,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     page_subtype: page.page_subtype,
                     serial_number: page.serial_number,
                     page_code: page.page_code,
-                    file_path: page.file_path
+                    file_path: page.file_path,
+                    notes: page.notes,
+                    is_important: page.is_important
                 }))
             })
         })
@@ -427,9 +729,47 @@ document.addEventListener('DOMContentLoaded', function() {
         // Reset state
         currentDocuments = [];
         currentDocumentIndex = 0;
+        currentPdfPages = [];
+        currentPdfPageIndex = 0;
         currentPageNumber = 1;
         savedPages = [];
         selectedFileIndexing = null;
+        zoomLevel = 1;
+        isFullscreen = false;
+    }
+    
+    // PDF extraction modal functions
+    function showPdfExtractionModal() {
+        // Only show the modal if we're actually in a page typing session
+        const pageTypingModal = document.getElementById('page-typing-modal');
+        const isPageTypingActive = pageTypingModal && !pageTypingModal.classList.contains('hidden');
+        
+        if (!isPageTypingActive) {
+            console.log('PDF extraction modal blocked - page typing not active');
+            return;
+        }
+        
+        console.log('Showing PDF extraction modal');
+        if (pdfExtractionModal) {
+            pdfExtractionModal.classList.remove('hidden');
+            pdfExtractionModal.setAttribute('aria-hidden', 'false');
+        }
+    }
+    
+    function hidePdfExtractionModal() {
+        if (pdfExtractionModal) {
+            pdfExtractionModal.classList.add('hidden');
+            pdfExtractionModal.setAttribute('aria-hidden', 'true');
+        }
+    }
+    
+    function updatePdfExtractionStatus(status, progress) {
+        if (pdfExtractionStatus) {
+            pdfExtractionStatus.textContent = status;
+        }
+        if (pdfExtractionProgress) {
+            pdfExtractionProgress.style.width = progress + '%';
+        }
     }
     
     // Toggle page details for completed files
@@ -474,9 +814,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const fileName = fileInfo?.file_number || 'Unknown File';
                 const fileTitle = fileInfo?.file_title || 'Unknown Title';
                 
-                // Create horizontal card layout for documents
+                // Create enhanced document cards with PDF page support
                 const documentCards = scannedFiles.map((doc, index) => {
-                    const docPages = pages.filter(page => page.file_path === doc.document_path);
+                    const docPages = pages.filter(page => page.file_path.startsWith(doc.document_path));
                     const pageType = docPages.length > 0 ? docPages[0].page_type : 'Unknown';
                     const pageCode = docPages.length > 0 ? docPages[0].page_code : '';
                     const typedBy = docPages.length > 0 ? docPages[0].typed_by : 'Unknown';
@@ -533,6 +873,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <!-- Page Count -->
                             <div class="text-xs text-gray-500 mt-1">
                                 ${docPages.length} page${docPages.length !== 1 ? 's' : ''}
+                                ${fileExtension === 'pdf' && docPages.length > 1 ? ' (PDF)' : ''}
                             </div>
                         </div>
                     `;
@@ -562,7 +903,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     </div>
                                 </div>
                                 
-                                <!-- Horizontal Document Cards -->
+                                <!-- Enhanced Document Cards -->
                                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                                     ${documentCards}
                                 </div>
@@ -600,6 +941,14 @@ document.addEventListener('DOMContentLoaded', function() {
         closeTypingModal.addEventListener('click', hidePageTypingModal);
     }
     
+    if (closePdfModal) {
+        closePdfModal.addEventListener('click', hidePdfExtractionModal);
+    }
+    
+    if (toggleFullscreenBtn) {
+        toggleFullscreenBtn.addEventListener('click', toggleFullscreen);
+    }
+    
     if (prevDocumentBtn) {
         prevDocumentBtn.addEventListener('click', () => {
             if (currentDocumentIndex > 0) {
@@ -614,6 +963,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadDocument(currentDocumentIndex + 1);
             }
         });
+    }
+    
+    if (prevPdfPageBtn) {
+        prevPdfPageBtn.addEventListener('click', () => {
+            if (currentPdfPageIndex > 0) {
+                renderPdfPage(currentPdfPageIndex - 1);
+            }
+        });
+    }
+    
+    if (nextPdfPageBtn) {
+        nextPdfPageBtn.addEventListener('click', () => {
+            if (currentPdfPageIndex < currentPdfPages.length - 1) {
+                renderPdfPage(currentPdfPageIndex + 1);
+            }
+        });
+    }
+    
+    if (zoomInBtn) {
+        zoomInBtn.addEventListener('click', zoomIn);
+    }
+    
+    if (zoomOutBtn) {
+        zoomOutBtn.addEventListener('click', zoomOut);
+    }
+    
+    if (zoomFitBtn) {
+        zoomFitBtn.addEventListener('click', zoomFit);
     }
     
     if (savePageBtn) {
@@ -704,9 +1081,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Initialize quick type buttons
+    setupQuickTypeButtons();
+    
     // Auto-start typing if file is selected
     if (selectedFileIndexing) {
-        startPageTyping(selectedFileIndexing.id);
+        // startPageTyping(selectedFileIndexing.id); // Moved to pagetyping_fixes.blade.php
     }
     
     // Make functions globally available
@@ -715,6 +1095,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.viewPageTyping = viewPageTyping;
     window.togglePageDetails = togglePageDetails;
     
-    console.log('Dynamic Page Typing module initialized');
+    console.log('Enhanced Dynamic Page Typing module initialized');
 });
 </script>
+

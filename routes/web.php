@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\AuthPageController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SubscriptionController;
@@ -780,3 +781,71 @@ Route::post('/edms/pagetyping/{fileIndexingId}/save-single', [\App\Http\Controll
 Route::post('/edms/pagetyping/{fileIndexingId}/finish', [\App\Http\Controllers\EdmsController::class, 'finishPageTyping'])->name('edms.finish-page-typing');
 Route::post('/edms/pagetyping/{fileIndexingId}/batch-save', [\App\Http\Controllers\EdmsController::class, 'batchSavePageTyping'])->name('edms.batch-save-page-typing');
 Route::post('/edms/pdf-thumbnail', [\App\Http\Controllers\EdmsController::class, 'getPdfPageThumbnail'])->name('edms.pdf-thumbnail');
+
+// Page Typing Debug Routes (main routes are in apps2.php)
+Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'pagetyping'], function () {
+    Route::get('/test-routes', function() {
+        return view('pagetyping.test_routes');
+    })->name('pagetyping.test');
+    Route::get('/debug-database', function() {
+        return view('pagetyping.debug_database');
+    })->name('pagetyping.debug');
+    Route::get('/test-file-urls', function() {
+        return view('pagetyping.test_file_urls');
+    })->name('pagetyping.test-urls');
+    Route::get('/test-pdf-access', function() {
+        return view('pagetyping.test_pdf_access');
+    })->name('pagetyping.test-pdf');
+    Route::get('/pdf-diagnostic', function() {
+        return view('pagetyping.pdf_diagnostic');
+    })->name('pagetyping.pdf-diagnostic');
+    Route::post('/check-pdf-file', function(Request $request) {
+        try {
+            $filePath = $request->input('file_path');
+            $fullPath = storage_path('app/public/' . $filePath);
+            
+            if (!file_exists($fullPath)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File does not exist on server',
+                    'details' => ['path' => $fullPath]
+                ]);
+            }
+            
+            $fileSize = filesize($fullPath);
+            $mimeType = mime_content_type($fullPath);
+            
+            // Read first 100 bytes to check PDF header
+            $handle = fopen($fullPath, 'rb');
+            $header = fread($handle, 100);
+            fclose($handle);
+            
+            $isPdf = strpos($header, '%PDF') === 0;
+            $pdfVersion = null;
+            if (preg_match('/%PDF-(\d\.\d)/', $header, $matches)) {
+                $pdfVersion = $matches[1];
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'File exists and analyzed',
+                'details' => [
+                    'path' => $fullPath,
+                    'size' => $fileSize,
+                    'mimeType' => $mimeType,
+                    'isPdf' => $isPdf,
+                    'pdfVersion' => $pdfVersion,
+                    'header' => bin2hex(substr($header, 0, 20)),
+                    'headerAscii' => substr($header, 0, 20),
+                    'permissions' => substr(sprintf('%o', fileperms($fullPath)), -4)
+                ]
+            ]);
+            
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Server-side check failed: ' . $e->getMessage()
+            ]);
+        }
+    })->name('pagetyping.check-pdf');
+});

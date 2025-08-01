@@ -337,7 +337,7 @@ class ScanningController extends Controller
                             'file_title' => $scan->fileIndexing->file_title,
                         ],
                         'uploaded_at' => $scan->created_at->format('M d, Y H:i'),
-                        'file_url' => Storage::url($scan->document_path),
+                        'file_url' => asset('storage/' . $scan->document_path),
                     ];
                 })
             ]);

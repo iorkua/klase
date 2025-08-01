@@ -14,7 +14,7 @@ use Exception;
 class Pagetypingcontroller extends Controller
 {
     /**
-     * Display the page typing dashboard
+     * Display the page typing dashboard or typing interface
      */
     public function index(Request $request)
     {
@@ -24,14 +24,36 @@ class Pagetypingcontroller extends Controller
             
             // Get file_indexing_id from request if provided
             $fileIndexingId = $request->get('file_indexing_id');
-            $selectedFileIndexing = null;
             
             if ($fileIndexingId) {
+                // Load the page typing interface for specific file
                 $selectedFileIndexing = FileIndexing::on('sqlsrv')
                     ->with(['mainApplication', 'scannings', 'pagetypings'])
                     ->find($fileIndexingId);
+                
+                if (!$selectedFileIndexing) {
+                    return redirect()->route('pagetyping.index')
+                        ->with('error', 'File not found');
+                }
+                
+                // Check if file has scannings
+                if ($selectedFileIndexing->scannings->isEmpty()) {
+                    return redirect()->route('scanning.index', ['file_indexing_id' => $fileIndexingId])
+                        ->with('error', 'Please upload scanned documents first before page typing');
+                }
+                
+                // Return the page typing interface view
+                $PageTitle = 'Page Typing - ' . $selectedFileIndexing->file_title;
+                $PageDescription = 'Classify and label document pages';
+                
+                return view('pagetyping.typing', compact(
+                    'PageTitle', 
+                    'PageDescription', 
+                    'selectedFileIndexing'
+                ));
             }
             
+            // Return the dashboard view (no file_indexing_id parameter)
             // Get statistics for dashboard
             $stats = [
                 'pending_count' => $this->getPendingPageTypingCount(),
@@ -76,8 +98,7 @@ class Pagetypingcontroller extends Controller
                 'stats', 
                 'pendingFiles',
                 'inProgressFiles',
-                'completedFiles',
-                'selectedFileIndexing'
+                'completedFiles'
             ));
         } catch (Exception $e) {
             Log::error('Error loading page typing dashboard', [
@@ -90,8 +111,7 @@ class Pagetypingcontroller extends Controller
                 'stats' => ['pending_count' => 0, 'in_progress_count' => 0, 'completed_count' => 0],
                 'pendingFiles' => collect(),
                 'inProgressFiles' => collect(),
-                'completedFiles' => collect(),
-                'selectedFileIndexing' => null
+                'completedFiles' => collect()
             ]);
         }
     }
