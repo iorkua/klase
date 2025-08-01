@@ -2,7 +2,7 @@
 @section('page-title')
     {{ __('File Indexing') }}
 @endsection
-
+ 
 
 @section('content')
   @include('fileindexing.css.style')
@@ -240,50 +240,31 @@
         <div class="form-section">
           <h3 class="form-section-title">File Identification</h3>
           
-          <div class="form-group">
+          <div class="form-group" x-data="{ showManualEntry: false }">
             <label for="file-number" class="form-label required">File Number</label>
             <div class="form-info">
               <i data-lucide="file-text" class="h-4 w-4 form-info-icon text-green-600"></i>
               <span class="form-info-text">File Number Information<br>Select file number type and enter the details</span>
             </div>
             
-            <div class="form-radio-group">
-              <label class="form-radio-item active">
-                <input type="radio" name="file-number-type" value="mls" checked>
-                MLS
-              </label>
-              <label class="form-radio-item">
-                <input type="radio" name="file-number-type" value="kangis">
-                KANGIS
-              </label>
-              <label class="form-radio-item">
-                <input type="radio" name="file-number-type" value="new-kangis">
-                New KANGIS
-              </label>
+            <div class="flex items-center justify-between mb-3">
+              <label class="block text-sm font-medium text-gray-700">Select File Number</label>
+              <button type="button" @click="showManualEntry = !showManualEntry" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                <span x-text="showManualEntry ? 'Use Smart Selector' : 'Enter Fileno manually'"></span>
+              </button>
             </div>
             
-            <div id="mls-fields">
-              <div class="form-group">
-                <label class="form-label">Legacy File Number (MLS)</label>
-              </div>
-              
-              <div class="grid grid-cols-2 gap-4">
-                <div class="form-group">
-                  <label class="form-label">File Prefix</label>
-                  <select class="input">
-                    <option value="">Select prefix</option>
-                    <option value="CON">CON</option>
-                    <option value="RES">RES</option>
-                    <option value="COM">COM</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Serial Number</label>
-                  <input type="text" class="input" placeholder="e.g. 2019-296 or 91-249">
-                </div>
-              </div>
-              
-              <div class="form-help-text">Format example: CON-COM-2019-296, RES-2015-4859, COM-91-249</div>
+            <!-- Smart File Number Selector (Default) -->
+            <div x-show="!showManualEntry" x-transition>
+              @include('fileindexing.partial.smart_fileno_selector')
+            </div>
+            
+            <!-- Manual File Number Entry -->
+            <div x-show="showManualEntry" x-transition>
+              @include('fileindexing.partial.manual_fileno')
             </div>
           </div>
           

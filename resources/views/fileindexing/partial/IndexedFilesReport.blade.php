@@ -1,12 +1,6 @@
  
    <style>
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.5;
-            color: #333;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
+        
         
         .mt-6 { margin-top: 1.5rem; }
         .flex { display: flex; }

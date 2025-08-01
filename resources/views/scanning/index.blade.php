@@ -5,7 +5,7 @@
 @section('content')
     <!-- Main Content -->
     <div class="flex-1 overflow-auto">
-        <!-- Header -->
+        <!-- Header --> 
         @include('admin.header')
         <!-- Dashboard Content -->
         <div class="p-6">

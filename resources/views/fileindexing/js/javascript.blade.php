@@ -270,5 +270,238 @@
                 });
             });
         }
+
+        // Functions for New File Index Dialog
+        function showNewFileDialog() {
+            console.log('Opening New File Index Dialog');
+            if (newFileDialogOverlay) {
+                newFileDialogOverlay.classList.remove('hidden');
+                // Initialize Lucide icons for the dialog
+                lucide.createIcons();
+            }
+        }
+
+        function closeNewFileDialog() {
+            console.log('Closing New File Index Dialog');
+            if (newFileDialogOverlay) {
+                newFileDialogOverlay.classList.add('hidden');
+            }
+            // Reset form
+            const form = document.getElementById('new-file-form');
+            if (form) {
+                form.reset();
+            }
+        }
+
+        function createNewFile() {
+            console.log('Creating new file index');
+            
+            // Get form data
+            const fileTitle = document.getElementById('file-title').value;
+            
+            if (!fileTitle.trim()) {
+                alert('Please enter a file title');
+                return;
+            }
+
+            // Get file number from either smart selector or manual entry
+            let fileNumber = '';
+            const smartFilenoInput = document.getElementById('fileno');
+            if (smartFilenoInput && smartFilenoInput.value) {
+                fileNumber = smartFilenoInput.value;
+            } else {
+                // Get from manual entry (Alpine.js data)
+                const manualFilenoContainer = document.querySelector('[x-data*="mlsPrefix"]');
+                if (manualFilenoContainer) {
+                    // This would need to be implemented based on the active tab
+                    fileNumber = 'MANUAL-' + Date.now(); // Placeholder
+                }
+            }
+
+            if (!fileNumber) {
+                alert('Please select or enter a file number');
+                return;
+            }
+
+            // Create new file object
+            const newFile = {
+                id: `FILE-${Date.now()}`,
+                fileNumber: fileNumber,
+                name: fileTitle,
+                type: 'New File',
+                source: 'Manual Entry',
+                date: new Date().toISOString().split('T')[0],
+                landUseType: document.querySelector('select').value || 'Residential',
+                district: document.querySelectorAll('select')[1]?.value || 'Nasarawa',
+                hasCofo: document.getElementById('has-cofo').checked,
+            };
+
+            // Add to pending files
+            pendingFiles.push(newFile);
+
+            // Re-render the list
+            renderPendingFiles();
+            updateCounters();
+            updateSelectedFilesCount();
+
+            // Close dialog
+            closeNewFileDialog();
+
+            // Show success message
+            alert('File index created successfully!');
+        }
+
+        // Add AI indexing functionality
+        if(startAiIndexingBtn){
+            startAiIndexingBtn.addEventListener('click', startAiIndexing);
+        }
+
+        function startAiIndexing() {
+            console.log('Starting AI indexing process');
+            
+            // Hide the start button and show processing view
+            const indexingTab = document.getElementById('indexing-tab');
+            const aiProcessingView = document.getElementById('ai-processing-view');
+            
+            if (indexingTab && aiProcessingView) {
+                indexingTab.style.display = 'none';
+                aiProcessingView.classList.remove('hidden');
+            }
+
+            // Start the AI processing simulation
+            simulateAiProcessing();
+        }
+
+        function simulateAiProcessing() {
+            let progress = 0;
+            const stages = ['init', 'analyze', 'extract', 'categorize', 'validate', 'complete'];
+            let currentStageIndex = 0;
+
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 100) progress = 100;
+
+                // Update progress bars
+                if (progressBar) progressBar.style.width = progress + '%';
+                if (progressPercentage) progressPercentage.textContent = Math.round(progress) + '%';
+                if (pipelineProgressBar) pipelineProgressBar.style.width = progress + '%';
+                if (pipelineProgressLine) pipelineProgressLine.style.width = progress + '%';
+                if (pipelinePercentage) pipelinePercentage.textContent = Math.round(progress) + '% Complete';
+
+                // Update pipeline stages
+                const stageProgress = progress / 100 * stages.length;
+                const newStageIndex = Math.floor(stageProgress);
+                
+                if (newStageIndex > currentStageIndex && newStageIndex < stages.length) {
+                    // Mark previous stage as complete
+                    const prevStage = document.getElementById(`stage-${stages[currentStageIndex]}`);
+                    const prevLabel = prevStage?.nextElementSibling;
+                    if (prevStage) {
+                        prevStage.classList.remove('active');
+                        prevStage.classList.add('complete');
+                    }
+                    if (prevLabel) {
+                        prevLabel.classList.remove('active');
+                        prevLabel.classList.add('complete');
+                    }
+
+                    // Mark current stage as active
+                    currentStageIndex = newStageIndex;
+                    const currentStage = document.getElementById(`stage-${stages[currentStageIndex]}`);
+                    const currentLabel = currentStage?.nextElementSibling;
+                    if (currentStage) {
+                        currentStage.classList.remove('pending');
+                        currentStage.classList.add('active');
+                    }
+                    if (currentLabel) {
+                        currentLabel.classList.remove('pending');
+                        currentLabel.classList.add('active');
+                    }
+
+                    // Update stage info
+                    updateStageInfo(stages[currentStageIndex]);
+                }
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    completeAiProcessing();
+                }
+            }, 500);
+        }
+
+        function updateStageInfo(stage) {
+            const stageInfos = {
+                'init': {
+                    title: 'Initialization',
+                    description: 'Setting up AI processing environment and preparing documents for analysis...'
+                },
+                'analyze': {
+                    title: 'Document Analysis',
+                    description: 'Analyzing document structure, layout, and identifying key sections...'
+                },
+                'extract': {
+                    title: 'Information Extraction',
+                    description: 'Extracting text, names, dates, and property details using OCR and NLP...'
+                },
+                'categorize': {
+                    title: 'Content Categorization',
+                    description: 'Categorizing document types and classifying extracted information...'
+                },
+                'validate': {
+                    title: 'Data Validation',
+                    description: 'Validating extracted data and checking for consistency...'
+                },
+                'complete': {
+                    title: 'Processing Complete',
+                    description: 'AI indexing completed successfully. Review and confirm results.'
+                }
+            };
+
+            const info = stageInfos[stage];
+            if (info && currentStageInfo) {
+                currentStageInfo.innerHTML = `
+                    <div class="p-2 bg-green-100 rounded-full">
+                        <i data-lucide="loader" class="h-5 w-5 text-green-500"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium mb-1">Current Stage: ${info.title}</p>
+                        <p class="text-xs text-gray-600">${info.description}</p>
+                    </div>
+                `;
+                lucide.createIcons();
+            }
+        }
+
+        function completeAiProcessing() {
+            console.log('AI processing completed');
+            
+            // Show the confirm button
+            if (confirmSaveResultsBtn) {
+                confirmSaveResultsBtn.classList.remove('hidden');
+            }
+
+            // Add AI insights
+            if (aiInsightsContainer) {
+                aiInsightsContainer.innerHTML = `
+                    <div class="bg-green-50 p-4 rounded-md border border-green-100">
+                        <h4 class="font-medium text-green-800 mb-2">AI Processing Results</h4>
+                        <ul class="text-sm text-green-700 space-y-1">
+                            <li>✓ ${selectedFiles.length} files processed successfully</li>
+                            <li>✓ Metadata extracted and validated</li>
+                            <li>✓ Document types identified</li>
+                            <li>✓ Key information categorized</li>
+                        </ul>
+                    </div>
+                `;
+            }
+
+            // Update final stage
+            updateStageInfo('complete');
+        }
+
+        // Make functions available globally
+        window.showNewFileDialog = showNewFileDialog;
+        window.closeNewFileDialog = closeNewFileDialog;
+        window.createNewFile = createNewFile;
     });
   </script>

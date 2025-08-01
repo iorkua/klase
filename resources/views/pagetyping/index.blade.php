@@ -3,7 +3,7 @@
     {{ __('Page Typing') }}
 @endsection
 
-
+ 
 @section('content')
   @include('pagetyping.css.style')
     <!-- Main Content -->

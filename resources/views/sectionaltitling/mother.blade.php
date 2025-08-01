@@ -185,7 +185,7 @@
                                    @if(!request()->has('survey') && (!request()->has('url') || (request()->get('url') !== 'phy_planning' && request()->get('url') !== 'recommendation')))
                                 <th class="table-header text-green-500">Director's Approval</th>
                                 
-                                     
+                             
                                 @endif
                                
                                 <th class="table-header text-green-500">Actions</th>
@@ -300,12 +300,12 @@
                                             @php
                                                 $planningStatus = strtolower($PrimaryApplication->planning_recommendation_status ?? '');
                                                 $planningBadgeClass = match($planningStatus) {
-                                                  'approved' => 'bg-green-100 text-green-800 border-green-200',
-                                                  'pending' => 'bg-yellow-100 text-yellow-800 border-yellow-200',
-                                                  'declined' => 'bg-red-100 text-red-800 border-red-200',
-                                                  'rejected' => 'bg-red-100 text-red-800 border-red-200',
-                                                  'in progress' => 'bg-blue-100 text-blue-800 border-blue-200',
-                                                  default => 'bg-gray-100 text-gray-800 border-gray-200'
+                                                    'approved' => 'bg-green-100 text-green-800 border-green-200',
+                                                    'pending' => 'bg-yellow-100 text-yellow-800 border-yellow-200',
+                                                    'declined' => 'bg-red-100 text-red-800 border-red-200',
+                                                    'rejected' => 'bg-red-100 text-red-800 border-red-200',
+                                                    'in progress' => 'bg-blue-100 text-blue-800 border-blue-200',
+                                                    default => 'bg-gray-100 text-gray-800 border-gray-200'
                                                 };
                                             @endphp
                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ $planningBadgeClass }}">
@@ -320,8 +320,19 @@
                                     @if(!request()->has('survey') && (!request()->has('url') || (request()->get('url') !== 'phy_planning' && request()->get('url') !== 'recommendation')))
                                     <td class="table-cell">
                                         <div class="flex items-center">
-                                            <span class="badge badge-{{ strtolower($PrimaryApplication->application_status) }}">
-                                                {{ $PrimaryApplication->application_status }}
+                                            @php
+                                                $directorStatus = strtolower($PrimaryApplication->application_status ?? '');
+                                                $directorBadgeClass = match($directorStatus) {
+                                                    'approved' => 'bg-green-100 text-green-800 border-green-200',
+                                                    'pending' => 'bg-yellow-100 text-yellow-800 border-yellow-200',
+                                                    'declined' => 'bg-red-100 text-red-800 border-red-200',
+                                                    'rejected' => 'bg-red-100 text-red-800 border-red-200',
+                                                    'in progress' => 'bg-blue-100 text-blue-800 border-blue-200',
+                                                    default => 'bg-gray-100 text-gray-800 border-gray-200'
+                                                };
+                                            @endphp
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ $directorBadgeClass }}">
+                                                {{ $PrimaryApplication->application_status ?? 'Pending' }}
                                             </span>
                                             @if($PrimaryApplication->application_status == 'Declined')
                                                 <i data-lucide="info" class="w-4 h-4 ml-1 text-blue-500 cursor-pointer" 
