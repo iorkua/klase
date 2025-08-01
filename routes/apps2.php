@@ -149,12 +149,29 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('fileindexing')->group(function () {
         Route::get('/', [FileIndexController::class, 'index'])->name('fileindexing.index');
         Route::get('/create', [FileIndexController::class, 'create'])->name('fileindexing.create');
-
+        Route::post('/store', [FileIndexController::class, 'store'])->name('fileindexing.store');
+        Route::get('/{id}', [FileIndexController::class, 'show'])->name('fileindexing.show');
+        Route::get('/{id}/edit', [FileIndexController::class, 'edit'])->name('fileindexing.edit');
+        Route::put('/{id}', [FileIndexController::class, 'update'])->name('fileindexing.update');
+        Route::delete('/{id}', [FileIndexController::class, 'destroy'])->name('fileindexing.destroy');
+        
+        // AJAX routes
+        Route::get('/search/applications', [FileIndexController::class, 'searchApplications'])->name('fileindexing.search-applications');
+        Route::get('/list/file-indexings', [FileIndexController::class, 'getFileIndexingList'])->name('fileindexing.list');
     });
    
     Route::prefix('pagetyping')->group(function () {
         Route::get('/', [PageTypingController::class, 'index'])->name('pagetyping.index');
         Route::get('/create', [PageTypingController::class, 'create'])->name('pagetyping.create');
+        Route::post('/store', [PageTypingController::class, 'store'])->name('pagetyping.store');
+        Route::get('/{id}', [PageTypingController::class, 'show'])->name('pagetyping.show');
+        Route::get('/{id}/edit', [PageTypingController::class, 'edit'])->name('pagetyping.edit');
+        Route::put('/{id}', [PageTypingController::class, 'update'])->name('pagetyping.update');
+        Route::delete('/{id}', [PageTypingController::class, 'destroy'])->name('pagetyping.destroy');
+        
+        // AJAX routes
+        Route::post('/save-single', [PageTypingController::class, 'saveSingle'])->name('pagetyping.save-single');
+        Route::get('/list/page-typings', [PageTypingController::class, 'getPageTypings'])->name('pagetyping.list');
     });
     
     Route::prefix('profile')->group(function () {
@@ -180,6 +197,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/upload', [ScanningController::class, 'upload'])->name('scanning.upload');
         Route::get('/view/{id}', [ScanningController::class, 'view'])->name('scanning.view');
         Route::delete('/delete/{id}', [ScanningController::class, 'delete'])->name('scanning.delete');
+        Route::put('/update-details/{id}', [ScanningController::class, 'updateDetails'])->name('scanning.update-details');
+        
+        // AJAX routes
+        Route::get('/list/scanned-files', [ScanningController::class, 'getScannedFiles'])->name('scanning.list');
     });
 
     Route::prefix('filearchive')->group(function () {

@@ -244,7 +244,7 @@
                                                             1 page
                                                         </td>
                                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            {{ $scan->uploader->name ?? 'Unknown' }}
+                                                            {{ $scan->uploadedBy->name ?? 'Unknown' }}
                                                         </td>
                                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                             <div class="flex items-center space-x-2">

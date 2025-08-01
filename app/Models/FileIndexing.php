@@ -12,6 +12,7 @@ class FileIndexing extends Model
     protected $fillable = [
         'main_application_id',
         'subapplication_id',
+        'st_fillno',
         'file_number',
         'file_title',
         'land_use_type',
@@ -22,6 +23,7 @@ class FileIndexing extends Model
         'is_merged',
         'has_transaction',
         'is_problematic',
+        'is_co_owned_plot',
     ];
 
     protected $casts = [
@@ -29,6 +31,7 @@ class FileIndexing extends Model
         'is_merged' => 'boolean',
         'has_transaction' => 'boolean',
         'is_problematic' => 'boolean',
+        'is_co_owned_plot' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

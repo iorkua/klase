@@ -17,10 +17,13 @@ class PageTyping extends Model
         'page_code',
         'file_path',
         'typed_by',
+        'page_number',
+        'scanning_id',
     ];
 
     protected $casts = [
         'serial_number' => 'integer',
+        'page_number' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -33,5 +36,10 @@ class PageTyping extends Model
     public function typedBy()
     {
         return $this->belongsTo(User::class, 'typed_by');
+    }
+
+    public function scanning()
+    {
+        return $this->belongsTo(Scanning::class, 'scanning_id');
     }
 }

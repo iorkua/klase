@@ -202,6 +202,21 @@
             color: white;
         }
 
+        .Badge-variant-green {
+            background-color: #10b981;
+            color: white;
+        }
+
+        .Badge-variant-blue {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        .Badge-variant-purple {
+            background-color: #8b5cf6;
+            color: white;
+        }
+
         /* Input styles */
         .Input {
             border-radius: 0.375rem;
@@ -379,7 +394,7 @@
                     <table class="Table">
                         <thead class="TableHeader">
                             <tr class="TableRow">
-                                <th class="TableHead cursor-pointer min-w-[150px]" data-sort="fileNumber">
+                                <th class="TableHead cursor-pointer min-w-[150px]" data-sort="file_number">
                                     File&nbsp;Number
                                     <svg class="ml-2 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="m21 16-4 4-4-4"></path>
@@ -388,8 +403,8 @@
                                         <path d="M7 4v16"></path>
                                     </svg>
                                 </th>
-                                <th class="TableHead cursor-pointer min-w-[200px]" data-sort="name">
-                                    Name
+                                <th class="TableHead cursor-pointer min-w-[200px]" data-sort="file_title">
+                                    File Title
                                     <svg class="ml-2 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="m21 16-4 4-4-4"></path>
                                         <path d="M17 20V4"></path>
@@ -397,17 +412,7 @@
                                         <path d="M7 4v16"></path>
                                     </svg>
                                 </th>
-                                
-                                <th class="TableHead cursor-pointer min-w-[150px]" data-sort="registry">
-                                    Registry
-                                    <svg class="ml-2 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="m21 16-4 4-4-4"></path>
-                                        <path d="M17 20V4"></path>
-                                        <path d="m3 8 4-4 4 4"></path>
-                                        <path d="M7 4v16"></path>
-                                    </svg>
-                                </th>
-                                <th class="TableHead cursor-pointer min-w-[120px]" data-sort="date">
+                                <th class="TableHead cursor-pointer min-w-[120px]" data-sort="created_at">
                                     Indexed Date
                                     <svg class="ml-2 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="m21 16-4 4-4-4"></path>
@@ -419,16 +424,7 @@
                                 <th class="TableHead min-w-[120px]">
                                     Status
                                 </th>
-                                <th class="TableHead cursor-pointer min-w-[150px]" data-sort="location">
-                                    Location
-                                    <svg class="ml-2 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="m21 16-4 4-4-4"></path>
-                                        <path d="M17 20V4"></path>
-                                        <path d="m3 8 4-4 4 4"></path>
-                                        <path d="M7 4v16"></path>
-                                    </svg>
-                                </th>
-                                <th class="TableHead cursor-pointer min-w-[120px]" data-sort="landUseType">
+                                <th class="TableHead cursor-pointer min-w-[120px]" data-sort="land_use_type">
                                     Land Use
                                     <svg class="ml-2 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="m21 16-4 4-4-4"></path>
@@ -446,6 +442,9 @@
                                         <path d="M7 4v16"></path>
                                     </svg>
                                 </th>
+                                <th class="TableHead min-w-[100px]">
+                                    Plot Number
+                                </th>
                                 <th class="TableHead text-right min-w-[100px]">Actions</th>
                             </tr>
                         </thead>
@@ -459,14 +458,26 @@
                 <button class="Button Button-variant-outline" id="index-more-files">
                     Index More Files
                 </button>
-                <button class="Button Button-variant-default" id="print-labels">
-                    <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                        <rect width="12" height="8" x="6" y="14"></rect>
-                    </svg>
-                    Print Labels
-                </button>
+                <div class="flex gap-2">
+                    <button class="Button Button-variant-outline" id="export-csv">
+                        <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                        Export CSV
+                    </button>
+                    <button class="Button Button-variant-default" id="print-labels">
+                        <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                            <rect width="12" height="8" x="6" y="14"></rect>
+                        </svg>
+                        Print Labels
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -485,69 +496,8 @@
     </div>
 
     <script>
-        // Sample data for indexed files
-        const indexedFiles = [
-            {
-                id: "FILE-2023-004",
-                fileNumber: "KNML 08146",
-                name: "Musa Usman Bayero",
-                type: "Right of Occupancy",
-                registry: "Lands Registry",
-                source: "Indexed",
-                date: "2023-06-12",
-                size: "3.1 MB",
-                status: "Indexed",
-                keywords: ["Right of Occupancy", "Residential", "Bayero", "Nasarawa"],
-                location: "Cabinet A-08",
-                landUseType: "Residential",
-                plotNumber: "PL-3421",
-                district: "Nasarawa",
-                hasCofo: true,
-                hasTransaction: true,
-                isProblematic: false,
-                pageTypingStatus: "Not Started",
-            },
-            {
-                id: "FILE-2023-005",
-                fileNumber: "MLKN 03888",
-                name: "Hajiya Fatima Mohammed",
-                type: "Deed of Assignment",
-                registry: "Deeds Registry",
-                source: "Indexed & Scanned",
-                date: "2023-06-10",
-                size: "4.5 MB",
-                status: "Indexed",
-                keywords: ["Deed", "Assignment", "Industrial", "Mohammed", "Bompai"],
-                location: "Cabinet B-05",
-                landUseType: "Industrial",
-                plotNumber: "PL-7654",
-                district: "Bompai",
-                hasCofo: true,
-                hasTransaction: true,
-                isProblematic: false,
-                pageTypingStatus: "Not Started",
-            },
-            {
-                id: "FILE-2023-006",
-                fileNumber: "KNML 08722",
-                name: "Community Development Plan - Nasarawa",
-                type: "Development Plan",
-                registry: "Lands Registry",
-                source: "Indexed",
-                date: "2023-04-25",
-                size: "2.8 MB",
-                status: "Indexed",
-                keywords: ["Development", "Plan", "Community", "Nasarawa"],
-                location: "Cabinet C-14",
-                landUseType: "Community",
-                plotNumber: "PL-0001",
-                district: "Nasarawa",
-                hasCofo: false,
-                hasTransaction: false,
-                isProblematic: true,
-                pageTypingStatus: "Completed",
-            },
-        ];
+        // Dynamic data from database
+        const indexedFiles = @json($recentIndexes ?? []);
 
         // DOM elements
         const emptyState = document.getElementById('empty-state');
@@ -559,6 +509,7 @@
         const indexMoreFilesBtn = document.getElementById('index-more-files');
         const printLabelsBtn = document.getElementById('print-labels');
         const downloadReportBtn = document.getElementById('download-report');
+        const exportCsvBtn = document.getElementById('export-csv');
         const sortableHeaders = document.querySelectorAll('[data-sort]');
         const modal = document.getElementById('file-details-modal');
         const closeModalBtn = document.getElementById('close-modal');
@@ -567,7 +518,7 @@
 
         // Current sort state
         let currentSort = {
-            field: 'fileNumber',
+            field: 'file_number',
             direction: 'asc'
         };
 
@@ -582,15 +533,24 @@
             // Set up event listeners
             searchInput.addEventListener('input', handleSearch);
             goToPendingBtn.addEventListener('click', () => {
-                alert('Navigating to Pending Files tab');
+                // Switch to pending tab
+                const pendingTab = document.querySelector('[data-tab="pending"]');
+                if (pendingTab) {
+                    pendingTab.click();
+                }
             });
             
             indexMoreFilesBtn.addEventListener('click', () => {
-                alert('Navigating to Pending Files tab');
+                // Switch to pending tab
+                const pendingTab = document.querySelector('[data-tab="pending"]');
+                if (pendingTab) {
+                    pendingTab.click();
+                }
             });
             
             printLabelsBtn.addEventListener('click', sendToLabelPrinting);
             downloadReportBtn.addEventListener('click', downloadReport);
+            exportCsvBtn.addEventListener('click', exportToCsv);
             
             sortableHeaders.forEach(header => {
                 header.addEventListener('click', () => {
@@ -625,6 +585,31 @@
             }
         }
 
+        // Get status badge based on file status
+        function getStatusBadge(file) {
+            const hasScanning = file.scannings_count > 0;
+            const hasPageTyping = file.pagetypings_count > 0;
+            
+            if (hasPageTyping) {
+                return '<span class="Badge Badge-variant-green">Typed</span>';
+            } else if (hasScanning) {
+                return '<span class="Badge Badge-variant-blue">Scanned</span>';
+            } else {
+                return '<span class="Badge Badge-variant-black">Indexed</span>';
+            }
+        }
+
+        // Format date for display
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
         // Render the table with current data
         function renderTable() {
             tableBody.innerHTML = '';
@@ -634,33 +619,39 @@
                 row.className = 'TableRow';
                 
                 // Add problematic file styling
-                if (file.isProblematic) {
+                if (file.is_problematic) {
                     row.style.backgroundColor = '#fff1f1';
                 }
                 
                 row.innerHTML = `
-                    <td class="TableCell font-medium">${file.fileNumber}</td>
-                    <td class="TableCell">${file.name}</td>
-                    
-                    <td class="TableCell">${file.registry}</td>
-                    <td class="TableCell">${file.date}</td>
+                    <td class="TableCell font-medium">${file.file_number || 'N/A'}</td>
+                    <td class="TableCell">${file.file_title || 'Untitled'}</td>
+                    <td class="TableCell">${formatDate(file.created_at)}</td>
                     <td class="TableCell">
-                        <span class="Badge Badge-variant-black">
-                            Indexed
-                        </span>
+                        ${getStatusBadge(file)}
                     </td>
-                    <td class="TableCell">${file.location}</td>
                     <td class="TableCell">
                         <span class="Badge Badge-variant-outline text-xs">
-                            ${file.landUseType}
+                            ${file.land_use_type || 'N/A'}
                         </span>
                     </td>
-                    <td class="TableCell">${file.district}</td>
+                    <td class="TableCell">${file.district || 'N/A'}</td>
+                    <td class="TableCell">${file.plot_number || 'N/A'}</td>
                     <td class="TableCell text-right">
                         <div class="flex justify-end gap-2">
                             <button class="Button Button-variant-outline Button-size-sm view-btn" data-id="${file.id}">
                                 View
                             </button>
+                            ${file.scannings_count === 0 ? `
+                                <a href="{{ route('scanning.index') }}?file_indexing_id=${file.id}" class="Button Button-variant-default Button-size-sm">
+                                    Scan
+                                </a>
+                            ` : file.pagetypings_count === 0 ? `
+                                <a href="{{ route('pagetyping.index') }}?file_indexing_id=${file.id}" class="Button Button-variant-default Button-size-sm">
+                                    Type
+                                </a>
+                            ` : `
+     `}
                         </div>
                     </td>
                 `;
@@ -678,81 +669,71 @@
 
         // Show file details in modal
         function showFileDetails(fileId) {
-            const file = indexedFiles.find(f => f.id === fileId);
+            const file = indexedFiles.find(f => f.id == fileId);
             if (!file) return;
 
-            modalTitle.textContent = `File Details: ${file.fileNumber}`;
+            modalTitle.textContent = `File Details: ${file.file_number}`;
             
             let detailsHTML = `
                 <div class="detail-row">
                     <div class="detail-label">File Number:</div>
-                    <div class="detail-value">${file.fileNumber}</div>
+                    <div class="detail-value">${file.file_number || 'N/A'}</div>
                 </div>
                 <div class="detail-row">
-                    <div class="detail-label">Name:</div>
-                    <div class="detail-value">${file.name}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Type:</div>
-                    <div class="detail-value">${file.type}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Registry:</div>
-                    <div class="detail-value">${file.registry}</div>
+                    <div class="detail-label">File Title:</div>
+                    <div class="detail-value">${file.file_title || 'Untitled'}</div>
                 </div>
                 <div class="detail-row">
                     <div class="detail-label">Indexed Date:</div>
-                    <div class="detail-value">${file.date}</div>
+                    <div class="detail-value">${formatDate(file.created_at)}</div>
                 </div>
                 <div class="detail-row">
                     <div class="detail-label">Status:</div>
                     <div class="detail-value">
-                        <span class="Badge Badge-variant-black">
-                            Indexed
-                        </span>
+                        ${getStatusBadge(file)}
                     </div>
                 </div>
                 <div class="detail-row">
-                    <div class="detail-label">Location:</div>
-                    <div class="detail-value">${file.location}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Land Use:</div>
-                    <div class="detail-value">${file.landUseType}</div>
+                    <div class="detail-label">Land Use Type:</div>
+                    <div class="detail-value">${file.land_use_type || 'N/A'}</div>
                 </div>
                 <div class="detail-row">
                     <div class="detail-label">Plot Number:</div>
-                    <div class="detail-value">${file.plotNumber}</div>
+                    <div class="detail-value">${file.plot_number || 'N/A'}</div>
                 </div>
                 <div class="detail-row">
                     <div class="detail-label">District:</div>
-                    <div class="detail-value">${file.district}</div>
+                    <div class="detail-value">${file.district || 'N/A'}</div>
                 </div>
                 <div class="detail-row">
-                    <div class="detail-label">Size:</div>
-                    <div class="detail-value">${file.size}</div>
+                    <div class="detail-label">LGA:</div>
+                    <div class="detail-value">${file.lga || 'N/A'}</div>
                 </div>
                 <div class="detail-row">
                     <div class="detail-label">Has COFO:</div>
-                    <div class="detail-value">${file.hasCofo ? 'Yes' : 'No'}</div>
+                    <div class="detail-value">${file.has_cofo ? 'Yes' : 'No'}</div>
                 </div>
                 <div class="detail-row">
                     <div class="detail-label">Has Transaction:</div>
-                    <div class="detail-value">${file.hasTransaction ? 'Yes' : 'No'}</div>
+                    <div class="detail-value">${file.has_transaction ? 'Yes' : 'No'}</div>
                 </div>
                 <div class="detail-row">
-                    <div class="detail-label">Page Typing Status:</div>
-                    <div class="detail-value">${file.pageTypingStatus}</div>
+                    <div class="detail-label">Is Merged:</div>
+                    <div class="detail-value">${file.is_merged ? 'Yes' : 'No'}</div>
                 </div>
                 <div class="detail-row">
-                    <div class="detail-label">Keywords:</div>
-                    <div class="detail-.value">
-                        <div class="keywords-container">
-                            ${file.keywords.map(keyword => `<span class="keyword-badge">${keyword}</span>`).join('')}
-                        </div>
-                    </div>
+                    <div class="detail-label">Co-Owned Plot:</div>
+                    <div class="detail-value">${file.is_co_owned_plot ? 'Yes' : 'No'}</div>
                 </div>
-                ${file.isProblematic ? `
+                <div class="detail-row">
+                    <div class="detail-label">Scanned Documents:</div>
+                    <div class="detail-value">${file.scannings_count || 0}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Typed Pages:</div>
+                    <div class="detail-value">${file.pagetypings_count || 0}</div>
+                </div>
+                ${file.is_problematic ? `
                 <div class="detail-row">
                     <div class="detail-label">Problematic:</div>
                     <div class="detail-value">
@@ -774,13 +755,12 @@
                 filteredAndSortedIndexedFiles = [...indexedFiles];
             } else {
                 filteredAndSortedIndexedFiles = indexedFiles.filter(file => 
-                    file.fileNumber.toLowerCase().includes(searchTerm) ||
-                    file.name.toLowerCase().includes(searchTerm) ||
-                    file.type.toLowerCase().includes(searchTerm) ||
-                    file.registry.toLowerCase().includes(searchTerm) ||
-                    file.location.toLowerCase().includes(searchTerm) ||
-                    file.district.toLowerCase().includes(searchTerm) ||
-                    file.keywords.some(keyword => keyword.toLowerCase().includes(searchTerm))
+                    (file.file_number && file.file_number.toLowerCase().includes(searchTerm)) ||
+                    (file.file_title && file.file_title.toLowerCase().includes(searchTerm)) ||
+                    (file.land_use_type && file.land_use_type.toLowerCase().includes(searchTerm)) ||
+                    (file.district && file.district.toLowerCase().includes(searchTerm)) ||
+                    (file.lga && file.lga.toLowerCase().includes(searchTerm)) ||
+                    (file.plot_number && file.plot_number.toLowerCase().includes(searchTerm))
                 );
             }
             
@@ -804,7 +784,7 @@
         function sortFiles(field, direction) {
             filteredAndSortedIndexedFiles.sort((a, b) => {
                 // Handle different field types
-                if (field === 'date') {
+                if (field === 'created_at') {
                     const dateA = new Date(a[field]);
                     const dateB = new Date(b[field]);
                     return direction === 'asc' ? dateA - dateB : dateB - dateA;
@@ -821,16 +801,67 @@
 
         // Send to label printing
         function sendToLabelPrinting() {
-            const selectedFiles = filteredAndSortedIndexedFiles.map(f => f.fileNumber).join(', ');
-            alert(`Printing labels for files: ${selectedFiles}`);
+            if (filteredAndSortedIndexedFiles.length === 0) {
+                alert('No files to print labels for');
+                return;
+            }
+            
+            const fileNumbers = filteredAndSortedIndexedFiles.map(f => f.file_number).join(', ');
+            alert(`Printing labels for ${filteredAndSortedIndexedFiles.length} files`);
+            
+            // Here you would typically send the data to a label printing service
+            // window.open('/print-labels?files=' + encodeURIComponent(JSON.stringify(filteredAndSortedIndexedFiles)));
         }
 
         // Download report
         function downloadReport() {
-            alert('Downloading report as CSV');
+            if (filteredAndSortedIndexedFiles.length === 0) {
+                alert('No files to download');
+                return;
+            }
+            
+            alert('Downloading report as PDF');
+            // Here you would typically generate and download a PDF report
+            // window.open('/download-report?files=' + encodeURIComponent(JSON.stringify(filteredAndSortedIndexedFiles)));
+        }
+
+        // Export to CSV
+        function exportToCsv() {
+            if (filteredAndSortedIndexedFiles.length === 0) {
+                alert('No files to export');
+                return;
+            }
+            
+            // Create CSV content
+            const headers = ['File Number', 'File Title', 'Indexed Date', 'Land Use Type', 'District', 'LGA', 'Plot Number', 'Has COFO', 'Has Transaction', 'Status'];
+            const csvContent = [
+                headers.join(','),
+                ...filteredAndSortedIndexedFiles.map(file => [
+                    `"${file.file_number || ''}"`,
+                    `"${file.file_title || ''}"`,
+                    `"${formatDate(file.created_at)}"`,
+                    `"${file.land_use_type || ''}"`,
+                    `"${file.district || ''}"`,
+                    `"${file.lga || ''}"`,
+                    `"${file.plot_number || ''}"`,
+                    `"${file.has_cofo ? 'Yes' : 'No'}"`,
+                    `"${file.has_transaction ? 'Yes' : 'No'}"`,
+                    `"${file.pagetypings_count > 0 ? 'Typed' : file.scannings_count > 0 ? 'Scanned' : 'Indexed'}"`
+                ].join(','))
+            ].join('\n');
+            
+            // Create and download file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `indexed_files_report_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         // Initialize the page when loaded
         document.addEventListener('DOMContentLoaded', init);
     </script>
- 

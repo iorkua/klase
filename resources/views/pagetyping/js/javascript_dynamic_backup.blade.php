@@ -127,10 +127,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load existing page typings
     function loadExistingPageTypings(fileIndexingId) {
         fetch(`{{ route("pagetyping.list") }}?file_indexing_id=${fileIndexingId}`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
-            if (data.success) {
-                savedPages = data.page_typings;
+            if (data.success && data.page_typings) {
+                savedPages = data.page_typings || [];
                 updateTypingProgress();
                 
                 // If there are existing typings, load the last one
@@ -140,10 +145,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     pageNumberInput.value = currentPageNumber;
                     serialNumberInput.value = savedPages.length + 1;
                 }
+            } else {
+                savedPages = [];
+                updateTypingProgress();
             }
         })
         .catch(error => {
             console.error('Error loading existing page typings:', error);
+            savedPages = [];
+            updateTypingProgress();
         });
     }
     
@@ -505,10 +515,91 @@ document.addEventListener('DOMContentLoaded', function() {
         startPageTyping(selectedFileIndexing.id);
     }
     
+    // Toggle page details for completed files
+    function togglePageDetails(fileIndexingId) {
+        const existingDetails = document.getElementById(`page-details-${fileIndexingId}`);
+        
+        if (existingDetails) {
+            // Toggle visibility
+            if (existingDetails.style.display === 'none') {
+                existingDetails.style.display = 'block';
+            } else {
+                existingDetails.style.display = 'none';
+            }
+            return;
+        }
+        
+        // Load page details
+        fetch(`{{ route("pagetyping.list") }}?file_indexing_id=${fileIndexingId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success && data.page_typings) {
+                const pages = data.page_typings;
+                const fileElement = document.querySelector(`[onclick="togglePageDetails(${fileIndexingId})"]`).closest('.border.rounded-lg');
+                
+                // Create page details table
+                const detailsHtml = `
+                    <div id="page-details-${fileIndexingId}" class="mt-4 border-t pt-4">
+                        <h4 class="font-medium mb-3 text-sm">Processed Pages (${pages.length})</h4>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-xs">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left font-medium text-gray-500">Page #</th>
+                                        <th class="px-3 py-2 text-left font-medium text-gray-500">Type</th>
+                                        <th class="px-3 py-2 text-left font-medium text-gray-500">Subtype</th>
+                                        <th class="px-3 py-2 text-left font-medium text-gray-500">Serial #</th>
+                                        <th class="px-3 py-2 text-left font-medium text-gray-500">Code</th>
+                                        <th class="px-3 py-2 text-left font-medium text-gray-500">Typed By</th>
+                                        <th class="px-3 py-2 text-left font-medium text-gray-500">Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200">
+                                    ${pages.map(page => `
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-3 py-2 text-gray-900">${page.page_number}</td>
+                                            <td class="px-3 py-2 text-gray-900">${page.page_type}</td>
+                                            <td class="px-3 py-2 text-gray-500">${page.page_subtype || '-'}</td>
+                                            <td class="px-3 py-2 text-gray-900">${page.serial_number}</td>
+                                            <td class="px-3 py-2 text-gray-500">${page.page_code || '-'}</td>
+                                            <td class="px-3 py-2 text-gray-500">${page.typed_by}</td>
+                                            <td class="px-3 py-2 text-gray-500">${page.created_at}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                
+                fileElement.insertAdjacentHTML('beforeend', detailsHtml);
+                
+                // Update button text
+                const button = fileElement.querySelector(`[onclick="togglePageDetails(${fileIndexingId})"]`);
+                const icon = button.querySelector('i');
+                icon.setAttribute('data-lucide', 'eye-off');
+                button.innerHTML = '<i data-lucide="eye-off" class="h-4 w-4 mr-1"></i>Hide Pages';
+                lucide.createIcons();
+            } else {
+                alert('No page typing data found for this file');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading page details:', error);
+            alert('Error loading page details: ' + error.message);
+        });
+    }
+    
     // Make functions globally available
     window.startPageTyping = startPageTyping;
     window.continuePageTyping = continuePageTyping;
     window.viewPageTyping = viewPageTyping;
+    window.togglePageDetails = togglePageDetails;
     
     console.log('Dynamic Page Typing module initialized');
 });

@@ -66,6 +66,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 content.setAttribute('aria-hidden', 'true');
             }
         });
+        
+        // Load scanned files when switching to that tab
+        if (tabName === 'scanned-files') {
+            loadScannedFiles();
+        }
     }
     
     // Load indexed files for selection
@@ -383,6 +388,154 @@ document.addEventListener('DOMContentLoaded', function() {
         if (uploadPercentage) uploadPercentage.textContent = '0%';
     }
     
+    // Load scanned files dynamically
+    function loadScannedFiles(search = '') {
+        const scannedFilesList = document.getElementById('scanned-files-list');
+        if (!scannedFilesList) return;
+        
+        // Show loading state in the table body
+        scannedFilesList.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-8">
+                    <i data-lucide="loader" class="h-8 w-8 mx-auto text-gray-400 animate-spin mb-4"></i>
+                    <p class="text-gray-500">Loading scanned files...</p>
+                </td>
+            </tr>
+        `;
+        lucide.createIcons();
+        
+        const url = `{{ route("scanning.list") }}?${selectedFileIndexing ? 'file_indexing_id=' + selectedFileIndexing.id + '&' : ''}search=${encodeURIComponent(search)}`;
+        
+        fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderScannedFiles(data.scanned_files);
+            } else {
+                scannedFilesList.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-8">
+                            <i data-lucide="alert-circle" class="h-12 w-12 mx-auto text-red-300 mb-4"></i>
+                            <p class="text-red-500">Error loading scanned files</p>
+                        </td>
+                    </tr>
+                `;
+                lucide.createIcons();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading scanned files:', error);
+            scannedFilesList.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-8">
+                        <i data-lucide="wifi-off" class="h-12 w-12 mx-auto text-red-300 mb-4"></i>
+                        <p class="text-red-500">Network error loading files</p>
+                    </td>
+                </tr>
+            `;
+            lucide.createIcons();
+        });
+    }
+    
+    // Render scanned files list as table rows
+    function renderScannedFiles(files) {
+        const scannedFilesList = document.getElementById('scanned-files-list');
+        if (!scannedFilesList) return;
+        
+        if (files.length === 0) {
+            scannedFilesList.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-8">
+                        <i data-lucide="inbox" class="h-12 w-12 mx-auto text-gray-300 mb-4"></i>
+                        <p class="text-gray-500">No scanned files found</p>
+                        <p class="text-sm text-gray-400">Upload some documents to see them here</p>
+                    </td>
+                </tr>
+            `;
+            lucide.createIcons();
+            return;
+        }
+        
+        // Clear the tbody and add table rows
+        scannedFilesList.innerHTML = '';
+        
+        files.forEach(file => {
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-gray-50';
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    ${file.file_indexing ? file.file_indexing.file_number : 'Unknown'}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    ${file.filename || 'Document'}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${file.uploaded_at || 'Unknown'}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(file.status)}">
+                        ${file.status ? file.status.charAt(0).toUpperCase() + file.status.slice(1) : 'Unknown'}
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    1 page
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    Unknown
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div class="flex items-center space-x-2">
+                        <button class="text-indigo-600 hover:text-indigo-900" onclick="viewDocument(${file.id})">
+                            <i data-lucide="eye" class="h-4 w-4 mr-1"></i>
+                            View
+                        </button>
+                       
+                    </div>
+                </td>
+            `;
+            scannedFilesList.appendChild(row);
+        });
+        
+        lucide.createIcons();
+    }
+    
+    // Get status badge class for table format
+    function getStatusBadgeClass(status) {
+        switch (status) {
+            case 'typed': return 'bg-green-100 text-green-800';
+            case 'scanned': return 'bg-blue-100 text-blue-800';
+            default: return 'bg-yellow-100 text-yellow-800';
+        }
+    }
+    
+    // Delete document function
+    function deleteDocument(scanId) {
+        if (!confirm('Are you sure you want to delete this document?')) {
+            return;
+        }
+        
+        fetch(`{{ route('scanning.delete', '') }}/${scanId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                loadScannedFiles(); // Reload the list
+            } else {
+                alert(data.message || 'Error deleting document');
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting document:', error);
+            alert('Error deleting document');
+        });
+    }
+    
     // Event listeners
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
@@ -448,6 +601,19 @@ document.addEventListener('DOMContentLoaded', function() {
     if (viewUploadedBtn) {
         viewUploadedBtn.addEventListener('click', () => {
             switchTab('scanned-files');
+            loadScannedFiles();
+        });
+    }
+    
+    // Search scanned files
+    const searchScannedFiles = document.getElementById('search-scanned-files');
+    if (searchScannedFiles) {
+        let searchTimeout;
+        searchScannedFiles.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                loadScannedFiles(this.value);
+            }, 300);
         });
     }
     
@@ -480,6 +646,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.viewDocument = function(scanId) {
         window.open(`{{ route('scanning.view', '') }}/${scanId}`, '_blank');
     };
+    window.deleteDocument = deleteDocument;
     
     console.log('Dynamic Scanning module initialized');
 });

@@ -296,11 +296,11 @@
                                     <td class="table-cell">
                                         {{ \Carbon\Carbon::parse($PrimaryApplication->created_at)->format('Y-m-d') }}
                                     </td>
-                                    <td class="table-cell uppercase">
+                                    <td class="table-cell capitalize">
                                         <div class="flex items-center">
                                             @php
-                                                $planningStatus = strtolower($PrimaryApplication->planning_recommendation_status ?? '');
-                                                $planningBadgeClass = match($planningStatus) {
+                                                $planningStatus = $PrimaryApplication->planning_recommendation_status ?? '';
+                                                $planningBadgeClass = match(strtolower($planningStatus)) {
                                                     'approved' => 'bg-green-100 text-green-800 border-green-200',
                                                     'pending' => 'bg-yellow-100 text-yellow-800 border-yellow-200',
                                                     'declined', 'rejected' => 'bg-red-100 text-red-800 border-red-200',
@@ -309,20 +309,20 @@
                                                 };
                                             @endphp
                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ $planningBadgeClass }}">
-                                                {{ strtolower($PrimaryApplication->planning_recommendation_status) }}
+                                                {{ ucfirst(strtolower($planningStatus)) }}
                                             </span>
-                                            @if(strtolower($PrimaryApplication->planning_recommendation_status) == 'declined')
+                                            @if(strtolower($planningStatus) == 'declined')
                                                 <i data-lucide="info" class="w-4 h-4 ml-1 text-blue-500 cursor-pointer" 
                                                    onclick="showDeclinedInfo(event, 'Planning Recommendation', {{ json_encode($PrimaryApplication->recomm_comments) }}, {{ json_encode($PrimaryApplication->director_comments) }})"></i>
                                             @endif
                                         </div>
                                     </td>    
                                     @if(!request()->has('survey') && (!request()->has('url') || (request()->get('url') !== 'phy_planning' && request()->get('url') !== 'recommendation')))
-                                    <td class="table-cell uppercase">
+                                    <td class="table-cell capitalize">
                                         <div class="flex items-center">
                                             @php
-                                                $directorStatus = strtolower($PrimaryApplication->application_status ?? '');
-                                                $directorBadgeClass = match($directorStatus) {
+                                                $directorStatus = $PrimaryApplication->application_status ?? '';
+                                                $directorBadgeClass = match(strtolower($directorStatus)) {
                                                     'approved' => 'bg-green-100 text-green-800 border-green-200',
                                                     'pending' => 'bg-yellow-100 text-yellow-800 border-yellow-200',
                                                     'declined', 'rejected' => 'bg-red-100 text-red-800 border-red-200',
@@ -331,9 +331,9 @@
                                                 };
                                             @endphp
                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ $directorBadgeClass }}">
-                                                {{ strtolower($PrimaryApplication->application_status) }}
+                                                {{ ucfirst(strtolower($directorStatus)) }}
                                             </span>
-                                            @if($directorStatus == 'declined')
+                                            @if(strtolower($directorStatus) == 'declined')
                                                 <i data-lucide="info" class="w-4 h-4 ml-1 text-blue-500 cursor-pointer" 
                                                    onclick="showDeclinedInfo(event, 'Application Status', {{ json_encode($PrimaryApplication->recomm_comments) }}, {{ json_encode($PrimaryApplication->director_comments) }})"></i>
                                             @endif

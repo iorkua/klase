@@ -197,70 +197,38 @@
             </div>
           </div>
           <div class="p-6">
-            @if($completedFiles && $completedFiles->count() > 0)
-              <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                  <thead class="bg-gray-50">
-                    <tr>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File Number</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File Name</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Typed</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Typed By</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pages</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="completed-files-list" class="bg-white divide-y divide-gray-200">
-                    @foreach($completedFiles as $file)
-                      <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {{ $file->file_number }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {{ $file->file_title }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {{ $file->updated_at->format('M d, Y') }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          @if($file->pagetypings->count() > 0)
-                            {{ $file->pagetypings->first()->typedBy->name ?? 'Unknown' }}
-                          @else
-                            Unknown
-                          @endif
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Completed
-                          </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {{ $file->pagetypings->count() }} pages
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div class="flex items-center space-x-2">
-                            <button class="text-indigo-600 hover:text-indigo-900" onclick="togglePageDetails({{ $file->id }})">
-                              <i data-lucide="eye" class="h-4 w-4 mr-1"></i>
-                              View Pages
-                            </button>
-                            {{-- <button class="text-gray-600 hover:text-gray-900" onclick="viewPageTyping({{ $file->id }})">
-                              <i data-lucide="external-link" class="h-4 w-4 mr-1"></i>
-                              Open
-                            </button> --}}
-                          </div>
-                        </td>
-                      </tr>
-                    @endforeach
-                  </tbody>
-                </table>
-              </div>
-            @else
-              <div class="text-center py-8">
-                <i data-lucide="inbox" class="h-12 w-12 mx-auto text-gray-300 mb-4"></i>
-                <p class="text-gray-500">No completed files</p>
-              </div>
-            @endif
+            <div id="completed-files-list" class="space-y-4">
+              @if($completedFiles && $completedFiles->count() > 0)
+                @foreach($completedFiles as $file)
+                  <div class="border rounded-lg p-4 hover:bg-gray-50">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center space-x-4">
+                        <div class="flex-shrink-0">
+                          <i data-lucide="check-circle" class="h-8 w-8 text-green-500"></i>
+                        </div>
+                        <div>
+                          <h3 class="text-sm font-medium">{{ $file->file_number }}</h3>
+                          <p class="text-sm text-gray-600">{{ $file->file_title }}</p>
+                          <p class="text-xs text-gray-500">{{ $file->pagetypings->count() }} pages typed • Completed {{ $file->updated_at->diffForHumans() }}</p>
+                        </div>
+                      </div>
+                      <div class="flex items-center space-x-2">
+                        <span class="badge bg-green-500 text-white">Completed</span>
+                        <button class="btn btn-outline btn-sm" onclick="viewPageTyping({{ $file->id }})">
+                          <i data-lucide="eye" class="h-4 w-4 mr-1"></i>
+                          View
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                @endforeach
+              @else
+                <div class="text-center py-8">
+                  <i data-lucide="inbox" class="h-12 w-12 mx-auto text-gray-300 mb-4"></i>
+                  <p class="text-gray-500">No completed files</p>
+                </div>
+              @endif
+            </div>
           </div>
         </div>
       </div>

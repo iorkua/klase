@@ -18,26 +18,26 @@
     <div class="grid grid-cols-3 gap-6 mb-6">
       <!-- File Index Card -->
       <div class="card p-6">
-        <div class="card-title mb-2">File Index</div>
-        <div class="text-3xl font-bold mb-2" id="pending-files-count">3</div>
+        <div class="card-title mb-2">Pending Files</div>
+        <div class="text-3xl font-bold mb-2" id="pending-files-count">{{ $stats['pending_files'] ?? 0 }}</div>
         <div class="text-sm text-gray-500">Files waiting to be indexed</div>
       </div>
 
       <!-- Indexed Today Card -->
       <div class="card p-6">
         <div class="card-title mb-2">Indexed Today</div>
-        <div class="text-3xl font-bold mb-2" id="indexed-files-count">2</div>
+        <div class="text-3xl font-bold mb-2" id="indexed-files-count">{{ $stats['indexed_today'] ?? 0 }}</div>
         <div class="text-sm text-gray-500">Files indexed today</div>
       </div>
 
-      <!-- Next Steps Card -->
+      <!-- Total Indexed Card -->
       <div class="card p-6">
-        <div class="card-title mb-2">Next Steps</div>
+        <div class="card-title mb-2">Total Indexed</div>
         <div class="text-3xl font-bold mb-2 flex items-center">
-          Scanning
-          <span class="badge badge-blue ml-2 text-xs">Stage 2</span>
+          {{ $stats['total_indexed'] ?? 0 }}
+          <span class="badge badge-blue ml-2 text-xs">Total</span>
         </div>
-        <div class="text-sm text-gray-500">After indexing, proceed to scanning</div>
+        <div class="text-sm text-gray-500">All indexed files in system</div>
       </div>
     </div>
 
@@ -281,12 +281,28 @@
           <div class="grid grid-cols-2 gap-4">
             <div class="form-group">
               <label class="form-label">Land Use Type</label>
-              <select class="input">
-                <option value="residential">Residential</option>
-                <option value="commercial">Commercial</option>
-                <option value="industrial">Industrial</option>
-                <option value="agricultural">Agricultural</option>
-              </select>
+              <select id="landUse" name="landUse" class="form-select text-sm">
+                <option value="">Select land use</option>
+                <option value="RESIDENTIAL">RESIDENTIAL</option>
+                <option value="AGRICULTURAL">AGRICULTURAL</option>
+                <option value="COMMERCIAL">COMMERCIAL</option>
+                <option value="COMMERCIAL ( WARE HOUSE)">COMMERCIAL ( WARE HOUSE)</option>
+                <option value="COMMERCIAL (OFFICES)">COMMERCIAL (OFFICES)</option>
+                <option value="COMMERCIAL (PETROL FILLING STATION)">COMMERCIAL (PETROL FILLING STATION)</option>
+                <option value="COMMERCIAL (RICE PROCESSING)">COMMERCIAL (RICE PROCESSING)</option>
+                <option value="COMMERCIAL (SCHOOL)">COMMERCIAL (SCHOOL)</option>
+                <option value="COMMERCIAL (SHOPS & PUBLIC CONVINIENCE)">COMMERCIAL (SHOPS & PUBLIC CONVINIENCE)</option>
+                <option value="COMMERCIAL (SHOPS AND OFFICES)">COMMERCIAL (SHOPS AND OFFICES)</option>
+                <option value="COMMERCIAL (SHOPS)">COMMERCIAL (SHOPS)</option>
+                <option value="COMMERCIAL (WAREHOUSE)">COMMERCIAL (WAREHOUSE)</option>
+                <option value="COMMERCIAL (WORKSHOP AND OFFICES)">COMMERCIAL (WORKSHOP AND OFFICES)</option>
+                <option value="COMMERCIAL AND RESIDENTIAL">COMMERCIAL AND RESIDENTIAL</option>
+                <option value="INDUSTRIAL">INDUSTRIAL</option>
+                <option value="INDUSTRIAL (SMALL SCALE)">INDUSTRIAL (SMALL SCALE)</option>
+                <option value="RESIDENTIAL AND COMMERCIAL">RESIDENTIAL AND COMMERCIAL</option>
+                <option value="RESIDENTIAL/COMMERCIAL">RESIDENTIAL/COMMERCIAL</option>
+                <option value="RESIDENTIAL/COMMERCIAL LAYOUT">RESIDENTIAL/COMMERCIAL LAYOUT</option>
+            </select>
             </div>
             <div class="form-group">
               <label class="form-label">Plot Number</label>
@@ -296,17 +312,11 @@
           
           <div class="grid grid-cols-2 gap-4">
             <div class="form-group">
-              <label class="form-label">District</label>
-              <select class="input">
-                <option value="nasarawa">Nasarawa</option>
-                <option value="fagge">Fagge</option>
-                <option value="bompai">Bompai</option>
-                <option value="other">Other</option>
-              </select>
+              @include('components.StreetName2')
+             
             </div>
             <div class="form-group">
-              <label class="form-label">LGA/City</label>
-              <input type="text" class="input" value="Kano Municipal">
+              @include('components.District')
             </div>
           </div>
         </div>

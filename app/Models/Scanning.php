@@ -14,6 +14,10 @@ class Scanning extends Model
         'document_path',
         'uploaded_by',
         'status',
+        'original_filename',
+        'paper_size',
+        'document_type',
+        'notes',
     ];
 
     protected $casts = [
@@ -29,5 +33,10 @@ class Scanning extends Model
     public function uploader()
     {
         return $this->belongsTo(User::class, 'uploaded_by');
+    }
+
+    public function pagetypings()
+    {
+        return $this->hasMany(PageTyping::class, 'scanning_id');
     }
 }

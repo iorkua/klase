@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                currentDocuments = data.scanned_files;
+                currentDocuments = data.scanned_files || [];
                 selectedFileIndexing = { id: fileIndexingId };
                 
                 if (currentDocuments.length === 0) {
@@ -112,7 +112,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateDocumentCounter();
                 updateTypingProgress();
                 
-                typingModalTitle.textContent = `Page Typing - ${currentDocuments[0].file_indexing.file_number}`;
+                // Set title safely
+                const fileNumber = currentDocuments[0]?.file_indexing?.file_number || 'Unknown File';
+                typingModalTitle.textContent = `Page Typing - ${fileNumber}`;
             } else {
                 throw new Error(data.message || 'Failed to load documents');
             }
@@ -127,10 +129,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load existing page typings
     function loadExistingPageTypings(fileIndexingId) {
         fetch(`{{ route("pagetyping.list") }}?file_indexing_id=${fileIndexingId}`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
-            if (data.success) {
-                savedPages = data.page_typings;
+            if (data.success && data.page_typings) {
+                savedPages = data.page_typings || [];
                 updateTypingProgress();
                 
                 // If there are existing typings, load the last one
@@ -140,10 +147,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     pageNumberInput.value = currentPageNumber;
                     serialNumberInput.value = savedPages.length + 1;
                 }
+            } else {
+                savedPages = [];
+                updateTypingProgress();
             }
         })
         .catch(error => {
             console.error('Error loading existing page typings:', error);
+            savedPages = [];
+            updateTypingProgress();
         });
     }
     
@@ -154,9 +166,16 @@ document.addEventListener('DOMContentLoaded', function() {
         currentDocumentIndex = index;
         const document = currentDocuments[index];
         
+        // Check if document and required properties exist
+        if (!document || !document.file_url) {
+            documentViewer.innerHTML = '<div class="flex items-center justify-center h-full text-gray-500"><p>Document not available</p></div>';
+            return;
+        }
+        
         // Display document
         const fileUrl = document.file_url;
-        const fileExtension = document.filename.split('.').pop().toLowerCase();
+        const filename = document.filename || document.file_name || 'Unknown file';
+        const fileExtension = filename && typeof filename === 'string' ? filename.split('.').pop().toLowerCase() : '';
         
         if (['jpg', 'jpeg', 'png', 'gif', 'tiff'].includes(fileExtension)) {
             documentViewer.innerHTML = `
@@ -170,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
             documentViewer.innerHTML = `
                 <div class="flex flex-col items-center justify-center h-full text-gray-500">
                     <i data-lucide="file-text" class="h-12 w-12 mb-4"></i>
-                    <p class="mb-2">${document.filename}</p>
+                    <p class="mb-2">${filename}</p>
                     <a href="${fileUrl}" target="_blank" class="btn btn-outline btn-sm">
                         <i data-lucide="external-link" class="h-4 w-4 mr-2"></i>
                         Open Document
@@ -413,6 +432,162 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedFileIndexing = null;
     }
     
+    // Toggle page details for completed files
+    function togglePageDetails(fileIndexingId) {
+        const existingDetails = document.getElementById(`page-details-${fileIndexingId}`);
+        
+        if (existingDetails) {
+            // Toggle visibility and update button
+            const button = document.querySelector(`[onclick="togglePageDetails(${fileIndexingId})"]`);
+            if (existingDetails.style.display === 'none') {
+                existingDetails.style.display = 'table-row';
+                button.innerHTML = '<i data-lucide="eye-off" class="h-4 w-4 mr-1"></i>Hide Pages';
+            } else {
+                existingDetails.style.display = 'none';
+                button.innerHTML = '<i data-lucide="eye" class="h-4 w-4 mr-1"></i>View Pages';
+            }
+            lucide.createIcons();
+            return;
+        }
+        
+        // Find the table row element
+        const tableRow = document.querySelector(`[onclick="togglePageDetails(${fileIndexingId})"]`).closest('tr');
+        
+        // Load page details and file information
+        Promise.all([
+            fetch(`{{ route("pagetyping.list") }}?file_indexing_id=${fileIndexingId}`),
+            fetch(`{{ route("scanning.list") }}?file_indexing_id=${fileIndexingId}`)
+        ])
+        .then(responses => Promise.all(responses.map(r => {
+            if (!r.ok) {
+                throw new Error(`HTTP error! status: ${r.status}`);
+            }
+            return r.json();
+        })))
+        .then(([pageData, scanData]) => {
+            if (pageData.success && pageData.page_typings && scanData.success) {
+                const pages = pageData.page_typings;
+                const scannedFiles = scanData.scanned_files || [];
+                
+                // Get file information
+                const fileInfo = scannedFiles.length > 0 ? scannedFiles[0].file_indexing : null;
+                const fileName = fileInfo?.file_number || 'Unknown File';
+                const fileTitle = fileInfo?.file_title || 'Unknown Title';
+                
+                // Create horizontal card layout for documents
+                const documentCards = scannedFiles.map((doc, index) => {
+                    const docPages = pages.filter(page => page.file_path === doc.document_path);
+                    const pageType = docPages.length > 0 ? docPages[0].page_type : 'Unknown';
+                    const pageCode = docPages.length > 0 ? docPages[0].page_code : '';
+                    const typedBy = docPages.length > 0 ? docPages[0].typed_by : 'Unknown';
+                    
+                    // Generate document preview
+                    const fileExtension = doc.filename ? doc.filename.split('.').pop().toLowerCase() : '';
+                    let documentPreview = '';
+                    
+                    if (['jpg', 'jpeg', 'png', 'gif', 'tiff'].includes(fileExtension)) {
+                        documentPreview = `<img src="${doc.file_url}" alt="Document" class="w-full h-32 object-cover rounded" onerror="this.parentElement.innerHTML='<div class=\\'w-full h-32 bg-gray-100 rounded flex items-center justify-center\\'><i data-lucide=\\'image-off\\' class=\\'h-12 w-12 text-gray-400\\'></i></div>'">`;
+                    } else if (fileExtension === 'pdf') {
+                        documentPreview = `
+                            <div class="w-full h-32 bg-red-100 rounded flex items-center justify-center">
+                                <i data-lucide="file-text" class="h-12 w-12 text-red-500"></i>
+                            </div>
+                        `;
+                    } else {
+                        documentPreview = `
+                            <div class="w-full h-32 bg-gray-100 rounded flex items-center justify-center">
+                                <i data-lucide="file" class="h-12 w-12 text-gray-400"></i>
+                            </div>
+                        `;
+                    }
+                    
+                    return `
+                        <div class="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                            <!-- Document Preview -->
+                            <div class="mb-3">
+                                ${documentPreview}
+                            </div>
+                            
+                            <!-- Document Code Badge -->
+                            ${pageCode ? `<div class="mb-2">
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    ${pageCode}
+                                </span>
+                            </div>` : ''}
+                            
+                            <!-- Document Type -->
+                            <div class="mb-2">
+                                <span class="text-xs font-medium text-gray-600">${pageType}</span>
+                            </div>
+                            
+                            <!-- Document Title -->
+                            <h6 class="text-sm font-semibold text-gray-900 mb-2 line-clamp-2">
+                                ${doc.filename || 'Untitled Document'}
+                            </h6>
+                            
+                            <!-- Typed By Info -->
+                            <div class="text-xs text-gray-500">
+                                <span class="font-medium">Typed by:</span> ${typedBy}
+                            </div>
+                            
+                            <!-- Page Count -->
+                            <div class="text-xs text-gray-500 mt-1">
+                                ${docPages.length} page${docPages.length !== 1 ? 's' : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // Create the expanded row content
+                const detailsHtml = `
+                    <tr id="page-details-${fileIndexingId}">
+                        <td colspan="7" class="px-6 py-4 bg-gray-50">
+                            <div class="space-y-4">
+                                <!-- File Information Header -->
+                                <div class="border-b pb-3">
+                                    <h4 class="font-semibold text-lg text-gray-900 mb-2">Document Pages</h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                        <div>
+                                            <span class="font-medium text-gray-600">File Name:</span>
+                                            <span class="text-gray-900 ml-1">${fileName}</span>
+                                        </div>
+                                        <div>
+                                            <span class="font-medium text-gray-600">File Title:</span>
+                                            <span class="text-gray-900 ml-1">${fileTitle}</span>
+                                        </div>
+                                        <div>
+                                            <span class="font-medium text-gray-600">Total Pages:</span>
+                                            <span class="text-gray-900 ml-1">${pages.length}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Horizontal Document Cards -->
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                                    ${documentCards}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                
+                // Insert the details row after the current row
+                tableRow.insertAdjacentHTML('afterend', detailsHtml);
+                
+                // Update button text
+                const button = tableRow.querySelector(`[onclick="togglePageDetails(${fileIndexingId})"]`);
+                button.innerHTML = '<i data-lucide="eye-off" class="h-4 w-4 mr-1"></i>Hide Pages';
+                lucide.createIcons();
+            } else {
+                alert('No page typing data found for this file');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading page details:', error);
+            alert('Error loading page details: ' + error.message);
+        });
+    }
+    
     // Event listeners
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
@@ -479,7 +654,7 @@ document.addEventListener('DOMContentLoaded', function() {
         searchCompletedFiles.addEventListener('input', function() {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
-                filterFilesList('completed-files-list', this.value);
+                filterCompletedFiles(this.value);
             }, 300);
         });
     }
@@ -500,6 +675,35 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Filter completed files table
+    function filterCompletedFiles(searchTerm) {
+        const tbody = document.getElementById('completed-files-list');
+        if (!tbody) return;
+        
+        const rows = tbody.querySelectorAll('tr');
+        rows.forEach(row => {
+            // Skip the expanded detail rows
+            if (row.id && row.id.startsWith('page-details-')) {
+                return;
+            }
+            
+            const text = row.textContent.toLowerCase();
+            if (text.includes(searchTerm.toLowerCase())) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+                // Also hide any expanded details for this row
+                const fileId = row.querySelector('[onclick*="togglePageDetails"]')?.getAttribute('onclick')?.match(/\d+/)?.[0];
+                if (fileId) {
+                    const detailRow = document.getElementById(`page-details-${fileId}`);
+                    if (detailRow) {
+                        detailRow.style.display = 'none';
+                    }
+                }
+            }
+        });
+    }
+    
     // Auto-start typing if file is selected
     if (selectedFileIndexing) {
         startPageTyping(selectedFileIndexing.id);
@@ -509,6 +713,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.startPageTyping = startPageTyping;
     window.continuePageTyping = continuePageTyping;
     window.viewPageTyping = viewPageTyping;
+    window.togglePageDetails = togglePageDetails;
     
     console.log('Dynamic Page Typing module initialized');
 });

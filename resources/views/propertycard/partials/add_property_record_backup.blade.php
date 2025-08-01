@@ -83,59 +83,8 @@
                     </div>
                     <!-- Street Name and District/Neighbourhood -->
                     <div class="grid grid-cols-2 gap-3">
-                        <!-- Street Name Component -->
-                        <div class="space-y-2">
-                            <label for="streetName" class="text-xs text-gray-600">Street Name</label>
-                            <select id="streetName" class="form-input text-sm property-input" 
-                                    @change="handleStreetChange($event.target.value)"
-                                    name="streetName">
-                                <option value="" selected>Select Street Name</option>
-                                <option value="10TH ST">10TH ST</option>
-                                <option value="11TH AV">11TH AV</option>
-                                <option value="AHMADU BELLO WAY">AHMADU BELLO WAY</option>
-                                <option value="MURTALA MOHAMMED WAY">MURTALA MOHAMMED WAY</option>
-                                <option value="IBRAHIM TAIWO ROAD">IBRAHIM TAIWO ROAD</option>
-                                <option value="other">Other</option>
-                            </select>
-                            <input 
-                                type="text" 
-                                id="otherStreetName" 
-                                x-show="showOtherStreet" 
-                                x-model="customStreet" 
-                                class="form-input text-sm property-input mt-2" 
-                                placeholder="Please specify other street name"
-                                x-transition
-                                @input="handleStreetChange($event.target.value)"
-                            >
-                        </div>
-                        
-                        <!-- District Component -->
-                        <div class="space-y-2">
-                            <label for="district" class="text-xs text-gray-600">District Name</label>
-                            <select id="district" class="form-input text-sm property-input" 
-                                    @change="handleDistrictChange($event.target.value)"
-                                    name="district">
-                                <option value="" selected>Select District Name</option>
-                                <option value="DALA">DALA</option>
-                                <option value="DAWAKIN KUDU">DAWAKIN KUDU</option>
-                                <option value="FAGGE">FAGGE</option>
-                                <option value="GWALE">GWALE</option>
-                                <option value="KUMBOTSO">KUMBOTSO</option>
-                                <option value="MUNICIPAL">MUNICIPAL</option>
-                                <option value="TARAUNI">TARAUNI</option>
-                                <option value="other">Other</option>
-                            </select>
-                            <input 
-                                type="text" 
-                                id="otherDistrict" 
-                                x-show="showOtherDistrict" 
-                                x-model="customDistrict" 
-                                class="form-input text-sm property-input mt-2" 
-                                placeholder="Please specify other district name"
-                                x-transition
-                                @input="handleDistrictChange($event.target.value)"
-                            >
-                        </div>
+                        @include('components.StreetName2')
+                        @include('components.District')
                     
                     <div>
                         <label for="lga" class="text-xs text-gray-600">LGA</label>
@@ -448,6 +397,207 @@
 @endif
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form submission handler
+    const propertyForm = document.getElementById('property-record-form');
+    if (propertyForm) {
+        propertyForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // File numbers are automatically handled by Alpine.js in the manual_fileno partial
+            
+            // Update registration number preview and hidden field
+            const serialNo = document.getElementById('serialNo').value || '';
+            const pageNo = document.getElementById('pageNo').value || '';
+            const volumeNo = document.getElementById('volumeNo').value || '';
+            
+            if (document.getElementById('regNo')) {
+                document.getElementById('regNo').textContent = `${serialNo}/${pageNo}/${volumeNo}`;
+            }
+            
+            // Create a hidden input for the reg number if it doesn't exist
+            if (!document.getElementById('regNoField')) {
+                const regNoInput = document.createElement('input');
+                regNoInput.type = 'hidden';
+                regNoInput.id = 'regNoField';
+                regNoInput.name = 'regNo';
+                regNoInput.value = `${serialNo}/${pageNo}/${volumeNo}`;
+                propertyForm.appendChild(regNoInput);
+            } else {
+                document.getElementById('regNoField').value = `${serialNo}/${pageNo}/${volumeNo}`;
+            }
+            
+            // Get transaction-specific fields based on the active transaction type
+            const transactionType = document.getElementById('transactionType-record').value;
+            if (transactionType) {
+                // Update party field names based on transaction type
+                updatePartyFields(transactionType);
+            }
+            
+            // Now actually submit the form
+            console.log('Submitting form...');
+            
+            // Show loading state
+            Swal.fire({
+                title: 'Processing...',
+                text: 'Saving property record',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                allowEnterKey: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // Get the form action URL as a string
+            const actionUrl = propertyForm.getAttribute('action');
+            
+            // Use fetch API for AJAX submission
+            fetch(actionUrl, {
+                method: 'POST',
+                body: new FormData(propertyForm),
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    // Handle validation errors specifically
+                    if (response.status === 422) {
+                        return response.json().then(data => {
+                            throw new Error('Validation failed');
+                        });
+                    }
+                    throw new Error('Network response was not ok: ' + response.statusText);
+                }
+                return response.json();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Show error message with SweetAlert
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Validation failed',
+                    confirmButtonColor: '#3085d6'
+                });
+            });
+        });
+    }
+    
+    // Function to update party fields based on transaction type
+    function updatePartyFields(transactionType) {
+        // Check which fields are visible based on transaction type
+        switch(transactionType) {
+            case 'assignment':
+                if (document.getElementById('trans-assignor-record')) {
+                    const assignorField = document.createElement('input');
+                    assignorField.type = 'hidden';
+                    assignorField.name = 'Assignor';
+                    assignorField.value = document.getElementById('trans-assignor-record').value;
+                    propertyForm.appendChild(assignorField);
+                    
+                    const assigneeField = document.createElement('input');
+                    assigneeField.type = 'hidden';
+                    assigneeField.name = 'Assignee';
+                    assigneeField.value = document.getElementById('trans-assignee-record').value;
+                    propertyForm.appendChild(assigneeField);
+                }
+                break;
+            case 'mortgage':
+                if (document.getElementById('mortgagor-record')) {
+                    const mortgagorField = document.createElement('input');
+                    mortgagorField.type = 'hidden';
+                    mortgagorField.name = 'Mortgagor';
+                    mortgagorField.value = document.getElementById('mortgagor-record').value;
+                    propertyForm.appendChild(mortgagorField);
+                    
+                    const mortgageeField = document.createElement('input');
+                    mortgageeField.type = 'hidden';
+                    mortgageeField.name = 'Mortgagee';
+                    mortgageeField.value = document.getElementById('mortgagee-record').value;
+                    propertyForm.appendChild(mortgageeField);
+                }
+                break;
+                // Add other transaction types as needed
+        }
+    }
+    
+    // Initialize registration number preview
+    const serialNo = document.getElementById('serialNo');
+    const pageNo = document.getElementById('pageNo');
+    const volumeNo = document.getElementById('volumeNo');
+    
+    // Function to update registration number preview
+    function updateRegNoPreview() {
+        const serialNo = document.getElementById('serialNo');
+        const pageNo = document.getElementById('pageNo');
+        const volumeNo = document.getElementById('volumeNo');
+        
+        if ((serialNo && serialNo.value) || (pageNo && pageNo.value) || (volumeNo && volumeNo.value)) {
+            const regNoDisplay = [
+                serialNo ? serialNo.value : '',
+                pageNo ? pageNo.value : '',
+                volumeNo ? volumeNo.value : ''
+            ].filter(Boolean).join('/') || 'Not set';
+            
+            // Update any preview elements if they exist
+            const previewElement = document.querySelector('[x-text="regNoDisplay"]');
+            if (previewElement) {
+                previewElement.textContent = regNoDisplay;
+            }
+        }
+    }
+    
+    if (serialNo) serialNo.addEventListener('input', updateRegNoPreview);
+    if (pageNo) pageNo.addEventListener('input', updateRegNoPreview);
+    if (volumeNo) volumeNo.addEventListener('input', updateRegNoPreview);
+    
+    // Fix name of transaction type field to match controller expected name
+    const transactionTypeField = document.getElementById('transactionType-record');
+    if (transactionTypeField) {
+        transactionTypeField.name = 'transactionType';
+    }
+    
+    // Fix other field names to match expected controller names
+    const instrumentTypeField = document.getElementById('instrumentType');
+    if (instrumentTypeField) {
+        instrumentTypeField.name = 'instrumentType';
+    }
+    
+    const periodField = document.getElementById('period');
+    if (periodField) {
+        periodField.name = 'period';
+    }
+    
+    const periodUnitField = document.getElementById('periodUnit');
+    if (periodUnitField) {
+        periodUnitField.name = 'periodUnit';
+    }
+    
+    const propertyDescriptionField = document.getElementById('property-description');
+    if (propertyDescriptionField) {
+        propertyDescriptionField.name = 'property_description';
+    }
+    
+    const locationField = document.getElementById('property-location');
+    if (locationField) {
+        locationField.name = 'location';
+    }
+    
+    const plotNoField = document.getElementById('plotNo');
+    if (plotNoField) {
+        plotNoField.name = 'plotNo';
+    }
+    
+    // Also fix date field name
+    const transactionDateField = document.getElementById('transactionDate');
+    if (transactionDateField) {
+        transactionDateField.name = 'transactionDate';
+    }
+});
+
 // Alpine.js component for Property Record Form
 function propertyRecordForm() {
     return {
@@ -461,12 +611,6 @@ function propertyRecordForm() {
         lga: '',
         state: 'Kano',
         
-        // Component state variables
-        showOtherStreet: false,
-        customStreet: '',
-        showOtherDistrict: false,
-        customDistrict: '',
-        
         // Computed property for description
         get description() {
             let desc = '';
@@ -476,38 +620,6 @@ function propertyRecordForm() {
             if (this.lga) desc += (desc ? ', ' : '') + `${this.lga} LGA`;
             if (this.state) desc += (desc ? ', ' : '') + this.state;
             return desc;
-        },
-        
-        // Handle street changes
-        handleStreetChange(value) {
-            if (value === 'other') {
-                this.showOtherStreet = true;
-                this.street = this.customStreet;
-            } else if (value && value !== 'other') {
-                this.showOtherStreet = false;
-                this.customStreet = '';
-                this.street = value;
-            } else {
-                // Custom input value
-                this.street = value;
-                this.customStreet = value;
-            }
-        },
-        
-        // Handle district changes
-        handleDistrictChange(value) {
-            if (value === 'other') {
-                this.showOtherDistrict = true;
-                this.district = this.customDistrict;
-            } else if (value && value !== 'other') {
-                this.showOtherDistrict = false;
-                this.customDistrict = '';
-                this.district = value;
-            } else {
-                // Custom input value
-                this.district = value;
-                this.customDistrict = value;
-            }
         },
         
         // Define transaction types with their corresponding party labels
@@ -589,15 +701,41 @@ function propertyRecordForm() {
             // Watch for changes in selectedTransactionType
             this.$watch('selectedTransactionType', (value) => {
                 console.log('📝 Transaction type changed to:', value);
-            });
-            
-            // Watch for changes in description
-            this.$watch('description', (value) => {
-                console.log('📝 Description updated:', value);
+                console.log('🏷️ Party labels updated to:', this.partyLabels);
+                console.log('🔍 Should show default fields:', this.shouldShowDefaultFields);
+                console.log('🏛️ Auto-filled grantor:', this.autoFilledGrantor);
             });
         }
     }
 }
 
 console.log('🎉 Alpine.js Property Record Form script loaded');
+
+// Function to toggle other street name input
+function toggleOtherStreetName() {
+    const select = document.getElementById('streetName');
+    const otherInput = document.getElementById('otherStreetName');
+    
+    if (select && otherInput) {
+        if (select.value === 'other') {
+            otherInput.classList.remove('hidden');
+            otherInput.name = 'streetName';
+            select.name = '';
+        } else {
+            otherInput.classList.add('hidden');
+            otherInput.name = '';
+            select.name = 'streetName';
+        }
+    }
+}
+
+// Function to toggle other street name input (alternative name for compatibility)
+function toggleotherStreetName() {
+    toggleOtherStreetName();
+}
+
+// Initialize the toggle function on page load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleOtherStreetName();
+});
 </script>

@@ -207,68 +207,39 @@
                                 </div>
                             </div>
                             <div class="p-6">
-                                @if($recentScans && $recentScans->count() > 0)
-                                    <div class="overflow-x-auto">
-                                        <table class="min-w-full divide-y divide-gray-200">
-                                            <thead class="bg-gray-50">
-                                                <tr>
-                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File Number</th>
-                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scan Date</th>
-                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pages</th>
-                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scanned By</th>
-                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="scanned-files-list" class="bg-white divide-y divide-gray-200">
-                                                @foreach($recentScans as $scan)
-                                                    <tr class="hover:bg-gray-50">
-                                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                            {{ $scan->fileIndexing->file_number ?? 'Unknown' }}
-                                                        </td>
-                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                            {{ $scan->original_filename ?? 'Document' }}
-                                                        </td>
-                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            {{ $scan->created_at->format('M d, Y') }}
-                                                        </td>
-                                                        <td class="px-6 py-4 whitespace-nowrap">
-                                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                                                {{ $scan->status === 'typed' ? 'bg-green-100 text-green-800' : 
-                                                                   ($scan->status === 'scanned' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800') }}">
-                                                                {{ ucfirst($scan->status) }}
-                                                            </span>
-                                                        </td>
-                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            1 page
-                                                        </td>
-                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            {{ $scan->uploader->name ?? 'Unknown' }}
-                                                        </td>
-                                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                            <div class="flex items-center space-x-2">
-                                                                <button class="text-indigo-600 hover:text-indigo-900" onclick="viewDocument({{ $scan->id }})">
-                                                                    <i data-lucide="eye" class="h-4 w-4 mr-1"></i>
-                                                                    View
-                                                                </button>
-                                                                <button class="text-red-600 hover:text-red-900" onclick="deleteDocument({{ $scan->id }})">
-                                                                    <i data-lucide="trash-2" class="h-4 w-4 mr-1"></i>
-                                                                    Delete
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                @else
-                                    <div class="text-center py-8">
-                                        <i data-lucide="inbox" class="h-12 w-12 mx-auto text-gray-300 mb-4"></i>
-                                        <p class="text-gray-500">No scanned files found</p>
-                                    </div>
-                                @endif
+                                <div id="scanned-files-list" class="space-y-4">
+                                    @if($recentScans && $recentScans->count() > 0)
+                                        @foreach($recentScans as $scan)
+                                            <div class="border rounded-lg p-4 hover:bg-gray-50">
+                                                <div class="flex items-center justify-between">
+                                                    <div class="flex items-center space-x-4">
+                                                        <div class="flex-shrink-0">
+                                                            <i data-lucide="file-text" class="h-8 w-8 text-blue-500"></i>
+                                                        </div>
+                                                        <div>
+                                                            <h3 class="text-sm font-medium">{{ $scan->original_filename ?? 'Document' }}</h3>
+                                                            <p class="text-sm text-gray-500">{{ $scan->fileIndexing->file_number ?? 'Unknown File' }}</p>
+                                                            <p class="text-xs text-gray-400">Uploaded {{ $scan->created_at->diffForHumans() }}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex items-center space-x-2">
+                                                        <span class="badge {{ $scan->status === 'typed' ? 'bg-green-500' : ($scan->status === 'scanned' ? 'bg-blue-500' : 'bg-yellow-500') }} text-white">
+                                                            {{ ucfirst($scan->status) }}
+                                                        </span>
+                                                        <button class="btn btn-outline btn-sm" onclick="viewDocument({{ $scan->id }})">
+                                                            <i data-lucide="eye" class="h-4 w-4"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    @else
+                                        <div class="text-center py-8">
+                                            <i data-lucide="inbox" class="h-12 w-12 mx-auto text-gray-300 mb-4"></i>
+                                            <p class="text-gray-500">No scanned files found</p>
+                                        </div>
+                                    @endif
+                                </div>
                             </div>
                         </div>
                     </div>

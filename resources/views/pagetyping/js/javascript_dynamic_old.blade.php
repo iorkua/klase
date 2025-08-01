@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                currentDocuments = data.scanned_files;
+                currentDocuments = data.scanned_files || [];
                 selectedFileIndexing = { id: fileIndexingId };
                 
                 if (currentDocuments.length === 0) {
@@ -112,7 +112,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateDocumentCounter();
                 updateTypingProgress();
                 
-                typingModalTitle.textContent = `Page Typing - ${currentDocuments[0].file_indexing.file_number}`;
+                // Set title safely
+                const fileNumber = currentDocuments[0]?.file_indexing?.file_number || 'Unknown File';
+                typingModalTitle.textContent = `Page Typing - ${fileNumber}`;
             } else {
                 throw new Error(data.message || 'Failed to load documents');
             }
@@ -127,10 +129,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load existing page typings
     function loadExistingPageTypings(fileIndexingId) {
         fetch(`{{ route("pagetyping.list") }}?file_indexing_id=${fileIndexingId}`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
-            if (data.success) {
-                savedPages = data.page_typings;
+            if (data.success && data.page_typings) {
+                savedPages = data.page_typings || [];
                 updateTypingProgress();
                 
                 // If there are existing typings, load the last one
@@ -140,10 +147,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     pageNumberInput.value = currentPageNumber;
                     serialNumberInput.value = savedPages.length + 1;
                 }
+            } else {
+                savedPages = [];
+                updateTypingProgress();
             }
         })
         .catch(error => {
             console.error('Error loading existing page typings:', error);
+            savedPages = [];
+            updateTypingProgress();
         });
     }
     
@@ -154,9 +166,16 @@ document.addEventListener('DOMContentLoaded', function() {
         currentDocumentIndex = index;
         const document = currentDocuments[index];
         
+        // Check if document and required properties exist
+        if (!document || !document.file_url) {
+            documentViewer.innerHTML = '<div class="flex items-center justify-center h-full text-gray-500"><p>Document not available</p></div>';
+            return;
+        }
+        
         // Display document
         const fileUrl = document.file_url;
-        const fileExtension = document.filename.split('.').pop().toLowerCase();
+        const filename = document.filename || document.file_name || 'Unknown file';
+        const fileExtension = filename && typeof filename === 'string' ? filename.split('.').pop().toLowerCase() : '';
         
         if (['jpg', 'jpeg', 'png', 'gif', 'tiff'].includes(fileExtension)) {
             documentViewer.innerHTML = `
@@ -170,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
             documentViewer.innerHTML = `
                 <div class="flex flex-col items-center justify-center h-full text-gray-500">
                     <i data-lucide="file-text" class="h-12 w-12 mb-4"></i>
-                    <p class="mb-2">${document.filename}</p>
+                    <p class="mb-2">${filename}</p>
                     <a href="${fileUrl}" target="_blank" class="btn btn-outline btn-sm">
                         <i data-lucide="external-link" class="h-4 w-4 mr-2"></i>
                         Open Document
@@ -413,6 +432,131 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedFileIndexing = null;
     }
     
+    // Toggle page details for completed files
+    function togglePageDetails(fileIndexingId) {
+        const existingDetails = document.getElementById(`page-details-${fileIndexingId}`);
+        
+        if (existingDetails) {
+            // Toggle visibility and update button
+            const button = document.querySelector(`[onclick="togglePageDetails(${fileIndexingId})"]`);
+            if (existingDetails.style.display === 'none') {
+                existingDetails.style.display = 'block';
+                button.innerHTML = '<i data-lucide="eye-off" class="h-4 w-4 mr-1"></i>Hide Pages';
+            } else {
+                existingDetails.style.display = 'none';
+                button.innerHTML = '<i data-lucide="eye" class="h-4 w-4 mr-1"></i>View Pages';
+            }
+            lucide.createIcons();
+            return;
+        }
+        
+        // Load page details and file information
+        Promise.all([
+            fetch(`{{ route("pagetyping.list") }}?file_indexing_id=${fileIndexingId}`),
+            fetch(`{{ route("scanning.list") }}?file_indexing_id=${fileIndexingId}`)
+        ])
+        .then(responses => Promise.all(responses.map(r => {
+            if (!r.ok) {
+                throw new Error(`HTTP error! status: ${r.status}`);
+            }
+            return r.json();
+        })))
+        .then(([pageData, scanData]) => {
+            if (pageData.success && pageData.page_typings && scanData.success) {
+                const pages = pageData.page_typings;
+                const scannedFiles = scanData.scanned_files || [];
+                const fileElement = document.querySelector(`[onclick="togglePageDetails(${fileIndexingId})"]`).closest('.border.rounded-lg');
+                
+                // Get file information
+                const fileInfo = scannedFiles.length > 0 ? scannedFiles[0].file_indexing : null;
+                const fileName = fileInfo?.file_number || 'Unknown File';
+                const fileTitle = fileInfo?.file_title || 'Unknown Title';
+                
+                // Group pages by file/document
+                const pagesByFile = {};
+                pages.forEach(page => {
+                    const filePath = page.file_path || 'unknown';
+                    if (!pagesByFile[filePath]) {
+                        pagesByFile[filePath] = [];
+                    }
+                    pagesByFile[filePath].push(page);
+                });
+                
+                // Create page details with file cards
+                const detailsHtml = `
+                    <div id="page-details-${fileIndexingId}" class="mt-4 border-t pt-4">
+                        <h4 class="font-medium mb-3 text-sm">Processed Pages (${pages.length})</h4>
+                        
+                        <!-- File Information -->
+                        <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                            <div class="text-sm">
+                                <div><strong>File Name:</strong> ${fileName}</div>
+                                <div><strong>File Title:</strong> ${fileTitle}</div>
+                                <div><strong>Typed by:</strong> ${pages.length > 0 ? pages[0].typed_by : 'Unknown'}</div>
+                            </div>
+                        </div>
+                        
+                        <!-- File Cards -->
+                        <div class="space-y-4">
+                            ${Object.entries(pagesByFile).map(([filePath, filePages]) => {
+                                const fileName = filePath.split('/').pop() || filePath;
+                                return `
+                                    <div class="border rounded-lg p-4 bg-white">
+                                        <div class="flex items-center mb-3">
+                                            <i data-lucide="file-text" class="h-5 w-5 text-blue-500 mr-2"></i>
+                                            <h5 class="font-medium text-sm">${fileName}</h5>
+                                            <span class="ml-auto text-xs text-gray-500">${filePages.length} pages</span>
+                                        </div>
+                                        
+                                        <div class="overflow-x-auto">
+                                            <table class="min-w-full text-xs">
+                                                <thead class="bg-gray-50">
+                                                    <tr>
+                                                        <th class="px-2 py-1 text-left font-medium text-gray-500">Page #</th>
+                                                        <th class="px-2 py-1 text-left font-medium text-gray-500">Type</th>
+                                                        <th class="px-2 py-1 text-left font-medium text-gray-500">Subtype</th>
+                                                        <th class="px-2 py-1 text-left font-medium text-gray-500">Serial #</th>
+                                                        <th class="px-2 py-1 text-left font-medium text-gray-500">Code</th>
+                                                        <th class="px-2 py-1 text-left font-medium text-gray-500">Date</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody class="divide-y divide-gray-200">
+                                                    ${filePages.map(page => `
+                                                        <tr class="hover:bg-gray-50">
+                                                            <td class="px-2 py-1 text-gray-900">${page.page_number}</td>
+                                                            <td class="px-2 py-1 text-gray-900">${page.page_type}</td>
+                                                            <td class="px-2 py-1 text-gray-500">${page.page_subtype || '-'}</td>
+                                                            <td class="px-2 py-1 text-gray-900">${page.serial_number}</td>
+                                                            <td class="px-2 py-1 text-gray-500">${page.page_code || '-'}</td>
+                                                            <td class="px-2 py-1 text-gray-500">${page.created_at}</td>
+                                                        </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+                
+                fileElement.insertAdjacentHTML('beforeend', detailsHtml);
+                
+                // Update button text
+                const button = fileElement.querySelector(`[onclick="togglePageDetails(${fileIndexingId})"]`);
+                button.innerHTML = '<i data-lucide="eye-off" class="h-4 w-4 mr-1"></i>Hide Pages';
+                lucide.createIcons();
+            } else {
+                alert('No page typing data found for this file');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading page details:', error);
+            alert('Error loading page details: ' + error.message);
+        });
+    }
+    
     // Event listeners
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
@@ -509,6 +653,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.startPageTyping = startPageTyping;
     window.continuePageTyping = continuePageTyping;
     window.viewPageTyping = viewPageTyping;
+    window.togglePageDetails = togglePageDetails;
     
     console.log('Dynamic Page Typing module initialized');
 });
