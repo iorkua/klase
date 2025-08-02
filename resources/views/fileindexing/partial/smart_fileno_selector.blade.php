@@ -7,28 +7,62 @@
         <select id="fileno-select" class="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option value="">Select File Number</option>
             @php
-                $ctApplications = DB::connection('sqlsrv')
-                    ->select("SELECT [fileno], [applicant_title], [first_name], [surname], [corporate_name], [rc_number], [multiple_owners_names] FROM [klas].[dbo].[mother_applications]");
+                // Get applications from both mother_applications and subapplications tables that don't have file indexing yet
+                $motherApplications = DB::connection('sqlsrv')
+                    ->table('mother_applications')
+                    ->whereNotExists(function ($query) {
+                        $query->select(DB::raw(1))
+                            ->from('file_indexings')
+                            ->whereRaw('file_indexings.main_application_id = mother_applications.id');
+                    })
+                    ->select('id', 'fileno', 'np_fileno', 'applicant_title', 'first_name', 'surname', 'corporate_name', 'rc_number', 'multiple_owners_names', 'land_use', DB::raw("'mother' as source_table"))
+                    ->orderBy('created_at', 'desc')
+                    ->limit(100)
+                    ->get();
+
+                $subApplications = DB::connection('sqlsrv')
+                    ->table('subapplications')
+                    ->leftJoin('mother_applications', 'subapplications.main_application_id', '=', 'mother_applications.id')
+                    ->whereNotExists(function ($query) {
+                        $query->select(DB::raw(1))
+                            ->from('file_indexings')
+                            ->whereRaw('file_indexings.subapplication_id = subapplications.id');
+                    })
+                    ->select('subapplications.id', 'subapplications.fileno', DB::raw('NULL as np_fileno'), 'subapplications.applicant_title', 'subapplications.first_name', 'subapplications.surname', 'subapplications.corporate_name', 'subapplications.rc_number', 'subapplications.multiple_owners_names', 'mother_applications.land_use', DB::raw("'sub' as source_table"))
+                    ->orderBy('subapplications.created_at', 'desc')
+                    ->limit(100)
+                    ->get();
+
+                $allApplications = $motherApplications->merge($subApplications)->sortByDesc('created_at');
             @endphp
-            @foreach($ctApplications as $application)
-                <option value="{{ $application->fileno }}" 
-                        data-fileno="{{ $application->fileno }}"
+            @foreach($allApplications as $application)
+                @php
+                    $fileNumber = $application->fileno ?? $application->np_fileno ?? "APP-{$application->id}";
+                    $applicantName = '';
+                    if($application->corporate_name) {
+                        $applicantName = $application->corporate_name;
+                    } else {
+                        $applicantName = trim(($application->applicant_title ?? '') . ' ' . ($application->first_name ?? '') . ' ' . ($application->surname ?? ''));
+                    }
+                    $sourceLabel = $application->source_table === 'mother' ? '[Primary]' : '[Sub]';
+                    $landUse = $application->land_use ?? 'Residential';
+                @endphp
+                <option value="{{ $fileNumber }}" 
+                        data-application-id="{{ $application->id }}"
+                        data-source-table="{{ $application->source_table }}"
+                        data-fileno="{{ $fileNumber }}"
                         data-applicant-title="{{ $application->applicant_title ?? '' }}"
                         data-first-name="{{ $application->first_name ?? '' }}"
                         data-surname="{{ $application->surname ?? '' }}"
                         data-corporate-name="{{ $application->corporate_name ?? '' }}"
                         data-rc-number="{{ $application->rc_number ?? '' }}"
-                        data-multiple-owners="{{ $application->multiple_owners_names ?? '' }}">
-                    {{ $application->fileno }} - 
-                    @if($application->corporate_name)
-                        {{ $application->corporate_name }}
-                    @else
-                        {{ $application->applicant_title ?? '' }} {{ $application->first_name ?? '' }} {{ $application->surname ?? '' }}
-                    @endif
+                        data-multiple-owners="{{ $application->multiple_owners_names ?? '' }}"
+                        data-land-use="{{ $landUse }}">
+                    {{ $fileNumber }} {{ $sourceLabel }} - {{ $applicantName }} ({{ $landUse }})
                 </option>
             @endforeach
         </select>
-        <p class="text-xs text-gray-500 mt-1">Search and select file numbers from mother applications database</p>
+        <p class="text-xs text-gray-500 mt-1">Search and select file numbers from mother applications and subapplications databases</p>
         
         <!-- Selected File Number Display (in dropdown mode) -->
         <div id="selected-fileno-display" class="hidden mt-3">
@@ -123,7 +157,8 @@ function smartFilenoSelector() {
                         surname: selectedOption.getAttribute('data-surname'),
                         corporate_name: selectedOption.getAttribute('data-corporate-name'),
                         rc_number: selectedOption.getAttribute('data-rc-number'),
-                        multiple_owners_names: selectedOption.getAttribute('data-multiple-owners')
+                        multiple_owners_names: selectedOption.getAttribute('data-multiple-owners'),
+                        land_use: selectedOption.getAttribute('data-land-use')
                     };
                     
                     this.handleSelection();

@@ -172,6 +172,9 @@ Route::middleware(['auth'])->group(function () {
         // AJAX routes
         Route::post('/save-single', [PageTypingController::class, 'saveSingle'])->name('pagetyping.save-single');
         Route::get('/list/page-typings', [PageTypingController::class, 'getPageTypings'])->name('pagetyping.list');
+        Route::get('/api/stats', [PageTypingController::class, 'getStats'])->name('pagetyping.api.stats');
+        Route::get('/api/files', [PageTypingController::class, 'getFilesByStatus'])->name('pagetyping.api.files');
+        Route::get('/api/file-details', [PageTypingController::class, 'getFileDetails'])->name('pagetyping.api.file-details');
     });
     
     Route::prefix('profile')->group(function () {

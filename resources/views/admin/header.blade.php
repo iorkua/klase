@@ -327,21 +327,13 @@
   }
 </script>
 
-{{-- Removed Auto Logout functionality:
-     - Auto Logout Configuration and associated timers.
-     - Auto Logout Toast markup and related scripts.
---}}
-
-<!-- Set last login time in session -->
 @php
     if (!session()->has('last_login_time')) {
         session(['last_login_time' => time()]);
     }
 @endphp
 
-<!-- Set welcome popup flag in session if not set -->
 @php
-    // Set welcome popup flag to true for first-time visits in a login session
     if (!session()->has('show_welcome_popup')) {
         session(['show_welcome_popup' => true]);
     }

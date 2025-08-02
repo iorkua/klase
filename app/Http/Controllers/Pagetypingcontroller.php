@@ -11,7 +11,7 @@ use App\Models\Scanning;
 use App\Models\PageTyping;
 use Exception;
 
-class Pagetypingcontroller extends Controller
+class PageTypingController extends Controller
 {
     /**
      * Display the page typing dashboard or typing interface
@@ -54,52 +54,7 @@ class Pagetypingcontroller extends Controller
             }
             
             // Return the dashboard view (no file_indexing_id parameter)
-            // Get statistics for dashboard
-            $stats = [
-                'pending_count' => $this->getPendingPageTypingCount(),
-                'in_progress_count' => $this->getInProgressPageTypingCount(),
-                'completed_count' => $this->getCompletedPageTypingCount(),
-            ];
-            
-            // Get pending files (files with scannings but no page typings)
-            $pendingFiles = FileIndexing::on('sqlsrv')
-                ->with(['mainApplication', 'scannings'])
-                ->whereHas('scannings')
-                ->whereDoesntHave('pagetypings')
-                ->orderBy('created_at', 'desc')
-                ->limit(20)
-                ->get();
-            
-            // Get in-progress files (files with some page typings but not all pages typed)
-            $inProgressFiles = FileIndexing::on('sqlsrv')
-                ->with(['mainApplication', 'scannings', 'pagetypings'])
-                ->whereHas('pagetypings')
-                ->whereHas('scannings', function ($query) {
-                    $query->where('status', '!=', 'typed');
-                })
-                ->orderBy('updated_at', 'desc')
-                ->limit(20)
-                ->get();
-            
-            // Get completed files
-            $completedFiles = FileIndexing::on('sqlsrv')
-                ->with(['mainApplication', 'scannings', 'pagetypings'])
-                ->whereHas('pagetypings')
-                ->whereDoesntHave('scannings', function ($query) {
-                    $query->where('status', '!=', 'typed');
-                })
-                ->orderBy('updated_at', 'desc')
-                ->limit(20)
-                ->get();
-            
-            return view('pagetyping.index', compact(
-                'PageTitle', 
-                'PageDescription', 
-                'stats', 
-                'pendingFiles',
-                'inProgressFiles',
-                'completedFiles'
-            ));
+            return view('pagetyping.index', compact('PageTitle', 'PageDescription'));
         } catch (Exception $e) {
             Log::error('Error loading page typing dashboard', [
                 'error' => $e->getMessage()
@@ -107,12 +62,244 @@ class Pagetypingcontroller extends Controller
             
             return view('pagetyping.index', [
                 'PageTitle' => 'Page Typing',
-                'PageDescription' => 'Categorize and digitize file content',
-                'stats' => ['pending_count' => 0, 'in_progress_count' => 0, 'completed_count' => 0],
-                'pendingFiles' => collect(),
-                'inProgressFiles' => collect(),
-                'completedFiles' => collect()
+                'PageDescription' => 'Categorize and digitize file content'
             ]);
+        }
+    }
+
+    /**
+     * Get dashboard statistics (AJAX)
+     */
+    public function getStats(Request $request)
+    {
+        try {
+            $stats = [
+                'pending_count' => $this->getPendingPageTypingCount(),
+                'in_progress_count' => $this->getInProgressPageTypingCount(),
+                'completed_count' => $this->getCompletedPageTypingCount(),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'stats' => $stats
+            ]);
+        } catch (Exception $e) {
+            Log::error('Error getting page typing stats', [
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading statistics',
+                'stats' => ['pending_count' => 0, 'in_progress_count' => 0, 'completed_count' => 0]
+            ], 500);
+        }
+    }
+
+    /**
+     * Get files by status (AJAX)
+     */
+    public function getFilesByStatus(Request $request)
+    {
+        try {
+            $status = $request->get('status', 'pending');
+            $search = $request->get('search', '');
+            $limit = $request->get('limit', 20);
+
+            $query = FileIndexing::on('sqlsrv')
+                ->with(['mainApplication', 'scannings', 'pagetypings']);
+
+            // Apply status filters
+            switch ($status) {
+                case 'pending':
+                    $query->whereHas('scannings')
+                          ->whereDoesntHave('pagetypings');
+                    break;
+                case 'in_progress':
+                    $query->whereHas('pagetypings')
+                          ->whereHas('scannings', function ($q) {
+                              $q->where('status', '!=', 'typed');
+                          });
+                    break;
+                case 'completed':
+                    $query->whereHas('pagetypings')
+                          ->whereDoesntHave('scannings', function ($q) {
+                              $q->where('status', '!=', 'typed');
+                          });
+                    break;
+            }
+
+            // Apply search filter
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('file_number', 'like', "%{$search}%")
+                      ->orWhere('file_title', 'like', "%{$search}%")
+                      ->orWhere('district', 'like', "%{$search}%")
+                      ->orWhere('lga', 'like', "%{$search}%");
+                });
+            }
+
+            $files = $query->orderBy('created_at', 'desc')
+                          ->limit($limit)
+                          ->get();
+
+            $formattedFiles = $files->map(function ($file) {
+                $scanningsCount = $file->scannings->count();
+                $pageTypingsCount = $file->pagetypings->count();
+                
+                // Calculate progress for in-progress files
+                $progress = $scanningsCount > 0 ? ($pageTypingsCount / $scanningsCount) * 100 : 0;
+
+                return [
+                    'id' => $file->id,
+                    'file_number' => $file->file_number,
+                    'file_title' => $file->file_title,
+                    'district' => $file->district,
+                    'lga' => $file->lga,
+                    'scannings_count' => $scanningsCount,
+                    'page_typings_count' => $pageTypingsCount,
+                    'progress' => round($progress, 1),
+                    'created_at' => $file->created_at ? $file->created_at->format('M d, Y') : 'Unknown',
+                    'updated_at' => $file->updated_at ? $file->updated_at->format('M d, Y H:i') : 'Unknown',
+                    'status' => $file->status,
+                    'main_application' => $file->mainApplication ? [
+                        'id' => $file->mainApplication->id,
+                        'applicant_name' => $file->mainApplication->applicant_name ?? 'Unknown'
+                    ] : null
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'files' => $formattedFiles
+            ]);
+        } catch (Exception $e) {
+            Log::error('Error getting files by status', [
+                'status' => $status,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading files',
+                'files' => []
+            ], 500);
+        }
+    }
+
+    /**
+     * Get file details with scannings for typing interface (AJAX)
+     */
+    public function getFileDetails(Request $request)
+    {
+        try {
+            $fileIndexingId = $request->get('file_indexing_id');
+            
+            if (!$fileIndexingId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File indexing ID is required'
+                ], 400);
+            }
+
+            $fileIndexing = FileIndexing::on('sqlsrv')
+                ->with(['mainApplication', 'scannings', 'pagetypings'])
+                ->find($fileIndexingId);
+
+            if (!$fileIndexing) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File not found'
+                ], 404);
+            }
+
+            // Format scannings with page information
+            $scannings = $fileIndexing->scannings->map(function ($scanning) use ($fileIndexing) {
+                $pageTypings = $fileIndexing->pagetypings()
+                    ->where('scanning_id', $scanning->id)
+                    ->get();
+
+                // For PDF files, get individual pages
+                $pages = [];
+                $fileExtension = strtolower(pathinfo($scanning->document_path, PATHINFO_EXTENSION));
+                
+                if ($fileExtension === 'pdf') {
+                    // For PDFs, we need to determine the number of pages
+                    $pdfPageCount = $this->getPdfPageCount($scanning->document_path);
+                    
+                    for ($i = 1; $i <= $pdfPageCount; $i++) {
+                        $pageTyping = $pageTypings->where('page_number', $i)->first();
+                        $pages[] = [
+                            'page_number' => $i,
+                            'file_path' => $scanning->document_path . '#page=' . $i,
+                            'is_typed' => $pageTyping !== null,
+                            'page_typing' => $pageTyping ? [
+                                'id' => $pageTyping->id,
+                                'page_type' => $pageTyping->page_type,
+                                'page_subtype' => $pageTyping->page_subtype,
+                                'page_code' => $pageTyping->page_code,
+                                'serial_number' => $pageTyping->serial_number
+                            ] : null
+                        ];
+                    }
+                } else {
+                    // For image files, treat as single page
+                    $pageTyping = $pageTypings->first();
+                    $pages[] = [
+                        'page_number' => 1,
+                        'file_path' => $scanning->document_path,
+                        'is_typed' => $pageTyping !== null,
+                        'page_typing' => $pageTyping ? [
+                            'id' => $pageTyping->id,
+                            'page_type' => $pageTyping->page_type,
+                            'page_subtype' => $pageTyping->page_subtype,
+                            'page_code' => $pageTyping->page_code,
+                            'serial_number' => $pageTyping->serial_number
+                        ] : null
+                    ];
+                }
+
+                return [
+                    'id' => $scanning->id,
+                    'document_path' => $scanning->document_path,
+                    'original_filename' => $scanning->original_filename,
+                    'document_type' => $scanning->document_type,
+                    'paper_size' => $scanning->paper_size,
+                    'status' => $scanning->status,
+                    'pages' => $pages,
+                    'total_pages' => count($pages),
+                    'typed_pages' => count(array_filter($pages, fn($page) => $page['is_typed']))
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'file' => [
+                    'id' => $fileIndexing->id,
+                    'file_number' => $fileIndexing->file_number,
+                    'file_title' => $fileIndexing->file_title,
+                    'district' => $fileIndexing->district,
+                    'lga' => $fileIndexing->lga,
+                    'main_application' => $fileIndexing->mainApplication ? [
+                        'id' => $fileIndexing->mainApplication->id,
+                        'applicant_name' => $fileIndexing->mainApplication->applicant_name ?? 'Unknown'
+                    ] : null,
+                    'scannings' => $scannings,
+                    'total_scannings' => $scannings->count(),
+                    'total_pages' => $scannings->sum('total_pages'),
+                    'typed_pages' => $scannings->sum('typed_pages')
+                ]
+            ]);
+        } catch (Exception $e) {
+            Log::error('Error getting file details', [
+                'file_indexing_id' => $fileIndexingId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading file details: ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -121,37 +308,10 @@ class Pagetypingcontroller extends Controller
      */
     public function create(Request $request)
     {
-        try {
-            $fileIndexingId = $request->get('file_indexing_id');
-            
-            if (!$fileIndexingId) {
-                return redirect()->route('pagetyping.index')
-                    ->with('error', 'File indexing ID is required');
-            }
-            
-            $fileIndexing = FileIndexing::on('sqlsrv')
-                ->with(['mainApplication', 'scannings'])
-                ->findOrFail($fileIndexingId);
-            
-            // Check if file has scannings
-            if ($fileIndexing->scannings->isEmpty()) {
-                return redirect()->route('scanning.index', ['file_indexing_id' => $fileIndexingId])
-                    ->with('error', 'Please upload scanned documents first before page typing');
-            }
-            
-            $PageTitle = 'Page Typing - ' . $fileIndexing->file_title;
-            $PageDescription = 'Classify and label document pages';
-            
-            return view('pagetyping.create', compact('PageTitle', 'PageDescription', 'fileIndexing'));
-        } catch (Exception $e) {
-            Log::error('Error loading page typing create form', [
-                'file_indexing_id' => $request->get('file_indexing_id'),
-                'error' => $e->getMessage()
-            ]);
-            
-            return redirect()->route('pagetyping.index')
-                ->with('error', 'Error loading page typing form: ' . $e->getMessage());
-        }
+        $PageTitle = 'Page Typing';
+        $PageDescription = 'Create new page typing';
+        
+        return view('pagetyping.create', compact('PageTitle', 'PageDescription'));
     }
 
     /**
@@ -181,8 +341,6 @@ class Pagetypingcontroller extends Controller
             }
 
             $fileIndexingId = $request->file_indexing_id;
-            $fileIndexing = FileIndexing::on('sqlsrv')->findOrFail($fileIndexingId);
-
             $savedCount = 0;
             $errors = [];
 
@@ -230,22 +388,11 @@ class Pagetypingcontroller extends Controller
                 }
             }
 
-            // Update scanning status to typed if all pages are typed
-            $this->updateScanningStatus($fileIndexingId);
-
-            Log::info('Page typing completed', [
-                'file_indexing_id' => $fileIndexingId,
-                'pages_saved' => $savedCount,
-                'errors_count' => count($errors),
-                'typed_by' => Auth::id()
-            ]);
-
             $response = [
                 'success' => $savedCount > 0,
                 'message' => "{$savedCount} pages classified successfully!",
                 'saved_count' => $savedCount,
                 'total_count' => count($request->page_types),
-                'redirect' => route('pagetyping.index')
             ];
 
             if (count($errors) > 0) {
@@ -273,24 +420,10 @@ class Pagetypingcontroller extends Controller
      */
     public function show($id)
     {
-        try {
-            $pageTyping = PageTyping::on('sqlsrv')
-                ->with(['fileIndexing', 'typedBy'])
-                ->findOrFail($id);
-
-            $PageTitle = 'Page Typing Details';
-            $PageDescription = 'View page typing information';
-
-            return view('pagetyping.show', compact('PageTitle', 'PageDescription', 'pageTyping'));
-        } catch (Exception $e) {
-            Log::error('Error loading page typing details', [
-                'page_typing_id' => $id,
-                'error' => $e->getMessage()
-            ]);
-
-            return redirect()->route('pagetyping.index')
-                ->with('error', 'Page typing record not found');
-        }
+        $PageTitle = 'Page Typing Details';
+        $PageDescription = 'View page typing information';
+        
+        return view('pagetyping.show', compact('PageTitle', 'PageDescription'));
     }
 
     /**
@@ -298,24 +431,10 @@ class Pagetypingcontroller extends Controller
      */
     public function edit($id)
     {
-        try {
-            $pageTyping = PageTyping::on('sqlsrv')
-                ->with(['fileIndexing'])
-                ->findOrFail($id);
-            
-            $PageTitle = 'Edit Page Typing';
-            $PageDescription = 'Update page classification';
-
-            return view('pagetyping.edit', compact('PageTitle', 'PageDescription', 'pageTyping'));
-        } catch (Exception $e) {
-            Log::error('Error loading page typing edit form', [
-                'page_typing_id' => $id,
-                'error' => $e->getMessage()
-            ]);
-
-            return redirect()->route('pagetyping.index')
-                ->with('error', 'Page typing record not found');
-        }
+        $PageTitle = 'Edit Page Typing';
+        $PageDescription = 'Update page classification';
+        
+        return view('pagetyping.edit', compact('PageTitle', 'PageDescription'));
     }
 
     /**
@@ -345,11 +464,6 @@ class Pagetypingcontroller extends Controller
                 'typed_by' => Auth::id()
             ]));
 
-            Log::info('Page typing updated', [
-                'page_typing_id' => $id,
-                'updated_by' => Auth::id()
-            ]);
-
             return response()->json([
                 'success' => true,
                 'message' => 'Page typing updated successfully!'
@@ -375,17 +489,7 @@ class Pagetypingcontroller extends Controller
     {
         try {
             $pageTyping = PageTyping::on('sqlsrv')->findOrFail($id);
-            $fileIndexingId = $pageTyping->file_indexing_id;
-            
             $pageTyping->delete();
-
-            // Update scanning status
-            $this->updateScanningStatus($fileIndexingId);
-
-            Log::info('Page typing deleted', [
-                'page_typing_id' => $id,
-                'deleted_by' => Auth::id()
-            ]);
 
             return response()->json([
                 'success' => true,
@@ -455,13 +559,6 @@ class Pagetypingcontroller extends Controller
                     'typed_by' => Auth::id()
                 ]));
             }
-
-            Log::info('Single page typing saved', [
-                'page_typing_id' => $pageTyping->id,
-                'file_indexing_id' => $validated['file_indexing_id'],
-                'page_number' => $validated['page_number'],
-                'typed_by' => Auth::id()
-            ]);
 
             return response()->json([
                 'success' => true,
@@ -601,43 +698,53 @@ class Pagetypingcontroller extends Controller
     }
 
     /**
-     * Update scanning status based on page typing completion
+     * Get PDF page count
      */
-    private function updateScanningStatus($fileIndexingId)
+    private function getPdfPageCount($filePath)
     {
         try {
-            $fileIndexing = FileIndexing::on('sqlsrv')
-                ->with(['scannings', 'pagetypings'])
-                ->find($fileIndexingId);
-
-            if (!$fileIndexing) {
-                return;
+            // Check if file exists
+            $fullPath = public_path($filePath);
+            if (!file_exists($fullPath)) {
+                return 1; // Default to 1 page if file not found
             }
 
-            // Check if all scanned documents have page typings
-            $allTyped = true;
-            foreach ($fileIndexing->scannings as $scanning) {
-                $hasPageTyping = $fileIndexing->pagetypings()
-                    ->where('file_path', $scanning->document_path)
-                    ->exists();
-                
-                if (!$hasPageTyping) {
-                    $allTyped = false;
-                    break;
+            // Try to get page count using different methods
+            if (extension_loaded('imagick')) {
+                try {
+                    $imagick = new \Imagick();
+                    $imagick->readImage($fullPath);
+                    $pageCount = $imagick->getNumberImages();
+                    $imagick->clear();
+                    return $pageCount;
+                } catch (Exception $e) {
+                    Log::warning('Imagick failed to read PDF', ['file' => $filePath, 'error' => $e->getMessage()]);
                 }
             }
 
-            // Update scanning status
-            $status = $allTyped ? 'typed' : 'pending';
-            Scanning::on('sqlsrv')
-                ->where('file_indexing_id', $fileIndexingId)
-                ->update(['status' => $status]);
+            // Fallback: try to parse PDF manually (basic method)
+            $content = file_get_contents($fullPath);
+            if ($content) {
+                preg_match_all('/\/Count\s+(\d+)/', $content, $matches);
+                if (!empty($matches[1])) {
+                    return max($matches[1]);
+                }
+                
+                // Alternative method: count page objects
+                preg_match_all('/\/Type\s*\/Page[^s]/', $content, $matches);
+                if (!empty($matches[0])) {
+                    return count($matches[0]);
+                }
+            }
 
+            // Default fallback
+            return 3; // Assume 3 pages for PDFs when we can't determine
         } catch (Exception $e) {
-            Log::error('Error updating scanning status', [
-                'file_indexing_id' => $fileIndexingId,
+            Log::error('Error getting PDF page count', [
+                'file_path' => $filePath,
                 'error' => $e->getMessage()
             ]);
+            return 1;
         }
     }
 }

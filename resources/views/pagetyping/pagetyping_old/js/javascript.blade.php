@@ -1,3 +1,4 @@
+
   <script>
     // Initialize Lucide icons
     lucide.createIcons();
@@ -23,26 +24,163 @@
       batchSubmitReady: false,
       batchProgress: 0,
       batchProcessing: false,
-      processedPages: {},
-      stats: { pending_count: 0, in_progress_count: 0, completed_count: 0 },
-      files: { pending: [], in_progress: [], completed: [] },
-      loading: false,
-      selectedFileDetails: null
+      processedPages: {}
     };
 
-    // API endpoints
-    const API = {
-      stats: '{{ route("pagetyping.api.stats") }}',
-      files: '{{ route("pagetyping.api.files") }}',
-      fileDetails: '{{ route("pagetyping.api.file-details") }}',
-      saveSingle: '{{ route("pagetyping.save-single") }}',
-      store: '{{ route("pagetyping.store") }}'
+    // Sample data
+    const samplePages = {
+      "FILE-2023-001": [
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+1",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+2",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+3",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+4",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+5"
+      ],
+      "FILE-2023-002": [
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+1",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+2",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+3"
+      ],
+      "FILE-2023-003": [
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+1",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+2"
+      ],
+      "FILE-2023-004": [
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+1",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+2",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+3",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+4"
+      ],
+      "FILE-2023-005": [
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+1",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+2",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+3",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+4",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+5",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+6"
+      ],
+      "FILE-2023-006": [
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+1",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+2",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+3"
+      ],
+      "SCAN-EXAMPLE": [
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+1",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+2",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+3"
+      ]
     };
 
-    // Dynamic data storage
-    let pendingFiles = [];
-    let inProgressFiles = [];
-    let completedFiles = [];
+    // Sample data for pending typing files
+    const pendingFiles = [
+      {
+        id: "FILE-2023-001",
+        fileNumber: "KNML 34591",
+        name: "Certificate of Occupancy - Alhaji Ibrahim Dantata",
+        type: "Certificate of Occupancy",
+        pages: 5,
+        completed: 0,
+        date: "2023-06-15",
+        status: "Pending",
+      },
+      {
+        id: "FILE-2023-002",
+        fileNumber: "KNGP 00892",
+        name: "Site Plan - Hajiya Amina Yusuf",
+        type: "Site Plan",
+        pages: 3,
+        completed: 0,
+        date: "2023-06-14",
+        status: "Pending",
+      },
+      {
+        id: "FILE-2023-003",
+        fileNumber: "KNML 42786",
+        name: "Letter of Administration - Kano Traders Association",
+        type: "Letter of Administration",
+        pages: 2,
+        completed: 0,
+        date: "2023-06-13",
+        status: "Pending",
+      },
+      {
+        id: "SCAN-EXAMPLE",
+        fileNumber: "KNML 09846",
+        name: "Certificate of Occupancy - Example",
+        type: "Certificate of Occupancy",
+        pages: 3,
+        completed: 0,
+        date: "2023-06-18",
+        status: "Pending",
+      }
+    ];
+
+    // Sample data for in-progress typing files
+    const inProgressFiles = [
+      {
+        id: "FILE-2023-006",
+        fileNumber: "KNML 09213",
+        name: "Land Use Permit - Abdullahi Sani",
+        type: "Land Use Permit",
+        pages: 3,
+        completed: 1,
+        date: "2023-06-09",
+        status: "In Progress",
+      }
+    ];
+
+    // Sample data for completed typing files
+    const completedFiles = [
+      {
+        id: "FILE-2023-004",
+        fileNumber: "KNGP 01478",
+        name: "Right of Occupancy - Musa Usman Bayero",
+        type: "Right of Occupancy",
+        pages: 4,
+        completed: 4,
+        date: "2023-06-12",
+        status: "Completed",
+        processedPages: [
+          { pageNumber: 1, pageCode: "KNGP 01478-1-1-01", pageType: "File Cover", pageSubType: "New File Cover" },
+          {
+            pageNumber: 2,
+            pageCode: "KNGP 01478-5-5-02",
+            pageType: "Land Title",
+            pageSubType: "Certificate of Occupancy",
+          },
+          { pageNumber: 3, pageCode: "KNGP 01478-9-25-03", pageType: "Survey", pageSubType: "Survey Plan" },
+          {
+            pageNumber: 4,
+            pageCode: "KNGP 01478-4-8-04",
+            pageType: "Correspondence",
+            pageSubType: "Acknowledgment Letter",
+          }
+        ]
+      },
+      {
+        id: "FILE-2023-005",
+        fileNumber: "KNML 37925",
+        name: "Deed of Assignment - Hajiya Fatima Mohammed",
+        type: "Deed of Assignment",
+        pages: 6,
+        completed: 6,
+        date: "2023-06-10",
+        status: "Completed",
+        processedPages: [
+          { pageNumber: 1, pageCode: "KNML 37925-1-1-01", pageType: "File Cover", pageSubType: "New File Cover" },
+          { pageNumber: 2, pageCode: "KNML 37925-6-53-02", pageType: "Legal", pageSubType: "Deed of Assignment" },
+          { pageNumber: 3, pageCode: "KNML 37925-6-53-03", pageType: "Legal", pageSubType: "Deed of Assignment" },
+          { pageNumber: 4, pageCode: "KNML 37925-7-20-04", pageType: "Payment Evidence", pageSubType: "Bank Teller" },
+          { pageNumber: 5, pageCode: "KNML 37925-7-78-05", pageType: "Payment Evidence", pageSubType: "Receipts" },
+          {
+            pageNumber: 6,
+            pageCode: "KNML 37925-4-72-06",
+            pageType: "Correspondence",
+            pageSubType: "Letter of Acceptance",
+          }
+        ]
+      }
+    ];
 
     // Page types and subtypes
     const pageTypes = [
@@ -71,54 +209,98 @@
         // Application
         { id: 3, code: "CO", name: "Certificate of Occupancy" },
         { id: 4, code: "REV", name: "Revalidation" },
-        { id: 42, code: "OTH", name: "Others" }
+        { id: 42, code: "OTH", name: "Others" },
+        { id: 96, code: "ASI", name: "Application for Surrender/Issuance of CofO" },
+        { id: 97, code: "ATF", name: "Application for Temporary Files" },
+        { id: 128, code: "REC", name: "Recertification" },
+        { id: 136, code: "INS", name: "Inspection" },
+        { id: 137, code: "CF", name: "Computer Form" }
       ],
       3: [
         // Bill Notice
         { id: 7, code: "DGR", name: "Demand for Ground Rent" },
         { id: 34, code: "DN", name: "Demand Notice" },
-        { id: 35, code: "MISC", name: "Miscellaneous" }
+        { id: 35, code: "MISC", name: "Miscellaneous" },
+        { id: 77, code: "NOA", name: "Notice of Assessment" },
+        { id: 92, code: "AUC", name: "Auction Notice" },
+        { id: 133, code: "FRP", name: "First Registration of Plot Bill" }
       ],
       4: [
         // Correspondence
         { id: 8, code: "AL", name: "Acknowledgment Letter" },
         { id: 9, code: "ASR", name: "Application Submission for Recommendation" },
         { id: 10, code: "ACO", name: "Approval of Certificate of Occupancy" },
-        { id: 29, code: "MISC", name: "Miscellaneous" }
+        { id: 11, code: "AUL", name: "Authority Letter" },
+        { id: 12, code: "BIR", name: "Board of Internal Revenue" },
+        { id: 13, code: "CL", name: "Conveyance Letter" },
+        { id: 14, code: "DTP", name: "Director Town Planning" },
+        { id: 15, code: "SD", name: "Survey Description" },
+        { id: 16, code: "SP", name: "Survey Plan" },
+        { id: 17, code: "SG", name: "Surveyor General" },
+        { id: 29, code: "MISC", name: "Miscellaneous" },
+        { id: 30, code: "IM", name: "Internal Memo" },
+        { id: 31, code: "EM", name: "External Memo" }
+        // ... more subtypes
       ],
       5: [
         // Land Title
         { id: 5, code: "CO", name: "Certificate of Occupancy" },
         { id: 6, code: "SP", name: "Survey Plan" },
-        { id: 32, code: "MISC", name: "Miscellaneous" }
+        { id: 32, code: "MISC", name: "Miscellaneous" },
+        { id: 130, code: "LFR", name: "Letter of First Registration" },
+        { id: 131, code: "CR", name: "Confirmation of Registration" },
+        { id: 140, code: "PRO", name: "Provisional Right of Occupancy" }
       ],
       6: [
         // Legal
         { id: 18, code: "AGR", name: "Agreement" },
+        { id: 39, code: "REP", name: "Report" },
         { id: 44, code: "POA", name: "Power of Attorney" },
-        { id: 53, code: "DOA", name: "Deed of Assignment" },
-        { id: 51, code: "MISC", name: "Miscellaneous" }
+        { id: 45, code: "DOS", name: "Deed of Surrender" },
+        { id: 46, code: "WCC", name: "Withdrawal of Clients CofO" },
+        { id: 48, code: "CACC", name: "CAC Certificate" },
+        { id: 49, code: "CI", name: "Certificate of Incorporation" },
+        { id: 50, code: "LA", name: "Letter of Administration" },
+        { id: 51, code: "MISC", name: "Miscellaneous" },
+        { id: 53, code: "DOA", name: "Deed of Assignment" }
+        // ... more subtypes
       ],
       7: [
         // Payment Evidence
+        { id: 19, code: "AOF", name: "Assessment of Fees" },
         { id: 20, code: "BT", name: "Bank Teller" },
-        { id: 78, code: "REC", name: "Receipts" },
-        { id: 36, code: "MISC", name: "Miscellaneous" }
+        { id: 21, code: "ITCC", name: "Income Tax Clearance Certificate" },
+        { id: 22, code: "RCR", name: "Revenue Collector's Receipt" },
+        { id: 36, code: "MISC", name: "Miscellaneous" },
+        { id: 41, code: "REP", name: "Report" },
+        { id: 70, code: "ITPR", name: "Income TAX P.A.Y.E Receipt" },
+        { id: 78, code: "REC", name: "Receipts" }
+        // ... more subtypes
       ],
       8: [
         // Report
         { id: 23, code: "RR", name: "Reinspection Report" },
-        { id: 37, code: "MISC", name: "Miscellaneous" }
+        { id: 37, code: "MISC", name: "Miscellaneous" },
+        { id: 65, code: "IPVR", name: "Inspection and Property Valuation Report" },
+        { id: 101, code: "PSR", name: "Property Search Report" },
+        { id: 110, code: "LITR", name: "Low Income TAX Report" },
+        { id: 111, code: "RVR", name: "Reconciliation of Valuation Report" },
+        { id: 116, code: "PVR", name: "Property Valuation Report" }
       ],
       9: [
         // Survey
+        { id: 24, code: "TDP", name: "Title Deed Plan" },
         { id: 25, code: "SP", name: "Survey Plan" },
         { id: 26, code: "SD", name: "Survey Description" },
-        { id: 33, code: "MISC", name: "Miscellaneous" }
+        { id: 33, code: "MISC", name: "Miscellaneous" },
+        { id: 38, code: "REP", name: "Report" }
       ],
       10: [
         // Miscellaneous
-        { id: 27, code: "MISC", name: "Miscellaneous" }
+        { id: 27, code: "MISC", name: "Miscellaneous" },
+        { id: 43, code: "OC", name: "Other Certificates" },
+        { id: 59, code: "CP", name: "Company Profile" },
+        { id: 132, code: "LRAT", name: "Land Registration Acknowledgment Ticket" }
       ],
       11: [
         // Image
@@ -130,6 +312,9 @@
         { id: 141, code: "LP", name: "Location Plan" }
       ]
     };
+
+    // Get all files
+    const allFiles = [...pendingFiles, ...inProgressFiles, ...completedFiles];
 
     // DOM Elements
     const elements = {
@@ -151,153 +336,9 @@
       completedCount: document.getElementById('completed-count')
     };
 
-    // API Functions
-    async function loadStats() {
-      try {
-        console.log('Loading stats from:', API.stats);
-        const response = await fetch(API.stats);
-        console.log('Stats response status:', response.status);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('Stats data:', data);
-        
-        if (data.success) {
-          state.stats = data.stats;
-          updateCounters();
-        } else {
-          console.error('Stats API returned error:', data.message);
-        }
-      } catch (error) {
-        console.error('Error loading stats:', error);
-        // Set default stats on error
-        state.stats = { pending_count: 0, in_progress_count: 0, completed_count: 0 };
-        updateCounters();
-      }
-    }
-
-    async function loadFilesByStatus(status, search = '') {
-      try {
-        state.loading = true;
-        updateUI(); // Update UI to show loading state
-        
-        console.log('Loading files for status:', status);
-        const url = new URL(API.files);
-        url.searchParams.append('status', status);
-        if (search) url.searchParams.append('search', search);
-        
-        console.log('Fetching from URL:', url.toString());
-        const response = await fetch(url);
-        console.log('Files response status:', response.status);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log(`Files data for ${status}:`, data);
-        
-        if (data.success) {
-          state.files[status.replace('-', '_')] = data.files;
-          
-          // Update the corresponding arrays for backward compatibility
-          switch (status) {
-            case 'pending':
-              pendingFiles = data.files;
-              break;
-            case 'in-progress':
-              inProgressFiles = data.files;
-              break;
-            case 'completed':
-              completedFiles = data.files;
-              break;
-          }
-        } else {
-          console.error(`Files API returned error for ${status}:`, data.message);
-          // Set empty array on error
-          switch (status) {
-            case 'pending':
-              pendingFiles = [];
-              break;
-            case 'in-progress':
-              inProgressFiles = [];
-              break;
-            case 'completed':
-              completedFiles = [];
-              break;
-          }
-        }
-      } catch (error) {
-        console.error(`Error loading ${status} files:`, error);
-        // Set empty array on error
-        switch (status) {
-          case 'pending':
-            pendingFiles = [];
-            break;
-          case 'in-progress':
-            inProgressFiles = [];
-            break;
-          case 'completed':
-            completedFiles = [];
-            break;
-        }
-      } finally {
-        state.loading = false;
-        updateUI(); // Update UI to show results or empty state
-      }
-    }
-
-    async function loadFileDetails(fileIndexingId) {
-      try {
-        const url = new URL(API.fileDetails);
-        url.searchParams.append('file_indexing_id', fileIndexingId);
-
-        const response = await fetch(url);
-        const data = await response.json();
-        
-        if (data.success) {
-          state.selectedFileDetails = data.file;
-          return data.file;
-        } else {
-          throw new Error(data.message || 'Failed to load file details');
-        }
-      } catch (error) {
-        console.error('Error loading file details:', error);
-        throw error;
-      }
-    }
-
-    async function saveSinglePageTyping(pageData) {
-      try {
-        const response = await fetch(API.saveSingle, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-          },
-          body: JSON.stringify(pageData)
-        });
-
-        const data = await response.json();
-        
-        if (data.success) {
-          return data;
-        } else {
-          throw new Error(data.message || 'Failed to save page typing');
-        }
-      } catch (error) {
-        console.error('Error saving page typing:', error);
-        throw error;
-      }
-    }
-
     // Helper functions
     function getFileById(fileId) {
-      const allFiles = [...pendingFiles, ...inProgressFiles, ...completedFiles];
-      return allFiles.find(file => file.id.toString() === fileId.toString());
+      return allFiles.find(file => file.id === fileId);
     }
 
     function getPageTypeById(typeId) {
@@ -308,19 +349,18 @@
       return pageSubTypes[parseInt(typeId)]?.find(subType => subType.id.toString() === subTypeId);
     }
 
-    // UI update functions
-    function updateCounters() {
-      if (elements.pendingCount) {
-        elements.pendingCount.textContent = state.stats.pending_count;
+    function getCurrentPageImage() {
+      if (!state.selectedFile || !samplePages[state.selectedFile]) {
+        return null;
       }
-      if (elements.inProgressCount) {
-        elements.inProgressCount.textContent = state.stats.in_progress_count;
-      }
-      if (elements.completedCount) {
-        elements.completedCount.textContent = state.stats.completed_count;
-      }
+
+      const pageIndex = state.currentPage - 1;
+      return pageIndex >= 0 && pageIndex < samplePages[state.selectedFile].length 
+        ? samplePages[state.selectedFile][pageIndex] 
+        : null;
     }
 
+    // UI update functions
     function updateUI() {
       // Update tabs
       elements.tabs.forEach(tab => {
@@ -334,43 +374,26 @@
       });
 
       // Update typing tab state
-      if (elements.typingTab) {
-        elements.typingTab.setAttribute('aria-disabled', state.selectedFile ? 'false' : 'true');
-      }
+      elements.typingTab.setAttribute('aria-disabled', state.selectedFile ? 'false' : 'true');
 
-      // Render file lists based on current tab
-      switch (state.activeTab) {
-        case 'pending':
-          renderPendingFiles();
-          break;
-        case 'in-progress':
-          renderInProgressFiles();
-          break;
-        case 'completed':
-          renderCompletedFiles();
-          break;
-        case 'typing':
-          if (state.selectedFile) {
-            renderTypingView();
-          }
-          break;
+      // Update counters
+      elements.pendingCount.textContent = pendingFiles.length;
+      elements.inProgressCount.textContent = inProgressFiles.length;
+      elements.completedCount.textContent = completedFiles.length;
+
+      // Render file lists
+      renderPendingFiles();
+      renderInProgressFiles();
+      renderCompletedFiles();
+
+      // Render typing view if needed
+      if (state.selectedFile) {
+        renderTypingView();
       }
     }
 
     function renderPendingFiles() {
-      if (!elements.pendingFilesList) return;
-      
       elements.pendingFilesList.innerHTML = '';
-      
-      if (state.loading) {
-        elements.pendingFilesList.innerHTML = `
-          <div class="rounded-md border p-8 text-center">
-            <div class="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p class="text-sm text-muted-foreground">Loading files...</p>
-          </div>
-        `;
-        return;
-      }
       
       if (pendingFiles.length === 0) {
         elements.pendingFilesList.innerHTML = `
@@ -379,7 +402,7 @@
               <i data-lucide="file-text" class="h-6 w-6"></i>
             </div>
             <h3 class="mb-2 text-lg font-medium">No files pending page typing</h3>
-            <p class="mb-4 text-sm text-muted-foreground">All files have been processed or there was an error loading data. Please check the browser console for details.</p>
+            <p class="mb-4 text-sm text-muted-foreground">All files have been processed</p>
           </div>
         `;
         lucide.createIcons();
@@ -389,20 +412,19 @@
       pendingFiles.forEach(file => {
         const fileItem = document.createElement('div');
         fileItem.className = 'flex items-center justify-between p-4';
-        
-        const applicantName = file.main_application?.applicant_name || 'Unknown Applicant';
-        
         fileItem.innerHTML = `
           <div class="flex items-center gap-3">
             <i data-lucide="file-text" class="h-8 w-8 text-blue-500"></i>
             <div>
-              <p class="text-blue-600 font-medium">${file.file_number}</p>
-              <p class="text-sm text-gray-700 mt-0.5">${applicantName}</p>
+              <p class="text-blue-600 font-medium">${file.fileNumber}</p>
+              <p class="text-sm text-gray-700 mt-0.5">
+                ${file.name.includes(" - ") ? file.name.split(" - ")[1] : file.name}
+              </p>
               <div class="flex items-center gap-2 mt-1">
                 <span class="badge badge-secondary text-xs">
-                  ${file.scannings_count} ${file.scannings_count === 1 ? "document" : "documents"}
+                  ${file.pages} ${file.pages === 1 ? "page" : "pages"}
                 </span>
-                <span class="text-xs text-muted-foreground">${file.created_at}</span>
+                <span class="text-xs text-muted-foreground">${file.date}</span>
               </div>
             </div>
           </div>
@@ -428,19 +450,7 @@
     }
 
     function renderInProgressFiles() {
-      if (!elements.inProgressFilesList) return;
-      
       elements.inProgressFilesList.innerHTML = '';
-      
-      if (state.loading) {
-        elements.inProgressFilesList.innerHTML = `
-          <div class="rounded-md border p-8 text-center">
-            <div class="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p class="text-sm text-muted-foreground">Loading files...</p>
-          </div>
-        `;
-        return;
-      }
       
       if (inProgressFiles.length === 0) {
         elements.inProgressFilesList.innerHTML = `
@@ -459,24 +469,23 @@
       inProgressFiles.forEach(file => {
         const fileItem = document.createElement('div');
         fileItem.className = 'flex items-center justify-between p-4';
-        
-        const applicantName = file.main_application?.applicant_name || 'Unknown Applicant';
-        
         fileItem.innerHTML = `
           <div class="flex items-center gap-3">
             <i data-lucide="file-text" class="h-8 w-8 text-orange-500"></i>
             <div class="flex-1">
-              <p class="text-blue-600 font-medium">${file.file_number}</p>
-              <p class="text-sm text-gray-700 mt-0.5">${applicantName}</p>
+              <p class="text-blue-600 font-medium">${file.fileNumber}</p>
+              <p class="text-sm text-gray-700 mt-0.5">
+                ${file.name.includes(" - ") ? file.name.split(" - ")[1] : file.name}
+              </p>
               <div class="flex items-center gap-2 mt-1">
                 <span class="badge badge-secondary text-xs">
-                  ${file.page_typings_count}/${file.scannings_count} typed
+                  ${file.completed}/${file.pages} pages
                 </span>
-                <span class="text-xs text-muted-foreground">${file.created_at}</span>
+                <span class="text-xs text-muted-foreground">${file.date}</span>
               </div>
               <div class="mt-2 w-full">
                 <div class="progress">
-                  <div class="progress-bar" style="width: ${file.progress}%"></div>
+                  <div class="progress-bar" style="width: ${(file.completed / file.pages) * 100}%"></div>
                 </div>
               </div>
             </div>
@@ -511,34 +520,9 @@
       
       tableBody.innerHTML = '';
       
-      if (state.loading) {
-        if (tableContainer) tableContainer.style.display = 'none';
-        if (emptyState) {
-          emptyState.classList.remove('hidden');
-          emptyState.innerHTML = `
-            <div class="rounded-md border p-8 text-center">
-              <div class="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-              <p class="text-sm text-muted-foreground">Loading completed files...</p>
-            </div>
-          `;
-        }
-        return;
-      }
-      
       if (completedFiles.length === 0) {
         if (tableContainer) tableContainer.style.display = 'none';
-        if (emptyState) {
-          emptyState.classList.remove('hidden');
-          emptyState.innerHTML = `
-            <div class="rounded-md border p-8 text-center">
-              <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                <i data-lucide="check-circle" class="h-6 w-6"></i>
-              </div>
-              <h3 class="mb-2 text-lg font-medium">No completed files</h3>
-              <p class="mb-4 text-sm text-muted-foreground">Complete typing a file to see it here</p>
-            </div>
-          `;
-        }
+        if (emptyState) emptyState.classList.remove('hidden');
         lucide.createIcons();
         return;
       }
@@ -550,20 +534,21 @@
         const row = document.createElement('tr');
         row.className = 'border-b hover:bg-muted/50 transition-colors';
         
-        const applicantName = file.main_application?.applicant_name || 'Unknown Applicant';
+        // Extract person name from file name
+        const personName = file.name.includes(" - ") ? file.name.split(" - ")[1] : file.name;
         
         row.innerHTML = `
           <td class="py-3 px-4">
-            <span class="text-blue-600 font-medium">${file.file_number}</span>
+            <span class="text-blue-600 font-medium">${file.fileNumber}</span>
           </td>
           <td class="py-3 px-4">
             <div class="flex items-center gap-2">
               <i data-lucide="file-text" class="h-4 w-4 text-green-500"></i>
-              <span class="text-sm">${applicantName}</span>
+              <span class="text-sm">${personName}</span>
             </div>
           </td>
           <td class="py-3 px-4">
-            <span class="text-sm text-muted-foreground">${file.created_at}</span>
+            <span class="text-sm text-muted-foreground">${file.date}</span>
           </td>
           <td class="py-3 px-4">
             <span class="text-sm">System User</span>
@@ -576,7 +561,7 @@
           </td>
           <td class="py-3 px-4">
             <span class="badge badge-secondary text-xs">
-              ${file.page_typings_count} ${file.page_typings_count === 1 ? "page" : "pages"}
+              ${file.pages} ${file.pages === 1 ? "page" : "pages"}
             </span>
           </td>
           <td class="py-3 px-4">
@@ -604,18 +589,8 @@
     }
 
     function renderTypingView() {
-      if (!state.selectedFileDetails) {
-        elements.typingCard.innerHTML = `
-          <div class="p-6 text-center">
-            <div class="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p class="text-sm text-muted-foreground">Loading file details...</p>
-          </div>
-        `;
-        return;
-      }
-
-      const file = state.selectedFileDetails;
-      const applicantName = file.main_application?.applicant_name || 'Unknown Applicant';
+      const file = getFileById(state.selectedFile);
+      if (!file) return;
       
       // Determine what to show based on state
       let content = '';
@@ -626,7 +601,8 @@
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h2 class="text-lg font-semibold">
-                <span class="text-blue-600">${file.file_number}</span> - ${applicantName}
+                <span class="text-blue-600">${file.fileNumber}</span> - 
+                ${file.name.split(" - ").length > 1 ? file.name.split(" - ")[1] : file.name}
               </h2>
               <p class="text-sm text-muted-foreground">
                 ${state.showFolderView && state.selectedPageInFolder === null
@@ -635,7 +611,7 @@
                     : "Select a page to type or categorize"
                   : state.selectedPageInFolder !== null
                     ? `Categorizing Page ${state.selectedPageInFolder + 1}`
-                    : `Typing Page ${state.currentPage} of ${file.total_pages}`}
+                    : `Typing Page ${state.currentPage} of ${file.pages}`}
               </p>
             </div>
             <div class="flex items-center gap-2">
@@ -648,6 +624,12 @@
               <button class="btn btn-outline btn-sm back-button">
                 ${state.selectedPageInFolder !== null ? 'Back to Folder' : 'Cancel'}
               </button>
+              ${!state.showFolderView 
+                ? `<button class="btn btn-primary btn-sm save-page">
+                    <i data-lucide="save" class="h-4 w-4 mr-1"></i>
+                    Save Page
+                  </button>` 
+                : ''}
             </div>
           </div>
         </div>
@@ -657,22 +639,19 @@
       if (state.showFolderView) {
         if (state.selectedPageInFolder !== null) {
           // Page categorization view
-          const currentScanning = file.scannings[0]; // For now, use first scanning
-          const currentPage = currentScanning?.pages[state.selectedPageInFolder];
-          
           content = `
             ${headerContent}
             <div class="p-6">
               <div class="space-y-6">
                 <div class="flex justify-between items-center">
                   <h3 class="text-lg font-medium">Categorize Page ${state.selectedPageInFolder + 1}</h3>
-                  <span class="badge bg-blue-500 text-white">${file.file_number}</span>
+                  <span class="badge bg-blue-500 text-white">${file.fileNumber}</span>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <div class="border rounded-md p-4 h-[400px] bg-white relative">
-                      ${currentPage 
+                      ${samplePages[state.selectedFile] && samplePages[state.selectedFile][state.selectedPageInFolder] 
                         ? `<div class="w-full h-full flex flex-col">
                             <div class="flex justify-between mb-2">
                               <span class="text-sm font-medium">Document Preview - Page ${state.selectedPageInFolder + 1}</span>
@@ -691,11 +670,10 @@
                             </div>
                             <div class="flex-1 overflow-auto flex items-center justify-center">
                               <img
-                                src="/storage/${currentPage.file_path.split('#')[0]}"
+                                src="${samplePages[state.selectedFile][state.selectedPageInFolder]}"
                                 alt="Page ${state.selectedPageInFolder + 1}"
                                 class="max-h-full max-w-full object-contain transition-transform"
                                 style="transform: scale(${state.zoomLevel / 100}) rotate(${state.rotation}deg);"
-                                onerror="this.src='https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Preview+Not+Available'"
                               />
                             </div>
                           </div>`
@@ -743,7 +721,7 @@
                       <h4 class="font-medium mb-2">Page Code Preview</h4>
                       <div class="flex items-center gap-2">
                         <span class="badge bg-blue-500 text-white text-base py-1 px-3">
-                          ${file.file_number}-
+                          ${file.fileNumber}-
                           ${getPageTypeById(state.pageType)?.code}-
                           ${getPageSubTypeById(state.pageType, state.pageSubType)?.code}-
                           ${state.serialNo}
@@ -764,16 +742,13 @@
           `;
         } else {
           // Folder view
-          const currentScanning = file.scannings[0]; // For now, use first scanning
-          const pages = currentScanning?.pages || [];
-          
           content = `
             ${headerContent}
             <div class="p-6">
               <div class="space-y-6">
                 <div class="flex justify-between items-center">
                   <h3 class="text-lg font-medium">File Pages</h3>
-                  <span class="badge bg-blue-500 text-white">${file.file_number}</span>
+                  <span class="badge bg-blue-500 text-white">${file.fileNumber}</span>
                 </div>
 
                 ${state.batchMode 
@@ -787,21 +762,21 @@
                       </div>
                       <div class="flex justify-between text-xs text-muted-foreground">
                         <span>Pages typed: ${Object.keys(state.batchTypedPages).length}</span>
-                        <span>Total pages: ${pages.length}</span>
+                        <span>Total pages: ${samplePages[state.selectedFile]?.length || 0}</span>
                       </div>
                     </div>`
                   : ''}
 
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="folder-pages">
-                  ${pages.length > 0 
-                    ? pages.map((page, index) => `
+                  ${samplePages[state.selectedFile] 
+                    ? samplePages[state.selectedFile].map((page, index) => `
                       <div class="border rounded-md overflow-hidden cursor-pointer hover:border-blue-500 transition-colors folder-page ${
-                        (state.batchMode && state.batchTypedPages[index]) || (!state.batchMode && page.is_typed)
+                        (state.batchMode && state.batchTypedPages[index]) || (!state.batchMode && state.processedPages[index])
                           ? 'border-green-500 bg-green-50'
                           : ''
                       }" data-index="${index}">
                         <div class="h-40 bg-muted flex items-center justify-center relative">
-                          ${((state.batchMode && state.batchTypedPages[index]) || (!state.batchMode && page.is_typed)) 
+                          ${((state.batchMode && state.batchTypedPages[index]) || (!state.batchMode && state.processedPages[index])) 
                             ? `<div class="absolute top-2 right-2 z-10">
                                 <span class="badge bg-green-500 text-white">
                                   <i data-lucide="check-circle" class="h-3 w-3 mr-1"></i>
@@ -810,10 +785,9 @@
                               </div>`
                             : ''}
                           <img
-                            src="/storage/${page.file_path.split('#')[0]}"
+                            src="${page}"
                             alt="Page ${index + 1}"
                             class="max-h-full max-w-full object-contain"
-                            onerror="this.src='https://via.placeholder.com/200x250/f8fafc/1e293b?text=Page+${index + 1}'"
                           />
                         </div>
                         <div class="p-2 bg-gray-50 border-t">
@@ -824,12 +798,12 @@
                             </span>
                           </div>
                           <div class="mt-1 text-xs text-muted-foreground">
-                            ${file.file_number}-${(index + 1).toString().padStart(2, '0')}
+                            ${file.fileNumber}-${(index + 1).toString().padStart(2, '0')}
                           </div>
                           ${state.batchMode && state.batchTypedPages[index] 
                             ? `<div class="mt-1">
                                 <span class="badge bg-blue-500 text-white text-xs w-full justify-center overflow-hidden text-ellipsis">
-                                  ${file.file_number}-
+                                  ${file.fileNumber}-
                                   ${getPageTypeById(state.batchTypedPages[index].pageType)?.code}-
                                   ${getPageSubTypeById(
                                     state.batchTypedPages[index].pageType, 
@@ -839,10 +813,10 @@
                                 </span>
                               </div>`
                             : ''}
-                          ${!state.batchMode && page.is_typed && page.page_typing 
+                          ${!state.batchMode && state.processedPages[index] 
                             ? `<div class="mt-1">
                                 <span class="badge bg-blue-500 text-white text-xs w-full justify-center overflow-hidden text-ellipsis">
-                                  ${page.page_typing.page_code}
+                                  ${state.processedPages[index].pageCode}
                                 </span>
                               </div>`
                             : ''}
@@ -873,11 +847,87 @@
           `;
         }
       } else {
-        // Traditional typing view (not implemented in this version)
+        // Traditional typing view
         content = `
           ${headerContent}
-          <div class="p-6 text-center">
-            <p class="text-muted-foreground">Traditional typing view not implemented. Please use folder view.</p>
+          <div class="p-6">
+            <div class="space-y-6">
+              <div class="space-y-2">
+                <div class="flex justify-between text-sm">
+                  <span>Typing Progress</span>
+                  <span>${Math.round(state.typingProgress)}%</span>
+                </div>
+                <div class="progress">
+                  <div class="progress-bar" style="width: ${state.typingProgress}%"></div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <div class="border rounded-md p-4 h-[400px] bg-white relative">
+                    ${getCurrentPageImage() 
+                      ? `<div class="w-full h-full flex flex-col">
+                          <div class="flex justify-between mb-2">
+                            <span class="text-sm font-medium">Document Preview - Page ${state.currentPage}</span>
+                            <div class="flex items-center gap-2">
+                              <button class="btn btn-ghost btn-icon zoom-out">
+                                <i data-lucide="zoom-out" class="h-4 w-4"></i>
+                              </button>
+                              <span class="text-xs">${state.zoomLevel}%</span>
+                              <button class="btn btn-ghost btn-icon zoom-in">
+                                <i data-lucide="zoom-in" class="h-4 w-4"></i>
+                              </button>
+                              <button class="btn btn-ghost btn-icon rotate">
+                                <i data-lucide="rotate-cw" class="h-4 w-4"></i>
+                              </button>
+                            </div>
+                          </div>
+                          <div class="flex-1 overflow-auto flex items-center justify-center">
+                            <img
+                              src="${getCurrentPageImage()}"
+                              alt="Page ${state.currentPage}"
+                              class="max-h-full max-w-full object-contain transition-transform"
+                              style="transform: scale(${state.zoomLevel / 100}) rotate(${state.rotation}deg);"
+                            />
+                          </div>
+                        </div>`
+                      : `<div class="h-full flex items-center justify-center">
+                          <div class="text-center">
+                            <i data-lucide="file-text" class="h-12 w-12 mx-auto mb-4 text-muted-foreground"></i>
+                            <p class="text-sm font-medium">Document preview not available</p>
+                          </div>
+                        </div>`
+                    }
+                  </div>
+                </div>
+                <div>
+                  <label for="typed-content" class="block text-sm font-medium mb-2">
+                    Type the content of page ${state.currentPage}:
+                  </label>
+                  <textarea
+                    id="typed-content"
+                    class="textarea h-[350px]"
+                    placeholder="Type the content of the document here..."
+                  >${state.typedContent}</textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-between border-t pt-4 p-6">
+            <div class="flex gap-2">
+              <button class="btn btn-outline prev-page ${state.currentPage === 1 ? 'disabled' : ''}" ${state.currentPage === 1 ? 'disabled' : ''}>
+                <i data-lucide="arrow-left" class="h-4 w-4 mr-1"></i>
+                Previous Page
+              </button>
+              <button class="btn btn-outline next-page ${state.currentPage === file.pages ? 'disabled' : ''}" ${state.currentPage === file.pages ? 'disabled' : ''}>
+                Next Page
+                <i data-lucide="arrow-right" class="h-4 w-4 ml-1"></i>
+              </button>
+            </div>
+            <button class="btn btn-primary save-continue">
+              <i data-lucide="save" class="h-4 w-4 mr-1"></i>
+              Save and Continue
+            </button>
           </div>
         `;
       }
@@ -936,13 +986,32 @@
           } else if (state.showFolderView) {
             state.showFolderView = false;
             state.selectedFile = null;
-            state.selectedFileDetails = null;
             state.activeTab = 'pending';
           } else {
             state.selectedFile = null;
-            state.selectedFileDetails = null;
             state.activeTab = 'pending';
           }
+          updateUI();
+        });
+      } else {
+        // Traditional typing view listeners
+        document.querySelector('#typed-content')?.addEventListener('input', (e) => {
+          state.typedContent = e.target.value;
+        });
+        
+        document.querySelector('.prev-page')?.addEventListener('click', goToPreviousPage);
+        document.querySelector('.next-page')?.addEventListener('click', goToNextPage);
+        document.querySelector('.save-page')?.addEventListener('click', saveTypedContent);
+        document.querySelector('.save-continue')?.addEventListener('click', saveTypedContent);
+        
+        // Image controls
+        document.querySelector('.zoom-in')?.addEventListener('click', zoomIn);
+        document.querySelector('.zoom-out')?.addEventListener('click', zoomOut);
+        document.querySelector('.rotate')?.addEventListener('click', rotate);
+        
+        document.querySelector('.back-button')?.addEventListener('click', () => {
+          state.selectedFile = null;
+          state.activeTab = 'pending';
           updateUI();
         });
       }
@@ -951,67 +1020,74 @@
     // Event handlers
     function switchTab(tabId) {
       state.activeTab = tabId;
-      
-      // Load data for the new tab
-      switch (tabId) {
-        case 'pending':
-          loadFilesByStatus('pending');
-          break;
-        case 'in-progress':
-          loadFilesByStatus('in-progress');
-          break;
-        case 'completed':
-          loadFilesByStatus('completed');
-          break;
+      updateUI();
+    }
+
+    function selectFileForTyping(fileId) {
+      state.selectedFile = fileId;
+      state.currentPage = 1;
+      state.typedContent = "";
+      state.activeTab = "typing";
+      state.zoomLevel = 100;
+      state.rotation = 0;
+      state.showFolderView = true;
+      state.selectedPageInFolder = null;
+      state.serialNo = "01"; // Reset serial number when selecting a new file
+      state.batchMode = false;
+      state.batchTypedPages = {};
+      state.currentBatchPageIndex = null;
+      state.batchSubmitReady = false;
+      state.processedPages = {};
+
+      // Calculate progress based on completed pages
+      const file = getFileById(fileId);
+      if (file) {
+        state.typingProgress = (file.completed / file.pages) * 100;
       }
       
       updateUI();
     }
 
-    async function selectFileForTyping(fileId) {
-      try {
-        state.selectedFile = fileId;
-        state.currentPage = 1;
-        state.typedContent = "";
-        state.activeTab = "typing";
-        state.zoomLevel = 100;
-        state.rotation = 0;
-        state.showFolderView = true;
-        state.selectedPageInFolder = null;
-        state.serialNo = "01";
-        state.batchMode = false;
-        state.batchTypedPages = {};
-        state.currentBatchPageIndex = null;
-        state.batchSubmitReady = false;
-        state.processedPages = {};
+    function saveTypedContent() {
+      if (!state.selectedFile) return;
 
-        // Load file details
-        await loadFileDetails(fileId);
-        
-        updateUI();
-      } catch (error) {
-        alert('Error loading file details: ' + error.message);
-        console.error('Error selecting file for typing:', error);
+      const file = getFileById(state.selectedFile);
+      if (!file) return;
+
+      // In a real app, this would save the content to a database
+      alert(`Content for page ${state.currentPage} of ${file.name} saved successfully!`);
+
+      // Update progress
+      const newProgress = (state.currentPage / file.pages) * 100;
+      state.typingProgress = newProgress;
+
+      // Clear content for next page
+      state.typedContent = "";
+
+      // Move to next page if available
+      if (state.currentPage < file.pages) {
+        state.currentPage++;
+      } else {
+        // If all pages are completed, go back to file list
+        alert("All pages completed! Returning to file list.");
+        state.selectedFile = null;
+        state.activeTab = "completed";
       }
+      
+      updateUI();
     }
 
-    async function processPage() {
-      if (!state.selectedFile || state.selectedPageInFolder === null || !state.selectedFileDetails) return;
+    function processPage() {
+      if (!state.selectedFile || state.selectedPageInFolder === null) return;
 
-      const file = state.selectedFileDetails;
-      const currentScanning = file.scannings[0]; // For now, use first scanning
-      const currentPage = currentScanning?.pages[state.selectedPageInFolder];
-      
-      if (!currentPage) {
-        alert('Page not found');
-        return;
-      }
+      const file = getFileById(state.selectedFile);
+      if (!file) return;
 
       // Generate the page code with the new format including serial number
       const pageTypeObj = getPageTypeById(state.pageType);
       const pageSubTypeObj = getPageSubTypeById(state.pageType, state.pageSubType);
       
-      const pageCode = `${file.file_number}-${pageTypeObj?.code}-${pageSubTypeObj?.code}-${state.serialNo}`;
+      const pageCode = `${file.fileNumber}-${pageTypeObj?.code}-${pageSubTypeObj?.code}-${state.serialNo}`;
 
       if (state.batchMode) {
         // In batch mode, add to batch instead of immediate submission
@@ -1032,8 +1108,8 @@
         state.selectedPageInFolder = null;
 
         // Check if all pages are typed
-        const totalPages = currentScanning?.pages?.length || 0;
-        const typedPagesCount = Object.keys(state.batchTypedPages).length;
+        const totalPages = samplePages[state.selectedFile]?.length || 0;
+        const typedPagesCount = Object.keys(state.batchTypedPages).length; // Count after adding current page
 
         // Update batch progress
         const progress = Math.min((typedPagesCount / totalPages) * 100, 100);
@@ -1045,143 +1121,60 @@
         }
       } else {
         // In normal mode, submit immediately
-        try {
-          const pageData = {
-            file_indexing_id: file.id,
-            scanning_id: currentScanning.id,
-            page_number: currentPage.page_number,
-            page_type: pageTypeObj?.name,
-            page_subtype: pageSubTypeObj?.name,
-            serial_number: parseInt(state.serialNo),
-            page_code: pageCode,
-            file_path: currentPage.file_path
-          };
+        // In a real app, this would save the page type and subtype to the database
+        alert(`Page ${state.selectedPageInFolder + 1} processed with code: ${pageCode}`);
 
-          await saveSinglePageTyping(pageData);
-          
-          alert(`Page ${state.selectedPageInFolder + 1} processed with code: ${pageCode}`);
+        // Store the processed page information
+        state.processedPages = {
+          ...state.processedPages,
+          [state.selectedPageInFolder]: {
+            pageType: state.pageType,
+            pageSubType: state.pageSubType,
+            serialNo: state.serialNo,
+            pageCode: pageCode,
+          }
+        };
 
-          // Store the processed page information
-          state.processedPages = {
-            ...state.processedPages,
-            [state.selectedPageInFolder]: {
-              pageType: state.pageType,
-              pageSubType: state.pageSubType,
-              serialNo: state.serialNo,
-              pageCode: pageCode,
-            }
-          };
+        // Increment serial number for next page
+        const nextSerialNo = parseInt(state.serialNo) + 1;
+        state.serialNo = nextSerialNo.toString().padStart(2, '0');
 
-          // Mark page as typed in file details
-          currentPage.is_typed = true;
-          currentPage.page_typing = {
-            id: Date.now(), // Temporary ID
-            page_type: pageTypeObj?.name,
-            page_subtype: pageSubTypeObj?.name,
-            page_code: pageCode,
-            serial_number: parseInt(state.serialNo)
-          };
-
-          // Increment serial number for next page
-          const nextSerialNo = parseInt(state.serialNo) + 1;
-          state.serialNo = nextSerialNo.toString().padStart(2, '0');
-
-          // Return to folder view
-          state.selectedPageInFolder = null;
-          
-          // Reload stats
-          loadStats();
-        } catch (error) {
-          alert('Error saving page typing: ' + error.message);
-          console.error('Error processing page:', error);
-        }
+        // Return to folder view
+        state.selectedPageInFolder = null;
       }
       
       updateUI();
     }
 
     function submitBatch() {
-      if (!state.selectedFile || !state.selectedFileDetails) return;
+      if (!state.selectedFile) return;
 
-      const file = state.selectedFileDetails;
-      const currentScanning = file.scannings[0];
-      
-      if (!currentScanning) {
-        alert('No scanning found for this file');
-        return;
-      }
+      const file = getFileById(state.selectedFile);
+      if (!file) return;
 
       state.batchProcessing = true;
       updateUI();
 
-      // Prepare batch data
-      const pageTypes = [];
-      Object.keys(state.batchTypedPages).forEach(pageIndex => {
-        const pageData = state.batchTypedPages[pageIndex];
-        const page = currentScanning.pages[parseInt(pageIndex)];
-        
-        if (page) {
-          const pageTypeObj = getPageTypeById(pageData.pageType);
-          const pageSubTypeObj = getPageSubTypeById(pageData.pageType, pageData.pageSubType);
-          const pageCode = `${file.file_number}-${pageTypeObj?.code}-${pageSubTypeObj?.code}-${pageData.serialNo}`;
-          
-          pageTypes.push({
-            scanning_id: currentScanning.id,
-            page_number: page.page_number,
-            page_type: pageTypeObj?.name,
-            page_subtype: pageSubTypeObj?.name,
-            serial_number: parseInt(pageData.serialNo),
-            page_code: pageCode,
-            file_path: page.file_path
-          });
-        }
-      });
+      // Simulate batch processing
+      setTimeout(() => {
+        // In a real app, this would submit all pages to the database
+        const pageCount = Object.keys(state.batchTypedPages).length;
+        // Extract just the person's name from the file name (removing document type)
+        const personName = file.name.includes(" - ") ? file.name.split(" - ")[1] : file.name;
+        alert(`Successfully submitted ${pageCount} pages as a batch for ${file.fileNumber} - ${personName}!`);
 
-      // Submit batch
-      fetch(API.store, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: JSON.stringify({
-          file_indexing_id: file.id,
-          page_types: pageTypes
-        })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          const pageCount = Object.keys(state.batchTypedPages).length;
-          const applicantName = file.main_application?.applicant_name || 'Unknown Applicant';
-          alert(`Successfully submitted ${pageCount} pages as a batch for ${file.file_number} - ${applicantName}!`);
-
-          // Reset batch mode
-          state.batchMode = false;
-          state.batchTypedPages = {};
-          state.batchSubmitReady = false;
-          state.batchProcessing = false;
-
-          // Return to file list
-          state.selectedFile = null;
-          state.selectedFileDetails = null;
-          state.activeTab = "completed";
-          
-          // Reload stats and files
-          loadStats();
-          loadFilesByStatus('completed');
-          
-          updateUI();
-        } else {
-          throw new Error(data.message || 'Failed to submit batch');
-        }
-      })
-      .catch(error => {
-        alert('Error submitting batch: ' + error.message);
-        console.error('Error submitting batch:', error);
+        // Reset batch mode
+        state.batchMode = false;
+        state.batchTypedPages = {};
+        state.batchSubmitReady = false;
         state.batchProcessing = false;
+
+        // Return to file list
+        state.selectedFile = null;
+        state.activeTab = "completed";
+        
         updateUI();
-      });
+      }, 2000);
     }
 
     function toggleBatchMode() {
@@ -1191,9 +1184,25 @@
         state.batchTypedPages = {};
         state.batchSubmitReady = false;
         state.currentBatchPageIndex = null;
-        state.batchProgress = 0;
       }
       updateUI();
+    }
+
+    function goToPreviousPage() {
+      if (state.currentPage > 1) {
+        state.currentPage--;
+        state.typedContent = "";
+        updateUI();
+      }
+    }
+
+    function goToNextPage() {
+      const file = getFileById(state.selectedFile);
+      if (file && state.currentPage < file.pages) {
+        state.currentPage++;
+        state.typedContent = "";
+        updateUI();
+      }
     }
 
     function zoomIn() {
@@ -1211,19 +1220,19 @@
       updateUI();
     }
 
+    function toggleFileExpansion(fileId) {
+      if (state.expandedFiles.includes(fileId)) {
+        state.expandedFiles = state.expandedFiles.filter(id => id !== fileId);
+      } else {
+        state.expandedFiles.push(fileId);
+      }
+      updateUI();
+    }
+
     function selectPageFromFolder(pageIndex) {
       // If this page is already typed in batch mode, don't allow re-typing
       if (state.batchMode && state.batchTypedPages[pageIndex]) {
         return;
-      }
-
-      // If this page is already typed in normal mode, don't allow re-typing
-      if (!state.batchMode && state.selectedFileDetails) {
-        const currentScanning = state.selectedFileDetails.scannings[0];
-        const page = currentScanning?.pages[pageIndex];
-        if (page && page.is_typed) {
-          return;
-        }
       }
 
       state.selectedPageInFolder = pageIndex;
@@ -1234,142 +1243,6 @@
       state.typedContent = "";
       
       updateUI();
-    }
-
-    async function showProcessedPagesModal(fileId) {
-      try {
-        // Load file details to get processed pages
-        const fileDetails = await loadFileDetails(fileId);
-        
-        if (!fileDetails) {
-          alert('Error loading file details');
-          return;
-        }
-
-        const modal = document.getElementById('processed-pages-modal');
-        const modalTitle = document.getElementById('modal-file-title');
-        const modalSubtitle = document.getElementById('modal-file-subtitle');
-        const modalContent = document.getElementById('modal-processed-pages-content');
-
-        if (!modal || !modalTitle || !modalSubtitle || !modalContent) {
-          alert('Modal elements not found');
-          return;
-        }
-
-        // Set modal title and subtitle
-        const applicantName = fileDetails.main_application?.applicant_name || 'Unknown Applicant';
-        modalTitle.textContent = `${fileDetails.file_number} - ${applicantName}`;
-        
-        // Count total processed pages across all scannings
-        let totalProcessedPages = 0;
-        const allProcessedPages = [];
-        
-        fileDetails.scannings.forEach(scanning => {
-          scanning.pages.forEach(page => {
-            if (page.is_typed && page.page_typing) {
-              totalProcessedPages++;
-              allProcessedPages.push({
-                ...page,
-                scanning_id: scanning.id,
-                original_filename: scanning.original_filename
-              });
-            }
-          });
-        });
-
-        modalSubtitle.textContent = `${totalProcessedPages} processed pages`;
-
-        // Generate processed pages content
-        if (allProcessedPages.length === 0) {
-          modalContent.innerHTML = `
-            <div class="text-center py-12">
-              <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                <i data-lucide="file-text" class="h-6 w-6"></i>
-              </div>
-              <h4 class="mb-2 text-lg font-medium">No processed pages</h4>
-              <p class="text-sm text-muted-foreground">This file has no pages that have been typed yet.</p>
-            </div>
-          `;
-        } else {
-          modalContent.innerHTML = `
-            <h4 class="text-sm font-medium mb-3">Processed Pages</h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              ${allProcessedPages.map((page, index) => `
-                <div class="border rounded-md overflow-hidden">
-                  <div class="h-32 bg-muted flex items-center justify-center">
-                    <img 
-                      src="/storage/${page.file_path.split('#')[0]}" 
-                      alt="Page ${page.page_number}" 
-                      class="max-h-full max-w-full object-contain"
-                      onerror="this.src='https://via.placeholder.com/200x150/f8fafc/1e293b?text=Page+${page.page_number}'"
-                    />
-                  </div>
-                  <div class="p-3 bg-gray-50 border-t">
-                    <div class="flex justify-between items-center mb-2">
-                      <span class="text-xs font-medium">Page ${page.page_number}</span>
-                      <span class="badge badge-outline text-xs">${page.page_typing.page_type}</span>
-                    </div>
-                    <div class="mb-2">
-                      <span class="badge bg-blue-500 text-white text-xs w-full justify-center overflow-hidden text-ellipsis">
-                        ${page.page_typing.page_code}
-                      </span>
-                    </div>
-                    <p class="text-xs text-muted-foreground truncate" title="${page.page_typing.page_subtype}">
-                      ${page.page_typing.page_subtype}
-                    </p>
-                    <p class="text-xs text-muted-foreground mt-1 truncate" title="${page.original_filename}">
-                      From: ${page.original_filename}
-                    </p>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-            
-            <!-- Summary Section -->
-            <div class="mt-6 p-4 border rounded-md bg-muted/30">
-              <h4 class="font-medium mb-2">Processing Summary</h4>
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div>
-                  <span class="text-muted-foreground">Total Pages:</span>
-                  <span class="font-medium ml-1">${fileDetails.total_pages}</span>
-                </div>
-                <div>
-                  <span class="text-muted-foreground">Processed:</span>
-                  <span class="font-medium ml-1">${totalProcessedPages}</span>
-                </div>
-                <div>
-                  <span class="text-muted-foreground">Progress:</span>
-                  <span class="font-medium ml-1">${Math.round((totalProcessedPages / fileDetails.total_pages) * 100)}%</span>
-                </div>
-                <div>
-                  <span class="text-muted-foreground">Status:</span>
-                  <span class="badge ${totalProcessedPages === fileDetails.total_pages ? 'bg-green-500 text-white' : 'bg-orange-500 text-white'} text-xs ml-1">
-                    ${totalProcessedPages === fileDetails.total_pages ? 'Complete' : 'In Progress'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          `;
-        }
-
-        // Show modal
-        modal.classList.remove('hidden');
-        
-        // Initialize icons
-        lucide.createIcons();
-        
-      } catch (error) {
-        console.error('Error showing processed pages modal:', error);
-        alert('Error loading processed pages: ' + error.message);
-      }
-    }
-
-    // Function to hide processed pages modal
-    function hideProcessedPagesModal() {
-      const modal = document.getElementById('processed-pages-modal');
-      if (modal) {
-        modal.classList.add('hidden');
-      }
     }
 
     // Initialize the page
@@ -1387,24 +1260,81 @@
       
       // Check URL for fileId parameter
       const urlParams = new URLSearchParams(window.location.search);
-      const fileId = urlParams.get('file_indexing_id');
+      const fileId = urlParams.get('fileId');
       
       if (fileId) {
         selectFileForTyping(fileId);
-      } else {
-        // Load initial data
-        loadStats();
-        loadFilesByStatus('pending');
       }
       
       // Initial UI update
       updateUI();
     }
+    
+    // Function to show processed pages in modal
+    function showProcessedPagesModal(fileId) {
+      const file = getFileById(fileId);
+      if (!file || !file.processedPages) return;
+
+      const modal = document.getElementById('processed-pages-modal');
+      const modalTitle = document.getElementById('modal-file-title');
+      const modalSubtitle = document.getElementById('modal-file-subtitle');
+      const modalContent = document.getElementById('modal-processed-pages-content');
+
+      if (!modal || !modalTitle || !modalSubtitle || !modalContent) return;
+
+      // Set modal title and subtitle
+      const personName = file.name.includes(" - ") ? file.name.split(" - ")[1] : file.name;
+      modalTitle.textContent = `${file.fileNumber} - ${personName}`;
+      modalSubtitle.textContent = `${file.processedPages.length} processed pages`;
+
+      // Generate processed pages content
+      modalContent.innerHTML = `
+        <h4 class="text-sm font-medium mb-3">Processed Pages</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          ${file.processedPages.map((page, index) => `
+            <div class="border rounded-md overflow-hidden">
+              <div class="h-32 bg-muted flex items-center justify-center">
+                ${samplePages[file.id] && samplePages[file.id][index]
+                  ? `<img src="${samplePages[file.id][index]}" alt="Page ${page.pageNumber}" class="max-h-full max-w-full object-contain">`
+                  : `<i data-lucide="file-text" class="h-10 w-10 text-muted-foreground"></i>`
+                }
+              </div>
+              <div class="p-2 bg-gray-50 border-t">
+                <div class="flex justify-between items-center">
+                  <span class="text-xs font-medium">Page ${page.pageNumber}</span>
+                  <span class="badge badge-outline text-xs">${page.pageType}</span>
+                </div>
+                <div class="mt-1">
+                  <span class="badge bg-blue-500 text-white text-xs mt-1 w-full justify-center overflow-hidden text-ellipsis">
+                    ${page.pageCode}
+                  </span>
+                  <p class="text-xs text-muted-foreground mt-1 truncate" title="${page.pageSubType}">
+                    ${page.pageSubType}
+                  </p>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      // Show modal
+      modal.classList.remove('hidden');
+      
+      // Initialize icons
+      lucide.createIcons();
+    }
+
+    // Function to hide processed pages modal
+    function hideProcessedPagesModal() {
+      const modal = document.getElementById('processed-pages-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+      }
+    }
 
     // Initialize the page when DOM is loaded
     document.addEventListener('DOMContentLoaded', () => {
-      console.log('DOM loaded, initializing page typing...');
-      console.log('API endpoints:', API);
       init();
       
       // Add modal close event listeners

@@ -784,7 +784,7 @@
                                 <th class="table-header">Scheme No</th>
                                 <th class="table-header">Unit Owner</th>
                                 <th class="table-header">LGA</th>
-                                <th class="table-header">Block/Floor/Unit</th>
+                                <th class="table-header">Unit/Section/Block</th>
                                 <th class="table-header">Land Use</th>
                                 <th class="table-header">ST Memo Status</th>
                                 <th class="table-header">Date Created</th>
@@ -812,7 +812,7 @@
                                     @endif
                                 </td>
                                 <td class="table-cell">{{ $unitApplication->property_lga ?? 'N/A' }}</td>
-                                <td class="table-cell">{{ $unitApplication->block_number ?? '' }}-{{ $unitApplication->floor_number ?? '' }}-{{ $unitApplication->unit_number ?? '' }}</td>
+                                <td class="table-cell">{{ $unitApplication->unit_number ?? '' }}-{{ $unitApplication->floor_number ?? '' }}-{{ $unitApplication->block_number ?? '' }}</td>
                                 <td class="table-cell">{{ $unitApplication->land_use ?? 'N/A' }}</td>
                                 <td class="table-cell">
                                     @if($unitApplication->has_st_memo ?? false)
@@ -882,7 +882,7 @@
                                     <th class="table-header text-green-500">Scheme No</th>
                                     <th class="table-header text-green-500">Unit Owner</th>
                                     <th class="table-header text-green-500">LGA</th>
-                                    <th class="table-header text-green-500">Block/Floor/Unit</th>
+                                    <th class="table-header text-green-500">Unit/Section/Block</th>
                                     <th class="table-header text-green-500">Land Use</th>
                                     <th class="table-header text-green-500">Date Created</th>
                                     <th class="table-header text-green-500">Actions</th>
@@ -932,9 +932,9 @@
                                                 @endif
                                             </span>
                                         </div>
-                                    </td>
+                                    </td>  
                                     <td class="table-cell">{{ $unitApplication->property_lga ?? 'N/A' }}</td>
-                                    <td class="table-cell">{{ $unitApplication->block_number ?? '' }}-{{ $unitApplication->floor_number ?? '' }}-{{ $unitApplication->unit_number ?? '' }}</td>
+                                    <td class="table-cell">{{ $unitApplication->unit_number ?? '' }}-{{ $unitApplication->floor_number ?? '' }}-{{ $unitApplication->block_number ?? '' }}</td>
                                     <td class="table-cell">
                                         @if($unitApplication->land_use)
                                             @php

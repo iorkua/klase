@@ -1,5 +1,4 @@
- 
-   <style>
+<style>
         
         
         .mt-6 { margin-top: 1.5rem; }
@@ -587,16 +586,13 @@
 
         // Get status badge based on file status
         function getStatusBadge(file) {
-            const hasScanning = file.scannings_count > 0;
-            const hasPageTyping = file.pagetypings_count > 0;
-            
-            if (hasPageTyping) {
-                return '<span class="Badge Badge-variant-green">Typed</span>';
-            } else if (hasScanning) {
-                return '<span class="Badge Badge-variant-blue">Scanned</span>';
-            } else {
-                return '<span class="Badge Badge-variant-black">Indexed</span>';
-            }
+            // Always use green badge for status
+            const statusText = file.pagetypings_count > 0
+                ? 'Typed'
+                : file.scannings_count > 0
+                    ? 'Scanned'
+                    : 'Indexed';
+            return `<span class="Badge Badge-variant-green">${statusText}</span>`;
         }
 
         // Format date for display

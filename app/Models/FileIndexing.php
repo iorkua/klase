@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\ApplicationMother;
+use App\Models\Scanning;
+use App\Models\PageTyping;
 
 class FileIndexing extends Model
 {

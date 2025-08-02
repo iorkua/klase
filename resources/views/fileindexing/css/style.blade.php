@@ -49,6 +49,21 @@
       color: white;
     }
     
+    .badge-red {
+      background-color: #ef4444;
+      color: white;
+    }
+    
+    .badge-purple {
+      background-color: #8b5cf6;
+      color: white;
+    }
+    
+    .badge-gray {
+      background-color: #6b7280;
+      color: white;
+    }
+    
     .badge-outline {
       background-color: transparent;
       border: 1px solid #e5e7eb;
@@ -132,6 +147,33 @@
     
     .btn-blue:hover {
       background-color: #2563eb;
+    }
+    
+    /* Table styles */
+    .table-auto {
+      table-layout: auto;
+      border-collapse: collapse;
+    }
+    
+    .table-auto th,
+    .table-auto td {
+      border-collapse: collapse;
+    }
+    
+    .table-auto th {
+      background-color: #f9fafb;
+      font-weight: 500;
+      text-align: left;
+    }
+    
+    .table-auto tr:hover {
+      background-color: #f9fafb;
+    }
+    
+    .transition-colors {
+      transition-property: color, background-color, border-color;
+      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      transition-duration: 150ms;
     }
     
     /* File item styles */
@@ -744,7 +786,7 @@
     .gap-6 {
       gap: 1.5rem;
     }
-    
+
     @media (max-width: 768px) {
       .grid-cols-3 {
         grid-template-columns: repeat(1, minmax(0, 1fr));
@@ -756,6 +798,16 @@
       
       .insight-analysis {
         grid-template-columns: 1fr;
+      }
+      
+      /* Make table responsive */
+      .table-auto {
+        font-size: 0.75rem;
+      }
+      
+      .table-auto th,
+      .table-auto td {
+        padding: 0.5rem;
       }
     }
   </style>

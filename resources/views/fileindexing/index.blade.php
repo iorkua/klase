@@ -43,14 +43,25 @@
 
     <!-- Tabs and New File Button -->
     <div class="flex justify-between items-center mb-6">
-      <div class="tabs" id="main-tabs">
-        <div class="tab active" data-tab="pending">File Index</div>
-        <div class="tab" data-tab="indexing">Digital Index (AI)</div>
-        <div class="tab" data-tab="indexed">Indexed Files</div>
+      <div class="tabs bg-white rounded-lg shadow-sm border border-gray-200 p-1" id="main-tabs">
+        <div class="tab active flex items-center px-6 py-3 text-sm font-medium rounded-md transition-all" data-tab="pending">
+          <i data-lucide="file-text" class="h-4 w-4 mr-2"></i>
+          File Index
+          <span class="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">New</span>
+        </div>
+        <div class="tab flex items-center px-6 py-3 text-sm font-medium rounded-md transition-all" data-tab="indexing">
+          <i data-lucide="cpu" class="h-4 w-4 mr-2"></i>
+          Digital Index (AI)
+        </div>
+        <div class="tab flex items-center px-6 py-3 text-sm font-medium rounded-md transition-all" data-tab="indexed">
+          <i data-lucide="check-circle" class="h-4 w-4 mr-2"></i>
+          Indexed Files
+        </div>
       </div>
-      <button class="btn btn-primary" id="new-file-index-btn">
-        <i data-lucide="folder-plus" class="h-4 w-4 mr-2"></i>
-        New File Index
+      
+      <button class="btn btn-primary flex items-center px-5 py-2.5 shadow-lg hover:shadow-xl transition-all duration-200" id="new-file-index-btn">
+        <i data-lucide="folder-plus" class="h-5 w-5 mr-2"></i>
+        <span class="font-medium">New File Index</span>
       </button>
     </div>
 
@@ -97,21 +108,29 @@
             <i data-lucide="brain" class="h-5 w-5 text-purple-600 mr-2"></i>
             <h2 class="text-xl font-bold">Digital Index (AI)</h2>
           </div>
-          <p class="text-sm text-gray-500 mb-6">AI-powered document analysis and metadata extraction</p>
+          <p class="text-sm text-gray-500 mb-6">AI-powered document analysis and metadata extraction from selected files</p>
           
-          <div class="card p-6 mb-4">
-            <div class="flex items-center mb-4">
-              <i data-lucide="brain" class="h-5 w-5 text-purple-600 mr-2"></i>
-              <h3 class="text-lg font-medium">AI Indexing: 2 Files</h3>
-            </div>
-            
-            <p class="mb-6">Ready to begin AI-powered indexing for 2 selected files.</p>
-            
-            <div class="flex justify-center">
-              <button class="btn btn-primary" id="start-ai-indexing-btn">
-                <i data-lucide="brain" class="h-4 w-4 mr-2"></i>
-                Start AI Indexing
-              </button>
+          <!-- AI Indexing Options -->
+          <div class="flex justify-center mb-6">
+            <!-- Selected Files AI Indexing -->
+            <div class="card p-8 max-w-md w-full">
+              <div class="flex items-center justify-center mb-4">
+                <i data-lucide="file-search" class="h-8 w-8 text-blue-600 mr-3"></i>
+                <h3 class="text-xl font-medium">AI Indexing</h3>
+              </div>
+              
+              <p class="text-sm text-gray-600 mb-6 text-center">Start AI-powered indexing for <span id="selected-files-ai-count" class="font-semibold text-blue-600">0</span> selected files from the File Index tab.</p>
+              
+              <div class="flex justify-center">
+                <button class="btn btn-primary btn-lg" id="start-ai-indexing-btn" disabled>
+                  <i data-lucide="brain" class="h-5 w-5 mr-2"></i>
+                  Start AI Indexing
+                </button>
+              </div>
+              
+              <div class="mt-4 text-xs text-gray-500 text-center">
+                <p>Select files from the "File Index" tab first, then return here to start AI processing.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -123,7 +142,7 @@
       <div class="card p-6 mb-4">
         <div class="flex items-center mb-4">
           <i data-lucide="layers" class="h-5 w-5 text-green-500 mr-2"></i>
-          <h3 class="text-lg font-medium">AI Indexing: 2 Files</h3>
+          <h3 class="text-lg font-medium">AI Indexing: <span id="processing-files-count">0</span> Files</h3>
         </div>
         
         <div class="mb-4">
@@ -197,7 +216,7 @@
         
         <div class="bg-purple-50 p-4 rounded-md border border-purple-100 mb-6">
           <p class="text-purple-700">
-            Our AI is analyzing your documents, extracting metadata, and identifying key information. This process uses machine learning to understand document structure, recognize text, and categorize content.
+            Our AI is analyzing your applications, extracting metadata, and identifying key information from the motheapplications, subapplication, and cofo tables. This process uses machine learning to understand application structure, recognize patterns, and categorize content.
           </p>
         </div>
         

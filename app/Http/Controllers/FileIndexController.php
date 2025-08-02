@@ -84,7 +84,9 @@ class FileIndexController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'file_number_type' => 'required|in:application,manual',
-                'main_application_id' => 'nullable|integer|exists:sqlsrv.mother_applications,id',
+                'main_application_id' => 'nullable|integer',
+                'subapplication_id' => 'nullable|integer',
+                'source_table' => 'nullable|in:mother,sub',
                 'file_number' => 'required|string|max:255',
                 'file_title' => 'required|string|max:255',
                 'land_use_type' => 'required|string|max:100',
@@ -109,10 +111,18 @@ class FileIndexController extends Controller
             $validated = $validator->validated();
 
             // Check if file indexing already exists for this application
-            if ($validated['file_number_type'] === 'application' && $validated['main_application_id']) {
-                $existingIndex = FileIndexing::on('sqlsrv')
-                    ->where('main_application_id', $validated['main_application_id'])
-                    ->first();
+            if ($validated['file_number_type'] === 'application') {
+                $existingIndex = null;
+                
+                if ($validated['main_application_id']) {
+                    $existingIndex = FileIndexing::on('sqlsrv')
+                        ->where('main_application_id', $validated['main_application_id'])
+                        ->first();
+                } elseif ($validated['subapplication_id']) {
+                    $existingIndex = FileIndexing::on('sqlsrv')
+                        ->where('subapplication_id', $validated['subapplication_id'])
+                        ->first();
+                }
                 
                 if ($existingIndex) {
                     return response()->json([
@@ -126,6 +136,7 @@ class FileIndexController extends Controller
             // Create file indexing record
             $fileIndexing = FileIndexing::on('sqlsrv')->create([
                 'main_application_id' => $validated['main_application_id'],
+                'subapplication_id' => $validated['subapplication_id'],
                 'file_number' => $validated['file_number'],
                 'file_title' => $validated['file_title'],
                 'land_use_type' => $validated['land_use_type'],
@@ -137,11 +148,15 @@ class FileIndexController extends Controller
                 'has_transaction' => $validated['has_transaction'] ?? false,
                 'is_problematic' => $validated['is_problematic'] ?? false,
                 'is_co_owned_plot' => $validated['is_co_owned_plot'] ?? false,
+                'created_by' => Auth::id(),
+                'updated_by' => Auth::id(),
             ]);
 
             Log::info('File indexing created', [
                 'file_indexing_id' => $fileIndexing->id,
                 'file_number' => $fileIndexing->file_number,
+                'file_title' => $fileIndexing->file_title,
+                'source_table' => $validated['source_table'] ?? 'manual',
                 'created_by' => Auth::id()
             ]);
 
@@ -338,53 +353,139 @@ class FileIndexController extends Controller
 
     /**
      * Search applications for file number selection (AJAX)
+     * Searches both mother_applications and subapplications tables
      */
     public function searchApplications(Request $request)
     {
         try {
             $search = $request->get('search', '');
             
-            $applications = ApplicationMother::on('sqlsrv')
+            // Search mother_applications table
+            $motherApplications = DB::connection('sqlsrv')
+                ->table('mother_applications')
                 ->whereNotExists(function ($query) {
                     $query->select(DB::raw(1))
                         ->from('file_indexings')
                         ->whereRaw('file_indexings.main_application_id = mother_applications.id');
                 })
                 ->where(function ($query) use ($search) {
-                    $query->where('fileno', 'like', "%{$search}%")
-                        ->orWhere('np_fileno', 'like', "%{$search}%")
-                        ->orWhere('first_name', 'like', "%{$search}%")
-                        ->orWhere('surname', 'like', "%{$search}%")
-                        ->orWhere('corporate_name', 'like', "%{$search}%");
+                    if ($search) {
+                        $query->where('fileno', 'like', "%{$search}%")
+                            ->orWhere('np_fileno', 'like', "%{$search}%")
+                            ->orWhere('first_name', 'like', "%{$search}%")
+                            ->orWhere('surname', 'like', "%{$search}%")
+                            ->orWhere('corporate_name', 'like', "%{$search}%")
+                            ->orWhere('multiple_owners_names', 'like', "%{$search}%");
+                    }
                 })
-                ->select('id', 'fileno', 'np_fileno', 'first_name', 'middle_name', 'surname', 'corporate_name', 'applicant_type', 'land_use', 'property_plot_no', 'property_district', 'property_lga')
+                ->select(
+                    'id',
+                    'fileno',
+                    'np_fileno', 
+                    'first_name',
+                    'middle_name',
+                    'surname',
+                    'applicant_title',
+                    'corporate_name',
+                    'rc_number',
+                    'multiple_owners_names',
+                    'applicant_type',
+                    'land_use',
+                    'property_plot_no',
+                    'property_district',
+                    'property_lga',
+                    'property_state',
+                    'created_at',
+                    DB::raw("'mother' as source_table")
+                )
                 ->orderBy('created_at', 'desc')
-                ->limit(50)
+                ->limit(25)
                 ->get();
+
+            // Search subapplications table with mother application data for land use
+            $subApplications = DB::connection('sqlsrv')
+                ->table('subapplications')
+                ->leftJoin('mother_applications', 'subapplications.main_application_id', '=', 'mother_applications.id')
+                ->whereNotExists(function ($query) {
+                    $query->select(DB::raw(1))
+                        ->from('file_indexings')
+                        ->whereRaw('file_indexings.subapplication_id = subapplications.id');
+                })
+                ->where(function ($query) use ($search) {
+                    if ($search) {
+                        $query->where('subapplications.fileno', 'like', "%{$search}%")
+                            ->orWhere('subapplications.first_name', 'like', "%{$search}%")
+                            ->orWhere('subapplications.surname', 'like', "%{$search}%")
+                            ->orWhere('subapplications.corporate_name', 'like', "%{$search}%")
+                            ->orWhere('subapplications.multiple_owners_names', 'like', "%{$search}%");
+                    }
+                })
+                ->select(
+                    'subapplications.id',
+                    'subapplications.fileno',
+                    DB::raw('NULL as np_fileno'),
+                    'subapplications.first_name',
+                    'subapplications.middle_name', 
+                    'subapplications.surname',
+                    'subapplications.applicant_title',
+                    'subapplications.corporate_name',
+                    'subapplications.rc_number',
+                    'subapplications.multiple_owners_names',
+                    'subapplications.applicant_type',
+                    'mother_applications.land_use', // Get land use from mother application
+                    'subapplications.unit_number',
+                    'subapplications.block_number',
+                    'subapplications.floor_number',
+                    'mother_applications.property_district',
+                    'mother_applications.property_lga',
+                    'mother_applications.property_state',
+                    'subapplications.created_at',
+                    DB::raw("'sub' as source_table")
+                )
+                ->orderBy('subapplications.created_at', 'desc')
+                ->limit(25)
+                ->get();
+
+            // Combine and format results
+            $allApplications = collect($motherApplications)->merge($subApplications);
 
             return response()->json([
                 'success' => true,
-                'applications' => $applications->map(function ($app) {
+                'applications' => $allApplications->map(function ($app) {
                     return [
                         'id' => $app->id,
+                        'source_table' => $app->source_table,
                         'file_number' => $app->fileno ?? $app->np_fileno ?? "APP-{$app->id}",
-                        'applicant_name' => $this->getApplicantName($app),
+                        'applicant_name' => $this->getApplicantNameFromRecord($app),
+                        'application_type' => $app->source_table === 'mother' ? 'Primary ' : 'Unit',
                         'land_use' => $app->land_use ?? 'Residential',
-                        'plot_number' => $app->property_plot_no,
-                        'district' => $app->property_district,
-                        'lga' => $app->property_lga,
+                        'plot_number' => $app->property_plot_no ?? ($app->unit_number ? "Unit {$app->unit_number}" : ''),
+                        'district' => $app->property_district ?? '',
+                        'lga' => $app->property_lga ?? '',
+                        'status' => 'Pending Index',
+                        'created_at' => $app->created_at ? date('M d, Y', strtotime($app->created_at)) : '',
+                        // Include all original fields for debugging
+                        'applicant_type' => $app->applicant_type,
+                        'first_name' => $app->first_name,
+                        'middle_name' => $app->middle_name,
+                        'surname' => $app->surname,
+                        'applicant_title' => $app->applicant_title,
+                        'corporate_name' => $app->corporate_name,
+                        'rc_number' => $app->rc_number,
+                        'multiple_owners_names' => $app->multiple_owners_names,
                     ];
-                })
+                })->sortByDesc('created_at')->values()
             ]);
 
         } catch (Exception $e) {
             Log::error('Error searching applications', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'search' => $search
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error searching applications'
+                'message' => 'Error searching applications: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -395,13 +496,24 @@ class FileIndexController extends Controller
     private function getPendingFilesCount()
     {
         try {
-            return ApplicationMother::on('sqlsrv')
+            $motherCount = ApplicationMother::on('sqlsrv')
                 ->whereNotExists(function ($query) {
                     $query->select(DB::raw(1))
                         ->from('file_indexings')
                         ->whereRaw('file_indexings.main_application_id = mother_applications.id');
                 })
                 ->count();
+
+            $subCount = DB::connection('sqlsrv')
+                ->table('subapplications')
+                ->whereNotExists(function ($query) {
+                    $query->select(DB::raw(1))
+                        ->from('file_indexings')
+                        ->whereRaw('file_indexings.subapplication_id = subapplications.id');
+                })
+                ->count();
+
+            return $motherCount + $subCount;
         } catch (Exception $e) {
             return 0;
         }
@@ -432,6 +544,68 @@ class FileIndexController extends Controller
             return $application->corporate_name;
         } else {
             return 'Multiple Applicants';
+        }
+    }
+
+    /**
+     * Get applicant name from database record (for both mother and unit applications)
+     */
+    private function getApplicantNameFromRecord($record)
+    {
+        if ($record->applicant_type === 'individual') {
+            $nameParts = [];
+            if (!empty($record->applicant_title)) $nameParts[] = $record->applicant_title;
+            if (!empty($record->first_name)) $nameParts[] = $record->first_name;
+            if (!empty($record->middle_name)) $nameParts[] = $record->middle_name;
+            if (!empty($record->surname)) $nameParts[] = $record->surname;
+            
+            $name = implode(' ', $nameParts);
+            return $name ?: 'Unknown Individual';
+        } elseif ($record->applicant_type === 'corporate') {
+            $corporateName = $record->corporate_name ?? 'Unknown Corporate';
+            if (!empty($record->rc_number)) {
+                $corporateName .= " (RC: {$record->rc_number})";
+            }
+            return $corporateName;
+        } elseif ($record->applicant_type === 'multiple') {
+            // Handle multiple owners
+            if (!empty($record->multiple_owners_names)) {
+                // Check if it's JSON encoded
+                $decoded = json_decode($record->multiple_owners_names, true);
+                if (is_array($decoded) && count($decoded) > 0) {
+                    // If it's an array, join the first few names
+                    if (count($decoded) > 2) {
+                        return $decoded[0] . ' & ' . $decoded[1] . ' et al.';
+                    } else {
+                        return implode(' & ', $decoded);
+                    }
+                } else {
+                    // If it's a plain string, return as is
+                    return $record->multiple_owners_names;
+                }
+            }
+            return 'Multiple Owners';
+        } else {
+            // Handle unknown types - try all possible name fields
+            if (!empty($record->multiple_owners_names)) {
+                $decoded = json_decode($record->multiple_owners_names, true);
+                if (is_array($decoded) && count($decoded) > 0) {
+                    return count($decoded) > 1 ? $decoded[0] . ' et al.' : $decoded[0];
+                } else {
+                    return $record->multiple_owners_names;
+                }
+            } elseif (!empty($record->corporate_name)) {
+                return $record->corporate_name;
+            } elseif (!empty($record->first_name) || !empty($record->surname)) {
+                $nameParts = [];
+                if (!empty($record->applicant_title)) $nameParts[] = $record->applicant_title;
+                if (!empty($record->first_name)) $nameParts[] = $record->first_name;
+                if (!empty($record->middle_name)) $nameParts[] = $record->middle_name;
+                if (!empty($record->surname)) $nameParts[] = $record->surname;
+                return implode(' ', $nameParts) ?: 'Unknown Applicant';
+            } else {
+                return 'Unknown Applicant';
+            }
         }
     }
 
