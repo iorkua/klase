@@ -212,7 +212,7 @@
                                         <table class="min-w-full divide-y divide-gray-200">
                                             <thead class="bg-gray-50">
                                                 <tr>
-                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File Number</th>
+                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File No</th>
                                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scan Date</th>
                                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -251,6 +251,10 @@
                                                                 <button class="text-indigo-600 hover:text-indigo-900" onclick="viewDocument({{ $scan->id }})">
                                                                     <i data-lucide="eye" class="h-4 w-4 mr-1"></i>
                                                                     View
+                                                                </button>
+                                                                <button class="text-blue-600 hover:text-blue-900" onclick="editDocument({{ $scan->id }})">
+                                                                    <i data-lucide="edit" class="h-4 w-4 mr-1"></i>
+                                                                    Edit
                                                                 </button>
                                                                 <button class="text-red-600 hover:text-red-900" onclick="deleteDocument({{ $scan->id }})">
                                                                     <i data-lucide="trash-2" class="h-4 w-4 mr-1"></i>
@@ -312,7 +316,7 @@
                                 <label for="paper-size" class="block mb-2 text-sm font-medium">Paper Size</label>
                                 <div class="radio-group">
                                     <div class="radio-item">
-                                        <input type="radio" name="paper-size" id="A4" value="A4" checked>
+                                        <input type="radio" name="paper-size" id="A4" value="A4">
                                         <label for="A4" class="text-sm">A4</label>
                                     </div>
                                     <div class="radio-item">

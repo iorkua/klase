@@ -79,6 +79,14 @@ class ScanningController extends Controller
                 'file_indexing_id' => 'required|integer|exists:sqlsrv.file_indexings,id',
                 'documents' => 'required|array|min:1',
                 'documents.*' => 'required|file|mimes:pdf,jpg,jpeg,png,tiff|max:20480', // 20MB max
+                'custom_names' => 'nullable|array',
+                'custom_names.*' => 'nullable|string|max:255',
+                'paper_sizes' => 'nullable|array',
+                'paper_sizes.*' => 'nullable|string|max:20',
+                'document_types' => 'nullable|array',
+                'document_types.*' => 'nullable|string|max:100',
+                'notes' => 'nullable|array',
+                'notes.*' => 'nullable|string|max:1000',
             ]);
 
             if ($validator->fails()) {
@@ -91,14 +99,26 @@ class ScanningController extends Controller
 
             $fileIndexingId = $request->file_indexing_id;
             $fileIndexing = FileIndexing::on('sqlsrv')->findOrFail($fileIndexingId);
+            $customNames = $request->input('custom_names', []);
+            $paperSizes = $request->input('paper_sizes', []);
+            $documentTypes = $request->input('document_types', []);
+            $notes = $request->input('notes', []);
 
             $uploadedDocuments = [];
             $errors = [];
 
             foreach ($request->file('documents') as $index => $document) {
                 try {
-                    // Generate unique filename
-                    $originalName = $document->getClientOriginalName();
+                    // Use custom name if provided, otherwise use original name
+                    $customName = $customNames[$index] ?? null;
+                    $originalName = $customName ?: $document->getClientOriginalName();
+                    
+                    // Get paper size, document type, and notes from form or use defaults
+                    $paperSize = $paperSizes[$index] ?? $this->detectPaperSize($document);
+                    $documentType = $documentTypes[$index] ?? $this->detectDocumentType($originalName);
+                    $documentNotes = $notes[$index] ?? null;
+                    
+                    // Generate unique filename for storage
                     $extension = $document->getClientOriginalExtension();
                     $filename = time() . '_' . $index . '_' . uniqid() . '.' . $extension;
                     
@@ -113,12 +133,12 @@ class ScanningController extends Controller
                     $scanning = Scanning::on('sqlsrv')->create([
                         'file_indexing_id' => $fileIndexingId,
                         'document_path' => $path,
-                        'original_filename' => $originalName,
-                        'paper_size' => $this->detectPaperSize($document),
-                        'document_type' => $this->detectDocumentType($originalName),
+                        'original_filename' => $originalName, // Use custom name as original filename
+                        'paper_size' => $paperSize,
+                        'document_type' => $documentType,
                         'uploaded_by' => Auth::id(),
                         'status' => 'pending',
-                        'notes' => null,
+                        'notes' => $documentNotes,
                     ]);
 
                     $uploadedDocuments[] = [
@@ -127,6 +147,9 @@ class ScanningController extends Controller
                         'path' => $path,
                         'size' => $document->getSize(),
                         'type' => $extension,
+                        'paper_size' => $paperSize,
+                        'document_type' => $documentType,
+                        'notes' => $documentNotes,
                     ];
 
                 } catch (Exception $e) {
@@ -199,6 +222,47 @@ class ScanningController extends Controller
     }
 
     /**
+     * Get document details for editing
+     */
+    public function details($id)
+    {
+        try {
+            $scanning = Scanning::on('sqlsrv')
+                ->with(['fileIndexing'])
+                ->findOrFail($id);
+
+            return response()->json([
+                'success' => true,
+                'document' => [
+                    'id' => $scanning->id,
+                    'original_filename' => $scanning->original_filename,
+                    'paper_size' => $scanning->paper_size,
+                    'document_type' => $scanning->document_type,
+                    'notes' => $scanning->notes,
+                    'status' => $scanning->status,
+                    'file_indexing' => [
+                        'id' => $scanning->fileIndexing->id,
+                        'file_number' => $scanning->fileIndexing->file_number,
+                        'file_title' => $scanning->fileIndexing->file_title,
+                    ],
+                    'uploaded_at' => $scanning->created_at->format('M d, Y H:i'),
+                ]
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error getting document details', [
+                'scanning_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Document not found'
+            ], 404);
+        }
+    }
+
+    /**
      * Delete a scanned document
      */
     public function delete($id)
@@ -254,6 +318,7 @@ class ScanningController extends Controller
             $scanning = Scanning::on('sqlsrv')->findOrFail($id);
 
             $validator = Validator::make($request->all(), [
+                'original_filename' => 'nullable|string|max:255',
                 'paper_size' => 'nullable|string|max:20',
                 'document_type' => 'nullable|string|max:100',
                 'notes' => 'nullable|string|max:1000',
@@ -337,7 +402,7 @@ class ScanningController extends Controller
                             'file_title' => $scan->fileIndexing->file_title,
                         ],
                         'uploaded_at' => $scan->created_at->format('M d, Y H:i'),
-                        'file_url' => asset('storage/' . $scan->document_path),
+                        'file_url' => url('storage/app/public/' . $scan->document_path),
                     ];
                 })
             ]);

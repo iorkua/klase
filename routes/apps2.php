@@ -199,7 +199,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [ScanningController::class, 'index'])->name('scanning.index');
         Route::post('/upload', [ScanningController::class, 'upload'])->name('scanning.upload');
         Route::get('/view/{id}', [ScanningController::class, 'view'])->name('scanning.view');
+        Route::get('/details/{id}', [ScanningController::class, 'details'])->name('scanning.details');
         Route::delete('/delete/{id}', [ScanningController::class, 'delete'])->name('scanning.delete');
+        Route::put('/update/{id}', [ScanningController::class, 'updateDetails'])->name('scanning.update');
         Route::put('/update-details/{id}', [ScanningController::class, 'updateDetails'])->name('scanning.update-details');
         
         // AJAX routes

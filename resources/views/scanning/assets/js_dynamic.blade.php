@@ -9,6 +9,9 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedFiles = [];
     let uploadedFiles = [];
     let isUploading = false;
+    let currentEditingDocument = null;
+    let currentEditingFileIndex = null;
+    let isEditingFileName = false;
     
     // DOM Elements
     const tabs = document.querySelectorAll('.tab');
@@ -42,6 +45,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const uploadMoreBtn = document.getElementById('upload-more-btn');
     const viewUploadedBtn = document.getElementById('view-uploaded-btn');
     const proceedPageTypingBtn = document.getElementById('proceed-page-typing-btn');
+    
+    // Document details dialog elements
+    const documentDetailsDialog = document.getElementById('document-details-dialog');
+    const documentNameDisplay = document.getElementById('document-name');
+    const cancelDetailsBtn = document.getElementById('cancel-details-btn');
+    const saveDetailsBtn = document.getElementById('save-details-btn');
     
     // Tab switching functionality
     function switchTab(tabName) {
@@ -119,6 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <h3 class="font-medium">${file.file_number}</h3>
                         <p class="text-sm text-gray-600">${file.file_title}</p>
                         <p class="text-xs text-gray-500">${file.district} • ${file.lga}</p>
+                        ${file.applicant_name ? `<p class="text-xs text-blue-600">Applicant: ${file.applicant_name}</p>` : ''}
                     </div>
                     <div class="text-right">
                         <span class="badge bg-blue-500 text-white">${file.status}</span>
@@ -203,9 +213,29 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Get applicant name from selected file indexing
+    function getApplicantName() {
+        if (!selectedFileIndexing) return 'Document';
+        
+        // Try to get applicant name from various possible fields
+        return selectedFileIndexing.applicant_name || 
+               selectedFileIndexing.file_title || 
+               selectedFileIndexing.file_number || 
+               'Document';
+    }
+    
     // Handle file selection for upload
     function handleFileSelection(files) {
-        selectedFiles = Array.from(files);
+        // Use applicant name from selected file indexing as the file name
+        const applicantName = getApplicantName();
+            
+        selectedFiles = Array.from(files).map((file, index) => ({
+            file: file,
+            customName: files.length === 1 ? applicantName : `${applicantName}_${index + 1}`, // Use applicant name, add index if multiple files
+            paperSize: 'A4', // Default paper size
+            documentType: 'Certificate', // Default document type
+            notes: '' // Default notes
+        }));
         updateSelectedFilesDisplay();
     }
     
@@ -225,25 +255,72 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedFilesCount.textContent = selectedFiles.length;
         
         selectedFilesList.innerHTML = '';
-        selectedFiles.forEach((file, index) => {
+        selectedFiles.forEach((fileObj, index) => {
             const fileItem = document.createElement('div');
             fileItem.className = 'p-3 flex items-center justify-between';
             fileItem.innerHTML = `
                 <div class="flex items-center space-x-3">
                     <i data-lucide="file-text" class="h-5 w-5 text-gray-400"></i>
                     <div>
-                        <p class="text-sm font-medium">${file.name}</p>
-                        <p class="text-xs text-gray-500">${formatFileSize(file.size)}</p>
+                        <p class="text-sm font-medium">${fileObj.customName}</p>
+                        <p class="text-xs text-gray-500">${formatFileSize(fileObj.file.size)} • ${fileObj.paperSize} • ${fileObj.documentType}</p>
                     </div>
                 </div>
-                <button class="btn btn-ghost btn-sm" onclick="removeFile(${index})">
-                    <i data-lucide="x" class="h-4 w-4"></i>
-                </button>
+                <div class="flex items-center space-x-2">
+                    <button class="btn btn-ghost btn-sm" onclick="editFileName(${index})">
+                        <i data-lucide="edit" class="h-4 w-4"></i>
+                    </button>
+                    <button class="btn btn-ghost btn-sm" onclick="removeFile(${index})">
+                        <i data-lucide="x" class="h-4 w-4"></i>
+                    </button>
+                </div>
             `;
             selectedFilesList.appendChild(fileItem);
         });
         
         lucide.createIcons();
+    }
+    
+    // Edit file name function using modal with complete form
+    function editFileName(index) {
+        currentEditingFileIndex = index;
+        isEditingFileName = true;
+        
+        const fileObj = selectedFiles[index];
+        
+        // Show the document details modal for file editing
+        if (documentNameDisplay) {
+            documentNameDisplay.textContent = fileObj.customName;
+        }
+        
+        // Set paper size
+        const paperSizeRadio = document.querySelector(`input[name="paper-size"][value="${fileObj.paperSize}"]`);
+        if (paperSizeRadio) {
+            paperSizeRadio.checked = true;
+        }
+        
+        // Set document type
+        const documentTypeSelect = document.getElementById('document-type');
+        if (documentTypeSelect) {
+            documentTypeSelect.value = fileObj.documentType;
+        }
+        
+        // Set notes
+        const documentNotesTextarea = document.getElementById('document-notes');
+        if (documentNotesTextarea) {
+            documentNotesTextarea.value = fileObj.notes;
+        }
+        
+        // Update modal title
+        const modalTitle = document.querySelector('#document-details-dialog h2');
+        if (modalTitle) {
+            modalTitle.textContent = 'Edit File Details';
+        }
+        
+        // Show the modal
+        if (documentDetailsDialog) {
+            documentDetailsDialog.classList.remove('hidden');
+        }
     }
     
     // Remove file from selection
@@ -289,8 +366,12 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('file_indexing_id', selectedFileIndexing.id);
         formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'));
         
-        selectedFiles.forEach((file, index) => {
-            formData.append(`documents[${index}]`, file);
+        selectedFiles.forEach((fileObj, index) => {
+            formData.append(`documents[${index}]`, fileObj.file);
+            formData.append(`custom_names[${index}]`, fileObj.customName);
+            formData.append(`paper_sizes[${index}]`, fileObj.paperSize);
+            formData.append(`document_types[${index}]`, fileObj.documentType);
+            formData.append(`notes[${index}]`, fileObj.notes);
         });
         
         // Update uploading count
@@ -467,7 +548,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     ${file.file_indexing ? file.file_indexing.file_number : 'Unknown'}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${file.filename || 'Document'}
+                    ${file.filename || file.original_filename || 'Document'}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     ${file.uploaded_at || 'Unknown'}
@@ -489,7 +570,14 @@ document.addEventListener('DOMContentLoaded', function() {
                             <i data-lucide="eye" class="h-4 w-4 mr-1"></i>
                             View
                         </button>
-                       
+                        <button class="text-blue-600 hover:text-blue-900" onclick="editDocument(${file.id})">
+                            <i data-lucide="edit" class="h-4 w-4 mr-1"></i>
+                            Edit
+                        </button>
+                        <button class="text-red-600 hover:text-red-900" onclick="deleteDocument(${file.id})">
+                            <i data-lucide="trash-2" class="h-4 w-4 mr-1"></i>
+                            Delete
+                        </button>
                     </div>
                 </td>
             `;
@@ -506,6 +594,126 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'scanned': return 'bg-blue-100 text-blue-800';
             default: return 'bg-yellow-100 text-yellow-800';
         }
+    }
+    
+    // Edit document function
+    function editDocument(scanId) {
+        // Fetch document details
+        fetch(`{{ route('scanning.details', '') }}/${scanId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                currentEditingDocument = data.document;
+                showDocumentDetailsDialog(data.document);
+            } else {
+                alert(data.message || 'Error loading document details');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading document details:', error);
+            alert('Error loading document details');
+        });
+    }
+    
+    // Show document details dialog
+    function showDocumentDetailsDialog(document) {
+        if (!documentDetailsDialog) return;
+        
+        isEditingFileName = false;
+        currentEditingFileIndex = null;
+        
+        // Reset modal title
+        const modalTitle = document.querySelector('#document-details-dialog h2');
+        if (modalTitle) {
+            modalTitle.textContent = 'Document Details';
+        }
+        
+        // Populate form with document data
+        if (documentNameDisplay) {
+            documentNameDisplay.textContent = document.original_filename || '';
+        }
+        
+        // Set paper size
+        const paperSizeRadio = document.querySelector(`input[name="paper-size"][value="${document.paper_size || 'A4'}"]`);
+        if (paperSizeRadio) {
+            paperSizeRadio.checked = true;
+        }
+        
+        // Set document type
+        const documentTypeSelect = document.getElementById('document-type');
+        if (documentTypeSelect) {
+            documentTypeSelect.value = document.document_type || 'Certificate';
+        }
+        
+        // Set notes
+        const documentNotesTextarea = document.getElementById('document-notes');
+        if (documentNotesTextarea) {
+            documentNotesTextarea.value = document.notes || '';
+        }
+        
+        // Show dialog
+        documentDetailsDialog.classList.remove('hidden');
+    }
+    
+    // Hide document details dialog
+    function hideDocumentDetailsDialog() {
+        if (documentDetailsDialog) {
+            documentDetailsDialog.classList.add('hidden');
+        }
+        currentEditingDocument = null;
+        currentEditingFileIndex = null;
+        isEditingFileName = false;
+    }
+    
+    // Save document details
+    function saveDocumentDetails() {
+        if (isEditingFileName && currentEditingFileIndex !== null) {
+            // Save file details for pre-upload file
+            const fileObj = selectedFiles[currentEditingFileIndex];
+            
+            // Update file object with form values
+            fileObj.paperSize = document.querySelector('input[name="paper-size"]:checked')?.value || 'A4';
+            fileObj.documentType = document.getElementById('document-type')?.value || 'Certificate';
+            fileObj.notes = document.getElementById('document-notes')?.value || '';
+            
+            updateSelectedFilesDisplay();
+            hideDocumentDetailsDialog();
+            return;
+        }
+        
+        if (!currentEditingDocument) return;
+        
+        // Save document details for uploaded document
+        const formData = {
+            paper_size: document.querySelector('input[name="paper-size"]:checked')?.value || 'A4',
+            document_type: document.getElementById('document-type')?.value || 'Certificate',
+            notes: document.getElementById('document-notes')?.value || '',
+            _token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+        };
+        
+        fetch(`{{ route('scanning.update', '') }}/${currentEditingDocument.id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': formData._token
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                hideDocumentDetailsDialog();
+                loadScannedFiles(); // Reload the list
+            } else {
+                alert(data.message || 'Error updating document');
+            }
+        })
+        .catch(error => {
+            console.error('Error updating document:', error);
+            alert('Error updating document');
+        });
     }
     
     // Delete document function
@@ -605,6 +813,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Document details dialog event listeners
+    if (cancelDetailsBtn) {
+        cancelDetailsBtn.addEventListener('click', hideDocumentDetailsDialog);
+    }
+    
+    if (saveDetailsBtn) {
+        saveDetailsBtn.addEventListener('click', saveDocumentDetails);
+    }
+    
     // Search scanned files
     const searchScannedFiles = document.getElementById('search-scanned-files');
     if (searchScannedFiles) {
@@ -643,9 +860,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Make functions globally available
     window.removeFile = removeFile;
+    window.editFileName = editFileName;
     window.viewDocument = function(scanId) {
         window.open(`{{ route('scanning.view', '') }}/${scanId}`, '_blank');
     };
+    window.editDocument = editDocument;
     window.deleteDocument = deleteDocument;
     
     console.log('Dynamic Scanning module initialized');

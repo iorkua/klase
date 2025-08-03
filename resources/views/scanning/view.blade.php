@@ -17,9 +17,15 @@
                     <div class="flex items-center space-x-4">
                         <div class="flex-shrink-0">
                             @php
-                                $fileExtension = pathinfo($scanning->original_filename, PATHINFO_EXTENSION);
+                                // Get file extension from both original filename and document path
+                                $originalExtension = pathinfo($scanning->original_filename, PATHINFO_EXTENSION);
+                                $pathExtension = pathinfo($scanning->document_path, PATHINFO_EXTENSION);
+                                $fileExtension = $pathExtension ?: $originalExtension; // Use path extension if available
+                                
+                                // Debug info
+                                $fileUrl = url('storage/app/public/' . $scanning->document_path);
                             @endphp
-                            @if(in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif', 'tiff']))
+                            @if(in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif', 'tiff', 'webp']))
                                 <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                                     <i data-lucide="image" class="h-6 w-6 text-green-600"></i>
                                 </div>
@@ -52,6 +58,9 @@
                                         {{ $scanning->paper_size }}
                                     </span>
                                 @endif
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    {{ strtoupper($fileExtension) }}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -63,7 +72,7 @@
                             Back
                         </a>
                         
-                        <a href="{{ Storage::url($scanning->document_path) }}" target="_blank" 
+                        <a href="{{ $fileUrl }}" target="_blank" 
                            class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
                             <i data-lucide="external-link" class="h-4 w-4 mr-2"></i>
                             Open in New Tab
@@ -91,6 +100,19 @@
                 </div>
             </div>
 
+            <!-- Debug Information (remove in production) -->
+            {{-- <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <h4 class="font-medium text-yellow-800 mb-2">Debug Information:</h4>
+                <div class="text-sm text-yellow-700 space-y-1">
+                    <p><strong>Document Path:</strong> {{ $scanning->document_path }}</p>
+                    <p><strong>File URL:</strong> {{ $fileUrl }}</p>
+                    <p><strong>Original Extension:</strong> {{ $originalExtension }}</p>
+                    <p><strong>Path Extension:</strong> {{ $pathExtension }}</p>
+                    <p><strong>Final Extension:</strong> {{ $fileExtension }}</p>
+                    <p><strong>File Exists:</strong> {{ Storage::exists('app/public/' . $scanning->document_path) ? 'Yes' : 'No' }}</p>
+                </div>
+            </div> --}}
+
             <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 <!-- Document Viewer - Takes up 2/3 of the space -->
                 <div class="xl:col-span-2">
@@ -99,57 +121,127 @@
                             <div class="flex items-center justify-between">
                                 <h2 class="text-lg font-semibold text-gray-900">Document Preview</h2>
                                 <div class="flex items-center space-x-2">
-                                    <button class="btn btn-outline btn-sm" onclick="zoomOut()">
-                                        <i data-lucide="zoom-out" class="h-4 w-4"></i>
-                                    </button>
-                                    <span id="zoom-level" class="text-sm text-gray-600">100%</span>
-                                    <button class="btn btn-outline btn-sm" onclick="zoomIn()">
-                                        <i data-lucide="zoom-in" class="h-4 w-4"></i>
-                                    </button>
-                                    <button class="btn btn-outline btn-sm" onclick="resetZoom()">
-                                        <i data-lucide="maximize" class="h-4 w-4"></i>
-                                    </button>
+                                    @if(in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif', 'tiff', 'webp']))
+                                        <button class="btn btn-outline btn-sm" onclick="zoomOut()">
+                                            <i data-lucide="zoom-out" class="h-4 w-4"></i>
+                                        </button>
+                                        <span id="zoom-level" class="text-sm text-gray-600">100%</span>
+                                        <button class="btn btn-outline btn-sm" onclick="zoomIn()">
+                                            <i data-lucide="zoom-in" class="h-4 w-4"></i>
+                                        </button>
+                                        <button class="btn btn-outline btn-sm" onclick="resetZoom()">
+                                            <i data-lucide="maximize" class="h-4 w-4"></i>
+                                        </button>
+                                    @endif
                                     <button class="btn btn-outline btn-sm" onclick="toggleFullscreen()">
                                         <i data-lucide="expand" class="h-4 w-4"></i>
                                     </button>
+                                    <a href="{{ $fileUrl }}" download="{{ $scanning->original_filename }}" class="btn btn-outline btn-sm">
+                                        <i data-lucide="download" class="h-4 w-4"></i>
+                                    </a>
                                 </div>
                             </div>
                         </div>
                         <div class="p-4">
                             <div id="document-container" class="border rounded-lg overflow-auto bg-gray-100 min-h-[600px] max-h-[800px] relative">
-                                @php
-                                    $fileUrl = Storage::url($scanning->document_path);
-                                @endphp
-                                
-                                @if(in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif', 'tiff']))
+                                @if(in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif', 'tiff', 'webp']))
                                     <!-- Enhanced Image viewer -->
                                     <div class="flex items-center justify-center min-h-[600px] p-4">
-                                        <img id="document-image" src="{{ $fileUrl }}" alt="Document" 
+                                        <img id="document-image" 
+                                             src="{{ $fileUrl }}" 
+                                             alt="Document Preview" 
                                              class="max-w-full max-h-full object-contain transition-transform duration-200 cursor-zoom-in"
-                                             onclick="toggleImageZoom(this)">
+                                             onclick="toggleImageZoom(this)"
+                                             onerror="handleImageError(this)"
+                                             onload="handleImageLoad(this)">
+                                        <div id="image-loading" class="absolute inset-0 flex items-center justify-center bg-gray-100">
+                                            <div class="text-center">
+                                                <i data-lucide="loader" class="h-8 w-8 mx-auto text-gray-400 animate-spin mb-4"></i>
+                                                <p class="text-gray-500">Loading image...</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 @elseif(strtolower($fileExtension) === 'pdf')
                                     <!-- Enhanced PDF viewer -->
-                                    <iframe id="document-pdf" src="{{ $fileUrl }}" class="w-full h-[600px] border-0 rounded"></iframe>
-                                @else
-                                    <!-- Unsupported file type with better styling -->
-                                    <div class="flex flex-col items-center justify-center min-h-[600px] text-gray-500">
-                                        <div class="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mb-6">
-                                            <i data-lucide="file-text" class="h-12 w-12 text-gray-400"></i>
+                                    <div class="w-full h-[600px] relative">
+                                        <iframe id="document-pdf" 
+                                                src="{{ $fileUrl }}#toolbar=1&navpanes=1&scrollbar=1" 
+                                                class="w-full h-full border-0 rounded"
+                                                onload="handlePdfLoad()"
+                                                onerror="handlePdfError()">
+                                        </iframe>
+                                        <div id="pdf-loading" class="absolute inset-0 flex items-center justify-center bg-gray-100">
+                                            <div class="text-center">
+                                                <i data-lucide="loader" class="h-8 w-8 mx-auto text-gray-400 animate-spin mb-4"></i>
+                                                <p class="text-gray-500">Loading PDF...</p>
+                                            </div>
                                         </div>
-                                        <h3 class="text-xl font-semibold mb-2 text-gray-700">{{ $scanning->original_filename }}</h3>
-                                        <p class="text-gray-500 mb-6 text-center max-w-md">
-                                            Preview is not available for this file type. You can download the file to view it.
-                                        </p>
-                                        <div class="flex space-x-3">
-                                            <a href="{{ $fileUrl }}" download class="btn btn-primary">
-                                                <i data-lucide="download" class="h-4 w-4 mr-2"></i>
-                                                Download File
-                                            </a>
-                                            <a href="{{ $fileUrl }}" target="_blank" class="btn btn-outline">
-                                                <i data-lucide="external-link" class="h-4 w-4 mr-2"></i>
-                                                Open in Browser
-                                            </a>
+                                        <div id="pdf-fallback" class="hidden flex flex-col items-center justify-center h-full text-gray-500">
+                                            <div class="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mb-6">
+                                                <i data-lucide="file-text" class="h-12 w-12 text-red-400"></i>
+                                            </div>
+                                            <h3 class="text-xl font-semibold mb-2 text-gray-700">PDF Preview Unavailable</h3>
+                                            <p class="text-gray-500 mb-6 text-center max-w-md">
+                                                Your browser cannot display this PDF. Please download the file to view it.
+                                            </p>
+                                            <div class="flex space-x-3">
+                                                <a href="{{ $fileUrl }}" download="{{ $scanning->original_filename }}" class="btn btn-primary">
+                                                    <i data-lucide="download" class="h-4 w-4 mr-2"></i>
+                                                    Download PDF
+                                                </a>
+                                                <a href="{{ $fileUrl }}" target="_blank" class="btn btn-outline">
+                                                    <i data-lucide="external-link" class="h-4 w-4 mr-2"></i>
+                                                    Open in New Tab
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @else
+                                    <!-- Try to detect file type by content or force preview -->
+                                    <div id="universal-preview" class="w-full h-[600px] relative">
+                                        <!-- Try iframe first for any file type -->
+                                        <iframe id="universal-iframe" 
+                                                src="{{ $fileUrl }}" 
+                                                class="w-full h-full border-0 rounded"
+                                                onload="handleUniversalLoad()"
+                                                onerror="handleUniversalError()">
+                                        </iframe>
+                                        
+                                        <!-- Try image as fallback -->
+                                        <img id="universal-image" 
+                                             src="{{ $fileUrl }}" 
+                                             alt="Document Preview" 
+                                             class="hidden w-full h-full object-contain"
+                                             onload="handleUniversalImageLoad(this)"
+                                             onerror="handleUniversalImageError(this)">
+                                        
+                                        <!-- Loading state -->
+                                        <div id="universal-loading" class="absolute inset-0 flex items-center justify-center bg-gray-100">
+                                            <div class="text-center">
+                                                <i data-lucide="loader" class="h-8 w-8 mx-auto text-gray-400 animate-spin mb-4"></i>
+                                                <p class="text-gray-500">Loading preview...</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Fallback when nothing works -->
+                                        <div id="universal-fallback" class="hidden flex flex-col items-center justify-center h-full text-gray-500">
+                                            <div class="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mb-6">
+                                                <i data-lucide="file-text" class="h-12 w-12 text-gray-400"></i>
+                                            </div>
+                                            <h3 class="text-xl font-semibold mb-2 text-gray-700">{{ $scanning->original_filename }}</h3>
+                                            <p class="text-gray-500 mb-6 text-center max-w-md">
+                                                Preview is not available for this file type. You can download the file to view it.
+                                            </p>
+                                            <div class="flex space-x-3">
+                                                <a href="{{ $fileUrl }}" download="{{ $scanning->original_filename }}" class="btn btn-primary">
+                                                    <i data-lucide="download" class="h-4 w-4 mr-2"></i>
+                                                    Download File
+                                                </a>
+                                                <a href="{{ $fileUrl }}" target="_blank" class="btn btn-outline">
+                                                    <i data-lucide="external-link" class="h-4 w-4 mr-2"></i>
+                                                    Open in Browser
+                                                </a>
+                                            </div>
                                         </div>
                                     </div>
                                 @endif
@@ -192,6 +284,12 @@
                                 <div class="flex justify-between items-center">
                                     <span class="text-sm text-gray-600">File Type</span>
                                     <span class="text-sm font-medium text-gray-900 uppercase">{{ $fileExtension }}</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">File URL</span>
+                                    <a href="{{ $fileUrl }}" target="_blank" class="text-sm text-blue-600 hover:text-blue-800 truncate max-w-[60%]">
+                                        View File
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -364,24 +462,22 @@ function resetZoom() {
 
 function updateZoom() {
     const image = document.getElementById('document-image');
-    const pdf = document.getElementById('document-pdf');
     const zoomLevel = document.getElementById('zoom-level');
     
     if (image) {
         image.style.transform = `scale(${currentZoom / 100})`;
     }
-    if (pdf) {
-        pdf.style.transform = `scale(${currentZoom / 100})`;
-        pdf.style.transformOrigin = 'top left';
-    }
     
-    zoomLevel.textContent = currentZoom + '%';
+    if (zoomLevel) {
+        zoomLevel.textContent = currentZoom + '%';
+    }
 }
 
 function toggleImageZoom(img) {
     if (img.classList.contains('zoom-in')) {
         img.classList.remove('zoom-in');
         img.classList.add('cursor-zoom-in');
+        img.classList.remove('cursor-zoom-out');
     } else {
         img.classList.add('zoom-in');
         img.classList.remove('cursor-zoom-in');
@@ -402,13 +498,91 @@ function toggleFullscreen() {
     }
 }
 
-function downloadDocument() {
-    const link = document.createElement('a');
-    link.href = '{{ Storage::url($scanning->document_path) }}';
-    link.download = '{{ $scanning->original_filename }}';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+// Image handling functions
+function handleImageLoad(img) {
+    const loading = document.getElementById('image-loading');
+    if (loading) loading.style.display = 'none';
+    console.log('Image loaded successfully');
+}
+
+function handleImageError(img) {
+    const loading = document.getElementById('image-loading');
+    if (loading) loading.style.display = 'none';
+    
+    const container = img.parentElement;
+    container.innerHTML = `
+        <div class="flex flex-col items-center justify-center h-full text-gray-500">
+            <div class="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mb-6">
+                <i data-lucide="image-off" class="h-12 w-12 text-red-400"></i>
+            </div>
+            <h3 class="text-xl font-semibold mb-2 text-gray-700">Image Not Found</h3>
+            <p class="text-gray-500 mb-6 text-center max-w-md">
+                The image file could not be loaded. It may have been moved or deleted.
+            </p>
+            <div class="flex space-x-3">
+                <a href="{{ $fileUrl }}" target="_blank" class="btn btn-primary">
+                    <i data-lucide="external-link" class="h-4 w-4 mr-2"></i>
+                    Try Direct Link
+                </a>
+                <button onclick="location.reload()" class="btn btn-outline">
+                    <i data-lucide="refresh-cw" class="h-4 w-4 mr-2"></i>
+                    Reload Page
+                </button>
+            </div>
+        </div>
+    `;
+    lucide.createIcons();
+}
+
+// PDF handling functions
+function handlePdfLoad() {
+    const loading = document.getElementById('pdf-loading');
+    if (loading) loading.style.display = 'none';
+    console.log('PDF loaded successfully');
+}
+
+function handlePdfError() {
+    const loading = document.getElementById('pdf-loading');
+    const iframe = document.getElementById('document-pdf');
+    const fallback = document.getElementById('pdf-fallback');
+    
+    if (loading) loading.style.display = 'none';
+    if (iframe) iframe.style.display = 'none';
+    if (fallback) fallback.classList.remove('hidden');
+}
+
+// Universal preview handling functions
+function handleUniversalLoad() {
+    const loading = document.getElementById('universal-loading');
+    if (loading) loading.style.display = 'none';
+    console.log('Universal preview loaded successfully');
+}
+
+function handleUniversalError() {
+    // Try image as fallback
+    const iframe = document.getElementById('universal-iframe');
+    const image = document.getElementById('universal-image');
+    
+    if (iframe) iframe.style.display = 'none';
+    if (image) {
+        image.classList.remove('hidden');
+        image.classList.add('block');
+    }
+}
+
+function handleUniversalImageLoad(img) {
+    const loading = document.getElementById('universal-loading');
+    if (loading) loading.style.display = 'none';
+    console.log('Universal image loaded successfully');
+}
+
+function handleUniversalImageError(img) {
+    const loading = document.getElementById('universal-loading');
+    const fallback = document.getElementById('universal-fallback');
+    
+    if (loading) loading.style.display = 'none';
+    if (img) img.style.display = 'none';
+    if (fallback) fallback.classList.remove('hidden');
 }
 
 function editDocument() {
@@ -456,11 +630,11 @@ function shareDocument() {
         navigator.share({
             title: '{{ $scanning->original_filename }}',
             text: 'Scanned document from {{ $scanning->fileIndexing->file_number }}',
-            url: '{{ Storage::url($scanning->document_path) }}'
+            url: '{{ $fileUrl }}'
         });
     } else {
         // Fallback: copy link to clipboard
-        navigator.clipboard.writeText('{{ Storage::url($scanning->document_path) }}').then(() => {
+        navigator.clipboard.writeText('{{ $fileUrl }}').then(() => {
             alert('Document link copied to clipboard!');
         });
     }
