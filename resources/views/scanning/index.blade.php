@@ -252,14 +252,6 @@
                                                                     <i data-lucide="eye" class="h-4 w-4 mr-1"></i>
                                                                     View
                                                                 </button>
-                                                                <button class="text-blue-600 hover:text-blue-900" onclick="editDocument({{ $scan->id }})">
-                                                                    <i data-lucide="edit" class="h-4 w-4 mr-1"></i>
-                                                                    Edit
-                                                                </button>
-                                                                <button class="text-red-600 hover:text-red-900" onclick="deleteDocument({{ $scan->id }})">
-                                                                    <i data-lucide="trash-2" class="h-4 w-4 mr-1"></i>
-                                                                    Delete
-                                                                </button>
                                                             </div>
                                                         </td>
                                                     </tr>

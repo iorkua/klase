@@ -41,22 +41,22 @@
 @endphp
 
 @if($exists)
-    <a href="{{ route('edms.index', $edmsId) }}" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
-        <i data-lucide="folder-open" class="w-4 h-4 text-blue-500"></i>
-        <span>Create DMS Record</span>
-    </a>
-@else
     <button class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2 opacity-50 cursor-not-allowed">
         <i data-lucide="folder-open" class="w-4 h-4 text-gray-500"></i>
         <span>Create DMS Record</span>
     </button>
+@else
+    <a href="{{ route('edms.index', $edmsId) }}" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
+        <i data-lucide="folder-open" class="w-4 h-4 text-blue-500"></i>
+        <span>Create DMS Record</span>
+    </a>
 @endif
 
  
     <hr class="my-2 border-gray-200">
     @php
         $fileExists = DB::connection('sqlsrv')
-            ->table('Cofo_legacy')
+            ->table('Cofo')
             ->where('mlsFNo', $PrimaryApplication->fileno)
             ->orWhere('kangisFileNo', $PrimaryApplication->fileno)
             ->orWhere('NewKANGISFileno', $PrimaryApplication->fileno)

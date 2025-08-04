@@ -105,7 +105,7 @@ class UserRoleController extends Controller
         if (Auth::user()->type != 'super admin' && !Auth::user()->can('edit user')) {
             return redirect()->back()->with('error', __('Permission Denied.'));
         }
-
+ 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             

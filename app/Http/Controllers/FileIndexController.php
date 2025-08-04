@@ -459,7 +459,7 @@ class FileIndexController extends Controller
                         'applicant_name' => $this->getApplicantNameFromRecord($app),
                         'application_type' => $app->source_table === 'mother' ? 'Primary ' : 'Unit',
                         'land_use' => $app->land_use ?? 'Residential',
-                        'plot_number' => $app->property_plot_no ?? ($app->unit_number ? "Unit {$app->unit_number}" : ''),
+                        'plot_number' => $app->property_plot_no ?? (isset($app->unit_number) && $app->unit_number ? "Unit {$app->unit_number}" : ''),
                         'district' => $app->property_district ?? '',
                         'lga' => $app->property_lga ?? '',
                         'status' => 'Pending Index',

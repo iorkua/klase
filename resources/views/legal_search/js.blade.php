@@ -182,7 +182,8 @@
   // Reset search
   const resetSearch = () => {
     document.getElementById('fileNumber').value = '';
-    document.getElementById('kangisFileNo').value = '';
+    document.getElementById('guarantorName').value = '';
+    document.getElementById('guaranteeName').value = '';
     
     // Reset any other filters that might be added
     const additionalFilters = document.querySelectorAll('.additional-filter');
@@ -313,7 +314,8 @@
     // Get all filter values
     const filters = {
       fileNumber: document.getElementById('fileNumber').value,
-      kangisFileNo: document.getElementById('kangisFileNo').value
+      guarantorName: document.getElementById('guarantorName').value,
+      guaranteeName: document.getElementById('guaranteeName').value
     };
 
     // Add any additional filters
@@ -325,9 +327,10 @@
       }
     });
 
-    // Check if any filter has a value
-    const hasFilters = Object.values(filters).some(value => value);
-    if (!hasFilters) {
+    // Check if at least one search parameter has a value
+    const hasSearchCriteria = Object.values(filters).some(value => value && value.trim() !== '');
+    
+    if (!hasSearchCriteria) {
       searchResults = [];
       resultsCount.textContent = '0';
       tableResults.classList.add('hidden');
@@ -343,38 +346,33 @@
     noResultsMessage.classList.add('hidden');
     fileDetailsView.classList.add('hidden');
 
-    // --- CHANGED LOGIC STARTS HERE ---
-    // If File Number is filled, use only that as the query
-    let query = '';
-    if (filters.fileNumber) {
-      query = filters.fileNumber;
-    } else if (filters.kangisFileNo) {
-      query = filters.kangisFileNo;
-    } else if (filters.newKangisFileNo) {
-      query = filters.newKangisFileNo;
-    } else {
-      // fallback: combine all filters as before
-      query = Object.values(filters).filter(v => v).join(' ');
-    }
-    // --- CHANGED LOGIC ENDS HERE ---
+    // Prepare data for AJAX call
+    const searchData = {
+      _token: '{{ csrf_token() }}',
+      query: filters.fileNumber || '',
+      guarantorName: filters.guarantorName || '',
+      guaranteeName: filters.guaranteeName || '',
+      lga: filters.lga || '',
+      district: filters.district || '',
+      location: filters.location || '',
+      plotNumber: filters.plotNumber || '',
+      planNumber: filters.planNumber || '',
+      size: filters.size || '',
+      caveat: filters.caveat || ''
+    };
 
     // AJAX call to the server
     $.ajax({
       url: '{{ route("legalsearch.search") }}',
       type: 'POST',
-      data: {
-        _token: '{{ csrf_token() }}',
-        query: query
-      },
+      data: searchData,
       success: function(data) {
         // Hide loading
         searchLoading.classList.add('hidden');
 
-        // Combine results from all tables
+        // Combine results from the 3 specified tables only
         searchResults = [
           ...data.property_records,
-          ...data.mother_applications,
-          ...data.subapplications,
           ...data.registered_instruments,
           ...data.cofo
         ];
@@ -395,12 +393,10 @@
             
             // Update active filters summary
             const activeFilters = Object.entries(filters)
-              .filter(([_, value]) => value)
+              .filter(([_, value]) => value && value.trim() !== '')
               .map(([key, value]) => {
                 const filterLabels = {
                   fileNumber: 'File Number',
-                  kangisFileNo: 'KANGIS File No.',
-                  newKangisFileNo: 'New KANGIS File No.',
                   guarantorName: 'Guarantor Name',
                   guaranteeName: 'Guarantee Name',
                   lga: 'LGA',
@@ -454,12 +450,12 @@
         <td class="p-2 text-sm">${file.mlsFNo || file.MLSFileNo || file.fileNo || file.fileno || 'N/A'}</td>
         <td class="p-2 text-sm">${file.kangisFileNo || file.KAGISFileNO || 'N/A'}</td>
         <td class="p-2 text-sm">${file.NewKANGISFileno || file.NewKANGISFileNo || 'N/A'}</td>
-        <td class="p-2 text-sm">${getMappedValue(file, 'grantor')}</td>
-        <td class="p-2 text-sm">${getMappedValue(file, 'grantee')}</td>
-        <td class="p-2 text-sm">${getMappedValue(file, 'lga')}</td>
-        <td class="p-2 text-sm">${file.property_house_no && file.property_plot_no && file.property_street_name && file.property_district && file.property_lga ? `${file.property_house_no},${file.property_plot_no},${file.property_street_name},${file.property_district},${file.property_lga}` : getMappedValue(file, 'location')}</td>
+        <td class="p-2 text-sm">${toProperCase(getMappedValue(file, 'grantor'))}</td>
+        <td class="p-2 text-sm">${toProperCase(getMappedValue(file, 'grantee'))}</td>
+        <td class="p-2 text-sm">${toProperCase(getMappedValue(file, 'lga'))}</td>
+        <td class="p-2 text-sm">${file.property_house_no && file.property_plot_no && file.property_street_name && file.property_district && file.property_lga ? toProperCase(`${file.property_house_no},${file.property_plot_no},${file.property_street_name},${file.property_district},${file.property_lga}`) : toProperCase(getMappedValue(file, 'location'))}</td>
         <td class="p-2 text-sm">${getMappedValue(file, 'plotNo')}</td>
-        <td class="p-2 text-sm">${getMappedValue(file, 'transactionType')}</td>
+        <td class="p-2 text-sm">${toProperCase(getMappedValue(file, 'transactionType'))}</td>
         <td class="p-2 text-sm">${getMappedValue(file, 'size')}</td>
         <td class="p-2 text-sm font-medium ${file.caveat === 'Yes' ? 'text-red-600' : ''}">${file.caveat || 'N/A'}</td>
         <td class="p-2 text-sm">
@@ -720,7 +716,7 @@
     const fieldMappings = {
       // Date fields - enhanced for applications
       date: [
-        'transaction_date', 'deeds_date', 'deedsDate', 'certificateDate', 
+        'transaction_date', 'deeds_date', 'certificateDate', 
         'instrumentDate', 'approval_date', 'planning_approval_date',
         'receipt_date', 'payment_date', 'accountant_signature_date',
         'created_at', 'updated_at'
@@ -773,7 +769,7 @@
       ],
       
       // Time fields
-      time: ['deeds_time', 'deedsTime'],
+      time: ['deeds_time', 'transaction_time'],
       
       // Plot number fields - enhanced for applications
       plotNo: [
@@ -824,6 +820,12 @@
     return 'N/A';
   };
 
+  // Helper function to convert text to proper case
+  const toProperCase = (text) => {
+    if (!text || text === 'N/A') return text;
+    return text.toString().toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  };
+
   // Render all transaction tables
   const renderTransactionTables = () => {
     // Get related transactions for the selected file
@@ -831,25 +833,39 @@
     
     console.log('Rendering transaction tables with:', relatedTransactions);
     
-    // Property History (merged view of transactions)
+    // Separate records by their source table
+    const propertyRecords = relatedTransactions.filter(item => 
+      item.hasOwnProperty('mlsFNo') && item.hasOwnProperty('serialNo') && 
+      !item.hasOwnProperty('instrument_type') && !item.hasOwnProperty('MLSFileNo')
+    );
+    
+    const instrumentRecords = relatedTransactions.filter(item => 
+      item.hasOwnProperty('instrument_type') || item.hasOwnProperty('MLSFileNo') || 
+      item.hasOwnProperty('KAGISFileNO') || item.hasOwnProperty('rootRegistrationNumber')
+    );
+    
+    const cofoRecords = relatedTransactions.filter(item => 
+      (item.hasOwnProperty('mlsFNo') || item.hasOwnProperty('kangisFileNo')) && 
+      !item.hasOwnProperty('serialNo') && !item.hasOwnProperty('instrument_type')
+    );
+    
+    // Property History (only property_records table)
     const propertyHistoryTable = document.getElementById('property-history-table');
     propertyHistoryTable.innerHTML = '';
     
-    if (relatedTransactions.length > 0) {
-      relatedTransactions.forEach(item => {
-        console.log('Processing item:', item);
+    if (propertyRecords.length > 0) {
+      propertyRecords.forEach(item => {
+        console.log('Processing property record:', item);
         
         const date = getMappedValue(item, 'date');
-        const transactionType = getMappedValue(item, 'transactionType');
-        const grantor = getMappedValue(item, 'grantor');
-        const grantee = getMappedValue(item, 'grantee');
+        const transactionType = toProperCase(getMappedValue(item, 'transactionType'));
+        const grantor = toProperCase(getMappedValue(item, 'grantor'));
+        const grantee = toProperCase(getMappedValue(item, 'grantee'));
         const serialNo = getMappedValue(item, 'serialNo');
         const pageNo = getMappedValue(item, 'pageNo');
         const volumeNo = getMappedValue(item, 'volumeNo');
         const size = getMappedValue(item, 'size');
-        const comments = getMappedValue(item, 'comments');
-        
-        console.log('Mapped values:', { date, transactionType, grantor, grantee, serialNo, pageNo, volumeNo, size, comments });
+        const comments = toProperCase(getMappedValue(item, 'comments'));
         
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -891,23 +907,17 @@
       `;
     }
     
-    // Instrument Registration
+    // Instrument Registration (only registered_instruments table)
     const instrumentRegistrationTable = document.getElementById('instrument-registration-table');
     instrumentRegistrationTable.innerHTML = '';
-    
-    // Filter for instrument records (registered_instruments table or records with instrument_type)
-    const instrumentRecords = relatedTransactions.filter(item => 
-      getMappedValue(item, 'transactionType') !== 'N/A' && 
-      (item.instrument_type || item.MLSFileNo || item.KAGISFileNO || item.rootRegistrationNumber)
-    );
     
     if (instrumentRecords.length > 0) {
       instrumentRecords.forEach(registration => {
         const date = getMappedValue(registration, 'date');
         const time = getMappedValue(registration, 'time');
-        const transactionType = getMappedValue(registration, 'transactionType');
-        const grantor = getMappedValue(registration, 'grantor');
-        const grantee = getMappedValue(registration, 'grantee');
+        const transactionType = toProperCase(getMappedValue(registration, 'transactionType'));
+        const grantor = toProperCase(getMappedValue(registration, 'grantor'));
+        const grantee = toProperCase(getMappedValue(registration, 'grantee'));
         const regNumber = getMappedValue(registration, 'serialNo');
         
         const row = document.createElement('tr');
@@ -919,7 +929,7 @@
           <td>${transactionType}</td>
           <td>${regNumber}</td>
           <td>${grantor} to ${grantee}</td>
-          <td>${registration.created_by || registration.updated_by || 'N/A'}</td>
+          <td>${toProperCase(registration.created_by || registration.updated_by || 'N/A')}</td>
           <td>
             <div class="flex space-x-2">
               <button class="edit-action">
@@ -948,14 +958,9 @@
       `;
     }
     
-    // Certificate of Occupancy
+    // Certificate of Occupancy (only CofO table)
     const cofoTable = document.getElementById('cofo-table');
     cofoTable.innerHTML = '';
-    
-    // Filter for CofO records (cofo table or records with certificateDate)
-    const cofoRecords = relatedTransactions.filter(item => 
-      item.certificateDate || item.mlsfNo || item.kangisFileNo || item.currentAllottee || item.originalAllottee
-    );
     
     if (cofoRecords.length > 0) {
       cofoRecords.forEach(cofo => {
@@ -963,8 +968,8 @@
         const pageNo = getMappedValue(cofo, 'pageNo');
         const volumeNo = getMappedValue(cofo, 'volumeNo');
         const date = getMappedValue(cofo, 'date');
-        const grantee = getMappedValue(cofo, 'grantee');
-        const landUse = getMappedValue(cofo, 'landUse');
+        const grantee = toProperCase(getMappedValue(cofo, 'grantee'));
+        const landUse = toProperCase(getMappedValue(cofo, 'landUse'));
         
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -1604,7 +1609,8 @@ return `${prefix}/${prefix}/${suffix}`;
 
   // Add input event listeners for search fields
   document.getElementById('fileNumber').addEventListener('input', performSearch);
-  document.getElementById('kangisFileNo').addEventListener('input', performSearch);
+  document.getElementById('guarantorName').addEventListener('input', performSearch);
+  document.getElementById('guaranteeName').addEventListener('input', performSearch);
 
   // Close modal when pressing Escape key
   document.addEventListener('keydown', (e) => {

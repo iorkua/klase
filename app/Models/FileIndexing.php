@@ -27,6 +27,8 @@ class FileIndexing extends Model
         'has_transaction',
         'is_problematic',
         'is_co_owned_plot',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [

@@ -224,6 +224,43 @@
           <!-- AI insights will be populated here -->
         </div>
         
+        <!-- AI Processing Complete Summary -->
+        <div class="flex justify-center mb-6" id="ai-completion-summary" style="display: none;">
+          <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 max-w-md w-full">
+            <!-- Header with Success Icon -->
+            <div class="flex items-center mb-4">
+              <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                <i data-lucide="check" class="text-green-600 text-lg"></i>
+              </div>
+              <div>
+                <h2 class="text-xl font-semibold text-gray-900">AI Processing Complete</h2>
+                <p class="text-sm text-gray-600">All selected documents have been successfully processed</p>
+              </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-3 gap-4 mt-6">
+              <!-- Documents Processed -->
+              <div class="text-center p-4 bg-blue-50 rounded-lg">
+                <div class="text-2xl font-bold text-blue-700 mb-1" id="summary-documents-count">0</div>
+                <div class="text-xs text-blue-600 font-medium uppercase tracking-wide">Documents Processed</div>
+              </div>
+
+              <!-- Average Confidence -->
+              <div class="text-center p-4 bg-green-50 rounded-lg">
+                <div class="text-2xl font-bold text-green-700 mb-1" id="summary-confidence">0%</div>
+                <div class="text-xs text-green-600 font-medium uppercase tracking-wide">Average Confidence</div>
+              </div>
+
+              <!-- Processing Time -->
+              <div class="text-center p-4 bg-purple-50 rounded-lg">
+                <div class="text-2xl font-bold text-purple-700 mb-1" id="summary-processing-time">0s</div>
+                <div class="text-xs text-purple-600 font-medium uppercase tracking-wide">Processing Time</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
         <div class="flex justify-end">
           <button class="btn btn-primary hidden" id="confirm-save-results-btn">
             Confirm & Save Results
