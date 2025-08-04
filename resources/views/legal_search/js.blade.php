@@ -1278,67 +1278,12 @@ const suffix = Math.floor(Math.random() * 201) + 100;
 return `${prefix}/${prefix}/${suffix}`;
 };
 
-  // Render legal search report
+   // Render legal search report using the better template format
   const renderLegalSearchReport = () => {
     if (!selectedFile) return;
 
-    // Set current date and time
-    const currentDate = new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    
-    const currentTime = new Date().toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
-    
-    // Update report header with timestamp info (with .0 fix)
-    let reportFileRef = selectedFile.mlsFNo || selectedFile.MLSFileNo || selectedFile.fileNo || selectedFile.fileno || 'N/A';
-    if (typeof reportFileRef === 'number' && reportFileRef % 1 === 0) {
-      reportFileRef = Math.floor(reportFileRef).toString();
-    } else if (typeof reportFileRef === 'string' && reportFileRef.endsWith('.0')) {
-      reportFileRef = reportFileRef.replace('.0', '');
-    }
-    document.getElementById('report-file-reference').textContent = reportFileRef;
-    document.getElementById('report-timestamp').textContent = `These details are as at ${currentDate} ${currentTime}`;
-    document.getElementById('report-date').textContent = `Date: ${currentDate}`;
-    document.getElementById('report-time').textContent = `Time: ${currentTime}`;
-    
-    // Update property details
-    document.getElementById('report-file-numbers').textContent = `mlsfNo: ${selectedFile.mlsFNo || selectedFile.MLSFileNo || selectedFile.fileNo || 'N/A'} | kangisFileNo: ${selectedFile.kangisFileNo || selectedFile.KAGISFileNO || 'N/A'} | NewKANGISFileNo: ${selectedFile.NewKANGISFileno || selectedFile.NewKANGISFileNo || 'N/A'}`;
-    document.getElementById('report-plot-number').textContent = selectedFile.plot_no || selectedFile.plotNo || "GP No. 1067/1 & 1067/2";
-    document.getElementById('report-plan-number').textContent = selectedFile.planNumber || "LKN/RES/2021/3006";
-    document.getElementById('report-plot-description').textContent = `${selectedFile.district || selectedFile.districtName || "Niger Street Nassarawa District"}, ${selectedFile.lgsaOrCity || selectedFile.lga || selectedFile.lgaName || "Nassarawa"} LGA`;
-    
-    // Generate QR code URL
-    const qrCodeData = `File Number: MLSF: ${selectedFile.mlsFNo || selectedFile.MLSFileNo || selectedFile.fileNo || 'N/A'} | KANGIS: ${selectedFile.kangisFileNo || selectedFile.KAGISFileNO || 'N/A'} | New KANGIS: ${selectedFile.NewKANGISFileno || selectedFile.NewKANGISFileNo || 'N/A'}`;
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrCodeData)}`;
-    document.getElementById('report-qr-code').src = qrCodeUrl;
-    
     // Get related transactions for the selected file
     const relatedTransactions = getRelatedTransactions(selectedFile);
-
-    // Helper to find reg instrument by file number
-    function findRegInstrumentByFileNo(fileNo) {
-      if (!searchResults) return null;
-      // Search in registered_instruments only
-      const regInstruments = searchResults.filter(
-        r =>
-          r.instrument_type ||
-          r.MLSFileNo ||
-          r.KAGISFileNO ||
-          r.rootRegistrationNumber
-      );
-      return regInstruments.find(
-        ri =>
-          ri.MLSFileNo == fileNo ||
-          ri.KAGISFileNO == fileNo ||
-          ri.NewKANGISFileNo == fileNo
-      );
-    }
 
     // Helper to get Registration Particulars for each transaction
     function getRegistrationParticulars(transaction) {
@@ -1349,36 +1294,6 @@ return `${prefix}/${prefix}/${suffix}`;
         transaction.hasOwnProperty('volumeNo')
       ) {
         return `${cleanNumericValue(transaction.serialNo)}/${cleanNumericValue(transaction.pageNo)}/${cleanNumericValue(transaction.volumeNo)}`;
-      }
-      // mother_applications table
-      if (
-        transaction.hasOwnProperty('owner_fullname') &&
-        transaction.hasOwnProperty('fileno')
-      ) {
-        let regInst = findRegInstrumentByFileNo(transaction.fileno);
-        if (regInst) {
-          return `${cleanNumericValue(regInst.volume_no)}/${cleanNumericValue(regInst.page_no)}/${cleanNumericValue(regInst.serial_no)}`;
-        }
-        return 'N/A/N/A/N/A';
-      }
-      // subapplications table
-      if (
-        transaction.hasOwnProperty('sub_owner_fullname') &&
-        transaction.hasOwnProperty('fileno')
-      ) {
-        let regInst = findRegInstrumentByFileNo(transaction.fileno);
-        if (regInst) {
-          return `${cleanNumericValue(regInst.volume_no)}/${cleanNumericValue(regInst.page_no)}/${cleanNumericValue(regInst.serial_no)}`;
-        }
-        return 'N/A/N/A/N/A';
-      }
-      // cofo table
-      if (
-        transaction.hasOwnProperty('oldTitleSerialNo') &&
-        transaction.hasOwnProperty('oldTitlePageNo') &&
-        transaction.hasOwnProperty('oldTitleVolumeNo')
-      ) {
-        return `${cleanNumericValue(transaction.oldTitleSerialNo)}/${cleanNumericValue(transaction.oldTitlePageNo)}/${cleanNumericValue(transaction.oldTitleVolumeNo)}`;
       }
       // registered_instruments table
       if (
@@ -1395,32 +1310,8 @@ return `${prefix}/${prefix}/${suffix}`;
 
     relatedTransactions.forEach(transaction => {
       let regNo = getRegistrationParticulars(transaction);
-      let category = 'Property Record';
-      if (
-        transaction.hasOwnProperty('instrument_type') ||
-        transaction.hasOwnProperty('rootRegistrationNumber')
-      ) {
-        category = 'Instrument Registration';
-      } else if (
-        transaction.hasOwnProperty('oldTitleSerialNo') &&
-        transaction.hasOwnProperty('oldTitlePageNo') &&
-        transaction.hasOwnProperty('oldTitleVolumeNo')
-      ) {
-        category = 'Certificate of Occupancy';
-      } else if (
-        transaction.hasOwnProperty('owner_fullname') &&
-        transaction.hasOwnProperty('fileno')
-      ) {
-        category = 'Sectional Title';
-      } else if (
-        transaction.hasOwnProperty('sub_owner_fullname') &&
-        transaction.hasOwnProperty('fileno')
-      ) {
-        category = 'Sectional Title';
-      }
-
+      
       allTransactions.push({
-        type: transaction.transaction_type || transaction.instrument_type || transaction.title_type || 'Record',
         date: transaction.transaction_date || transaction.deeds_date || transaction.certificateDate || transaction.approval_date || 'N/A',
         time: transaction.deeds_time || generateRandomTime(),
         transactionType: transaction.transaction_type || transaction.instrument_type || transaction.title_type || 'Record',
@@ -1428,9 +1319,8 @@ return `${prefix}/${prefix}/${suffix}`;
         grantee: transaction.sub_owner_fullname || transaction.multiple_owners_names || transaction.Assignee || transaction.Grantee || transaction.currentAllottee || 'N/A',
         regNo: regNo,
         size: transaction.size || transaction.plot_size || 'N/A',
-        caveat: transaction.caveat || 'N/A',
+        caveat: transaction.caveat === 'Yes' ? 'Yes' : 'NO',
         comments: transaction.comments || transaction.additional_comments || 'N/A',
-        category: category,
         originalRecord: transaction
       });
     });
@@ -1446,8 +1336,8 @@ return `${prefix}/${prefix}/${suffix}`;
         for (let i = 0; i < propertyHistoryTable.children.length; i++) {
           const row = propertyHistoryTable.children[i];
           if (row.children.length >= 8) {
+            const caveatText = cleanNumericValue(row.children[6].textContent.trim());
             const backupTransaction = {
-              type: 'Property History',
               date: cleanNumericValue(row.children[0].textContent.trim()),
               time: generateRandomTime(),
               transactionType: cleanNumericValue(row.children[1].textContent.trim()),
@@ -1455,9 +1345,8 @@ return `${prefix}/${prefix}/${suffix}`;
               grantee: cleanNumericValue(row.children[3].textContent.trim()),
               regNo: cleanNumericValue(row.children[4].textContent.trim()),
               size: cleanNumericValue(row.children[5].textContent.trim()),
-              caveat: cleanNumericValue(row.children[6].textContent.trim()),
-              comments: cleanNumericValue(row.children[7].textContent.trim()),
-              category: 'Property History'
+              caveat: caveatText === 'Yes' ? 'Yes' : 'NO',
+              comments: cleanNumericValue(row.children[7].textContent.trim())
             };
             allTransactions.push(backupTransaction);
             console.log(`Added backup transaction from Property History:`, backupTransaction);
@@ -1473,7 +1362,6 @@ return `${prefix}/${prefix}/${suffix}`;
           const row = instrumentTable.children[i];
           if (row.children.length >= 5) {
             const backupTransaction = {
-              type: 'Instrument Registration',
               date: cleanNumericValue(row.children[0].textContent.trim()),
               time: generateRandomTime(),
               transactionType: cleanNumericValue(row.children[1].textContent.trim()),
@@ -1481,9 +1369,8 @@ return `${prefix}/${prefix}/${suffix}`;
               grantee: cleanNumericValue(row.children[3].textContent.split(' to ')[1]) || 'N/A',
               regNo: cleanNumericValue(row.children[2].textContent.trim()),
               size: 'N/A',
-              caveat: 'N/A',
-              comments: 'N/A',
-              category: 'Instrument Registration'
+              caveat: 'NO',
+              comments: 'N/A'
             };
             allTransactions.push(backupTransaction);
             console.log(`Added backup transaction from Instrument Registration:`, backupTransaction);
@@ -1499,7 +1386,6 @@ return `${prefix}/${prefix}/${suffix}`;
           const row = cofoTable.children[i];
           if (row.children.length >= 5) {
             const backupTransaction = {
-              type: 'Certificate of Occupancy',
               date: cleanNumericValue(row.children[1].textContent.trim()),
               time: generateRandomTime(),
               transactionType: 'Certificate of Occupancy',
@@ -1507,9 +1393,8 @@ return `${prefix}/${prefix}/${suffix}`;
               grantee: cleanNumericValue(row.children[2].textContent.trim()),
               regNo: cleanNumericValue(row.children[0].textContent.trim()),
               size: 'N/A',
-              caveat: 'N/A',
-              comments: cleanNumericValue(row.children[3].textContent.trim()),
-              category: 'Certificate of Occupancy'
+              caveat: 'NO',
+              comments: cleanNumericValue(row.children[3].textContent.trim())
             };
             allTransactions.push(backupTransaction);
             console.log(`Added backup transaction from CofO:`, backupTransaction);
@@ -1519,92 +1404,504 @@ return `${prefix}/${prefix}/${suffix}`;
       
       console.log(`After backup approach, total transactions: ${allTransactions.length}`);
     }
-    
-    console.log('=== FINAL TRANSACTIONS ARRAY ===');
-    console.log('Total transactions processed:', allTransactions.length);
-    console.log('All transactions for report:', allTransactions);
-
-    
-    // Map to report row format
-    const mappedTransactions = allTransactions.map(transaction => {
-      const date = getMappedValue(transaction, 'date');
-      const time = getMappedValue(transaction, 'time');
-      const transactionType = getMappedValue(transaction, 'transactionType');
-      const grantor = getMappedValue(transaction, 'grantor');
-      const grantee = getMappedValue(transaction, 'grantee');
-      const serialNo = getMappedValue(transaction, 'serialNo');
-      const pageNo = getMappedValue(transaction, 'pageNo');
-      const volumeNo = getMappedValue(transaction, 'volumeNo');
-      const size = getMappedValue(transaction, 'size');
-      const comments = getMappedValue(transaction, 'comments');
-      let category = 'Property Record';
-      if (
-        transaction.instrument_type ||
-        transaction.rootRegistrationNumber ||
-        transaction.MLSFileNo ||
-        transaction.KAGISFileNO
-      ) {
-        category = 'Instrument Registration';
-      } else if (
-        transaction.certificateDate ||
-        transaction.currentAllottee ||
-        transaction.originalAllottee
-      ) {
-        category = 'Certificate of Occupancy';
-      }
-      return {
-        type: transactionType,
-        date: date,
-        time: time !== 'N/A' ? time : generateRandomTime(),
-        transactionType: transactionType,
-        grantor: grantor,
-        grantee: grantee,
-        regNo: `${serialNo}/${pageNo}/${volumeNo}`,
-        size: size,
-        caveat: transaction.caveat || 'N/A',
-        comments: comments,
-        category: category
-      };
-    });
 
     // Sort by date (newest first)
     allTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    // Render the combined transactions table
-    const transactionsTable = document.getElementById('report-transactions-table');
-    transactionsTable.innerHTML = '';
+    // Create the report HTML using the better template format
+    const reportHtml = `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>KANO STATE GEOGRAPHIC INFORMATION SYSTEM - OFFICIAL SEARCH REPORT</title>
+        <style type="text/css">
+          body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: white;
+            display: flex;
+            justify-content: center;
+          }
+          
+          .report-container {
+            width: 1000px;
+            background-color: white;
+            padding: 20px;
+            position: relative;
+            box-shadow: none;
+            border: none;
+          }
+          
+          @media print {
+            body {
+              background-color: white !important;
+              background: white !important;
+            }
+            
+            .report-container {
+              background-color: white !important;
+              background: white !important;
+              box-shadow: none !important;
+              border: none !important;
+              margin: 0 !important;
+              padding: 20px !important;
+              width: 100% !important;
+              max-width: none !important;
+            }
+          }
+          
+          .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+          
+          .logo {
+            width: 80px;
+            height: 80px;
+          }
+          
+          .header-text {
+            text-align: center;
+            flex-grow: 1;
+            margin: 0 20px;
+          }
+          
+          .header-title {
+            color: #0066cc;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+          }
+          
+          .header-subtitle {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 5px 0;
+          }
+          
+          .header-purpose {
+            font-size: 14px;
+            font-weight: bold;
+          }
+          
+          .date-section {
+            text-align: right;
+            margin: 10px 0 20px 0;
+            font-size: 12px;
+          }
+          
+          .section-title {
+            border: 1px solid black;
+            padding: 2px 5px;
+            font-size: 12px;
+            font-weight: bold;
+            background-color: #f5f5f5;
+            display: inline-block;
+            margin-bottom: 5px;
+          }
+          
+          .property-details {
+            border-top: 1px solid black;
+            margin-top: 0;
+            padding-top: 10px;
+          }
+          
+          .property-row {
+            display: flex;
+            margin-bottom: 5px;
+            font-size: 12px;
+          }
+          
+          .property-label {
+            width: 150px;
+            font-weight: bold;
+          }
+          
+          .transaction-history {
+            margin-top: 20px;
+            border-top: 1px solid black;
+            padding-top: 10px;
+          }
+          
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+          }
+          
+          th, td {
+            padding: 3px;
+            text-align: left;
+            vertical-align: top;
+          }
+          
+          th {
+            background-color: white;
+            font-weight: bold;
+          }
+          
+          .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 80px;
+            color: rgba(200, 200, 200, 0.1);
+            opacity: 0.1;
+            z-index: -1;
+            white-space: nowrap;
+            pointer-events: none;
+            font-weight: bold;
+            font-family: Arial, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+          }
+          
+          @media print {
+            * {
+              background-color: white !important;
+              background: white !important;
+              color-adjust: exact !important;
+              -webkit-print-color-adjust: exact !important;
+            }
+            
+            body, html {
+              background-color: white !important;
+              background: white !important;
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+            
+            @page {
+              size: A4;
+              margin: 10mm 8mm !important;
+            }
+            
+            .report-container {
+              background-color: white !important;
+              background: white !important;
+              box-shadow: none !important;
+              border: none !important;
+              margin: 0 !important;
+              padding: 15px !important;
+              width: 100% !important;
+              max-width: none !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+            
+            .header {
+              margin-bottom: 8px !important;
+            }
+            
+            .date-section {
+              margin: 5px 0 10px 0 !important;
+            }
+            
+            .property-details {
+              padding-top: 5px !important;
+              margin-bottom: 10px !important;
+            }
+            
+            .property-row {
+              margin-bottom: 3px !important;
+              font-size: 11px !important;
+            }
+            
+            .transaction-history {
+              margin-top: 10px !important;
+              padding-top: 5px !important;
+            }
+            
+            table {
+              font-size: 10px !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+            
+            th, td {
+              padding: 2px !important;
+              font-size: 10px !important;
+            }
+            
+            .footer {
+              margin-top: 15px !important;
+              padding: 5px 0 !important;
+              page-break-inside: avoid !important;
+            }
+            
+            .timestamp {
+              font-size: 11px !important;
+              margin-bottom: 10px !important;
+            }
+            
+            .footer-content {
+              margin-bottom: 8px !important;
+            }
+            
+            .signature-text, .print-info {
+              font-size: 11px !important;
+            }
+            
+            .barcode {
+              margin: 8px 0 !important;
+            }
+            
+            .disclaimer, .contact-info, .geo-info {
+              font-size: 10px !important;
+              margin-bottom: 5px !important;
+            }
+            
+            .watermark {
+              position: absolute !important;
+              top: 50% !important;
+              left: 50% !important;
+              transform: translate(-50%, -50%) rotate(-45deg) !important;
+              font-size: 60px !important;
+              color: rgba(200, 200, 200, 0.05) !important;
+              opacity: 0.05 !important;
+              z-index: -1 !important;
+              background: none !important;
+              background-color: transparent !important;
+              border: none !important;
+              box-shadow: none !important;
+              text-shadow: none !important;
+            }
+            
+            /* Force single page for small datasets */
+            .report-container:has(tbody tr:nth-child(-n+10)) {
+              page-break-after: avoid !important;
+              break-after: avoid !important;
+            }
+          }
+          
+          .col-sn { width: 20px; }
+          .col-grantor { width: 150px; }
+          .col-grantee { width: 150px; }
+          .col-instrument { width: 125px; }
+          .col-date { width: 70px; }
+          .col-reg { width: 60px; }
+          .col-size { width: 60px; }
+          .col-caveat { width: 60px; }
+          .col-comments { width: 180px; }
 
-    if (allTransactions.length > 0) {
-      allTransactions.forEach((transaction, index) => {
-        // Use the correct registration particulars for each row
-        const regParticulars = getRegistrationParticulars(transaction.originalRecord);
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td class="border border-gray-300 px-3 py-2">${index + 1}</td>
-          <td class="border border-gray-300 px-3 py-2">${transaction.grantor}</td>
-          <td class="border border-gray-300 px-3 py-2">${transaction.grantee}</td>
-          <td class="border border-gray-300 px-3 py-2">
-            ${transaction.transactionType}
-            <div class="text-xs text-gray-500">${transaction.category}</div>
-          </td>
-          <td class="border border-gray-300 px-3 py-2">
-            <div>${transaction.date}</div>
-            <div class="text-xs text-gray-600">${transaction.time}</div>
-          </td>
-          <td class="border border-gray-300 px-3 py-2">${cleanNumericValue(regParticulars)}</td>
-          <td class="border border-gray-300 px-3 py-2">${transaction.size}</td>
-          <td class="border border-gray-300 px-3 py-2 ${transaction.caveat === 'Yes' ? 'text-red-600' : ''}">${transaction.caveat}</td>
-          <td class="border border-gray-300 px-3 py-2">${transaction.comments}</td>
-        `;
-        transactionsTable.appendChild(row);
-      });
-    } else {
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td colspan="9" class="border border-gray-300 px-3 py-2 text-center">No transaction history found</td>
-      `;
-      transactionsTable.appendChild(row);
-    }
+          .footer {
+            font-family: Arial, sans-serif;
+            margin-top: 30px;
+            padding: 10px 0;
+            border-top: 1px solid #eee;
+            width: 100%;
+          }
+          
+          .timestamp {
+            font-size: 12px;
+            font-weight: bold;
+            text-align: left;
+            margin-bottom: 20px;
+          }
+          
+          .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+          }
+          
+          .signature-block {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+          }
+          
+          .signature-text {
+            font-size: 12px;
+            margin-bottom: 5px;
+          }
+          
+          .signature-image {
+            border: 2px solid #0047AB;
+            padding: 5px;
+            transform: rotate(-20deg);
+            width: 200px;
+            height: 45px;
+          }
+          
+          .print-info {
+            font-size: 12px;
+            text-align: right;
+          }
+          
+          .barcode {
+            text-align: center;
+            margin: 15px 0;
+          }
+          
+          .disclaimer {
+            font-size: 11px;
+            text-align: center;
+            margin-bottom: 10px;
+          }
+          
+          .contact-info {
+            font-size: 11px;
+            text-align: center;
+            margin-bottom: 10px;
+          }
+          
+          .geo-info {
+            font-size: 11px;
+            text-align: center;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="report-container">
+          <div class="watermark">FOR OFFICE USE ONLY</div>  
+           
+          <div class="header">
+            <img src="{{ asset('assets/logo/logo1.jpg') }}" alt="Kano State Logo" width="80" height="80">
+            <div class="header-text">
+              <div class="header-title">KANO STATE GEOGRAPHIC INFORMATION SYSTEM</div>
+              <div class="header-subtitle">MINISTRY OF LAND AND PHYSICAL PLANNING</div>
+              <div class="header-purpose">LEGAL SEARCH REPORT</div>  
+              <div class="header-purpose">OFFICIAL SEARCH REPORT FOR FILING PURPOSES</div>   
+            </div>
+            <img src="{{ asset('assets/logo/logo2.jpg') }}" alt="GIS Logo" width="80" height="80">
+          </div>
+          
+          <div class="date-section">
+            Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+          </div>
+         
+          <div class="section-title">Property Details</div>
+          
+          <div class="property-details">
+            <div class="property-row">
+              <div class="property-label">File Number:</div>
+              <div>NewKANGISFileNo: ${selectedFile.NewKANGISFileno || selectedFile.NewKANGISFileNo || 'N/A'}  |  kangisFileNo: ${selectedFile.kangisFileNo || selectedFile.KAGISFileNO || 'N/A'}  |  mlsfNo: ${selectedFile.mlsFNo || selectedFile.MLSFileNo || selectedFile.fileNo || selectedFile.fileno || 'N/A'}</div>
+            </div>
+            
+            <div class="property-row">       
+              <div class="property-label">Schedule:</div>
+              <div>Kano</div>
+            </div>
+            
+            <div class="property-row">
+              <div class="property-label">Plot Number:</div>
+              <div>${selectedFile.plot_no || selectedFile.plotNo || "GP No. 1067/1 & 1067/2"}</div>
+            </div>
+            
+            <div class="property-row">
+              <div class="property-label">Plan Number:</div>
+              <div>${selectedFile.planNumber || "LKN/RES/2021/3006"}</div>
+            </div>
+            
+            <div class="property-row">
+              <div class="property-label">Plot Description:</div>
+              <div>${selectedFile.district || selectedFile.districtName || "Niger Street Nassarawa District"}, ${selectedFile.lgsaOrCity || selectedFile.lga || selectedFile.lgaName || "Nassarawa"} LGA</div>
+            </div>
+          </div>
+          <br>
+          <br>
+          <br>
+          <div class="section-title">Transaction History</div> 
+          
+          <div class="transaction-history">
+            <table>
+              <thead>
+                <tr>
+                  <th class="col-sn">S/N</th>
+                  <th class="col-grantor">Grantor</th>
+                  <th class="col-grantee">Grantee</th>
+                  <th class="col-instrument">Transaction Type</th>
+                  <th class="col-date">Date/Time</th>
+                  <th class="col-reg">Registration Particulars</th>
+                  <th class="col-size">Size</th>
+                  <th class="col-caveat">Caveat</th>
+                  <th class="col-comments">Comments</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${allTransactions.map((transaction, index) => `
+                  <tr>
+                    <td>${index + 1}</td>
+                    <td>${transaction.grantor}</td>
+                    <td>${transaction.grantee}</td>
+                    <td>${transaction.transactionType}</td>
+                    <td>${transaction.date}<br><small>${transaction.time}</small></td>
+                    <td>${transaction.regNo}</td>
+                    <td>${transaction.size}</td>
+                    <td>${transaction.caveat}</td>
+                    <td>${transaction.comments}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="footer">
+            <!-- Timestamp -->
+            <div class="timestamp">
+              These details are as at ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}
+            </div>
+            
+            <!-- Signature and Print Info -->
+            <div class="footer-content">
+              <div class="signature-block">
+                <div class="signature-text">Yours Faithfully,</div>
+                <div class="signature-image">
+                  <svg width="200" height="45" viewBox="0 0 200 45" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10,35 C30,5 50,40 70,15 C90,30 110,10 130,25 C150,15 170,30 190,20" 
+                          stroke="#000080" fill="none" stroke-width="2"/>
+                  </svg>
+                </div>
+                .......Director Deeds.........
+              </div>
+              <div class="print-info">
+                Generated by: {{ auth()->user()->first_name }}
+              </div>
+            </div>
+            
+            <!--qrcode -->
+            <div class="barcode">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent('File Number: MLSF: ' + (selectedFile.mlsFNo || selectedFile.MLSFileNo || selectedFile.fileNo || 'N/A') + ' | KANGIS: ' + (selectedFile.kangisFileNo || selectedFile.KAGISFileNO || 'N/A') + ' | New KANGIS: ' + (selectedFile.NewKANGISFileno || selectedFile.NewKANGISFileNo || 'N/A'))}" alt="QR Code" width="100" height="100">
+            </div>
+            
+            <!-- Disclaimer -->
+            <div class="disclaimer">
+              Disclaimer: This Search Report does not represent consent to any transaction and is without prejudice to subsequent disclosures.
+            </div>
+            
+            <!-- Contact Info -->
+            <div class="contact-info">
+              For enquiries, please call +234 (0) 8023456789
+            </div>
+            
+            <!-- Geographic Info -->
+            <div class="geo-info">
+              KANO STATE GEOGRAPHIC INFORMATION SYSTEM, Plot P/123, Secretariat Kano, Kano State
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Open the report in a new window for printing
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(reportHtml);
+    printWindow.document.close();
+    
+    // Auto-print after a short delay
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
   };
 
   // Add input event listeners for search fields
