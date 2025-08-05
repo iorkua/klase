@@ -144,8 +144,8 @@
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead> 
                             <tr class="text-xs">
-                                
-                                <th class="table-header text-green-500">File No</th>
+                                <th class="table-header text-green-500">ST FileNo</th>
+                                <th class="table-header text-green-500">MLSFileNo</th>
                                 <th class="table-header text-green-500">Property</th>
                                 <th class="table-header text-green-500">Type</th>
                                 <th class="table-header text-green-500">Land Use</th>
@@ -169,10 +169,14 @@
                                    
                                     <td class="table-cell">
                                         <div class="truncate max-w-[120px]" title="{{ $PrimaryApplication->fileno }}">
+                                            {{ $PrimaryApplication->np_fileno }}
+                                        </div>
+                                    </td>
+                                    <td class="table-cell">
+                                        <div class="truncate max-w-[120px]" title="{{ $PrimaryApplication->fileno }}">
                                             {{ $PrimaryApplication->fileno }}
                                         </div>
                                     </td>
-                                     
                                     <td class="table-cell">
                                         <div class="truncate max-w-[150px]" title="{{ $PrimaryApplication->property_plot_no }} {{ $PrimaryApplication->property_street_name }}, {{ $PrimaryApplication->property_lga }}">
                                             {{ $PrimaryApplication->property_plot_no }} {{ $PrimaryApplication->property_street_name }}, {{ $PrimaryApplication->property_lga }}
@@ -271,7 +275,7 @@
                                         @endphp
                                         @if($totalUnits > 0)
                                             <span class="badge badge-units">
-                                                <i data-lucide="building" class="w-3 h-3 mr-1"></i>
+                                               
                                                 {{ $enteredUnitsCount }} of {{ $totalUnits }} Units
                                             </span>
                                         @else

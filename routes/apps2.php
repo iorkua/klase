@@ -210,6 +210,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::prefix('filearchive')->group(function () {
         Route::get('/', [FilearchiveController::class, 'index'])->name('filearchive.index');
+        Route::get('/file-details/{id}', [FilearchiveController::class, 'getFileDetails'])->name('filearchive.file-details');
+        Route::get('/search', [FilearchiveController::class, 'search'])->name('filearchive.search');
         Route::post('/upload', [FilearchiveController::class, 'upload'])->name('filearchive.upload');
         Route::get('/view/{id}', [FilearchiveController::class, 'view'])->name('filearchive.view');
         Route::delete('/delete/{id}', [FilearchiveController::class, 'delete'])->name('filearchive.delete');

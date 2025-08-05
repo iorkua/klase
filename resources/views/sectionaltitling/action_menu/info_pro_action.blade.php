@@ -155,6 +155,33 @@
           </a>
        </li>
        @endif  
+
+       @php
+        // Check if there are sub_applications with this main_application_id in the sub_applications table
+        $hasSubApplications = \DB::connection('sqlsrv')
+          ->table('subapplications')
+          ->where('main_application_id', $PrimaryApplication->id)
+          ->exists();
+      @endphp
+
+      @if(
+        ($PrimaryApplication->planning_recommendation_status == 'Pending' && $PrimaryApplication->application_status == 'Pending')
+        || !$hasSubApplications
+      )
+        <li class="opacity-50 cursor-not-allowed">
+          <a href="#" class="w-full text-left px-4 py-2 flex items-center space-x-2">
+            <i data-lucide="list" class="w-4 h-4 text-gray-500"></i>
+            <span>View Unit Application(s)</span>
+          </a>
+        </li>
+      @else
+        <li>
+          <a href="{{ route('sectionaltitling.units') }}?main_application_id={{ $PrimaryApplication->id }}" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
+            <i data-lucide="list" class="w-4 h-4 text-blue-600"></i>
+            <span>View Unit Application(s)</span>
+          </a>
+        </li>
+      @endif  
    </ul>
  </div>
  <script>

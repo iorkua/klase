@@ -574,19 +574,28 @@
                               <span>View Application</span>
                             </a>
                           </li>
-                          @if(request()->query('url') != 'view')
+                            @if(request()->query('url') != 'view')
                             <li>
-                                @if($application->planning_recommendation_status == 'Approved')
-                                <div class="block w-full text-left px-4 py-2 flex items-center space-x-2 disabled-link">
-                                    <i data-lucide="check-circle" class="w-4 h-4 disabled-icon"></i>
-                                    <span>Approve/Decline</span>
-                                </div>
-                                @else
-                                <a href="{{ route('actions.recommendation', ['id' => $application->id]) }}?url=phy_planning" class="block w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
-                                    <i data-lucide="check-circle" class="w-4 h-4 text-blue-600"></i>
-                                    <span>Approve/Decline</span>
-                                </a>
-                                @endif
+                              @php
+                              $fileExists = DB::connection('sqlsrv')
+                                ->table('Cofo')
+                                ->where('mlsFNo', $application->fileno)
+                                ->orWhere('kangisFileNo', $application->fileno)
+                                ->orWhere('NewKANGISFileno', $application->fileno)
+                                ->exists();
+                              @endphp
+
+                              @if($application->planning_recommendation_status == 'Approved' || !$fileExists)
+                              <div class="block w-full text-left px-4 py-2 flex items-center space-x-2 disabled-link">
+                                <i data-lucide="check-circle" class="w-4 h-4 disabled-icon"></i>
+                                <span>@if(!$fileExists) COFO Required @else Approve/Decline @endif</span>
+                              </div>
+                              @else
+                              <a href="{{ route('actions.recommendation', ['id' => $application->id]) }}?url=phy_planning" class="block w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
+                                <i data-lucide="check-circle" class="w-4 h-4 text-blue-600"></i>
+                                <span>Approve/Decline</span>
+                              </a>
+                              @endif
                             </li>
 
                             <li>

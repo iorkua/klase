@@ -403,7 +403,7 @@
                                     </svg>
                                 </th>
                                 <th class="TableHead cursor-pointer min-w-[200px]" data-sort="file_title">
-                                    File Title
+                                    File&nbsp;Title
                                     <svg class="ml-2 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="m21 16-4 4-4-4"></path>
                                         <path d="M17 20V4"></path>
@@ -412,19 +412,21 @@
                                     </svg>
                                 </th>
                                 <th class="TableHead cursor-pointer min-w-[120px]" data-sort="created_at">
-                                    Indexed Date
-                                    <svg class="ml-2 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="m21 16-4 4-4-4"></path>
-                                        <path d="M17 20V4"></path>
-                                        <path d="m3 8 4-4 4 4"></path>
-                                        <path d="M7 4v16"></path>
-                                    </svg>
+                                    <span class="flex items-center">
+                                        Indexed&nbsp;Date
+                                        <svg class="ml-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="m21 16-4 4-4-4"></path>
+                                            <path d="M17 20V4"></path>
+                                            <path d="m3 8 4-4 4 4"></path>
+                                            <path d="M7 4v16"></path>
+                                        </svg>
+                                    </span>
                                 </th>
                                 <th class="TableHead min-w-[120px]">
                                     Status
                                 </th>
                                 <th class="TableHead cursor-pointer min-w-[120px]" data-sort="land_use_type">
-                                    Land Use
+                                    Land&nbsp;Use
                                     <svg class="ml-2 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="m21 16-4 4-4-4"></path>
                                         <path d="M17 20V4"></path>
@@ -442,7 +444,7 @@
                                     </svg>
                                 </th>
                                 <th class="TableHead min-w-[100px]">
-                                    Plot Number
+                                    Plot&nbsp;Number
                                 </th>
                                 <th class="TableHead text-right min-w-[100px]">Actions</th>
                             </tr>

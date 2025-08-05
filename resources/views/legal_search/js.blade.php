@@ -384,35 +384,27 @@
         if (searchResults.length === 0) {
           noResultsMessage.classList.remove('hidden');
         } else {
-          // Automatically collapse filters when results are found
-          if (searchResults.length > 0 && !filtersCollapsed) {
-            filtersCollapsed = true;
-            filtersContainer.classList.add('hidden');
-            collapsedFilters.classList.remove('hidden');
-            toggleFiltersBtn.textContent = 'Expand Filters';
-            
-            // Update active filters summary
-            const activeFilters = Object.entries(filters)
-              .filter(([_, value]) => value && value.trim() !== '')
-              .map(([key, value]) => {
-                const filterLabels = {
-                  fileNumber: 'File Number',
-                  guarantorName: 'Guarantor Name',
-                  guaranteeName: 'Guarantee Name',
-                  lga: 'LGA',
-                  district: 'District',
-                  location: 'Location',
-                  plotNumber: 'Plot Number',
-                  planNumber: 'Plan Number',
-                  size: 'Size',
-                  caveat: 'Caveat'
-                };
-                return `${filterLabels[key]}: ${value}`;
-              })
-              .join(', ');
-            
-            document.getElementById('active-filters-summary').textContent = activeFilters;
-          }
+          // Update active filters summary without auto-collapsing
+          const activeFilters = Object.entries(filters)
+            .filter(([_, value]) => value && value.trim() !== '')
+            .map(([key, value]) => {
+              const filterLabels = {
+                fileNumber: 'File Number',
+                guarantorName: 'Guarantor Name',
+                guaranteeName: 'Guarantee Name',
+                lga: 'LGA',
+                district: 'District',
+                location: 'Location',
+                plotNumber: 'Plot Number',
+                planNumber: 'Plan Number',
+                size: 'Size',
+                caveat: 'Caveat'
+              };
+              return `${filterLabels[key]}: ${value}`;
+            })
+            .join(', ');
+          
+          document.getElementById('active-filters-summary').textContent = activeFilters;
           
           renderSearchResults();
         }
@@ -861,9 +853,10 @@
         const transactionType = toProperCase(getMappedValue(item, 'transactionType'));
         const grantor = toProperCase(getMappedValue(item, 'grantor'));
         const grantee = toProperCase(getMappedValue(item, 'grantee'));
-        const serialNo = getMappedValue(item, 'serialNo');
-        const pageNo = getMappedValue(item, 'pageNo');
-        const volumeNo = getMappedValue(item, 'volumeNo');
+        
+        // Use regNo for property_records table
+        const regNumber = item.regNo || 'N/A';
+        
         const size = getMappedValue(item, 'size');
         const comments = toProperCase(getMappedValue(item, 'comments'));
         
@@ -875,7 +868,7 @@
           <td>${transactionType}</td>
           <td>${grantor}</td>
           <td>${grantee}</td>
-          <td>${cleanNumericValue(serialNo)}/${cleanNumericValue(pageNo)}/${cleanNumericValue(volumeNo)}</td>
+          <td>${regNumber}</td>
           <td>${size}</td>
           <td class="${item.caveat === 'Yes' ? 'text-red-600 font-medium' : ''}">${item.caveat || 'N/A'}</td>
           <td>${comments}</td>
@@ -918,7 +911,12 @@
         const transactionType = toProperCase(getMappedValue(registration, 'transactionType'));
         const grantor = toProperCase(getMappedValue(registration, 'grantor'));
         const grantee = toProperCase(getMappedValue(registration, 'grantee'));
-        const regNumber = getMappedValue(registration, 'serialNo');
+        
+        // Use particularsRegistrationNumber for registered_instruments table
+        const regNumber = registration.particularsRegistrationNumber || 'N/A';
+        
+        // Get user name from user fields (assuming user data is joined)
+        const registeredBy = registration.user_name || registration.first_name || registration.created_by_name || registration.updated_by_name || 'N/A';
         
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -929,7 +927,7 @@
           <td>${transactionType}</td>
           <td>${regNumber}</td>
           <td>${grantor} to ${grantee}</td>
-          <td>${toProperCase(registration.created_by || registration.updated_by || 'N/A')}</td>
+          <td>${toProperCase(registeredBy)}</td>
           <td>
             <div class="flex space-x-2">
               <button class="edit-action">
@@ -964,16 +962,15 @@
     
     if (cofoRecords.length > 0) {
       cofoRecords.forEach(cofo => {
-        const serialNo = getMappedValue(cofo, 'serialNo');
-        const pageNo = getMappedValue(cofo, 'pageNo');
-        const volumeNo = getMappedValue(cofo, 'volumeNo');
+        // Use regNo for CofO table
+        const regNumber = cofo.regNo || 'N/A';
         const date = getMappedValue(cofo, 'date');
         const grantee = toProperCase(getMappedValue(cofo, 'grantee'));
         const landUse = toProperCase(getMappedValue(cofo, 'landUse'));
         
         const row = document.createElement('tr');
         row.innerHTML = `
-          <td>${cleanNumericValue(serialNo)}/${cleanNumericValue(pageNo)}/${cleanNumericValue(volumeNo)}</td>
+          <td>${regNumber}</td>
           <td>
             <div>${date}</div>
           </td>

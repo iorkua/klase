@@ -173,8 +173,8 @@
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead> 
                             <tr class="text-xs">
-                               
-                                <th class="table-header text-green-500">File No</th>
+                                <th class="table-header text-green-500">ST FileNo</th>
+                                <th class="table-header text-green-500">MLSFileNo</th>
                                 <th class="table-header text-green-500">Property</th>
                                 <th class="table-header text-green-500">Type</th>
                                 <th class="table-header text-green-500">Land Use</th>
@@ -195,6 +195,7 @@
                             @foreach ($PrimaryApplications as $PrimaryApplication)
                                  <tr class="text-xs">
                                     
+                                    <td class="table-cell">{{ $PrimaryApplication->np_fileno }}</td>
                                     <td class="table-cell">{{ $PrimaryApplication->fileno }}</td>
                                      
                                     <td class="table-cell">

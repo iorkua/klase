@@ -207,14 +207,127 @@
       animation: spin 1s linear infinite;
     }
 
-    /* Hide scrollbar for Chrome, Safari and Opera */
+    /* Hide scrollbar for Chrome Safari and Opera */
     .no-scrollbar::-webkit-scrollbar {
       display: none;
     }
 
-    /* Hide scrollbar for IE, Edge and Firefox */
+    /* Hide scrollbar for IE Edge and Firefox */
     .no-scrollbar {
       -ms-overflow-style: none;  /* IE and Edge */
       scrollbar-width: none;  /* Firefox */
+    }
+
+    /* Dialog/Modal styles */
+    .dialog-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .dialog-content {
+      background-color: white;
+      border-radius: 0.5rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      display: flex;
+      flex-direction: column;
+      max-height: 90vh;
+      overflow: hidden;
+    }
+
+    .dialog-fullscreen {
+      width: 100vw;
+      height: 100vh;
+      max-width: none;
+      max-height: none;
+      border-radius: 0;
+      margin: 0;
+    }
+
+    /* Enhanced document viewer styles */
+    #document-viewer-container {
+      position: relative;
+      background: #f8fafc;
+    }
+
+    #document-viewer {
+      transition: transform 0.2s ease;
+      transform-origin: center center;
+    }
+
+    #document-viewer img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    #document-viewer iframe {
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Quick type buttons */
+    .quick-type-btn {
+      transition: all 0.2s ease;
+      border: 1px solid #e5e7eb;
+    }
+
+    .quick-type-btn:hover {
+      background-color: #f3f4f6;
+      border-color: #d1d5db;
+    }
+
+    .quick-type-btn.active {
+      background-color: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    /* Success button styles */
+    .btn-success {
+      background-color: #10b981;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background-color: #059669;
+    }
+
+    .btn-success:disabled {
+      background-color: #d1d5db;
+      color: #9ca3af;
+    }
+
+    /* Animation styles */
+    .animate-fade-in {
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1280px) {
+      .dialog-fullscreen .grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .xl\:col-span-2 {
+        grid-column: span 1;
+      }
     }
   </style>

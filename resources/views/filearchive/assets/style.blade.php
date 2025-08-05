@@ -163,6 +163,7 @@
     align-items: center;
     justify-content: center;
     z-index: 50;
+    padding: 1rem;
   }
 
   .dialog-content {
@@ -173,6 +174,34 @@
     max-width: 900px;
     max-height: 90vh;
     overflow-y: auto;
+    margin: auto;
+    position: relative;
+  }
+
+  /* Responsive modal adjustments */
+  @media (max-width: 768px) {
+    .dialog-backdrop {
+      padding: 0.5rem;
+    }
+    
+    .dialog-content {
+      max-width: 100%;
+      max-height: 95vh;
+      margin: 0;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .dialog-backdrop {
+      padding: 0.25rem;
+      align-items: flex-start;
+      padding-top: 2rem;
+    }
+    
+    .dialog-content {
+      max-height: calc(100vh - 2rem);
+      width: 100%;
+    }
   }
 
   /* Mark style for search highlighting */

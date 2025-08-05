@@ -14,7 +14,7 @@ class OnPremiseController extends Controller
         //Log::info('File Tracker accessed', ['user_id' => auth()->id()]);
         return view('onpremise.index', compact('PageTitle', 'PageDescription'));
     }
-
+ 
 
     
 }

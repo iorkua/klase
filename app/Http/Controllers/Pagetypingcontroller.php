@@ -24,6 +24,7 @@ class PageTypingController extends Controller
             
             // Get file_indexing_id from request if provided
             $fileIndexingId = $request->get('file_indexing_id');
+            $selectedFileIndexing = null;
             
             if ($fileIndexingId) {
                 // Load the page typing interface for specific file
@@ -42,19 +43,59 @@ class PageTypingController extends Controller
                         ->with('error', 'Please upload scanned documents first before page typing');
                 }
                 
-                // Return the page typing interface view
+                // Update the page title to reflect we're in typing mode
                 $PageTitle = 'Page Typing - ' . $selectedFileIndexing->file_title;
                 $PageDescription = 'Classify and label document pages';
-                
-                return view('pagetyping.typing', compact(
-                    'PageTitle', 
-                    'PageDescription', 
-                    'selectedFileIndexing'
-                ));
             }
             
-            // Return the dashboard view (no file_indexing_id parameter)
-            return view('pagetyping.index', compact('PageTitle', 'PageDescription'));
+            // Load dashboard data
+            $stats = [
+                'pending_count' => $this->getPendingPageTypingCount(),
+                'in_progress_count' => $this->getInProgressPageTypingCount(),
+                'completed_count' => $this->getCompletedPageTypingCount(),
+            ];
+
+            // Load pending files (files with scannings but no page typings)
+            $pendingFiles = FileIndexing::on('sqlsrv')
+                ->with(['mainApplication', 'scannings'])
+                ->whereHas('scannings')
+                ->whereDoesntHave('pagetypings')
+                ->orderBy('created_at', 'desc')
+                ->limit(20)
+                ->get();
+
+            // Load in-progress files (files with some page typings but not all pages typed)
+            $inProgressFiles = FileIndexing::on('sqlsrv')
+                ->with(['mainApplication', 'scannings', 'pagetypings'])
+                ->whereHas('pagetypings')
+                ->whereHas('scannings', function ($query) {
+                    $query->where('status', '!=', 'typed');
+                })
+                ->orderBy('updated_at', 'desc')
+                ->limit(20)
+                ->get();
+
+            // Load completed files (files where all pages are typed)
+            $completedFiles = FileIndexing::on('sqlsrv')
+                ->with(['mainApplication', 'scannings', 'pagetypings.typedBy'])
+                ->whereHas('pagetypings')
+                ->whereDoesntHave('scannings', function ($query) {
+                    $query->where('status', '!=', 'typed');
+                })
+                ->orderBy('updated_at', 'desc')
+                ->limit(20)
+                ->get();
+
+            // Return the dashboard view with selectedFileIndexing if provided
+            return view('pagetyping.index', compact(
+                'PageTitle', 
+                'PageDescription', 
+                'stats', 
+                'pendingFiles', 
+                'inProgressFiles', 
+                'completedFiles',
+                'selectedFileIndexing'
+            ));
         } catch (Exception $e) {
             Log::error('Error loading page typing dashboard', [
                 'error' => $e->getMessage()
@@ -62,7 +103,8 @@ class PageTypingController extends Controller
             
             return view('pagetyping.index', [
                 'PageTitle' => 'Page Typing',
-                'PageDescription' => 'Categorize and digitize file content'
+                'PageDescription' => 'Categorize and digitize file content',
+                'selectedFileIndexing' => null
             ]);
         }
     }
@@ -320,6 +362,27 @@ class PageTypingController extends Controller
     public function store(Request $request)
     {
         try {
+            // Check if this is a completion request
+            if ($request->has('action') && $request->action === 'complete') {
+                $fileIndexingId = $request->file_indexing_id;
+                
+                // Update all scannings for this file to 'typed' status
+                $fileIndexing = FileIndexing::on('sqlsrv')->find($fileIndexingId);
+                if ($fileIndexing) {
+                    $fileIndexing->scannings()->update(['status' => 'typed']);
+                    
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Page typing completed successfully!'
+                    ]);
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'File not found'
+                    ], 404);
+                }
+            }
+            
             $validator = Validator::make($request->all(), [
                 'file_indexing_id' => 'required|integer|exists:sqlsrv.file_indexings,id',
                 'page_types' => 'required|array|min:1',

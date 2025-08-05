@@ -200,6 +200,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 content.classList.remove('active');
             }
         });
+
+        // Update New File Index button state based on current tab
+        updateNewFileIndexButtonForTab(tabName);
     }
     
     function renderPendingFiles() {
@@ -317,6 +320,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 digitalIndexTab.style.pointerEvents = 'auto';
                 digitalIndexTab.title = '';
             }
+        }
+    }
+
+    function updateNewFileIndexButtonForTab(tabName) {
+        if (newFileIndexBtn) {
+            if (tabName === 'indexed') {
+                // Disable the "New File Index" button when on Indexed Files tab
+                newFileIndexBtn.disabled = true;
+                newFileIndexBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                newFileIndexBtn.title = 'Cannot create new file index while viewing indexed files';
+            } else if (selectedFiles.length === 0) {
+                // Enable the button if not on indexed tab and no files are selected
+                newFileIndexBtn.disabled = false;
+                newFileIndexBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                newFileIndexBtn.title = '';
+            }
+            // If files are selected, the updateNewFileIndexButton() function will handle the state
         }
     }
 

@@ -54,6 +54,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_verified_at' => 'datetime',
     ];
 
+    protected $appends = ['name'];
+
     public function canImpersonate()
     {
         // Example: Only admins can impersonate others
@@ -179,3 +181,4 @@ class User extends Authenticatable implements MustVerifyEmail
         'company settings',
     ];
 }
+

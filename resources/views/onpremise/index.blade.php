@@ -11,7 +11,8 @@
     <div class="flex-1 overflow-auto">
         <!-- Header -->
         @include('admin.header')
-        <!-- Dashboard Content --<div class="p-6">
+  
+          <div class="p-6">
              
     <!-- Include Print.js library for enhanced printing -->
     <script src="https://printjs-4de6.kxcdn.com/print.min.js"></script>
@@ -501,7 +502,7 @@
               </svg>
               <h3 class="text-lg font-semibold">On-Premise - Pay-per-Search</h3>
             </div>
-              <p class="text-sm text-gray-500 mb-4">Find legal records for Official purposes</p>
+            <p class="text-sm text-gray-500 mb-4">Find legal records for Official purposes</p>
             <p class="text-sm text-gray-500 mb-4">
               Conduct legal searches for Official purposes with extended access to records.
             </p>  
@@ -993,10 +994,21 @@
               </button>
             </div>
 
-            <!-- KANGIS File No. Filter -->
+            <!-- Guarantor Name Filter -->
             <div class="flex items-center gap-2 mb-2">
-              <span class="badge badge-outline">KANGIS File No.</span>
-              <input type="text" id="kangisFileNo" placeholder="Enter KANGIS file number" class="flex-grow px-3 py-2 border border-gray-300 rounded-md">
+              <span class="badge badge-outline">Guarantor Name</span>
+              <input type="text" id="guarantorName" placeholder="Enter guarantor name" class="flex-grow px-3 py-2 border border-gray-300 rounded-md">
+              <button class="h-8 w-8 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- Guarantee Name Filter -->
+            <div class="flex items-center gap-2 mb-2">
+              <span class="badge badge-outline">Guarantee Name</span>
+              <input type="text" id="guaranteeName" placeholder="Enter guarantee name" class="flex-grow px-3 py-2 border border-gray-300 rounded-md">
               <button class="h-8 w-8 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -1045,7 +1057,7 @@
           <!-- Collapsed Filters (initially hidden) -->
           <div id="collapsed-filters" class="hidden flex items-center gap-2 mb-2">
             <div class="text-sm text-gray-500">
-              Filtered by: <span id="active-filters-summary">File Number, KANGIS File No.</span>
+              Filtered by: <span id="active-filters-summary">File Number, Guarantor Name, Guarantee Name</span>
             </div>
             <button id="reset-search-collapsed-btn" class="ml-auto inline-flex items-center gap-1 px-3 py-1 text-sm bg-white border border-gray-300 rounded-md">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
