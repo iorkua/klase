@@ -629,8 +629,10 @@
               <table class="w-full min-w-[1000px]">
                 <thead class="bg-gray-100">
                   <tr>
-                    <th>File Number</th>
-                    <th>KANGIS File No.</th>
+                    <th>NP FileNO</th>
+                    <th>Unit Filno</th>
+                    <th>MLS File No</th>
+                    <th>KANGIS File No</th>
                     <th>New KANGIS</th>
                     <th>Guarantor</th>
                     <th>Guarantee</th>
@@ -687,3 +689,98 @@
    
 @include('legal_search.js')
 @endsection
+
+
+
+<script>
+// Enhanced landscape printing function
+function printLandscapeReport() {
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank', 'width=1200,height=800');
+    
+    // Get the print content
+    const printContent = document.querySelector('.print-div').innerHTML;
+    
+    // Landscape-specific styles
+    const landscapeStyles = 
+        <style>
+            @media print {
+                @page {
+                    size: A4 landscape !important;
+                    margin: 8mm 12mm !important;
+                    orientation: landscape !important;
+                }
+                
+                html, body {
+                    width: 297mm !important;
+                    height: 210mm !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+                
+                .print-div {
+                    width: 100% !important;
+                    max-width: 297mm !important;
+                    min-height: 210mm !important;
+                }
+                
+                .print-div table {
+                    width: 100% !important;
+                    font-size: 8pt !important;
+                }
+                
+                .print-div th,
+                .print-div td {
+                    padding: 2px 3px !important;
+                    font-size: 7pt !important;
+                    line-height: 1.1 !important;
+                }
+            }
+        </style>
+    ;
+    
+    // Write the complete HTML with landscape styles
+    printWindow.document.write(
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Legal Search Report - Landscape</title>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+             + landscapeStyles + 
+        </head>
+        <body>
+            <div class="print-div">
+                 + printContent + 
+            </div>
+        </body>
+        </html>
+    );
+    
+    printWindow.document.close();
+    
+    // Wait for content to load then print
+    printWindow.onload = function() {
+        setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+        }, 500);
+    };
+}
+
+// Override the existing print button click
+document.addEventListener('DOMContentLoaded', function() {
+    const printBtn = document.getElementById('print-report-btn');
+    if (printBtn) {
+        printBtn.onclick = function(e) {
+            e.preventDefault();
+            printLandscapeReport();
+        };
+    }
+});
+</script>
+
+
+
+

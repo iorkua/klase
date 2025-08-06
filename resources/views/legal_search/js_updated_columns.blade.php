@@ -1,4 +1,4 @@
-// Fixed JavaScript for Legal Search - Pattern Recognition Fix: 2025-01-08 23:30:00
+// Fixed JavaScript for Legal Search - Updated: 2025-01-08 22:00:00
 <script>
   // Mock data for the application
   const monthlyData = [
@@ -388,12 +388,18 @@
           ...data.cofo
         ];
 
+        // Sort results to show old records first (ascending by date)
+        searchResults.sort((a, b) => {
+          const dateA = new Date(a.transaction_date || a.deeds_date || a.certificateDate || a.approval_date || '1900-01-01');
+          const dateB = new Date(b.transaction_date || b.deeds_date || b.certificateDate || b.approval_date || '1900-01-01');
+          return dateA - dateB; // Ascending order (old first)
+        });
+
         console.log('=== HIERARCHICAL SEARCH RESULTS ===');
         console.log('Property records:', data.property_records.length);
         console.log('Registered instruments:', data.registered_instruments.length);
         console.log('CofO records:', data.cofo.length);
         console.log('Total combined results:', searchResults.length);
-        console.log('Sample results:', searchResults.slice(0, 3));
 
         // Update results count
         resultsCount.textContent = searchResults.length;
@@ -436,62 +442,65 @@
     });
   };
 
-  // Helper function to remove .0 from values
-  const cleanNumericValue = (value) => {
-    if (!value || value === 'N/A') return value;
-    
-    // Convert to string if it's a number
-    let stringValue = value.toString();
-    
-    // Remove .0 from the end if present
-    if (stringValue.endsWith('.0')) {
-      stringValue = stringValue.replace('.0', '');
-    }
-    
-    return stringValue;
-  };
-
-  // Helper function to identify file number type by pattern
-  const identifyFileNumberType = (value) => {
+  // Helper function to identify and categorize file numbers based on format patterns
+  const identifyFileNumber = (value) => {
     if (!value || value === 'N/A' || value === null || value === undefined) {
-      return 'unknown';
+      return { type: 'unknown', value: 'N/A' };
     }
     
     const cleanValue = cleanNumericValue(value.toString().trim());
     
-    // ST File Number patterns: ST-RES-2024-01-001, ST-COM-2024-02-002, ST-IND-2024-03-009
-    if (/^ST-(RES|COM|IND|AG)-\d{4}-\d+-\d+$/i.test(cleanValue)) {
-      return 'st';
-    }
-    
-    // Parent File Number (NP) patterns: ST-RES-2024-01, ST-COM-2024-02, ST-IND-2024-03
-    if (/^ST-(RES|COM|IND|AG)-\d{4}-\d+$/i.test(cleanValue)) {
-      return 'parent';
-    }
-    
-    // MLS File Number patterns: COM-2022-572, RES-2023-145, CON-COM-2024-089, CON-IND-42154, etc.
-    if (/^(COM|RES|IND|AG|CON-COM|CON-RES|CON-AG|CON-IND)-\d{4}-\d+$/i.test(cleanValue) ||
-        /^(COM|RES|IND|AG|CON-COM|CON-RES|CON-AG|CON-IND)-\d+$/i.test(cleanValue)) {
-      return 'mls';
+    // MLS File Number patterns: COM-2022-572, RES-2023-145, CON-COM-2024-089, etc.
+    if (/^(COM|RES|IND|AG|CON-COM|CON-RES|CON-AG|CON-IND)-\d{4}-\d+$/i.test(cleanValue)) {
+      return { type: 'mls', value: cleanValue };
     }
     
     // KANGIS File Number patterns: KNML 00001, MNKL 02500, MLKN 00567, KNGP 01234
     if (/^[A-Z]{4}\s?\d{5}$/i.test(cleanValue)) {
-      return 'kangis';
+      return { type: 'kangis', value: cleanValue };
     }
     
     // New KANGIS File Number patterns: KN1586, KN0001, KN2345
     if (/^KN\d{4}$/i.test(cleanValue)) {
-      return 'new_kangis';
+      return { type: 'new_kangis', value: cleanValue };
     }
     
-    return 'unknown';
+    // Parent File Number (NP) patterns: ST-RES-2024-01, ST-COM-2024-02, ST-IND-2024-03
+    if (/^ST-(RES|COM|IND|AG)-\d{4}-\d+$/i.test(cleanValue)) {
+      return { type: 'parent', value: cleanValue };
+    }
+    
+    // ST File Number patterns: ST-RES-2024-01-001, ST-COM-2024-02-002, ST-IND-2024-03-009
+    if (/^ST-(RES|COM|IND|AG)-\d{4}-\d+-\d+$/i.test(cleanValue)) {
+      return { type: 'st', value: cleanValue };
+    }
+    
+    // Fallback: try to guess based on content patterns
+    if (/^ST-/i.test(cleanValue)) {
+      if (cleanValue.split('-').length >= 5) {
+        return { type: 'st', value: cleanValue };
+      } else {
+        return { type: 'parent', value: cleanValue };
+      }
+    }
+    
+    if (/^(COM|RES|IND|AG|CON-)/i.test(cleanValue)) {
+      return { type: 'mls', value: cleanValue };
+    }
+    
+    if (/^KN\d/i.test(cleanValue)) {
+      return { type: 'new_kangis', value: cleanValue };
+    }
+    
+    if (/^[A-Z]{4}/i.test(cleanValue)) {
+      return { type: 'kangis', value: cleanValue };
+    }
+    
+    return { type: 'unknown', value: cleanValue };
   };
 
-  // Helper function to extract correct file numbers from a file record - UPDATED WITH PATTERN RECOGNITION
+  // Helper function to extract correct file numbers from a file record
   const extractFileNumbers = (file) => {
-    console.log('Extracting file numbers from:', file);
-    
     const result = {
       st: 'N/A',
       parent: 'N/A', 
@@ -500,31 +509,69 @@
       new_kangis: 'N/A'
     };
     
-    // Collect all possible file number values from the record
-    const allPossibleValues = [
-      file.STFileNo, file.StFileNo, file.st_file_no, file.sub_fileno,
-      file.ParentFileNo, file.parent_fileNo, file.np_fileno, file.mother_np_fileno,
-      file.MLSFileNo, file.mlsFNo, file.fileNo, file.fileno, file.mother_fileno,
-      file.KANGISFileNo, file.kangisFileNo, file.KAGISFileNO,
-      file.NewKANGISFileNo, file.NewKANGISFileno, file.new_kangis_file_no
-    ].filter(val => val && val !== 'N/A' && val !== null && val !== undefined);
-    
-    console.log('All possible file number values:', allPossibleValues);
-    
-    // Categorize each value by its pattern
-    allPossibleValues.forEach(value => {
-      const cleanValue = cleanNumericValue(value);
-      const type = identifyFileNumberType(cleanValue);
-      
-      console.log(`Value: ${cleanValue}, Type: ${type}`);
-      
-      // Only assign if we haven't found a value for this type yet
-      if (type !== 'unknown' && result[type] === 'N/A') {
-        result[type] = cleanValue;
+    // Extract ST File Number
+    const stValues = [file.STFileNo, file.StFileNo, file.st_file_no, file.sub_fileno];
+    for (const val of stValues) {
+      if (val && val !== 'N/A' && val !== null && val !== undefined && val !== '') {
+        const identified = identifyFileNumber(val);
+        if (identified.type === 'st') {
+          result.st = identified.value;
+          break;
+        }
       }
-    });
+    }
     
-    console.log('Final extracted file numbers:', result);
+    // Extract Parent File Number - prioritize backend computed fields
+    const parentValues = [
+      file.ParentFileNo, file.parent_fileNo, file.np_fileno, 
+      file.mother_np_fileno, file.mother_fileno
+    ];
+    for (const val of parentValues) {
+      if (val && val !== 'N/A' && val !== null && val !== undefined && val !== '') {
+        const identified = identifyFileNumber(val);
+        if (identified.type === 'parent' || identified.type === 'st') {
+          result.parent = identified.value;
+          break;
+        }
+      }
+    }
+    
+    // Extract MLS File Number
+    const mlsValues = [file.MLSFileNo, file.mlsFNo, file.fileNo, file.fileno];
+    for (const val of mlsValues) {
+      if (val && val !== 'N/A' && val !== null && val !== undefined && val !== '') {
+        const identified = identifyFileNumber(val);
+        if (identified.type === 'mls') {
+          result.mls = identified.value;
+          break;
+        }
+      }
+    }
+    
+    // Extract KANGIS File Number
+    const kangisValues = [file.KANGISFileNo, file.kangisFileNo, file.KAGISFileNO];
+    for (const val of kangisValues) {
+      if (val && val !== 'N/A' && val !== null && val !== undefined && val !== '') {
+        const identified = identifyFileNumber(val);
+        if (identified.type === 'kangis') {
+          result.kangis = identified.value;
+          break;
+        }
+      }
+    }
+    
+    // Extract New KANGIS File Number
+    const newKangisValues = [file.NewKANGISFileNo, file.NewKANGISFileno, file.new_kangis_file_no];
+    for (const val of newKangisValues) {
+      if (val && val !== 'N/A' && val !== null && val !== undefined && val !== '') {
+        const identified = identifyFileNumber(val);
+        if (identified.type === 'new_kangis') {
+          result.new_kangis = identified.value;
+          break;
+        }
+      }
+    }
+    
     return result;
   };
 
@@ -541,20 +588,19 @@
     }
   };
 
-  // Render table results - UPDATED FOR NEW FILE NUMBER STRUCTURE AND COLUMN ORDER
+  // Render table results - UPDATED FOR NEW COLUMN ORDER (NP FileNO first, then Unit Filno)
   const renderTableResults = () => {
     tableResultsBody.innerHTML = '';
     
     searchResults.forEach((file, index) => {
-      const fileNumbers = extractFileNumbers(file);
       const row = document.createElement('tr');
       row.className = 'hover:bg-gray-50 transition-colors';
       row.innerHTML = `
-        <td class="p-2 text-sm">${fileNumbers.parent}</td>
-        <td class="p-2 text-sm">${fileNumbers.st}</td>
-        <td class="p-2 text-sm">${fileNumbers.mls}</td>
-        <td class="p-2 text-sm">${fileNumbers.kangis}</td>
-        <td class="p-2 text-sm">${fileNumbers.new_kangis}</td>
+        <td class="p-2 text-sm">${extractFileNumbers(file).parent}</td>
+        <td class="p-2 text-sm">${extractFileNumbers(file).st}</td>
+        <td class="p-2 text-sm">${extractFileNumbers(file).mls}</td>
+        <td class="p-2 text-sm">${extractFileNumbers(file).kangis}</td>
+        <td class="p-2 text-sm">${extractFileNumbers(file).new_kangis}</td>
         <td class="p-2 text-sm">${toProperCase(getMappedValue(file, 'grantor'))}</td>
         <td class="p-2 text-sm">${toProperCase(getMappedValue(file, 'grantee'))}</td>
         <td class="p-2 text-sm">${toProperCase(getMappedValue(file, 'lga'))}</td>
@@ -718,7 +764,6 @@
     cardResults.innerHTML = '';
     
     searchResults.forEach((file, index) => {
-      const fileNumbers = extractFileNumbers(file);
       const card = document.createElement('div');
       card.className = 'bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer';
       card.setAttribute('data-index', index);
@@ -730,10 +775,10 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 21h7a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v11m0 5l4.879-4.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242z" />
                 </svg>
-                ${fileNumbers.mls}
+                ${file.MLSFileNo || file.mlsFNo || file.fileNo || file.fileno || 'N/A'}
               </div>
               <div class="text-sm text-gray-500 mt-1">
-                NP: ${fileNumbers.parent} | Unit: ${fileNumbers.st} | KANGIS: ${fileNumbers.kangis} | New KANGIS: ${fileNumbers.new_kangis}
+                NP FileNO: ${extractFileNumbers(file).parent} | Unit Filno: ${extractFileNumbers(file).st} | KANGIS: ${extractFileNumbers(file).kangis} | New KANGIS: ${extractFileNumbers(file).new_kangis}
               </div>
             </div>
           </div>
@@ -762,16 +807,25 @@
     
     console.log('Rendering file history for:', selectedFile);
     
-    const fileNumbers = extractFileNumbers(selectedFile);
-    
     // Update file reference in subtitle (with .0 fix)
-    let fileRef = fileNumbers.mls !== 'N/A' ? fileNumbers.mls : (selectedFile.mlsFNo || selectedFile.MLSFileNo || selectedFile.fileNo || selectedFile.fileno || 'N/A');
+    let fileRef = selectedFile.mlsFNo || selectedFile.MLSFileNo || selectedFile.fileNo || selectedFile.fileno || 'N/A';
+    if (typeof fileRef === 'number' && fileRef % 1 === 0) {
+      fileRef = Math.floor(fileRef).toString();
+    } else if (typeof fileRef === 'string' && fileRef.endsWith('.0')) {
+      fileRef = fileRef.replace('.0', '');
+    }
     document.getElementById('file-reference').textContent = fileRef;
     
     // Update file information fields (with .0 fix and better field mapping)
-    document.getElementById('file-number-value').textContent = fileNumbers.mls;
-    document.getElementById('kangis-file-number-value').textContent = fileNumbers.kangis;
-    document.getElementById('new-kangis-file-number-value').textContent = fileNumbers.new_kangis;
+    let fileNumber = selectedFile.mlsFNo || selectedFile.MLSFileNo || selectedFile.fileNo || selectedFile.fileno || 'N/A';
+    if (typeof fileNumber === 'number' && fileNumber % 1 === 0) {
+      fileNumber = Math.floor(fileNumber).toString();
+    } else if (typeof fileNumber === 'string' && fileNumber.endsWith('.0')) {
+      fileNumber = fileNumber.replace('.0', '');
+    }
+    document.getElementById('file-number-value').textContent = fileNumber;
+    document.getElementById('kangis-file-number-value').textContent = selectedFile.kangisFileNo || selectedFile.KAGISFileNO || 'N/A';
+    document.getElementById('new-kangis-file-number-value').textContent = selectedFile.NewKANGISFileno || selectedFile.NewKANGISFileNo || 'N/A';
     
     // Enhanced guarantor/guarantee mapping for mother and sub applications
     const guarantorValue = selectedFile.owner_fullname || selectedFile.mother_owner_fullname || 
@@ -837,6 +891,21 @@
     return searchResults;
   };
 
+  // Helper function to remove .0 from values
+  const cleanNumericValue = (value) => {
+    if (!value || value === 'N/A') return value;
+    
+    // Convert to string if it's a number
+    let stringValue = value.toString();
+    
+    // Remove .0 from the end if present
+    if (stringValue.endsWith('.0')) {
+      stringValue = stringValue.replace('.0', '');
+    }
+    
+    return stringValue;
+  };
+
   // Render all transaction tables - UPDATED FOR HIERARCHICAL SEARCH
   const renderTransactionTables = () => {
     // Get related transactions for the selected file
@@ -846,15 +915,21 @@
     
     // Separate records by their record_type field (added by backend)
     const propertyRecords = relatedTransactions.filter(item => 
-      item.record_type === 'property_records'
+      !item.hasOwnProperty('record_type') || 
+      (item.hasOwnProperty('mlsFNo') && item.hasOwnProperty('serialNo') && 
+       !item.hasOwnProperty('instrument_type') && !item.hasOwnProperty('MLSFileNo'))
     );
     
     const instrumentRecords = relatedTransactions.filter(item => 
-      item.record_type === 'registered_instruments'
+      item.record_type === 'ST_Instrument' || item.record_type === 'Other_Instrument' ||
+      item.hasOwnProperty('instrument_type') || item.hasOwnProperty('MLSFileNo') || 
+      item.hasOwnProperty('KAGISFileNO') || item.hasOwnProperty('rootRegistrationNumber')
     );
     
     const cofoRecords = relatedTransactions.filter(item => 
-      item.record_type === 'CofO'
+      item.record_type === 'CofO' ||
+      ((item.hasOwnProperty('mlsFNo') || item.hasOwnProperty('kangisFileNo')) && 
+       !item.hasOwnProperty('serialNo') && !item.hasOwnProperty('instrument_type'))
     );
     
     console.log('Property records:', propertyRecords.length);
@@ -919,56 +994,38 @@
       `;
     }
     
-    // Instrument Registration (only registered_instruments table) - ENHANCED FOR ST FRAGMENTATION
+    // Instrument Registration (only registered_instruments table) - FIXED REGISTRATION PARTICULARS
     const instrumentRegistrationTable = document.getElementById('instrument-registration-table');
     instrumentRegistrationTable.innerHTML = '';
     
     if (instrumentRecords.length > 0) {
-      console.log('=== RENDERING INSTRUMENT RECORDS ===');
-      console.log('Total instrument records:', instrumentRecords.length);
-      
-      instrumentRecords.forEach((registration, index) => {
-        console.log(`Processing instrument record ${index + 1}:`, registration);
-        
+      instrumentRecords.forEach(registration => {
         const date = getMappedValue(registration, 'date');
         const time = getMappedValue(registration, 'time');
         const transactionType = toProperCase(getMappedValue(registration, 'transactionType'));
         const grantor = toProperCase(getMappedValue(registration, 'grantor'));
         const grantee = toProperCase(getMappedValue(registration, 'grantee'));
         
-        // Fix Registration Particulars to show full format (Serial/Page/Volume)
-        const serialNo = getMappedValue(registration, 'serialNo');
-        const pageNo = getMappedValue(registration, 'pageNo');
-        const volumeNo = getMappedValue(registration, 'volumeNo');
-        const regNumber = `${cleanNumericValue(serialNo)}/${cleanNumericValue(pageNo)}/${cleanNumericValue(volumeNo)}`;
-        
-        // Enhanced logging for ST Fragmentation records
-        if (transactionType.toLowerCase().includes('fragmentation') || 
-            transactionType.toLowerCase().includes('st fragmentation')) {
-          console.log('*** ST FRAGMENTATION RECORD FOUND ***');
-          console.log('Transaction Type:', transactionType);
-          console.log('Date:', date);
-          console.log('Grantor:', grantor);
-          console.log('Grantee:', grantee);
-          console.log('Registration Number:', regNumber);
+        // FIXED: Get Registration Particulars properly
+        let regParticulars = 'N/A';
+        if (registration.volume_no && registration.page_no && registration.serial_no) {
+          regParticulars = `${cleanNumericValue(registration.volume_no)}/${cleanNumericValue(registration.page_no)}/${cleanNumericValue(registration.serial_no)}`;
+        } else if (registration.serialNo && registration.pageNo && registration.volumeNo) {
+          regParticulars = `${cleanNumericValue(registration.serialNo)}/${cleanNumericValue(registration.pageNo)}/${cleanNumericValue(registration.volumeNo)}`;
+        } else if (registration.rootRegistrationNumber) {
+          regParticulars = registration.rootRegistrationNumber;
+        } else if (registration.particularsRegistrationNumber) {
+          regParticulars = registration.particularsRegistrationNumber;
         }
         
         const row = document.createElement('tr');
-        // Add special styling for ST Fragmentation records
-        const isSTFragmentation = transactionType.toLowerCase().includes('fragmentation') || 
-                                 transactionType.toLowerCase().includes('st fragmentation');
-        
-        if (isSTFragmentation) {
-          row.className = 'bg-yellow-50 border-l-4 border-l-yellow-400';
-        }
-        
         row.innerHTML = `
           <td>
             <div>${date}</div>
             <div class="text-xs text-gray-600">${time}</div>
           </td>
-          <td class="${isSTFragmentation ? 'font-semibold text-yellow-800' : ''}">${transactionType}</td>
-          <td>${regNumber}</td>
+          <td>${transactionType}</td>
+          <td>${regParticulars}</td>
           <td>${grantor} to ${grantee}</td>
           <td>${toProperCase(registration.created_by || registration.updated_by || 'N/A')}</td>
           <td>
@@ -991,16 +1048,6 @@
         `;
         instrumentRegistrationTable.appendChild(row);
       });
-      
-      // Log summary of ST Fragmentation records found
-      const stFragmentationCount = instrumentRecords.filter(record => {
-        const transactionType = getMappedValue(record, 'transactionType').toLowerCase();
-        return transactionType.includes('fragmentation') || transactionType.includes('st fragmentation');
-      }).length;
-      
-      console.log(`=== ST FRAGMENTATION SUMMARY ===`);
-      console.log(`Total ST Fragmentation records displayed: ${stFragmentationCount}`);
-      
     } else {
       instrumentRegistrationTable.innerHTML = `
         <tr>
@@ -1095,7 +1142,7 @@
     return `${hours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
   };
 
-  // Render legal search report
+  // Render legal search report - UPDATED WITH CORRECT FILE NUMBERS
   const renderLegalSearchReport = () => {
     if (!selectedFile) return;
 
@@ -1142,39 +1189,13 @@
       });
     });
 
-    // Sort by date (oldest first)
+    // Sort by date (oldest first for report)
     allTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
 
+    // Update the report content with UPDATED FILE NUMBERS
     const fileNumbers = extractFileNumbers(selectedFile);
-
-    // Determine if search was made with primary file numbers
-    const searchQuery = document.getElementById('fileNumber').value.trim();
-    const isPrimaryFileSearch = searchQuery && (
-      // Check if search query matches primary file number patterns
-      identifyFileNumberType(searchQuery) === 'parent' ||  // NP FileNO pattern
-      identifyFileNumberType(searchQuery) === 'mls' ||     // MLS File No pattern
-      identifyFileNumberType(searchQuery) === 'kangis' ||  // KANGIS File No pattern
-      identifyFileNumberType(searchQuery) === 'new_kangis' // New KANGIS pattern
-    );
-
-    // Update the report content
-    document.getElementById('report-file-reference').textContent = fileNumbers.mls;
-    
-    // Build file numbers display - hide Unit Filno for primary file searches
-    let fileNumbersDisplay = `NP FileNO: ${fileNumbers.parent}`;
-    
-    // Only show Unit Filno if:
-    // 1. It's a valid ST file number (subapplication), AND
-    // 2. The search was NOT made with primary file numbers
-    if (fileNumbers.st !== 'N/A' && 
-        fileNumbers.st.match(/^ST-(RES|COM|IND|AG)-\d{4}-\d+-\d+$/i) && 
-        !isPrimaryFileSearch) {
-      fileNumbersDisplay += `  |  Unit Filno: ${fileNumbers.st}`;
-    }
-    
-    fileNumbersDisplay += `  |  MLS File No: ${fileNumbers.mls}  |  KANGIS File No: ${fileNumbers.kangis}  |  New KANGIS: ${fileNumbers.new_kangis}`;
-    
-    document.getElementById('report-file-numbers').textContent = fileNumbersDisplay;
+    document.getElementById('report-file-reference').textContent = selectedFile.mlsFNo || selectedFile.MLSFileNo || selectedFile.fileNo || selectedFile.fileno || 'N/A';
+    document.getElementById('report-file-numbers').textContent = `NP FileNO: ${fileNumbers.parent}  |  Unit Filno: ${fileNumbers.st}  |  MLS File No: ${fileNumbers.mls}  |  KANGIS File No: ${fileNumbers.kangis}  |  New KANGIS File No: ${fileNumbers.new_kangis}`;
     document.getElementById('report-plot-number').textContent = selectedFile.plot_no || selectedFile.plotNo || "GP No. 1067/1 & 1067/2";
     document.getElementById('report-plan-number').textContent = selectedFile.planNumber || "LKN/RES/2021/3006";
     document.getElementById('report-plot-description').textContent = `${selectedFile.district || selectedFile.districtName || "Niger Street Nassarawa District"}, ${selectedFile.lgsaOrCity || selectedFile.lga || selectedFile.lgaName || "Nassarawa"} LGA`;
@@ -1208,7 +1229,7 @@
     // Update QR code
     const qrCodeImg = document.getElementById('report-qr-code');
     if (qrCodeImg) {
-      const fileInfo = `File Number: MLSF: ${fileNumbers.mls} | KANGIS: ${fileNumbers.kangis} | New KANGIS: ${fileNumbers.new_kangis}`;
+      const fileInfo = `NP FileNO: ${fileNumbers.parent} | Unit Filno: ${fileNumbers.st} | MLS: ${fileNumbers.mls} | KANGIS: ${fileNumbers.kangis} | New KANGIS: ${fileNumbers.new_kangis}`;
       qrCodeImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(fileInfo)}`;
     }
   };
@@ -1264,33 +1285,9 @@
       fileHistoryView.classList.remove('hidden');
     }
 
-    // Print report button - ENHANCED WITH WATERMARK FIX
+    // Print report button
     if (e.target.closest('#print-report-btn')) {
-      // Ensure watermark is visible before printing
-      const watermark = document.querySelector('.watermark');
-      if (watermark) {
-        watermark.style.display = 'block';
-        watermark.style.visibility = 'visible';
-        watermark.style.opacity = '1';
-        watermark.style.position = 'fixed';
-        watermark.style.zIndex = '1000';
-        watermark.style.color = 'rgba(200, 200, 200, 0.3)';
-        watermark.style.fontSize = '60px';
-        watermark.style.fontWeight = 'bold';
-        watermark.style.fontFamily = 'Arial Black, Arial, sans-serif';
-        watermark.style.textTransform = 'uppercase';
-        watermark.style.letterSpacing = '3px';
-        watermark.style.top = '50%';
-        watermark.style.left = '50%';
-        watermark.style.transform = 'translate(-50%, -50%) rotate(-45deg)';
-        watermark.style.whiteSpace = 'nowrap';
-        watermark.style.pointerEvents = 'none';
-      }
-      
-      // Add a small delay to ensure styles are applied
-      setTimeout(() => {
-        window.print();
-      }, 100);
+      window.print();
     }
 
     // Delete and edit action buttons (placeholder functionality)

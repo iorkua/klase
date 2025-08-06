@@ -6,487 +6,19 @@
 
  
 @section('content')
-
+@include('legal_search.style') 
+  <!-- Include Print.js library for enhanced printing -->
+  <script src="https://printjs-4de6.kxcdn.com/print.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="https://printjs-4de6.kxcdn.com/print.min.css">
     <!-- Main Content -->
     <div class="flex-1 overflow-auto">
         <!-- Header -->
         @include('admin.header')
-  
-          <div class="p-6">
+        <div class="p-6">
              
-    <!-- Include Print.js library for enhanced printing -->
-    <script src="https://printjs-4de6.kxcdn.com/print.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="https://printjs-4de6.kxcdn.com/print.min.css">
   
-  <style>
-    /* Base styles */
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      color: #111827;
-      background-color: #f9fafb;
-    }
-     
-    .watermark {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) rotate(-45deg);
-      font-size: 80px;
-      color: #cccccc;
-      opacity: 0.2;
-      z-index: 0;
-      white-space: nowrap;
-      pointer-events: none;
-    }
-    
-    /* Enhanced Print styles for A4 landscape responsive printing */
-    @media print {
-      @page {
-        size: A4 landscape;
-        margin: 8mm 12mm; /* Optimized A4 landscape margins */
-        orphans: 3;
-        widows: 3;
-      }
+  
 
-      * {
-        -webkit-print-color-adjust: exact !important;
-        color-adjust: exact !important;
-        print-color-adjust: exact !important;
-      }
-
-      body {
-        margin: 0;
-        padding: 0;
-        font-size: 11pt;
-        line-height: 1.3;
-        color: #000;
-        background: white;
-      }
-
-      body * {
-        visibility: hidden;
-        margin: 0;
-        padding: 0;
-      }
-      
-      .print-div, .print-div * {
-        visibility: visible;
-      }
-      
-      .print-div {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        max-width: 100%;
-        padding: 0;
-        margin: 0;
-        background: white;
-        font-family: 'Times New Roman', serif;
-      }
-
-      /* Responsive table handling */
-      .print-div table {
-        width: 100%;
-        max-width: 100%;
-        font-size: 9pt;
-        border-collapse: collapse;
-        page-break-inside: auto;
-        margin: 0;
-      }
-
-      .print-div th,
-      .print-div td {
-        padding: 3px 4px;
-        border: 1px solid #000 !important;
-        font-size: 8pt;
-        line-height: 1.2;
-        word-wrap: break-word;
-        overflow-wrap: break-word;
-        hyphens: auto;
-      }
-
-      .print-div th {
-        background-color: #f0f0f0 !important;
-        font-weight: bold;
-        text-align: center;
-      }
-
-      /* Ensure small datasets fit on one page */
-      .print-div .space-y-6 {
-        page-break-inside: avoid;
-        break-inside: avoid;
-      }
-
-      /* Header optimization */
-      .print-div .flex-wrap {
-        display: flex !important;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 10px;
-      }
-
-      /* Logo positioning - left and right */
-      .print-div .h-16 {
-        height: 50px !important;
-        width: 50px !important;
-        max-width: 50px !important;
-        max-height: 50px !important;
-      }
-
-      .print-div .w-16 {
-        width: 50px !important;
-        max-width: 50px !important;
-      }
-
-      /* Header text optimization */
-      .print-div .text-xl {
-        font-size: 14pt !important;
-        font-weight: bold;
-        text-align: center;
-        margin: 0 10px;
-      }
-
-      .print-div .text-lg {
-        font-size: 12pt !important;
-        font-weight: bold;
-        text-align: center;
-        margin: 2px 0;
-      }
-
-      .print-div .text-md {
-        font-size: 11pt !important;
-        font-weight: bold;
-        text-align: center;
-        margin: 2px 0;
-      }
-
-      /* Watermark optimization */
-      .watermark {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) rotate(-45deg);
-        font-size: 48px;
-        color: rgba(200, 200, 200, 0.15) !important;
-        z-index: 0;
-        white-space: nowrap;
-        pointer-events: none;
-        font-weight: bold;
-      }
-
-      /* Hide non-printable elements */
-      button, 
-      .hidden-print,
-      .actions-column,
-      .no-print {
-        display: none !important;
-        visibility: hidden !important;
-      }
-
-      /* Ensure proper table layout */
-      .overflow-x-auto {
-        overflow: visible !important;
-      }
-
-      .min-w-[1000px] {
-        min-width: unset !important;
-      }
-
-      /* Property details section */
-      .print-div .border-black {
-        border: 2px solid #000 !important;
-      }
-
-      .print-div .bg-gray-100 {
-        background-color: #f5f5f5 !important;
-      }
-
-      .print-div .bg-gray-200 {
-        background-color: #e5e5e5 !important;
-      }
-
-      /* Responsive font scaling for small datasets */
-      .print-div.small-dataset {
-        font-size: 12pt;
-      }
-
-      .print-div.small-dataset table {
-        font-size: 10pt;
-      }
-
-      .print-div.small-dataset th,
-      .print-div.small-dataset td {
-        padding: 6px 8px;
-        font-size: 9pt;
-      }
-
-      /* Force single page for small datasets */
-      .print-div.force-single-page {
-        page-break-after: avoid;
-        page-break-inside: avoid;
-        break-inside: avoid;
-      }
-
-      .print-div.force-single-page table {
-        page-break-inside: avoid;
-        break-inside: avoid;
-      }
-
-      /* Signature and footer area */
-      .print-div .mt-8 {
-        margin-top: 15px !important;
-      }
-
-      .print-div .border-t {
-        border-top: 1px solid #000 !important;
-        padding-top: 10px !important;
-      }
-
-      /* QR Code positioning */
-      .print-div #report-qr-code {
-        max-width: 70px !important;
-        max-height: 70px !important;
-        width: 70px !important;
-        height: 70px !important;
-      }
-
-      /* Timestamp positioning */
-      .print-div .text-right {
-        text-align: right !important;
-      }
-
-      /* Ensure proper page breaks */
-      .print-div .mb-6 {
-        margin-bottom: 8px !important;
-      }
-
-      /* Table row height optimization */
-      .print-div tbody tr {
-        height: auto;
-        min-height: 20px;
-      }
-
-      /* Text size adjustments for better readability */
-      .print-div .text-sm {
-        font-size: 9pt !important;
-      }
-
-      .print-div .text-xs {
-        font-size: 8pt !important;
-      }
-
-      /* Border consistency */
-      .print-div .border-gray-300 {
-        border-color: #000 !important;
-      }
-    }
-    
-    /* Custom components */
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      border-radius: 9999px;
-      padding: 0.25rem 0.75rem;
-      font-size: 0.75rem;
-      font-weight: 500;
-      line-height: 1;
-    }
-    
-    .badge-outline {
-      background-color: transparent;
-      border: 1px solid #e5e7eb;
-    }
-    
-    .badge-destructive {
-      background-color: #ef4444;
-      color: white;
-    }
-    
-    /* Modal styles */
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: rgba(0, 0, 0, 0.5);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 50;
-    }
-    
-    .modal-content {
-      background-color: white;
-      border-radius: 0.5rem;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-      width: 95%;
-      max-width: 95%;
-      max-height: 90vh;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .modal-header {
-      padding: 1.5rem;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    
-    .modal-title {
-      font-size: 1.25rem;
-      font-weight: 600;
-    }
-    
-    .search-section {
-      padding: 1rem 1.5rem;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    
-    .results-section {
-      flex-grow: 1;
-      overflow: auto;
-      padding: 1.5rem;
-    }
-    
-    /* Loading spinner */
-    .spinner {
-      border: 4px solid rgba(0, 0, 0, 0.1);
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      border-left-color: #000;
-      animation: spin 1s linear infinite;
-    }
-    
-    @keyframes spin {
-      0% {
-        transform: rotate(0deg);
-      }
-      100% {
-        transform: rotate(360deg);
-      }
-    }
-    
-    /* Tab styles */
-    .tabs {
-      display: flex;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    
-    .tab {
-      padding: 0.75rem 1rem;
-      font-size: 0.875rem;
-      font-weight: 500;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      color: #6b7280;
-    }
-    
-    .tab.active {
-      border-bottom-color: #000;
-      color: #000;
-      font-weight: 600;
-    }
-    
-    .tab-content {
-      display: none;
-    }
-    
-    .tab-content.active {
-      display: block;
-    }
-    
-    /* Table styles */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    
-    th {
-      text-align: left;
-      padding: 0.75rem 1rem;
-      font-size: 0.75rem;
-      font-weight: 500;
-      color: #6b7280;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      background-color: #f9fafb;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    
-    td {
-      padding: 0.75rem 1rem;
-      font-size: 0.875rem;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    
-    tr:hover {
-      background-color: #f9fafb;
-    }
-    
-    /* Select dropdown fix */
-    .select-wrapper {
-      position: relative;
-      width: 100%;
-    }
-    
-    .select {
-      appearance: none;
-      width: 100%;
-      padding: 0.5rem 2.5rem 0.5rem 0.75rem;
-      font-size: 0.875rem;
-      line-height: 1.25rem;
-      border: 1px solid #e5e7eb;
-      border-radius: 0.375rem;
-      background-color: white;
-    }
-    
-    .select-icon {
-      position: absolute;
-      right: 0.75rem;
-      top: 50%;
-      transform: translateY(-50%);
-      pointer-events: none;
-    }
-    
-    /* Form field styles */
-    .form-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 0.75rem;
-    }
-    
-    .form-label {
-      font-size: 0.875rem;
-      color: #6b7280;
-      width: 40%;
-      padding-top: 0.25rem;
-    }
-    
-    .form-value {
-      font-size: 0.875rem;
-      font-weight: 500;
-      width: 60%;
-      text-align: right;
-    }
-    
-    /* Status indicator */
-    .status-indicator {
-      display: inline-block;
-      width: 0.75rem;
-      height: 0.75rem;
-      border-radius: 50%;
-      margin-right: 0.5rem;
-    }
-    
-    /* Hide elements */
-    .hidden {
-      display: none;
-    }
-  </style>
 
 
   <!-- Main Content -->
@@ -500,12 +32,12 @@
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              <h3 class="text-lg font-semibold">On-Premise - Pay-per-Search</h3>
+              <h3 class="text-lg font-semibold">Official Search</h3>
             </div>
             <p class="text-sm text-gray-500 mb-4">Find legal records for Official purposes</p>
             <p class="text-sm text-gray-500 mb-4">
               Conduct legal searches for Official purposes with extended access to records.
-            </p>  
+            </p>
             <button id="search-records-btn" class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-black hover:bg-black/90">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 21h7a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v11m0 5l4.879-4.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242z" />
@@ -542,7 +74,7 @@
           <div class="p-6">
             <div class="flex items-center gap-2 mb-1">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m-9 9a9 9 0 019-9" />
               </svg>
               <h3 class="text-lg font-semibold">Online Portal</h3>
             </div>
@@ -820,7 +352,7 @@
             <h2 class="text-2xl font-bold">Legal Search Report</h2>
             <p class="text-gray-500" id="report-subtitle">Official search report for file <span id="report-file-reference"></span></p>
           </div>
-             
+            <div class="watermark">FOR OFFICE USE ONLY</div>   
           <div class="flex items-center gap-2 hidden-print">
             <button id="back-to-file-details-btn" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -922,26 +454,31 @@
               </div>
 
               <!-- Report Footer -->
-                <div class="mt-8 text-sm">
+              <div class="mt-8 text-sm">
                 <p class="font-bold" id="report-timestamp"></p>
 
-                <div class="mt-6 flex flex-wrap justify-between items-start">
-                  <div class="w-full md:w-2/3">
-                  <p class="font-medium">Yours Faithfully,</p>
-                  <br><br>
-                  <p>........................................</p>
-                  <p class="font-bold">Deeds Director</p>
-                  <p class="font-bold"></p>
-                  <p class="mt-2">Generated by: {{ auth()->user()->first_name }}</p>
+                <div class="mt-6 flex justify-between items-start">
+                  <div>
+                    {{-- <p class="font-medium">Yours Faithfully,</p> --}}
+                    {{-- <div class="h-12 mt-2 border-2 border-blue-900 p-1 w-48 transform -rotate-12">
+                      <svg width="200" height="45" viewBox="0 0 200 45" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                          d="M10,35 C30,5 50,40 70,15 C90,30 110,10 130,25 C150,15 170,30 190,20"
+                          stroke="#000080"
+                          fill="none"
+                          stroke-width="2"
+                        />
+                      </svg>
+                    </div> --}}
+                     {{-- {{ auth()->user()->first_name }} {{ auth()->user()->first_name }} --}}
+                    <p class="mt-2">Generated by: {{ auth()->user()->first_name }}</p>
                   </div>
-                  <div class="w-full md:w-1/3 flex justify-end mt-4 md:mt-0">
-                  <!-- QR Code -->
+
                   <div class="text-right">
+                    <!-- QR Code -->
                     <img id="report-qr-code" src="/placeholder.svg" alt="QR Code with File Details" width="80" height="80">
                     <div class="text-center text-xs mt-1">Scan for file verification</div>
                   </div>
-                  </div>
-                </div>
                 </div>
 
                 <div class="mt-8 border-t pt-4 text-center">
@@ -1031,9 +568,6 @@
               <!-- Filter Dropdown (initially hidden) -->
               <div id="filter-dropdown" class="hidden absolute top-full left-0 mt-1 z-50 w-64 bg-white rounded-md shadow-lg border border-gray-200">
                 <div class="p-2 max-h-[200px] overflow-y-auto">
-                  <button class="w-full text-left px-3 py-1 text-sm hover:bg-gray-100 rounded-md" data-filter="newKangisFileNo">New KANGIS File No.</button>
-                  <button class="w-full text-left px-3 py-1 text-sm hover:bg-gray-100 rounded-md" data-filter="guarantorName">Guarantor Name</button>
-                  <button class="w-full text-left px-3 py-1 text-sm hover:bg-gray-100 rounded-md" data-filter="guaranteeName">Guarantee Name</button>
                   <button class="w-full text-left px-3 py-1 text-sm hover:bg-gray-100 rounded-md" data-filter="lga">LGA</button>
                   <button class="w-full text-left px-3 py-1 text-sm hover:bg-gray-100 rounded-md" data-filter="district">District</button>
                   <button class="w-full text-left px-3 py-1 text-sm hover:bg-gray-100 rounded-md" data-filter="location">Location</button>
@@ -1057,7 +591,7 @@
           <!-- Collapsed Filters (initially hidden) -->
           <div id="collapsed-filters" class="hidden flex items-center gap-2 mb-2">
             <div class="text-sm text-gray-500">
-              Filtered by: <span id="active-filters-summary">File Number, Guarantor Name, Guarantee Name</span>
+              Filtered by: <span id="active-filters-summary">File Number</span>
             </div>
             <button id="reset-search-collapsed-btn" class="ml-auto inline-flex items-center gap-1 px-3 py-1 text-sm bg-white border border-gray-300 rounded-md">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1095,8 +629,10 @@
               <table class="w-full min-w-[1000px]">
                 <thead class="bg-gray-100">
                   <tr>
-                    <th>File Number</th>
-                    <th>KANGIS File No.</th>
+                    <th>NP FileNO</th>
+                    <th>Unit Filno</th>
+                    <th>MLS File No</th>
+                    <th>KANGIS File No</th>
                     <th>New KANGIS</th>
                     <th>Guarantor</th>
                     <th>Guarantee</th>
@@ -1151,7 +687,7 @@
         @include('admin.footer')
     </div>
    
-@include('legal_search.js')
+@include('legal_search.js_column_updated')
 @endsection
 
 
@@ -1166,7 +702,7 @@ function printLandscapeReport() {
     const printContent = document.querySelector('.print-div').innerHTML;
     
     // Landscape-specific styles
-    const landscapeStyles = 
+    const landscapeStyles = `
         <style>
             @media print {
                 @page {
@@ -1201,10 +737,10 @@ function printLandscapeReport() {
                 }
             }
         </style>
-    ;
+    `;
     
     // Write the complete HTML with landscape styles
-    printWindow.document.write(
+    printWindow.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
@@ -1212,15 +748,15 @@ function printLandscapeReport() {
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-             + landscapeStyles + 
+            ${landscapeStyles}
         </head>
         <body>
             <div class="print-div">
-                 + printContent + 
+                ${printContent}
             </div>
         </body>
         </html>
-    );
+    `);
     
     printWindow.document.close();
     
@@ -1244,3 +780,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+
+

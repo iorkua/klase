@@ -19,13 +19,28 @@
       pointer-events: none;
     }
     
-    /* Enhanced Print styles for A4 responsive printing */
+    /* Enhanced Print styles for A4 landscape responsive printing */
     @media print {
       @page {
-        size: A4;
-        margin: 12mm 8mm; /* Optimized A4 margins */
+        size: A4 landscape;
+        margin: 8mm 12mm; /* Optimized A4 landscape margins */
         orphans: 3;
         widows: 3;
+      }
+      
+      @page :first {
+        size: A4 landscape !important;
+        margin: 8mm 12mm !important;
+      }
+      
+      @page :left {
+        size: A4 landscape !important;
+        margin: 8mm 12mm !important;
+      }
+      
+      @page :right {
+        size: A4 landscape !important;
+        margin: 8mm 12mm !important;
       }
 
       * {
@@ -34,13 +49,22 @@
         print-color-adjust: exact !important;
       }
 
+      html {
+        width: 297mm !important;
+        height: 210mm !important;
+      }
+
       body {
-        margin: 0;
-        padding: 0;
+        width: 297mm !important;
+        height: 210mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
         font-size: 11pt;
         line-height: 1.3;
         color: #000;
         background: white;
+        transform: none !important;
+        orientation: landscape !important;
       }
 
       body * {
@@ -57,33 +81,38 @@
         position: absolute;
         left: 0;
         top: 0;
-        width: 100%;
-        max-width: 100%;
+        width: 100% !important;
+        max-width: 297mm !important;
+        min-height: 210mm !important;
         padding: 0;
         margin: 0;
         background: white;
         font-family: 'Times New Roman', serif;
+        transform: none !important;
+        page-break-after: auto !important;
       }
 
       /* Responsive table handling */
       .print-div table {
-        width: 100%;
+        width: 100% !important;
         max-width: 100%;
-        font-size: 9pt;
+        font-size: 8pt !important;
         border-collapse: collapse;
         page-break-inside: auto;
         margin: 0;
+        table-layout: auto !important;
       }
 
       .print-div th,
       .print-div td {
-        padding: 3px 4px;
+        padding: 2px 3px !important;
         border: 1px solid #000 !important;
-        font-size: 8pt;
-        line-height: 1.2;
+        font-size: 7pt !important;
+        line-height: 1.1 !important;
         word-wrap: break-word;
         overflow-wrap: break-word;
         hyphens: auto;
+        word-break: break-word !important;
       }
 
       .print-div th {
@@ -122,38 +151,76 @@
 
       /* Header text optimization */
       .print-div .text-xl {
-        font-size: 14pt !important;
+        font-size: 12pt !important;
         font-weight: bold;
         text-align: center;
         margin: 0 10px;
       }
 
       .print-div .text-lg {
-        font-size: 12pt !important;
+        font-size: 10pt !important;
         font-weight: bold;
         text-align: center;
         margin: 2px 0;
       }
 
       .print-div .text-md {
-        font-size: 11pt !important;
+        font-size: 9pt !important;
         font-weight: bold;
         text-align: center;
         margin: 2px 0;
       }
 
-      /* Watermark optimization */
+      /* Watermark optimization - FIXED FOR PRINT */
       .watermark {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) rotate(-45deg);
-        font-size: 48px;
-        color: rgba(200, 200, 200, 0.15) !important;
-        z-index: 0;
-        white-space: nowrap;
-        pointer-events: none;
-        font-weight: bold;
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) rotate(-45deg) !important;
+        font-size: 60px !important;
+        color: rgba(200, 200, 200, 0.3) !important;
+        z-index: 1000 !important;
+        white-space: nowrap !important;
+        pointer-events: none !important;
+        font-weight: bold !important;
+        font-family: 'Arial Black', Arial, sans-serif !important;
+        text-transform: uppercase !important;
+        letter-spacing: 3px !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        -webkit-print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      
+      /* Ensure watermark appears on all print pages */
+      @page {
+        size: A4 landscape;
+        margin: 8mm 12mm;
+        orphans: 3;
+        widows: 3;
+        background: white;
+      }
+      
+      /* Alternative watermark positioning for different browsers */
+      .print-div .watermark {
+        position: absolute !important;
+        top: 45% !important;
+        left: 45% !important;
+        transform: translate(-50%, -50%) rotate(-45deg) !important;
+        font-size: 60px !important;
+        color: rgba(150, 150, 150, 0.4) !important;
+        z-index: 999 !important;
+        white-space: nowrap !important;
+        pointer-events: none !important;
+        font-weight: 900 !important;
+        font-family: 'Arial Black', Arial, sans-serif !important;
+        text-transform: uppercase !important;
+        letter-spacing: 3px !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
       }
 
       /* Hide non-printable elements */
@@ -466,4 +533,4 @@
     .hidden {
       display: none;
     }
-  </style>
+</style>
