@@ -374,7 +374,7 @@
 
     // AJAX call to the server
     $.ajax({
-      url: '{{ route("legalsearch.search") }}',
+      url: '{{ route("onpremise.search") }}',
       type: 'POST',
       data: searchData,
       success: function(data) {

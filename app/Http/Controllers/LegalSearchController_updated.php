@@ -43,89 +43,16 @@ class LegalSearchController extends Controller
             ]);
         }
 
-        // ENHANCED APPROACH: Handle different file types appropriately
+        // SIMPLIFIED APPROACH: Handle specific ST file search differently
         $fileType = $this->identifyFileNumberType($fileNo);
         
         if ($fileType === 'st' && !empty($fileNo)) {
             // SPECIFIC ST FILE SEARCH - Only include that ST file + its parent + MLS
             return $this->searchSpecificSTFile($fileNo, $guarantorName, $guaranteeName, $lga, $district, $location, $plotNumber, $planNumber, $size, $caveat);
-        } elseif ($fileType === 'parent' && !empty($fileNo)) {
-            // PRIMARY FILE SEARCH - Search directly for associated records
-            return $this->searchPrimaryFile($fileNo, $guarantorName, $guaranteeName, $lga, $district, $location, $plotNumber, $planNumber, $size, $caveat);
         } else {
             // GENERAL SEARCH - Use the existing hierarchical logic
             return $this->searchGeneral($fileNo, $guarantorName, $guaranteeName, $lga, $district, $location, $plotNumber, $planNumber, $size, $caveat);
         }
-    }
-
-    /**
-     * Search for a primary file number (like ST-COM-2025-05) - DIRECT APPROACH
-     */
-    private function searchPrimaryFile($primaryFileNo, $guarantorName, $guaranteeName, $lga, $district, $location, $plotNumber, $planNumber, $size, $caveat)
-    {
-        // Direct search approach for primary files
-        $allFileNumbers = [$primaryFileNo];
-        
-        try {
-            // Try registered_instruments first, then registered_instructions if that fails
-            $tableName = 'registered_instruments';
-            try {
-                DB::connection('sqlsrv')->table($tableName)->limit(1)->get();
-            } catch (\Exception $e) {
-                $tableName = 'registered_instructions';
-            }
-            
-            // Find all MLS files associated with this primary file
-            $associatedMLS = DB::connection('sqlsrv')->table($tableName)
-                ->where(function($q) use ($primaryFileNo) {
-                    $q->where('parent_fileNo', $primaryFileNo)
-                      ->orWhere('StFileNo', $primaryFileNo)
-                      ->orWhereRaw("UPPER(parent_fileNo) LIKE UPPER(?)", ["%{$primaryFileNo}%"])
-                      ->orWhereRaw("UPPER(StFileNo) LIKE UPPER(?)", ["%{$primaryFileNo}%"]);
-                })
-                ->whereNotNull('MLSFileNo')
-                ->pluck('MLSFileNo')
-                ->toArray();
-            
-            $allFileNumbers = array_merge($allFileNumbers, array_filter($associatedMLS));
-            
-            // Also check CofO table
-            $cofoMLS = DB::connection('sqlsrv')->table('CofO')
-                ->where(function($q) use ($primaryFileNo) {
-                    $q->where('np_fileno', $primaryFileNo)
-                      ->orWhereRaw("UPPER(np_fileno) LIKE UPPER(?)", ["%{$primaryFileNo}%"]);
-                })
-                ->whereNotNull('mlsFNo')
-                ->pluck('mlsFNo')
-                ->toArray();
-            
-            $allFileNumbers = array_merge($allFileNumbers, array_filter($cofoMLS));
-            
-            // Find all ST files associated with this primary file
-            $associatedST = DB::connection('sqlsrv')->table($tableName)
-                ->where('parent_fileNo', $primaryFileNo)
-                ->whereNotNull('StFileNo')
-                ->pluck('StFileNo')
-                ->toArray();
-            
-            $allFileNumbers = array_merge($allFileNumbers, array_filter($associatedST));
-            
-        } catch (\Exception $e) {
-            \Log::error('Error in searchPrimaryFile for: ' . $primaryFileNo, ['error' => $e->getMessage()]);
-        }
-        
-        $allFileNumbers = array_unique(array_filter($allFileNumbers));
-        
-        // Search across the three main tables using all related file numbers
-        $property_records = $this->searchPropertyRecords($allFileNumbers, $guarantorName, $guaranteeName, $lga, $district, $location, $plotNumber, $planNumber, $size, $caveat);
-        $registered_instruments = $this->searchRegisteredInstruments($allFileNumbers, $guarantorName, $guaranteeName, $lga, $district, $location, $plotNumber, $planNumber, $size, $caveat);
-        $cofo = $this->searchCofoRecords($allFileNumbers, $guarantorName, $guaranteeName, $lga, $district, $location, $plotNumber, $planNumber, $size, $caveat);
-
-        return response()->json([
-            'property_records' => $property_records,
-            'registered_instruments' => $registered_instruments,
-            'cofo' => $cofo,
-        ]);
     }
 
     /**

@@ -275,6 +275,10 @@ Route::middleware(['auth'])->group(function () {
 
     Route::prefix('onpremise')->group(function () {
         Route::get('/', [OnPremiseController::class, 'index'])->name('onpremise.index');
+        Route::post('/search', [OnPremiseController::class, 'search'])->name('onpremise.search');
+        Route::get('/report', [OnPremiseController::class, 'report'])->name('onpremise.report');
+        Route::get('/reports', [OnPremiseController::class, 'reports'])->name('onpremise.reports');
+        Route::get('/legal-search-report', [OnPremiseController::class, 'legal_search_report'])->name('onpremise.legal_search_report');
     });
 
 

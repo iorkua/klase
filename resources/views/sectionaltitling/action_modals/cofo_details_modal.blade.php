@@ -8,7 +8,7 @@
         </div>
         
         <div class="px-6 py-4">
-            <form id="cofoDetailsForm">
+            <form id="cofoDetailsForm" enctype="application/x-www-form-urlencoded">
                 @csrf
                 <input type="hidden" id="cofoApplicationId" name="application_id" value="">
                 
@@ -220,13 +220,19 @@
     document.getElementById('cofoDetailsForm').addEventListener('submit', function(e) {
         e.preventDefault();
         
-        // Get form data
+        // Get form data as URL-encoded string
         const formData = new FormData(this);
         
         // Add the registration number to form data
         const regNo = document.getElementById('cofoRegNoPreview').value;
         if (regNo) {
             formData.append('reg_no', regNo);
+        }
+        
+        // Convert FormData to URLSearchParams for proper encoding
+        const urlEncodedData = new URLSearchParams();
+        for (const [key, value] of formData.entries()) {
+            urlEncodedData.append(key, value);
         }
         
         // Show loading state
@@ -238,8 +244,9 @@
         // Submit via AJAX
         fetch('/sectionaltitling/save-cofo-details', {
             method: 'POST',
-            body: formData,
+            body: urlEncodedData,
             headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                 'X-Requested-With': 'XMLHttpRequest'
             }

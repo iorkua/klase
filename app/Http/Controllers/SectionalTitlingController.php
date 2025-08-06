@@ -246,7 +246,7 @@ class  SectionalTitlingController extends Controller
             ]);
 
             // Validate the request
-            $request->validate([
+            $validatedData = $request->validate([
                 'application_id' => 'required|integer',
                 'transaction_type' => 'required|string',
                 'certificate_date' => 'required|date',
@@ -254,12 +254,17 @@ class  SectionalTitlingController extends Controller
                 'page_no' => 'required|integer',
                 'volume_no' => 'required|integer',
                 'transaction_date' => 'required|date',
+                'transaction_time' => 'nullable|string',
+                'land_use' => 'nullable|string',
                 'period' => 'nullable|integer',
-                'period_unit' => 'nullable|string',
+                'period_unit' => 'nullable|string|in:years,months,weeks',
                 'grantor' => 'required|string',
                 'grantee' => 'required|string',
-                'property_description' => 'nullable|string'
+                'property_description' => 'nullable|string',
+                'reg_no' => 'nullable|string'
             ]);
+
+            \Log::info('CofO Details Validation Passed', ['validated_data' => $validatedData]);
 
             // Get the mother application data
             $motherApplication = DB::connection('sqlsrv')
@@ -276,7 +281,7 @@ class  SectionalTitlingController extends Controller
 
             // Check for duplicates based on application ID
             $existingRecord = DB::connection('sqlsrv')
-                ->table('dbo.Cofo_legacy')
+                ->table('dbo.CofO')
                 ->where('mlsFNo', $motherApplication->fileno)
                 ->first();
 
@@ -295,6 +300,7 @@ class  SectionalTitlingController extends Controller
                 'title_type' => 'Certificate of Occupancy', // Default title type
                 'transaction_type' => $request->transaction_type,
                 'transaction_date' => $request->transaction_date,
+                'transaction_time' => $request->transaction_time,
                 'serialNo' => $request->serial_no,
                 'pageNo' => $request->page_no,
                 'volumeNo' => $request->volume_no,
@@ -302,6 +308,7 @@ class  SectionalTitlingController extends Controller
                 'instrument_type' => 'Certificate of Occupancy', // Fixed as Certificate of Occupancy
                 'period' => $request->period,
                 'period_unit' => $request->period_unit,
+                'land_use' => $request->land_use ?: $motherApplication->land_use, // Use form data or fallback to mother application
                 'Assignor' => null, // Will be set based on transaction type
                 'Assignee' => null,
                 'Mortgagor' => null,
@@ -347,8 +354,13 @@ class  SectionalTitlingController extends Controller
                     break;
             }
 
-            // Insert into Cofo_legacy table
-            DB::connection('sqlsrv')->table('dbo.Cofo_legacy')->insert($cofoData);
+            // Log the data being inserted
+            \Log::info('CofO Data to be inserted', ['cofo_data' => $cofoData]);
+
+            // Insert into CofO table
+            $insertResult = DB::connection('sqlsrv')->table('dbo.CofO')->insert($cofoData);
+            
+            \Log::info('CofO Insert Result', ['result' => $insertResult]);
 
             return response()->json([
                 'success' => true,
@@ -356,12 +368,23 @@ class  SectionalTitlingController extends Controller
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('CofO Validation Error', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
+            \Log::error('CofO Save Error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Error saving CofO details: ' . $e->getMessage()

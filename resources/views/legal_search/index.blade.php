@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('page-title')
-    {{ __('Legal Search - On-Premise Official
-') }}
+    {{ __('Legal Search - Official (for filing purpose)') }}
 @endsection
 
  
@@ -629,8 +628,8 @@
               <table class="w-full min-w-[1000px]">
                 <thead class="bg-gray-100">
                   <tr>
-                    <th>NP FileNO</th>
-                    <th>Unit Filno</th>
+                    <th>ST Unit FileNo</th>
+                    <th>New FileNo</th>
                     <th>MLS File No</th>
                     <th>KANGIS File No</th>
                     <th>New KANGIS</th>

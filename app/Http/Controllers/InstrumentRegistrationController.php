@@ -1188,6 +1188,728 @@ class InstrumentRegistrationController extends Controller
         }
     }
 
+    public function registerBatch(Request $request)
+    {
+        try {
+            $request->validate([
+                'batch_entries' => 'required|array',
+                'deeds_time' => 'required|string',
+                'deeds_date' => 'required|date'
+            ]);
+            
+            // Pre-validate ST Assignment and Sectional Titling entries
+            $stFileValidation = [];
+            foreach ($request->batch_entries as $entry) {
+                $instrumentType = $entry['instrument_type'] ?? '';
+                if (in_array($instrumentType, ['ST Assignment (Transfer of Title)', 'Sectional Titling CofO'])) {
+                    $fileNo = $entry['file_no'] ?? '';
+                    if (empty($fileNo)) {
+                        return response()->json([
+                            'success' => false, 
+                            'error' => "File number (StFileNo) is required for {$instrumentType}"
+                        ], 422);
+                    }
+                    
+                    // Track what we're trying to register for each file
+                    if (!isset($stFileValidation[$fileNo])) {
+                        $stFileValidation[$fileNo] = [];
+                    }
+                    $stFileValidation[$fileNo][] = $instrumentType;
+                }
+            }
+            
+            // Check for existing registrations and duplicates within the batch
+            foreach ($stFileValidation as $fileNo => $types) {
+                // Check for duplicates within the batch
+                if (count($types) !== count(array_unique($types))) {
+                    return response()->json([
+                        'success' => false, 
+                        'error' => "Duplicate instrument types found in batch for file number {$fileNo}"
+                    ], 422);
+                }
+                
+                // Check existing registrations in database
+                $existingRegistrations = DB::connection('sqlsrv')->table('registered_instruments')
+                    ->where('StFileNo', $fileNo)
+                    ->whereIn('instrument_type', ['ST Assignment (Transfer of Title)', 'Sectional Titling CofO'])
+                    ->pluck('instrument_type')
+                    ->toArray();
+                
+                foreach ($types as $type) {
+                    if (in_array($type, $existingRegistrations)) {
+                        return response()->json([
+                            'success' => false, 
+                            'error' => "A {$type} registration already exists for file number {$fileNo}"
+                        ], 422);
+                    }
+                }
+            }
+            
+            $serialData = $this->getNextSerialNumber()->getData(true);
+            $results = [];
+            $processedRecords = [];
+            $registeredFiles = []; // Track files for final validation
+            
+            DB::connection('sqlsrv')->beginTransaction();
+            
+            foreach ($request->batch_entries as $index => $entry) {
+                if ($index > 0) {
+                    if (++$serialData['page_no'] > 100) {
+                        $serialData['volume_no']++;
+                        $serialData['page_no'] = 1;
+                        $serialData['serial_no'] = 1;
+                    } else {
+                        $serialData['serial_no']++;
+                    }
+                    $serialData['deeds_serial_no'] = "{$serialData['serial_no']}/{$serialData['page_no']}/{$serialData['volume_no']}";
+                }
+                
+                $applicationId = $entry['application_id'];
+                $sourceRecord = null;
+                $sourceTable = null;
+                
+                // Handle composite IDs for ST Assignment and Sectional Titling
+                if (strpos($applicationId, '_st_assignment') !== false || strpos($applicationId, '_sectional_cofo') !== false) {
+                    $originalId = str_replace(['_st_assignment', '_sectional_cofo'], '', $applicationId);
+                    $sourceRecord = DB::connection('sqlsrv')->table('subapplications')->where('id', $originalId)->first();
+                    if ($sourceRecord) {
+                        $sourceTable = 'subapplications';
+                        $sourceRecord->original_id = $originalId;
+                    }
+                } elseif (strpos($applicationId, 'instr_reg_') === 0) {
+                    // Handle instrument_registration IDs that start with 'instr_reg_'
+                    $originalId = str_replace('instr_reg_', '', $applicationId);
+                    $sourceRecord = DB::connection('sqlsrv')->table('instrument_registration')->where('id', $originalId)->first();
+                    if ($sourceRecord) {
+                        $sourceTable = 'instrument_registration';
+                    }
+                } else {
+                    // Only check subapplications if the ID is numeric
+                    if (is_numeric($applicationId)) {
+                        $sourceRecord = DB::connection('sqlsrv')->table('subapplications')->where('id', $applicationId)->first();
+                        if ($sourceRecord) {
+                            $sourceTable = 'subapplications';
+                        }
+                    }
+                    
+                    if (!isset($sourceRecord)) {
+                        $sourceRecord = DB::connection('sqlsrv')->table('instrument_registration')->where('id', $applicationId)->first();
+                        if ($sourceRecord) {
+                            $sourceTable = 'instrument_registration';
+                        } else {
+                            $sourceRecord = DB::connection('sqlsrv')->table('mother_applications')->where('id', $applicationId)->first();
+                            if ($sourceRecord) {
+                                $sourceTable = 'mother_applications';
+                            }
+                        }
+                    }
+                }
+                    
+                if (!$sourceRecord) {
+                    Log::warning('Source record not found for batch entry', ['application_id' => $applicationId]);
+                    continue;
+                }
+                
+                // Update ID handling for instrument_registration IDs
+                $updateId = isset($sourceRecord->original_id) ? $sourceRecord->original_id : $applicationId;
+                
+                // For instrument_registration IDs, we need to extract the numeric part
+                if ($sourceTable === 'instrument_registration' && strpos($updateId, 'instr_reg_') === 0) {
+                    $updateId = str_replace('instr_reg_', '', $updateId);
+                }
+                
+                $processedRecords[] = ['id' => $updateId, 'table' => $sourceTable];
+                $stmReference = $this->generateSTMReference();
+                
+                $entryRequest = new \Illuminate\Http\Request();
+                $entryRequest->merge([
+                    'instrument_type' => $entry['instrument_type'] ?? '',
+                    'Grantor' => $entry['grantor'] ?? '',
+                    'Grantee' => $entry['grantee'] ?? '',
+                    'duration' => $entry['duration'] ?? '',
+                    'propertyDescription' => $entry['propertyDescription'] ?? '',
+                    'lga' => $entry['lga'] ?? '',
+                    'district' => $entry['district'] ?? '',
+                    'plotSize' => $entry['size'] ?? '',
+                    'plotNumber' => $entry['plotNumber'] ?? '',
+                    'deeds_date' => $request->deeds_date,
+                    'deeds_time' => $request->deeds_time,
+                    'file_no' => $entry['file_no'] ?? ''
+                ]);
+                
+                $dataToInsert = $this->prepareRegistrationData($sourceRecord, $sourceTable, $entryRequest, $serialData, $stmReference);
+                $newId = DB::connection('sqlsrv')->table('registered_instruments')->insertGetId($dataToInsert);
+                
+                // Update instrument completion status for ST Assignment and Sectional Titling
+                $instrumentType = $entry['instrument_type'] ?? '';
+                if (in_array($instrumentType, ['ST Assignment (Transfer of Title)', 'Sectional Titling CofO']) && $sourceTable === 'subapplications') {
+                    $this->updateInstrumentCompletionStatus($updateId, $instrumentType, 'Registered');
+                }
+                
+                // Track registered files for final validation
+                if (in_array($instrumentType, ['ST Assignment (Transfer of Title)', 'Sectional Titling CofO'])) {
+                    $fileNo = $entry['file_no'] ?? $sourceRecord->fileno;
+                    $registeredFiles[] = $fileNo;
+                }
+                
+                $results[] = [
+                    'application_id' => $applicationId,
+                    'new_id' => $newId,
+                    'deeds_serial_no' => $serialData['deeds_serial_no'],
+                    'stm_ref' => $stmReference,
+                    'source_table' => $sourceTable
+                ];
+            }
+            
+            foreach ($processedRecords as $record) {
+                $this->updateSourceRecordStatus($record['id'], $record['table']);
+            }
+            
+            // Check if both types are registered for each file
+            foreach (array_unique($registeredFiles) as $fileNo) {
+                $this->checkBothTypesRegistered($fileNo);
+            }
+            
+            DB::connection('sqlsrv')->commit();
+            
+            return response()->json(['success' => true, 'message' => count($results) . ' instruments registered successfully', 'results' => $results]);
+        } catch (\Exception $e) {
+            DB::connection('sqlsrv')->rollBack();
+            Log::error('Error in registerBatch', ['exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['success' => false, 'error' => 'Failed to register batch: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Check registration status for ST Assignment and Sectional Titling CofO for a given file number
+     */
+    public function checkRegistrationStatus(Request $request)
+    {
+        try {
+            $fileNo = $request->query('file_no');
+            
+            if (empty($fileNo)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'File number is required'
+                ], 400);
+            }
+
+            $registrations = DB::connection('sqlsrv')->table('registered_instruments')
+                ->where('StFileNo', $fileNo)
+                ->whereIn('instrument_type', ['ST Assignment (Transfer of Title)', 'Sectional Titling CofO'])
+                ->select('instrument_type', 'status', 'particularsRegistrationNumber', 'STM_Ref', 'created_at')
+                ->get();
+
+            $stAssignment = $registrations->firstWhere('instrument_type', 'ST Assignment (Transfer of Title)');
+            $sectionalTitling = $registrations->firstWhere('instrument_type', 'Sectional Titling CofO');
+
+            $response = [
+                'success' => true,
+                'file_no' => $fileNo,
+                'st_assignment' => [
+                    'registered' => !is_null($stAssignment),
+                    'status' => $stAssignment->status ?? null,
+                    'registration_number' => $stAssignment->particularsRegistrationNumber ?? null,
+                    'stm_ref' => $stAssignment->STM_Ref ?? null,
+                    'registered_date' => $stAssignment->created_at ?? null
+                ],
+                'sectional_titling' => [
+                    'registered' => !is_null($sectionalTitling),
+                    'status' => $sectionalTitling->status ?? null,
+                    'registration_number' => $sectionalTitling->particularsRegistrationNumber ?? null,
+                    'stm_ref' => $sectionalTitling->STM_Ref ?? null,
+                    'registered_date' => $sectionalTitling->created_at ?? null
+                ],
+                'both_registered' => !is_null($stAssignment) && !is_null($sectionalTitling),
+                'total_registrations' => $registrations->count()
+            ];
+
+            return response()->json($response);
+        } catch (\Exception $e) {
+            Log::error('Error checking registration status', [
+                'file_no' => $request->query('file_no'),
+                'exception' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to check registration status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getBatchData(Request $request)
+    {
+        try {
+            $filter = $request->query('filter', 'batch');
+            $data = collect();
+            
+            switch ($filter) {
+                case 'other':
+                    // Keep other instruments available for registration modals
+                    $data = DB::connection('sqlsrv')->table('instrument_registration')
+                        ->where(function ($q) {
+                            $q->where('status', '!=', 'registered')
+                              ->orWhereNull('status');
+                        })
+                        ->select(
+                            'id', 
+                            DB::raw("COALESCE(MLSFileNo, KAGISFileNO, NewKANGISFileNo) as fileno"), 
+                            'instrument_type', 
+                            'Grantor as grantor', 
+                            'Grantee as grantee', 
+                            'lga', 
+                            'district', 
+                            'size', 
+                            'plotNumber', 
+                            'created_at',
+                            DB::raw("COALESCE(status, 'pending') as status"),
+                            DB::raw("'Other Instruments' as source_type")
+                        )
+                        ->get();
+                    break;
+                    
+                case 'stAssignment':
+                    // ST Assignment from subapplications where both statuses are approved
+                    // Only show PENDING ST Assignment instruments
+                    $approvedSubapplications = DB::connection('sqlsrv')->table('subapplications as s')
+                        ->leftJoin('mother_applications as m', 's.main_application_id', '=', 'm.id')
+                        ->where('s.planning_recommendation_status', 'Approved')
+                        ->where('s.application_status', 'Approved')
+                        ->select(
+                            's.id',
+                            's.fileno',
+                            's.deeds_completion_status',
+                            DB::raw("CONCAT(COALESCE(s.applicant_title,''), ' ', COALESCE(s.first_name,''), ' ', COALESCE(s.surname,''), COALESCE(s.corporate_name,''), COALESCE(s.multiple_owners_names,'')) as sub_applicant"),
+                            DB::raw("CONCAT(COALESCE(m.applicant_title,''), ' ', COALESCE(m.first_name,''), ' ', COALESCE(m.surname,''), COALESCE(m.corporate_name,''), COALESCE(m.multiple_owners_names,'')) as mother_applicant"),
+                            'm.property_lga as lga', 
+                            'm.property_district as district', 
+                            'm.plot_size as size', 
+                            'm.property_plot_no as plotNumber', 
+                            's.created_at'
+                        )
+                        ->get();
+                    
+                    // Create ST Assignment records for each subapplication, but only if it's PENDING
+                    $data = collect();
+                    foreach ($approvedSubapplications as $subApp) {
+                        // Check if ST Assignment is pending
+                        $stAssignmentStatus = 'pending';
+                        if (!empty($subApp->deeds_completion_status)) {
+                            $completionStatus = json_decode($subApp->deeds_completion_status, true);
+                            if ($completionStatus && isset($completionStatus['instruments'])) {
+                                foreach ($completionStatus['instruments'] as $instrument) {
+                                    if ($instrument['name'] === 'ST Assignment (Transfer of Title)') {
+                                        $stAssignmentStatus = strtolower($instrument['status']) === 'registered' ? 'registered' : 'pending';
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Only add if it's pending
+                        if ($stAssignmentStatus === 'pending') {
+                            $data->push((object)[
+                                'id' => $subApp->id . '_st_assignment',
+                                'fileno' => $subApp->fileno,
+                                'instrument_type' => 'ST Assignment (Transfer of Title)',
+                                'grantor' => $subApp->mother_applicant, // Grantor should be from mother application applicant details
+                                'grantee' => $subApp->sub_applicant,
+                                'lga' => $subApp->lga,
+                                'district' => $subApp->district,
+                                'size' => $subApp->size,
+                                'plotNumber' => $subApp->plotNumber,
+                                'created_at' => $subApp->created_at,
+                                'status' => 'pending',
+                                'source_type' => 'ST Assignment',
+                                'original_subapp_id' => $subApp->id
+                            ]);
+                        }
+                    }
+                    break;
+                    
+                case 'regular':
+                case 'sltr':
+                    // Keep these available for other instrument types in modals
+                    $data = collect([
+                        (object)[
+                            'id' => null,
+                            'fileno' => 'No Record',
+                            'grantor' => 'No Record',
+                            'grantee' => 'No Record',
+                            'lga' => 'No Record',
+                            'district' => 'No Record',
+                            'size' => 'No Record',
+                            'plotNumber' => 'No Record',
+                            'created_at' => null,
+                            'status' => 'unavailable'
+                        ]
+                    ]);
+                    break;
+                    
+                case 'sectional':
+                    // Sectional Titling from subapplications where both statuses are approved
+                    // Only show PENDING Sectional Titling instruments
+                    $approvedSubapplications = DB::connection('sqlsrv')->table('subapplications as s')
+                        ->leftJoin('mother_applications as m', 's.main_application_id', '=', 'm.id')
+                        ->where('s.planning_recommendation_status', 'Approved')
+                        ->where('s.application_status', 'Approved')
+                        ->select(
+                            's.id',
+                            's.fileno',
+                            's.deeds_completion_status',
+                            DB::raw("CONCAT(COALESCE(s.applicant_title,''), ' ', COALESCE(s.first_name,''), ' ', COALESCE(s.surname,''), COALESCE(s.corporate_name,''), COALESCE(s.multiple_owners_names,'')) as sub_applicant"),
+                            DB::raw("CONCAT(COALESCE(m.applicant_title,''), ' ', COALESCE(m.first_name,''), ' ', COALESCE(m.surname,''), COALESCE(m.corporate_name,''), COALESCE(m.multiple_owners_names,'')) as mother_applicant"),
+                            'm.property_lga as lga', 
+                            'm.property_district as district', 
+                            'm.plot_size as size', 
+                            'm.property_plot_no as plotNumber', 
+                            's.created_at'
+                        )
+                        ->get();
+                    
+                    // Create Sectional Titling records for each subapplication, but only if it's PENDING
+                    $data = collect();
+                    foreach ($approvedSubapplications as $subApp) {
+                        // Check if Sectional Titling is pending
+                        $sectionalTitlingStatus = 'pending';
+                        if (!empty($subApp->deeds_completion_status)) {
+                            $completionStatus = json_decode($subApp->deeds_completion_status, true);
+                            if ($completionStatus && isset($completionStatus['instruments'])) {
+                                foreach ($completionStatus['instruments'] as $instrument) {
+                                    if ($instrument['name'] === 'Sectional Titling CofO') {
+                                        $sectionalTitlingStatus = strtolower($instrument['status']) === 'registered' ? 'registered' : 'pending';
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Only add if it's pending
+                        if ($sectionalTitlingStatus === 'pending') {
+                            $data->push((object)[
+                                'id' => $subApp->id . '_sectional_cofo',
+                                'fileno' => $subApp->fileno,
+                                'instrument_type' => 'Sectional Titling CofO',
+                                'grantor' => 'Kano State Government', // Always Kano State Government for Sectional Titling CofO
+                                'grantee' => $subApp->sub_applicant,
+                                'lga' => $subApp->lga,
+                                'district' => $subApp->district,
+                                'size' => $subApp->size,
+                                'plotNumber' => $subApp->plotNumber,
+                                'created_at' => $subApp->created_at,
+                                'status' => 'pending',
+                                'source_type' => 'Sectional Titling',
+                                'original_subapp_id' => $subApp->id
+                            ]);
+                        }
+                    }
+                    break;
+                    
+                case 'batch':
+                default:
+                    // For batch registration, include other instruments plus the two main types from subapplications
+                    $instrumentData = DB::connection('sqlsrv')->table('instrument_registration')
+                        ->where(function ($q) {
+                            $q->where('status', '!=', 'registered')
+                              ->orWhereNull('status');
+                        })
+                        ->select('id', DB::raw("COALESCE(MLSFileNo, KAGISFileNO, NewKANGISFileNo) as fileno"), 'instrument_type', 'Grantor as grantor', 'Grantee as grantee', 'lga', 'district', 'size', 'plotNumber', 'created_at', DB::raw("COALESCE(status, 'pending') as status"), DB::raw("'Other Instruments' as source_type"))->get();
+                    
+                    // Get approved subapplications
+                    $approvedSubapplications = DB::connection('sqlsrv')->table('subapplications as s')
+                        ->leftJoin('mother_applications as m', 's.main_application_id', '=', 'm.id')
+                        ->where('s.planning_recommendation_status', 'Approved')
+                        ->where('s.application_status', 'Approved')
+                        ->select(
+                            's.id',
+                            's.fileno',
+                            's.deeds_completion_status',
+                            DB::raw("CONCAT(COALESCE(s.applicant_title,''), ' ', COALESCE(s.first_name,''), ' ', COALESCE(s.surname,''), COALESCE(s.corporate_name,''), COALESCE(s.multiple_owners_names,'')) as sub_applicant"),
+                            DB::raw("CONCAT(COALESCE(m.applicant_title,''), ' ', COALESCE(m.first_name,''), ' ', COALESCE(m.surname,''), COALESCE(m.corporate_name,''), COALESCE(m.multiple_owners_names,'')) as mother_applicant"),
+                            'm.property_lga as lga', 
+                            'm.property_district as district', 
+                            'm.plot_size as size', 
+                            'm.property_plot_no as plotNumber', 
+                            's.created_at'
+                        )
+                        ->get();
+                    
+                    // Create both ST Assignment and Sectional Titling records for each subapplication
+                    // But only include PENDING instruments in the batch modal
+                    $stAssignmentData = collect();
+                    $subData = collect();
+                    
+                    foreach ($approvedSubapplications as $subApp) {
+                        // Check completion status for both instruments
+                        $stAssignmentStatus = 'pending';
+                        $sectionalTitlingStatus = 'pending';
+                        
+                        if (!empty($subApp->deeds_completion_status)) {
+                            $completionStatus = json_decode($subApp->deeds_completion_status, true);
+                            if ($completionStatus && isset($completionStatus['instruments'])) {
+                                foreach ($completionStatus['instruments'] as $instrument) {
+                                    if ($instrument['name'] === 'ST Assignment (Transfer of Title)') {
+                                        $stAssignmentStatus = strtolower($instrument['status']) === 'registered' ? 'registered' : 'pending';
+                                    } elseif ($instrument['name'] === 'Sectional Titling CofO') {
+                                        $sectionalTitlingStatus = strtolower($instrument['status']) === 'registered' ? 'registered' : 'pending';
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Only add ST Assignment if it's pending
+                        if ($stAssignmentStatus === 'pending') {
+                            $stAssignmentData->push((object)[
+                                'id' => $subApp->id . '_st_assignment',
+                                'fileno' => $subApp->fileno,
+                                'instrument_type' => 'ST Assignment (Transfer of Title)',
+                                'grantor' => $subApp->mother_applicant, // Grantor should be from mother application applicant details
+                                'grantee' => $subApp->sub_applicant,
+                                'lga' => $subApp->lga,
+                                'district' => $subApp->district,
+                                'size' => $subApp->size,
+                                'plotNumber' => $subApp->plotNumber,
+                                'created_at' => $subApp->created_at,
+                                'status' => 'pending',
+                                'source_type' => 'ST Assignment',
+                                'original_subapp_id' => $subApp->id
+                            ]);
+                        }
+                        
+                        // Only add Sectional Titling if it's pending
+                        if ($sectionalTitlingStatus === 'pending') {
+                            $subData->push((object)[
+                                'id' => $subApp->id . '_sectional_cofo',
+                                'fileno' => $subApp->fileno,
+                                'instrument_type' => 'Sectional Titling CofO',
+                                'grantor' => 'Kano State Government', // Always Kano State Government for Sectional Titling CofO
+                                'grantee' => $subApp->sub_applicant,
+                                'lga' => $subApp->lga,
+                                'district' => $subApp->district,
+                                'size' => $subApp->size,
+                                'plotNumber' => $subApp->plotNumber,
+                                'created_at' => $subApp->created_at,
+                                'status' => 'pending',
+                                'source_type' => 'Sectional Titling',
+                                'original_subapp_id' => $subApp->id
+                            ]);
+                        }
+                    }
+                    
+                    $data = $instrumentData->merge($stAssignmentData)->merge($subData);
+                    break;
+            }
+            
+            return response()->json($data->values()->toArray());
+            
+        } catch (\Exception $e) {
+            Log::error('Error in getBatchData', ['filter' => $request->query('filter'), 'exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['error' => 'Failed to fetch batch data: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function declineRegistration(Request $request)
+    {
+        try {
+            $request->validate([
+                'application_id' => 'required',
+                'decline_reason' => 'required|string|max:500'
+            ]);
+
+            $applicationId = $request->application_id;
+            $sourceRecord = null;
+            $sourceTable = null;
+            
+            // Handle composite IDs for ST Assignment and Sectional Titling
+            if (strpos($applicationId, '_st_assignment') !== false || strpos($applicationId, '_sectional_cofo') !== false) {
+                $originalId = str_replace(['_st_assignment', '_sectional_cofo'], '', $applicationId);
+                $sourceRecord = DB::connection('sqlsrv')->table('subapplications')->where('id', $originalId)->first();
+                if ($sourceRecord) {
+                    $sourceTable = 'subapplications';
+                    $sourceRecord->original_id = $originalId;
+                }
+            } elseif (strpos($applicationId, 'instr_reg_') === 0) {
+                // Handle instrument_registration IDs that start with 'instr_reg_'
+                $originalId = str_replace('instr_reg_', '', $applicationId);
+                $sourceRecord = DB::connection('sqlsrv')->table('instrument_registration')->where('id', $originalId)->first();
+                if ($sourceRecord) {
+                    $sourceTable = 'instrument_registration';
+                }
+            } else {
+                // Only check subapplications if the ID is numeric
+                if (is_numeric($applicationId)) {
+                    $sourceRecord = DB::connection('sqlsrv')->table('subapplications')->where('id', $applicationId)->first();
+                    if ($sourceRecord) {
+                        $sourceTable = 'subapplications';
+                    }
+                }
+                
+                if (!isset($sourceRecord)) {
+                    $sourceRecord = DB::connection('sqlsrv')->table('instrument_registration')->where('id', $applicationId)->first();
+                    if ($sourceRecord) {
+                        $sourceTable = 'instrument_registration';
+                    } else {
+                        $sourceRecord = DB::connection('sqlsrv')->table('mother_applications')->where('id', $applicationId)->first();
+                        if ($sourceRecord) {
+                            $sourceTable = 'mother_applications';
+                        }
+                    }
+                }
+            }
+                
+            if (!$sourceRecord) {
+                return response()->json(['success' => false, 'error' => 'Source record not found'], 404);
+            }
+            
+            // Update status using original ID if it's a composite ID
+            $updateId = isset($sourceRecord->original_id) ? $sourceRecord->original_id : $applicationId;
+            
+            // For instrument_registration IDs, we need to extract the numeric part
+            if ($sourceTable === 'instrument_registration' && strpos($updateId, 'instr_reg_') === 0) {
+                $updateId = str_replace('instr_reg_', '', $updateId);
+            }
+            
+            $updateData = [
+                'deeds_status' => 'declined',
+                'decline_reason' => $request->decline_reason,
+                'updated_by' => Auth::id(),
+                'updated_at' => now()
+            ];
+
+            switch ($sourceTable) {
+                case 'instrument_registration':
+                    $updateData['status'] = 'declined';
+                    DB::connection('sqlsrv')->table('instrument_registration')->where('id', $updateId)->update($updateData);
+                    break;
+
+                case 'mother_applications':
+                    DB::connection('sqlsrv')->table('mother_applications')->where('id', $updateId)->update($updateData);
+                    break;
+
+                case 'subapplications':
+                    DB::connection('sqlsrv')->table('subapplications')->where('id', $updateId)->update($updateData);
+                    break;
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Registration declined successfully'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in declineRegistration', ['exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['success' => false, 'error' => 'Failed to decline registration: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function getOverallCompletionStatus(Request $request)
+    {
+        try {
+            // Get counts for different statuses
+            $totalInstruments = DB::connection('sqlsrv')->table('subapplications')
+                ->where('planning_recommendation_status', 'Approved')
+                ->where('application_status', 'Approved')
+                ->count() * 2; // Each subapplication has 2 instruments (ST Assignment + Sectional Titling)
+            
+            $registeredInstruments = DB::connection('sqlsrv')->table('registered_instruments')
+                ->whereIn('instrument_type', ['ST Assignment (Transfer of Title)', 'Sectional Titling CofO'])
+                ->where('status', 'registered')
+                ->count();
+            
+            $pendingInstruments = $totalInstruments - $registeredInstruments;
+            
+            $completionPercentage = $totalInstruments > 0 ? round(($registeredInstruments / $totalInstruments) * 100, 2) : 0;
+            
+            return response()->json([
+                'success' => true,
+                'total_instruments' => $totalInstruments,
+                'registered_instruments' => $registeredInstruments,
+                'pending_instruments' => $pendingInstruments,
+                'completion_percentage' => $completionPercentage
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting overall completion status', [
+                'exception' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to get completion status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getFileCompletionStatus(Request $request)
+    {
+        try {
+            $fileNo = $request->query('file_no');
+            
+            if (empty($fileNo)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'File number is required'
+                ], 400);
+            }
+
+            // Get the subapplication for this file number
+            $subApplication = DB::connection('sqlsrv')->table('subapplications')
+                ->where('fileno', $fileNo)
+                ->first();
+
+            if (!$subApplication) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'File not found'
+                ], 404);
+            }
+
+            // Check registration status for both instruments
+            $registrations = DB::connection('sqlsrv')->table('registered_instruments')
+                ->where('StFileNo', $fileNo)
+                ->whereIn('instrument_type', ['ST Assignment (Transfer of Title)', 'Sectional Titling CofO'])
+                ->select('instrument_type', 'status')
+                ->get();
+
+            $stAssignmentRegistered = $registrations->contains('instrument_type', 'ST Assignment (Transfer of Title)');
+            $sectionalTitlingRegistered = $registrations->contains('instrument_type', 'Sectional Titling CofO');
+            
+            $completionStatus = [
+                'instruments' => [
+                    [
+                        'name' => 'ST Assignment (Transfer of Title)',
+                        'status' => $stAssignmentRegistered ? 'Registered' : 'Pending'
+                    ],
+                    [
+                        'name' => 'Sectional Titling CofO',
+                        'status' => $sectionalTitlingRegistered ? 'Registered' : 'Pending'
+                    ]
+                ]
+            ];
+
+            $overallStatus = ($stAssignmentRegistered && $sectionalTitlingRegistered) ? 'Completed' : 'In Progress';
+            $completionPercentage = (($stAssignmentRegistered ? 1 : 0) + ($sectionalTitlingRegistered ? 1 : 0)) / 2 * 100;
+
+            return response()->json([
+                'success' => true,
+                'file_no' => $fileNo,
+                'overall_status' => $overallStatus,
+                'completion_percentage' => $completionPercentage,
+                'completion_details' => $completionStatus
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting file completion status', [
+                'file_no' => $request->query('file_no'),
+                'exception' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to get file completion status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     private function updateSourceRecordStatus($id, $sourceTable)
     {
         $updateData = [
