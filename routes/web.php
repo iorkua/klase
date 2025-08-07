@@ -787,7 +787,9 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'file-numbers'], func
     Route::get('/', [App\Http\Controllers\FileNumberController::class, 'index'])->name('file-numbers.index');
     Route::get('/data', [App\Http\Controllers\FileNumberController::class, 'getData'])->name('file-numbers.data');
     Route::get('/next-serial', [App\Http\Controllers\FileNumberController::class, 'getNextSerial'])->name('file-numbers.next-serial');
+    Route::get('/existing', [App\Http\Controllers\FileNumberController::class, 'getExistingFileNumbers'])->name('file-numbers.existing');
     Route::post('/store', [App\Http\Controllers\FileNumberController::class, 'store'])->name('file-numbers.store');
+    Route::post('/migrate', [App\Http\Controllers\FileNumberController::class, 'migrate'])->name('file-numbers.migrate');
     Route::get('/{id}', [App\Http\Controllers\FileNumberController::class, 'show'])->name('file-numbers.show');
     Route::put('/{id}', [App\Http\Controllers\FileNumberController::class, 'update'])->name('file-numbers.update');
     Route::delete('/{id}', [App\Http\Controllers\FileNumberController::class, 'destroy'])->name('file-numbers.destroy');

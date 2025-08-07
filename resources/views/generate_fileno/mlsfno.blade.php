@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('page-title')
-    {{ __('MLSF Number Generator') }}
+    {{ __('MLS File Number Generator') }}
 @endsection
 
 @section('content')
@@ -8,8 +8,8 @@
     <div class="flex-1 overflow-auto">
         <!-- Header -->
         @include('admin.header', [
-            'PageTitle' => 'MLSF Number Generator',
-            'PageDescription' => 'Generate and manage MLSF file numbers'
+            'PageTitle' => 'MLS File Number Generator',
+            'PageDescription' => 'Generate and manage MLS file numbers'
         ])
         
         <!-- Dashboard Content -->
@@ -20,16 +20,16 @@
                 <div class="flex justify-between items-center mb-6">
                     <div class="flex space-x-4">
                         <button 
-                            onclick="openGenerateModal('new')"
+                            onclick="openGenerateModal()"
                             class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
                             <i data-lucide="plus" class="w-4 h-4"></i>
-                            <span>Generate New Application</span>
+                            <span>Generate New Application MLS File Number</span>
                         </button>
                         <button 
-                            onclick="openGenerateModal('conversion')"
+                            onclick="openMigrationModal()"
                             class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
-                            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                            <span>Generate Conversion</span>
+                            <i data-lucide="upload" class="w-4 h-4"></i>
+                            <span>Migrate Data</span>
                         </button>
                     </div>
                     <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 shadow-sm">
@@ -54,9 +54,9 @@
                             <table id="mlsfTable" class="w-full table-auto">
                                 <thead>
                                     <tr class="bg-gray-50">
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">MLSF No</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KANGIS File No</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">New KANGIS File No</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File Name</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
@@ -76,11 +76,11 @@
 
     <!-- Generate Modal -->
     <div id="generateModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="relative top-10 mx-auto p-5 border w-[500px] shadow-lg rounded-md bg-white">
             <div class="mt-3">
                 <!-- Modal Header -->
                 <div class="flex items-center justify-between mb-4">
-                    <h3 id="modalTitle" class="text-lg font-medium text-gray-900">Generate MLSF Number</h3>
+                    <h3 id="modalTitle" class="text-lg font-medium text-gray-900">Generate New Application MLS File Number</h3>
                     <button onclick="closeGenerateModal()" class="text-gray-400 hover:text-gray-600">
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
@@ -89,7 +89,29 @@
                 <!-- Modal Form -->
                 <form id="generateForm" onsubmit="submitForm(event)">
                     @csrf
-                    <input type="hidden" id="applicationType" name="application_type" value="">
+                    
+                    <!-- Application Type Selection -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Application Type</label>
+                        <div class="flex space-x-4">
+                            <label class="flex items-center">
+                                <input type="radio" name="application_type" value="new" class="mr-2" onchange="updateApplicationType('new')" checked>
+                                <span>New Application MLS File Number</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="application_type" value="conversion" class="mr-2" onchange="updateApplicationType('conversion')">
+                                <span>Conversion</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- File Name -->
+                    <div class="mb-4">
+                        <label for="fileName" class="block text-sm font-medium text-gray-700 mb-2">File Name</label>
+                        <input type="text" id="fileName" name="file_name" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Enter file name">
+                    </div>
                     
                     <!-- Land Use -->
                     <div class="mb-4">
@@ -105,7 +127,7 @@
                                 <option value="IND">IND - Industrial</option>
                                 <option value="AGR">AGR - Agricultural</option>
                                 <option value="INS">INS - Institutional</option>
-                            </optgroup>
+                            </optgroup> 
                             <!-- Conversion Options -->
                             <optgroup id="conversionOptions" label="Conversion" style="display: none;">
                                 <option value="CON-RES">CON-RES - Conversion to Residential</option>
@@ -114,6 +136,36 @@
                                 <option value="CON-AGR">CON-AGR - Conversion to Agricultural</option>
                                 <option value="CON-INS">CON-INS - Conversion to Institutional</option>
                             </optgroup>
+                        </select>
+                    </div>
+
+                    <!-- File Options -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">File Options</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="radio" name="file_option" value="normal" class="mr-2" onchange="updatePreview()" checked>
+                                <span>Normal File</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="file_option" value="temporary" class="mr-2" onchange="updatePreview()">
+                                <span>Temporary File</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="file_option" value="extension" class="mr-2" onchange="updatePreview()">
+                                <span>Extension</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Extension File Selection (shown only when Extension is selected) -->
+                    <div id="extensionFileSection" class="mb-4 hidden">
+                        <label for="existingFileNo" class="block text-sm font-medium text-gray-700 mb-2">Select Existing MLS File Number</label>
+                        <select id="existingFileNo" name="existing_file_no" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                onchange="updatePreview()">
+                            <option value="">Select existing file number...</option>
+                            <!-- Options will be populated via AJAX -->
                         </select>
                     </div>
 
@@ -145,14 +197,118 @@
                     </div>
 
                     <!-- Form Actions -->
+                    <div class="flex justify-between">
+                        <button type="button" onclick="showOverrideModal()" 
+                                class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700">
+                            Override
+                        </button>
+                        <div class="flex space-x-3">
+                            <button type="button" onclick="closeGenerateModal()" 
+                                    class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                                Cancel
+                            </button>
+                            <button type="submit" 
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                                Generate
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Override Modal -->
+    <div id="overrideModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Override File Number</h3>
+                    <button onclick="closeOverrideModal()" class="text-gray-400 hover:text-gray-600">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <!-- Override Form -->
+                <form id="overrideForm" onsubmit="submitOverrideForm(event)">
+                    @csrf
+                    
+                    <!-- Manual Year -->
+                    <div class="mb-4">
+                        <label for="overrideYear" class="block text-sm font-medium text-gray-700 mb-2">Year</label>
+                        <input type="number" id="overrideYear" name="override_year" 
+                               value="{{ date('Y') }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               min="2020" max="2050">
+                    </div>
+
+                    <!-- Manual Serial Number -->
+                    <div class="mb-4">
+                        <label for="overrideSerialNo" class="block text-sm font-medium text-gray-700 mb-2">Serial Number</label>
+                        <input type="number" id="overrideSerialNo" name="override_serial_no" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               min="1" max="9999">
+                    </div>
+
+                    <!-- Extension Option -->
+                    <div class="mb-4">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="overrideExtension" name="override_extension" class="mr-2">
+                            <span>File Extension</span>
+                        </label>
+                    </div>
+
+                    <!-- Form Actions -->
                     <div class="flex justify-end space-x-3">
-                        <button type="button" onclick="closeGenerateModal()" 
+                        <button type="button" onclick="closeOverrideModal()" 
                                 class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
                             Cancel
                         </button>
                         <button type="submit" 
-                                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                            Generate
+                                class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700">
+                            Apply Override
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Migration Modal -->
+    <div id="migrationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Migrate Data from Excel</h3>
+                    <button onclick="closeMigrationModal()" class="text-gray-400 hover:text-gray-600">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <!-- Migration Form -->
+                <form id="migrationForm" onsubmit="submitMigrationForm(event)" enctype="multipart/form-data">
+                    @csrf
+                    
+                    <!-- File Upload -->
+                    <div class="mb-4">
+                        <label for="excelFile" class="block text-sm font-medium text-gray-700 mb-2">Excel File</label>
+                        <input type="file" id="excelFile" name="excel_file" 
+                               accept=".xlsx,.xls,.csv"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <p class="text-xs text-gray-500 mt-1">Upload Excel file with columns: mlsfNo, kangisFile, NewKANGISFileNo, FileName</p>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="closeMigrationModal()" 
+                                class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit" 
+                                class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                            Migrate Data
                         </button>
                     </div>
                 </form>
@@ -214,6 +370,7 @@
     <script>
         let table;
         let nextSerialNo = 1;
+        let isOverrideMode = false;
 
         $(document).ready(function() {
             // Initialize DataTable
@@ -237,27 +394,19 @@
                 },
                 columns: [
                     { 
-                        data: 'mlsfNo', 
-                        name: 'mlsfNo',
-                        title: 'MLSF No'
+                        data: 'kangisFileNo', 
+                        name: 'kangisFileNo',
+                        title: 'KANGIS File No'
                     },
                     { 
-                        data: 'created_by', 
-                        name: 'created_by',
-                        title: 'Created By'
+                        data: 'NewKANGISFileNo', 
+                        name: 'NewKANGISFileNo',
+                        title: 'New KANGIS File No'
                     },
                     { 
-                        data: 'created_at', 
-                        name: 'created_at',
-                        title: 'Created At',
-                        render: function(data) {
-                            if (!data) return '-';
-                            try {
-                                return new Date(data).toLocaleDateString();
-                            } catch (e) {
-                                return data;
-                            }
-                        }
+                        data: 'FileName', 
+                        name: 'FileName',
+                        title: 'File Name'
                     },
                     { 
                         data: 'action', 
@@ -267,7 +416,7 @@
                         searchable: false
                     }
                 ],
-                order: [[2, 'desc']],
+                order: [[0, 'desc']],
                 pageLength: 25,
                 responsive: true,
                 language: {
@@ -285,27 +434,30 @@
 
             // Get next serial number
             getNextSerialNumber();
+            
+            // Load existing file numbers for extension dropdown
+            loadExistingFileNumbers();
         });
 
-        function openGenerateModal(type) {
+        function openGenerateModal() {
             document.getElementById('generateModal').classList.remove('hidden');
-            document.getElementById('applicationType').value = type;
-            
-            // Update modal title and form based on type
-            if (type === 'new') {
-                document.getElementById('modalTitle').textContent = 'Generate New Application MLSF Number';
-                document.querySelector('input[value="new"]').checked = true;
-                updateApplicationType('new');
-            } else {
-                document.getElementById('modalTitle').textContent = 'Generate Conversion MLSF Number';
-                document.querySelector('input[value="conversion"]').checked = true;
-                updateApplicationType('conversion');
-            }
             
             // Reset form
             document.getElementById('generateForm').reset();
             document.getElementById('year').value = new Date().getFullYear();
             document.getElementById('serialNo').value = nextSerialNo;
+            
+            // Reset to default state
+            isOverrideMode = false;
+            document.getElementById('year').readOnly = true;
+            document.getElementById('serialNo').readOnly = true;
+            document.getElementById('year').classList.add('bg-gray-100', 'text-gray-600');
+            document.getElementById('serialNo').classList.add('bg-gray-100', 'text-gray-600');
+            
+            // Set default application type
+            document.querySelector('input[name="application_type"][value="new"]').checked = true;
+            updateApplicationType('new');
+            
             updatePreview();
         }
 
@@ -335,31 +487,166 @@
             const serialNo = document.getElementById('serialNo').value;
             const year = document.getElementById('year').value;
             const landUse = document.getElementById('landUse').value;
+            const fileOption = document.querySelector('input[name="file_option"]:checked')?.value;
+            const existingFileNo = document.getElementById('existingFileNo').value;
             const preview = document.getElementById('mlsfPreview');
             
-            if (serialNo && year && landUse) {
+            let previewText = '-';
+            
+            if (fileOption === 'extension' && existingFileNo) {
+                previewText = existingFileNo + ' AND EXTENSION';
+            } else if (serialNo && year && landUse) {
                 const paddedSerial = serialNo.toString().padStart(4, '0');
-                preview.textContent = `${landUse}-${year}-${paddedSerial}`;
+                previewText = `${landUse}-${year}-${paddedSerial}`;
+                
+                if (fileOption === 'temporary') {
+                    previewText += '(T)';
+                }
+            }
+            
+            preview.textContent = previewText;
+            
+            if (previewText !== '-') {
                 preview.classList.remove('text-gray-400');
                 preview.classList.add('text-green-600');
             } else {
-                preview.textContent = '-';
                 preview.classList.remove('text-green-600');
                 preview.classList.add('text-gray-400');
             }
+            
+            // Show/hide extension file selection
+            const extensionSection = document.getElementById('extensionFileSection');
+            if (fileOption === 'extension') {
+                extensionSection.classList.remove('hidden');
+            } else {
+                extensionSection.classList.add('hidden');
+            }
+        }
+
+        function loadExistingFileNumbers() {
+            fetch('{{ route("file-numbers.existing") }}')
+                .then(response => response.json())
+                .then(data => {
+                    const select = document.getElementById('existingFileNo');
+                    select.innerHTML = '<option value="">Select existing file number...</option>';
+                    
+                    data.forEach(fileNo => {
+                        const option = document.createElement('option');
+                        option.value = fileNo.mlsfNo;
+                        option.textContent = fileNo.mlsfNo;
+                        select.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading existing file numbers:', error);
+                });
         }
 
         function getNextSerialNumber() {
-            fetch('{{ route("file-numbers.next-serial") }}')
+            const currentYear = new Date().getFullYear();
+            
+            fetch(`{{ route("file-numbers.next-serial") }}?year=${currentYear}`)
                 .then(response => response.json())
                 .then(data => {
                     nextSerialNo = data.nextSerial;
-                    document.getElementById('serialNo').value = nextSerialNo;
-                    updatePreview();
+                    if (!isOverrideMode) {
+                        document.getElementById('serialNo').value = nextSerialNo;
+                        updatePreview();
+                    }
                 })
                 .catch(error => {
                     console.error('Error getting next serial number:', error);
                 });
+        }
+
+        function showOverrideModal() {
+            document.getElementById('overrideModal').classList.remove('hidden');
+            document.getElementById('overrideYear').value = document.getElementById('year').value;
+            document.getElementById('overrideSerialNo').value = document.getElementById('serialNo').value;
+        }
+
+        function closeOverrideModal() {
+            document.getElementById('overrideModal').classList.add('hidden');
+        }
+
+        function submitOverrideForm(event) {
+            event.preventDefault();
+            
+            const overrideYear = document.getElementById('overrideYear').value;
+            const overrideSerialNo = document.getElementById('overrideSerialNo').value;
+            const overrideExtension = document.getElementById('overrideExtension').checked;
+            
+            // Apply override values to main form
+            document.getElementById('year').value = overrideYear;
+            document.getElementById('serialNo').value = overrideSerialNo;
+            
+            // Enable manual editing
+            isOverrideMode = true;
+            document.getElementById('year').readOnly = false;
+            document.getElementById('serialNo').readOnly = false;
+            document.getElementById('year').classList.remove('bg-gray-100', 'text-gray-600');
+            document.getElementById('serialNo').classList.remove('bg-gray-100', 'text-gray-600');
+            document.getElementById('year').classList.add('bg-white', 'text-gray-900');
+            document.getElementById('serialNo').classList.add('bg-white', 'text-gray-900');
+            
+            if (overrideExtension) {
+                document.querySelector('input[name="file_option"][value="extension"]').checked = true;
+            }
+            
+            updatePreview();
+            closeOverrideModal();
+        }
+
+        function openMigrationModal() {
+            document.getElementById('migrationModal').classList.remove('hidden');
+        }
+
+        function closeMigrationModal() {
+            document.getElementById('migrationModal').classList.add('hidden');
+        }
+
+        function submitMigrationForm(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(document.getElementById('migrationForm'));
+            
+            fetch('{{ route("file-numbers.migrate") }}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: data.message,
+                        confirmButtonColor: '#10b981'
+                    });
+                    closeMigrationModal();
+                    table.ajax.reload();
+                    updateTotalCount();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: data.message || 'An error occurred during migration',
+                        confirmButtonColor: '#ef4444'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'An error occurred while migrating data',
+                    confirmButtonColor: '#ef4444'
+                });
+            });
         }
 
         function submitForm(event) {
@@ -401,7 +688,7 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'Error!',
-                    text: 'An error occurred while generating the MLSF number',
+                    text: 'An error occurred while generating the file number',
                     confirmButtonColor: '#ef4444'
                 });
             });
@@ -412,8 +699,8 @@
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('editId').value = data.id;
-                    document.getElementById('editMlsfNo').value = data.mlsfNo;
-                    document.getElementById('editType').value = data.type;
+                    document.getElementById('editMlsfNo').value = data.mlsfNo || data.kangisFileNo;
+                    document.getElementById('editType').value = data.type || 'Generated';
                     document.getElementById('editModal').classList.remove('hidden');
                 })
                 .catch(error => {
@@ -542,6 +829,14 @@
             document.getElementById('serialNo').addEventListener('input', updatePreview);
             document.getElementById('year').addEventListener('input', updatePreview);
             document.getElementById('landUse').addEventListener('change', updatePreview);
+            
+            // Add event listeners for file option radio buttons
+            document.querySelectorAll('input[name="file_option"]').forEach(radio => {
+                radio.addEventListener('change', updatePreview);
+            });
+            
+            // Add event listener for existing file number dropdown
+            document.getElementById('existingFileNo').addEventListener('change', updatePreview);
         });
     </script>
 @endsection
