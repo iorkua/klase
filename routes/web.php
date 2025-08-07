@@ -782,6 +782,29 @@ Route::post('/edms/pagetyping/{fileIndexingId}/finish', [\App\Http\Controllers\E
 Route::post('/edms/pagetyping/{fileIndexingId}/batch-save', [\App\Http\Controllers\EdmsController::class, 'batchSavePageTyping'])->name('edms.batch-save-page-typing');
 Route::post('/edms/pdf-thumbnail', [\App\Http\Controllers\EdmsController::class, 'getPdfPageThumbnail'])->name('edms.pdf-thumbnail');
 
+// File Number Generation Routes
+Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'file-numbers'], function () {
+    Route::get('/', [App\Http\Controllers\FileNumberController::class, 'index'])->name('file-numbers.index');
+    Route::get('/data', [App\Http\Controllers\FileNumberController::class, 'getData'])->name('file-numbers.data');
+    Route::get('/next-serial', [App\Http\Controllers\FileNumberController::class, 'getNextSerial'])->name('file-numbers.next-serial');
+    Route::post('/store', [App\Http\Controllers\FileNumberController::class, 'store'])->name('file-numbers.store');
+    Route::get('/{id}', [App\Http\Controllers\FileNumberController::class, 'show'])->name('file-numbers.show');
+    Route::put('/{id}', [App\Http\Controllers\FileNumberController::class, 'update'])->name('file-numbers.update');
+    Route::delete('/{id}', [App\Http\Controllers\FileNumberController::class, 'destroy'])->name('file-numbers.destroy');
+    Route::get('/count/total', [App\Http\Controllers\FileNumberController::class, 'getCount'])->name('file-numbers.count');
+});
+
+// Recertification Routes
+Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'recertification'], function () {
+    Route::get('/', function() {
+        return view('recertification.index');
+    })->name('recertification.index');
+    
+    Route::get('/application', function() {
+        return view('recertification.application_standalone_clean');
+    })->name('recertification.application');
+});
+
 // Page Typing Debug Routes (main routes are in apps2.php)
 Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'pagetyping'], function () {
     Route::get('/test-routes', function() {

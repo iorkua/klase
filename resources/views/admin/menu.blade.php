@@ -194,7 +194,7 @@
       </div>
       @endif
 
-      <!-- Recertification Section -->
+      <!-- Recertification Section --> 
       @if($hasRole('Recertification'))
       <div class="sidebar-submodule-header flex items-center justify-between py-1.5 px-3 cursor-pointer rounded-md" data-section="recertification">
         <div class="flex items-center gap-2">
@@ -205,7 +205,7 @@
       </div>
 
       <div class="pl-4 mt-1 mb-1 space-y-0.5 hidden" data-content="recertification">
-        <a href="/programmes/recertification/application" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
+        <a href="{{route('recertification.index')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200"  {{ request()->routeIs('recertification.index') ? 'active' : '' }}>
         <i data-lucide="file-plus" class="h-3.5 w-3.5 text-purple-400"></i>
         <span>Application</span>
         </a>
@@ -503,6 +503,15 @@
       <div class="pl-4 mt-1 space-y-0.5 hidden" data-content="lands">
       <!-- File Tracker Section -->
    @if($hasRole('Lands - File Tracker/Tracking - RFID'))
+
+     <!-- MLSF Number Generator -->
+     @if($hasRole('EDMS - File Number Generation') || $hasRole('Supper Admin'))
+     <a href="{{route('file-numbers.index')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('file-numbers.index') ? 'active' : '' }}">
+       <i data-lucide="hash" class="h-3.5 w-3.5 text-blue-400"></i>
+       <span>Generate New FileNo (MLSFileNo)</span>
+     </a>
+     @endif
+
       <div class="sidebar-submodule-header flex items-center justify-between py-1.5 px-3 cursor-pointer rounded-md" data-section="fileTracker">
         <a href="{{ route('filetracker.index') }}" class="flex items-center gap-2 w-full {{ request()->routeIs('filetracker.index') ? 'active' : '' }}">
           <i data-lucide="radio-tower" class="h-4 w-4 text-blue-500"></i>
@@ -591,6 +600,8 @@
           <span>PageTyping</span>
         </a>
         @endif
+
+      
       </div>
       @endif
       </div>

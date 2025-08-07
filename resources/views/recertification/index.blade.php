@@ -133,7 +133,7 @@ input:checked + .toggle-slider:before {
    @include('admin.header')
     <!-- Dashboard Content -->
     <div class="p-6">
- 
+      @include('recertification.js.form_js')
  
 <div class="container mx-auto py-6 space-y-6 max-w-7xl px-4 sm:px-6 lg:px-8">
   
@@ -156,10 +156,16 @@ input:checked + .toggle-slider:before {
           OCR Mode
         </label>
       </div>
-      <button id="new-application-btn" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-4 py-2 transition-all cursor-pointer border-0 bg-blue-600 text-white hover:bg-blue-700 gap-2">
-        <i data-lucide="plus" class="h-4 w-4"></i>
-        New Application
-      </button>
+      <div class="flex gap-2">
+        <button id="new-application-btn" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-4 py-2 transition-all cursor-pointer border-0 bg-blue-600 text-white hover:bg-blue-700 gap-2">
+          <i data-lucide="plus" class="h-4 w-4"></i>
+          New Application (Modal)
+        </button>
+        <a href="{{ url('/recertification/application') }}" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-4 py-2 transition-all cursor-pointer border border-blue-600 text-blue-600 hover:bg-blue-50 gap-2">
+          <i data-lucide="external-link" class="h-4 w-4"></i>
+          New Application (Page)
+        </a>
+      </div>
     </div>
   </div>
 
@@ -341,14 +347,16 @@ input:checked + .toggle-slider:before {
 
     
     </div>
+    <!-- Include the New Application  form Modal -->
+@include('recertification.application_form')
     <!-- Footer -->
     @include('admin.footer')
   </div>
 
-<!-- Include the New Application Modal -->
-@include('recertification.new_application')
 
-@include('recertification.js')
+
+@include('recertification.js.js')
+
 @endsection
 
  
