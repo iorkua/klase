@@ -90,7 +90,7 @@
                         <label for="lga" class="text-xs text-gray-600">LGA</label>
                         <select id="lga" name="lgsaOrCity" x-model="lga" class="form-input text-sm property-input">
                             <option value="">Select LGA</option>
-                            <option value="Ajingi">Ajingi</option>
+                             <option value="Ajingi">Ajingi</option>
                             <option value="Albasu">Albasu</option>
                             <option value="Bagwai">Bagwai</option>
                             <option value="Bebeji">Bebeji</option>

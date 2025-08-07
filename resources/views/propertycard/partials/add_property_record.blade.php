@@ -91,8 +91,7 @@
                                     @change="handleStreetChange($event.target.value)"
                                     name="streetName">
                                 <option value="" selected>Select Street Name</option>
-                                 
-        <option value="10TH ST">10TH ST</option>
+                                <option value="10TH ST">10TH ST</option>
         <option value="11TH AV">11TH AV</option>
         <option value="11TH ST">11TH ST</option>
         <option value="12TH AV">12TH AV</option>
@@ -985,7 +984,8 @@
         <option value="ZUBAIRU INUWA LINK">ZUBAIRU INUWA LINK</option>
         <option value="ZUMA ST">ZUMA ST</option>
         <option value="ZUNGERU ROAD">ZUNGERU ROAD</option>
-                                <option value="other">Other</option>
+        <option value="ZUWA ST">ZUWA ST</option>
+          <option value="other">Other</option>
                             </select>
                             <input 
                                 type="text" 
@@ -1008,85 +1008,85 @@
                                     name="district">
                                 <option value="" selected>Select District Name</option>
                                 <option value="DALA">DALA</option>
-                                <option value="DAWAKIN KUDU">DAWAKIN KUDU</option>
-                                <option value="FAGGE">FAGGE</option>
-                                <option value="GWALE">GWALE</option>
-                                <option value="KUMBOTSO">KUMBOTSO</option>
-                                <option value="AJINGI">AJINGI</option>
-                                <option value="ALBASU">ALBASU</option>
-                                <option value="BAGWAI">BAGWAI</option>
-                                <option value="BEBEJI">BEBEJI</option>
-                                <option value="BICHI">BICHI</option>
-                                <option value="BUNKURE">BUNKURE</option>
-                                <option value="CITY">CITY</option>
-                                <option value="CITY DISTRICT">CITY DISTRICT</option>
-                                <option value="D/KUDU">D/KUDU</option>
-                                <option value="DAMBATTA">DAMBATTA</option>
-                                <option value="DAN DINSHE KOFAR DAWANAU">DAN DINSHE KOFAR DAWANAU</option>
-                                <option value="DANBATTA">DANBATTA</option>
-                                <option value="DAWAKIL KUDU">DAWAKIL KUDU</option>
-                                <option value="DAWAKIN KUDU DISTRICT">DAWAKIN KUDU DISTRICT</option>
-                                <option value="DAWAKIN TOFA">DAWAKIN TOFA</option>
-                                <option value="DAWAKIN-KUDU">DAWAKIN-KUDU</option>
-                                <option value="DAWAKIN-TOFA">DAWAKIN-TOFA</option>
-                                <option value="DAWANAU TOFA">DAWANAU TOFA</option>
-                                <option value="DOGUWA">DOGUWA</option>
-                                <option value="DORAYI KARAMA">DORAYI KARAMA</option>
-                                <option value="GABASAWA">GABASAWA</option>
-                                <option value="GARKO">GARKO</option>
-                                <option value="GARUN MALAM">GARUN MALAM</option>
-                                <option value="GARUN MALLAM">GARUN MALLAM</option>
-                                <option value="GAYA">GAYA</option>
-                                <option value="GEZAWA">GEZAWA</option>
-                                <option value="GWALA">GWALA</option>
-                                <option value="GWALE DISTRICT">GWALE DISTRICT</option>
-                                <option value="GWAMMAJA">GWAMMAJA</option>
-                                <option value="GWARZO">GWARZO</option>
-                                <option value="HAUSAWA">HAUSAWA</option>
-                                <option value="INUBAWA">INUBAWA</option>
-                                <option value="KABO">KABO</option>
-                                <option value="KANO CITY">KANO CITY</option>
-                                <option value="KANO MUNICIPAL">KANO MUNICIPAL</option>
-                                <option value="KANO MUNICIPAL CITY">KANO MUNICIPAL CITY</option>
-                                <option value="KANO STATE">KANO STATE</option>
-                                <option value="KANO-CITY">KANO-CITY</option>
-                                <option value="KARAYE">KARAYE</option>
-                                <option value="KIBIYA">KIBIYA</option>
-                                <option value="KIMBOTSO">KIMBOTSO</option>
-                                <option value="KIRU">KIRU</option>
-                                <option value="KOFAR DAWANAU">KOFAR DAWANAU</option>
-                                <option value="KUMBOSTO">KUMBOSTO</option>
-                                <option value="KUMBOTSO VILLAGE">KUMBOTSO VILLAGE</option>
-                                <option value="KUMBOTSOI">KUMBOTSOI</option>
-                                <option value="KUNCHI">KUNCHI</option>
-                                <option value="KURA">KURA</option>
-                                <option value="MADOBI">MADOBI</option>
-                                <option value="MAKODA">MAKODA</option>
-                                <option value="MINJIBIR">MINJIBIR</option>
-                                <option value="MUNICIPAL">MUNICIPAL</option>
-                                <option value="MUNICIPAL LOCAL GOVERNMENT">MUNICIPAL LOCAL GOVERNMENT</option>
-                                <option value="MUNNICIPAL">MUNNICIPAL</option>
-                                <option value="NASARAWA">NASARAWA</option>
-                                <option value="NASSARAWA">NASSARAWA</option>
-                                <option value="RANO">RANO</option>
-                                <option value="RIMIN GADO">RIMIN GADO</option>
-                                <option value="RIMIN ZAKARA">RIMIN ZAKARA</option>
-                                <option value="ROGO">ROGO</option>
-                                <option value="SUMAILA">SUMAILA</option>
-                                <option value="TAKAI">TAKAI</option>
-                                <option value="TARAUNI">TARAUNI</option>
-                                <option value="TARAUNI DISTRICT">TARAUNI DISTRICT</option>
-                                <option value="TOFA">TOFA</option>
-                                <option value="TSANTAWA">TSANTAWA</option>
-                                <option value="TSANYAWA">TSANYAWA</option>
-                                <option value="TUDUN WADA">TUDUN WADA</option>
-                                <option value="UNGOGGO">UNGOGGO</option>
-                                <option value="UNGOGO">UNGOGO</option>
-                                <option value="WAJE">WAJE</option>
-                                <option value="WARAWA">WARAWA</option>
-                                <option value="WUDIL">WUDIL</option>
-                                <option value="ZAWACHIKI">ZAWACHIKI</option>
-                                <option value="other">Other</option>
+        <option value="DAWAKIN KUDU">DAWAKIN KUDU</option>
+        <option value="FAGGE">FAGGE</option>
+        <option value="GWALE">GWALE</option>
+        <option value="KUMBOTSO">KUMBOTSO</option>
+        <option value="AJINGI">AJINGI</option>
+        <option value="ALBASU">ALBASU</option>
+        <option value="BAGWAI">BAGWAI</option>
+        <option value="BEBEJI">BEBEJI</option>
+        <option value="BICHI">BICHI</option>
+        <option value="BUNKURE">BUNKURE</option>
+        <option value="CITY">CITY</option>
+        <option value="CITY DISTRICT">CITY DISTRICT</option>
+        <option value="D/KUDU">D/KUDU</option>
+        <option value="DAMBATTA">DAMBATTA</option>
+        <option value="DAN DINSHE KOFAR DAWANAU">DAN DINSHE KOFAR DAWANAU</option>
+        <option value="DANBATTA">DANBATTA</option>
+        <option value="DAWAKIL KUDU">DAWAKIL KUDU</option>
+        <option value="DAWAKIN KUDU DISTRICT">DAWAKIN KUDU DISTRICT</option>
+        <option value="DAWAKIN TOFA">DAWAKIN TOFA</option>
+        <option value="DAWAKIN-KUDU">DAWAKIN-KUDU</option>
+        <option value="DAWAKIN-TOFA">DAWAKIN-TOFA</option>
+        <option value="DAWANAU TOFA">DAWANAU TOFA</option>
+        <option value="DOGUWA">DOGUWA</option>
+        <option value="DORAYI KARAMA">DORAYI KARAMA</option>
+        <option value="GABASAWA">GABASAWA</option>
+        <option value="GARKO">GARKO</option>
+        <option value="GARUN MALAM">GARUN MALAM</option>
+        <option value="GARUN MALLAM">GARUN MALLAM</option>
+        <option value="GAYA">GAYA</option>
+        <option value="GEZAWA">GEZAWA</option>
+        <option value="GWALA">GWALA</option>
+        <option value="GWALE DISTRICT">GWALE DISTRICT</option>
+        <option value="GWAMMAJA">GWAMMAJA</option>
+        <option value="GWARZO">GWARZO</option>
+        <option value="HAUSAWA">HAUSAWA</option>
+        <option value="INUBAWA">INUBAWA</option>
+        <option value="KABO">KABO</option>
+        <option value="KANO CITY">KANO CITY</option>
+        <option value="KANO MUNICIPAL">KANO MUNICIPAL</option>
+        <option value="KANO MUNICIPAL CITY">KANO MUNICIPAL CITY</option>
+        <option value="KANO STATE">KANO STATE</option>
+        <option value="KANO-CITY">KANO-CITY</option>
+        <option value="KARAYE">KARAYE</option>
+        <option value="KIBIYA">KIBIYA</option>
+        <option value="KIMBOTSO">KIMBOTSO</option>
+        <option value="KIRU">KIRU</option>
+        <option value="KOFAR DAWANAU">KOFAR DAWANAU</option>
+        <option value="KUMBOSTO">KUMBOSTO</option>
+        <option value="KUMBOTSO VILLAGE">KUMBOTSO VILLAGE</option>
+        <option value="KUMBOTSOI">KUMBOTSOI</option>
+        <option value="KUNCHI">KUNCHI</option>
+        <option value="KURA">KURA</option>
+        <option value="MADOBI">MADOBI</option>
+        <option value="MAKODA">MAKODA</option>
+        <option value="MINJIBIR">MINJIBIR</option>
+        <option value="MUNICIPAL">MUNICIPAL</option>
+        <option value="MUNICIPAL LOCAL GOVERNMENT">MUNICIPAL LOCAL GOVERNMENT</option>
+        <option value="MUNNICIPAL">MUNNICIPAL</option>
+        <option value="NASARAWA">NASARAWA</option>
+        <option value="NASSARAWA">NASSARAWA</option>
+        <option value="RANO">RANO</option>
+        <option value="RIMIN GADO">RIMIN GADO</option>
+        <option value="RIMIN ZAKARA">RIMIN ZAKARA</option>
+        <option value="ROGO">ROGO</option>
+        <option value="SUMAILA">SUMAILA</option>
+        <option value="TAKAI">TAKAI</option>
+        <option value="TARAUNI">TARAUNI</option>
+        <option value="TARAUNI DISTRICT">TARAUNI DISTRICT</option>
+        <option value="TOFA">TOFA</option>
+        <option value="TSANTAWA">TSANTAWA</option>
+        <option value="TSANYAWA">TSANYAWA</option>
+        <option value="TUDUN WADA">TUDUN WADA</option>
+        <option value="UNGOGGO">UNGOGGO</option>
+        <option value="UNGOGO">UNGOGO</option>
+        <option value="WAJE">WAJE</option>
+        <option value="WARAWA">WARAWA</option>
+        <option value="WUDIL">WUDIL</option>
+        <option value="ZAWACHIKI">ZAWACHIKI</option>
+        <option value="other">Other</option>
                             </select>
                             <input 
                                 type="text" 
@@ -1099,12 +1099,12 @@
                                 @input="handleCustomDistrictInput($event.target.value)"
                             >
                         </div>
-                    
+                    </div>
                     <div>
                         <label for="lga" class="text-xs text-gray-600">LGA</label>
                         <select id="lga" name="lgsaOrCity" x-model="lga" class="form-input text-sm property-input">
                             <option value="">Select LGA</option>
-                            <option value="Ajingi">Ajingi</option>
+                             <option value="Ajingi">Ajingi</option>
                             <option value="Albasu">Albasu</option>
                             <option value="Bagwai">Bagwai</option>
                             <option value="Bebeji">Bebeji</option>
@@ -1154,124 +1154,119 @@
                     <!-- State -->
                     <div>
                         <label for="state" class="text-xs text-gray-600">State</label>
-                        <input id="state" name="state" x-model="state" type="text" class="form-input text-sm property-input" placeholder="Enter state">
+                        <input id="state" name="state" x-model="state"  type="text" class="form-input text-sm property-input" placeholder="Enter state">
                     </div>
-                  
                 </div>
-            </div>
-
-        </div>
-
-      
-
-         </div>
-  <!-- Instrument Type Section -->
-  <div class="form-section">
-    <h4 class="form-section-title">Instrument Type</h4>
-    <div class="space-y-3">
-        <!-- Transaction Type and Date -->
-        <div class="grid grid-cols-2 gap-3">
-            <div class="space-y-1">
-                <label for="transactionType-record" class="text-sm">Transaction Type</label>
-                <select id="transactionType-record" x-model="selectedTransactionType" class="form-select text-sm transaction-type-select">
-                    <option value="">Select type</option>
-                    <option value="Deed of Transfer">Deed of Transfer</option>
-                    <option value="Certificate of Occupancy">Certificate of Occupancy</option>
-                    <option value="ST Certificate of Occupancy">ST Certificate of Occupancy</option>
-                    <option value="SLTR Certificate of Occupancy">SLTR Certificate of Occupancy</option>
-                    <option value="Irrevocable Power of Attorney">Irrevocable Power of Attorney</option>
-                    <option value="Deed of Release">Deed of Release</option>
-                    <option value="Deed of Assignment">Deed of Assignment</option>
-                    <option value="ST Assignment">ST Assignment</option>
-                    <option value="Deed of Mortgage">Deed of Mortgage</option>
-                    <option value="Tripartite Mortgage">Tripartite Mortgage</option>
-                    <option value="Deed of Sub Lease">Deed of Sub Lease</option>
-                    <option value="Deed of Sub Under Lease">Deed of Sub Under Lease</option>
-                    <option value="Power of Attorney">Power of Attorney</option>
-                    <option value="Deed of Surrender">Deed of Surrender</option>
-                    <option value="Indenture of Lease">Indenture of Lease</option>
-                    <option value="Deed of Variation">Deed of Variation</option>
-                    <option value="Customary Right of Occupancy">Customary Right of Occupancy</option>
-                    <option value="Vesting Assent">Vesting Assent</option>
-                    <option value="Court Judgement">Court Judgement</option>
-                    <option value="Exchange of Letters">Exchange of Letters</option>
-                    <option value="Tenancy Agreement">Tenancy Agreement</option>
-                    <option value="Revocation of Power of Attorney">Revocation of Power of Attorney</option>
-                    <option value="Deed of Convenyence">Deed of Convenyence</option>
-                    <option value="Memorandom of Agreement">Memorandom of Agreement</option>
-                    <option value="Quarry Lease">Quarry Lease</option>
-                    <option value="Private Lease">Private Lease</option>
-                    <option value="Deed of Gift">Deed of Gift</option>
-                    <option value="Deed of Partition">Deed of Partition</option>
-                    <option value="Non-European Occupational Lease">Non-European Occupational Lease</option>
-                    <option value="Deed of Revocation">Deed of Revocation</option>
-                    <option value="Deed of lease">Deed of lease</option>
-                    <option value="Deed of Reconveyance">Deed of Reconveyance</option>
-                    <option value="Letter of Administration">Letter of Administration</option>
-                    <option value="Customary Inhertitance">Customary Inhertitance</option>
-                    <option value="Certificate of Purchase">Certificate of Purchase</option>
-                    <option value="Deed of Rectification">Deed of Rectification</option>
-                    <option value="Building Lease">Building Lease</option>
-                    <option value="Memorandum of Loss">Memorandum of Loss</option>
-                    <option value="Vesting Deed">Vesting Deed</option>
-                    <option value="ST Fragmentation">ST Fragmentation</option>
-                    <option value="Other">Other</option>
-                </select>
-            </div>
-            <div class="space-y-1">
-                <label for="transactionDate" class="text-sm">Transaction/Certificate Date</label>
-                <input type="date" id="transactionDate" class="form-input text-sm">
             </div>
         </div>
 
-        <!-- Registration Number Components -->
-        <div class="space-y-1" x-data="{ serialNo: '', pageNo: '', volumeNo: '', showPreview: false, get regNoDisplay() { return [this.serialNo, this.pageNo, this.volumeNo].filter(Boolean).join('/') || 'Not set'; } }">
-            <label class="text-sm">Registration Number  </label>
-            <div class="grid grid-cols-5 gap-2">
-                <div>
-                    <label for="serialNo" class="text-xs">Serial No.</label>
-                    <input id="serialNo" name="serialNo" x-model="serialNo" @input="showPreview = serialNo || pageNo || volumeNo" class="form-input text-xs py-1" placeholder="e.g. 1">
-                </div>
-                <div>
-                    <label for="pageNo" class="text-xs">Page No.</label>
-                    <input id="pageNo" name="pageNo" x-model="pageNo" @input="showPreview = serialNo || pageNo || volumeNo" class="form-input text-xs py-1" placeholder="e.g. 1">
-                </div>
-                <div>
-                    <label for="volumeNo" class="text-xs">Volume No.</label>
-                    <input id="volumeNo" name="volumeNo" x-model="volumeNo" @input="showPreview = serialNo || pageNo || volumeNo" class="form-input text-xs py-1" placeholder="e.g. 2">
-                </div>
-                <div>
-                    <label for="regDate" class="text-xs">Reg Date</label>
-                    <input id="regDate" name="regDate" type="date" class="form-input text-xs py-1">
-                </div>
-                <div>
-                    <label for="regTime" class="text-xs">Reg Time</label>
-                    <input id="regTime" name="regTime" type="time" class="form-input text-xs py-1">
-                </div>
-            </div>
-            <div x-show="showPreview" x-transition class="mt-2 p-3 bg-blue-50 border-2 border-blue-200 rounded-lg shadow-sm">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                        </svg>
-                        <span class="text-sm font-semibold text-blue-700">Registration Number:</span>
+        <!-- Instrument Type Section -->
+        <div class="form-section">
+            <h4 class="form-section-title">Instrument Type</h4>
+            <div class="space-y-3">
+                <!-- Transaction Type and Date -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-1">
+                        <label for="transactionType-record" class="text-sm">Transaction Type</label>
+                        <select id="transactionType-record" name="transactionType" x-model="selectedTransactionType" class="form-select text-sm transaction-type-select">
+                            <option value="">Select type</option>
+                            <option value="Deed of Transfer">Deed of Transfer</option>
+                            <option value="Certificate of Occupancy">Certificate of Occupancy</option>
+                            <option value="ST Certificate of Occupancy">ST Certificate of Occupancy</option>
+                            <option value="SLTR Certificate of Occupancy">SLTR Certificate of Occupancy</option>
+                            <option value="Irrevocable Power of Attorney">Irrevocable Power of Attorney</option>
+                            <option value="Deed of Release">Deed of Release</option>
+                            <option value="Deed of Assignment">Deed of Assignment</option>
+                            <option value="ST Assignment">ST Assignment</option>
+                            <option value="Deed of Mortgage">Deed of Mortgage</option>
+                            <option value="Tripartite Mortgage">Tripartite Mortgage</option>
+                            <option value="Deed of Sub Lease">Deed of Sub Lease</option>
+                            <option value="Deed of Sub Under Lease">Deed of Sub Under Lease</option>
+                            <option value="Power of Attorney">Power of Attorney</option>
+                            <option value="Deed of Surrender">Deed of Surrender</option>
+                            <option value="Indenture of Lease">Indenture of Lease</option>
+                            <option value="Deed of Variation">Deed of Variation</option>
+                            <option value="Customary Right of Occupancy">Customary Right of Occupancy</option>
+                            <option value="Vesting Assent">Vesting Assent</option>
+                            <option value="Court Judgement">Court Judgement</option>
+                            <option value="Exchange of Letters">Exchange of Letters</option>
+                            <option value="Tenancy Agreement">Tenancy Agreement</option>
+                            <option value="Revocation of Power of Attorney">Revocation of Power of Attorney</option>
+                            <option value="Deed of Convenyence">Deed of Convenyence</option>
+                            <option value="Memorandom of Agreement">Memorandom of Agreement</option>
+                            <option value="Quarry Lease">Quarry Lease</option>
+                            <option value="Private Lease">Private Lease</option>
+                            <option value="Deed of Gift">Deed of Gift</option>
+                            <option value="Deed of Partition">Deed of Partition</option>
+                            <option value="Non-European Occupational Lease">Non-European Occupational Lease</option>
+                            <option value="Deed of Revocation">Deed of Revocation</option>
+                            <option value="Deed of lease">Deed of lease</option>
+                            <option value="Deed of Reconveyance">Deed of Reconveyance</option>
+                            <option value="Letter of Administration">Letter of Administration</option>
+                            <option value="Customary Inhertitance">Customary Inhertitance</option>
+                            <option value="Certificate of Purchase">Certificate of Purchase</option>
+                            <option value="Deed of Rectification">Deed of Rectification</option>
+                            <option value="Building Lease">Building Lease</option>
+                            <option value="Memorandum of Loss">Memorandum of Loss</option>
+                            <option value="Vesting Deed">Vesting Deed</option>
+                            <option value="ST Fragmentation">ST Fragmentation</option>
+                            <option value="Other">Other</option>
+                        </select>
                     </div>
-                    <span class="text-lg font-bold text-blue-800 tracking-wider" x-text="regNoDisplay"></span>
+                    <div class="space-y-1">
+                        <label for="transactionDate" class="text-sm">Transaction/Certificate Date</label>
+                        <input type="date" id="transactionDate" name="transactionDate" class="form-input text-sm">
+                    </div>
                 </div>
-                <div class="mt-1.5 flex justify-between items-center">
-                    <div class="text-xs text-blue-600">Format: Serial No/Page No/Volume No</div>
-                    <div x-show="serialNo && pageNo && volumeNo" class="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">Complete</div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Instrument Type and Period -->
-        <div >
-                   <!-- Land Use Type -->
-            <div class="space-y-1">
-                <label for="landUse" class="text-sm">Land Use</label>
-                <select id="landUse" name="landUse" class="form-select text-sm">
+                <!-- Registration Number Components -->
+                <div class="space-y-1" x-data="{ serialNo: '', pageNo: '', volumeNo: '', showPreview: false, get regNoDisplay() { return [this.serialNo, this.pageNo, this.volumeNo].filter(Boolean).join('/') || 'Not set'; } }">
+                    <label class="text-sm">Registration Number</label>
+                    <div class="grid grid-cols-5 gap-2">
+                        <div>
+                            <label for="serialNo" class="text-xs">Serial No.</label>
+                            <input id="serialNo" name="serialNo" x-model="serialNo" @input="showPreview = serialNo || pageNo || volumeNo" class="form-input text-xs py-1" placeholder="e.g. 1">
+                        </div>
+                        <div>
+                            <label for="pageNo" class="text-xs">Page No.</label>
+                            <input id="pageNo" name="pageNo" x-model="pageNo" @input="showPreview = serialNo || pageNo || volumeNo" class="form-input text-xs py-1" placeholder="e.g. 1">
+                        </div>
+                        <div>
+                            <label for="volumeNo" class="text-xs">Volume No.</label>
+                            <input id="volumeNo" name="volumeNo" x-model="volumeNo" @input="showPreview = serialNo || pageNo || volumeNo" class="form-input text-xs py-1" placeholder="e.g. 2">
+                        </div>
+                        <div>
+                            <label for="regDate" class="text-xs">Reg Date</label>
+                            <input id="regDate" name="regDate" type="date" class="form-input text-xs py-1">
+                        </div>
+                        <div>
+                            <label for="regTime" class="text-xs">Reg Time</label>
+                            <input id="regTime" name="regTime" type="time" class="form-input text-xs py-1">
+                        </div>
+                    </div>
+                    <div x-show="showPreview" x-transition class="mt-2 p-3 bg-blue-50 border-2 border-blue-200 rounded-lg shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                </svg>
+                                <span class="text-sm font-semibold text-blue-700">Registration Number:</span>
+                            </div>
+                            <span class="text-lg font-bold text-blue-800 tracking-wider" x-text="regNoDisplay"></span>
+                        </div>
+                        <div class="mt-1.5 flex justify-between items-center">
+                            <div class="text-xs text-blue-600">Format: Serial No/Page No/Volume No</div>
+                            <div x-show="serialNo && pageNo && volumeNo" class="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">Complete</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Land Use Type -->
+                
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="space-y-1">
+                    <label for="landUse" class="text-sm">Land Use</label>
+                    <select id="landUse" name="landUse" class="form-select text-sm">
                     <option value="">Select land use</option>
                     <option value="RESIDENTIAL">RESIDENTIAL</option>
                     <option value="AGRICULTURAL">AGRICULTURAL</option>
@@ -1293,114 +1288,52 @@
                     <option value="RESIDENTIAL/COMMERCIAL">RESIDENTIAL/COMMERCIAL</option>
                     <option value="RESIDENTIAL/COMMERCIAL LAYOUT">RESIDENTIAL/COMMERCIAL LAYOUT</option>
                 </select>
-            </div>
-
-            <div class="space-y-1">
-                <label for="period" class="text-sm">Period/Tenancy</label>
-                <div class="flex space-x-1">
-                    <input id="period" type="number" class="form-input text-sm" placeholder="Period">
-                    <select id="periodUnit" class="form-select text-sm w-[90px]">
-                        <option value="Days">Days</option>
-                        <option value="Months">Months</option>
-                        <option value="Years" selected>Years</option>
-                    </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label for="period" class="text-sm">Period</label>
+                        <input id="period" name="period" type="number" class="form-input text-sm" placeholder="e.g. 99">
+                    </div>
+                    <div class="space-y-1">
+                        <label for="periodUnit" class="text-sm">Period Unit</label>
+                        <select id="periodUnit" name="periodUnit" class="form-select text-sm">
+                            <option value="">Select unit</option>
+                            <option value="YEARS">YEARS</option>
+                            <option value="MONTHS">MONTHS</option>
+                            <option value="DAYS">DAYS</option>
+                            <option value="PERPETUAL">PERPETUAL</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Transaction Details Section -->
-<div id="transaction-specific-fields-record" class="form-section" x-show="selectedTransactionType" x-transition  >
-    <h4 class="form-section-title">Transaction Details</h4>
-    
-    <!-- Other Transaction Type Input -->
-    <div id="other-transaction-type" class="space-y-1 mb-3" x-show="selectedTransactionType === 'Other'" x-transition>
-        <label for="otherTransactionType" class="text-sm">Specify Other Transaction Type</label>
-        <input type="text" id="otherTransactionType" name="otherTransactionType" class="form-input text-sm" placeholder="Enter transaction type">
-    </div>
-    
-    <!-- Assignment fields -->
-    <div id="assignment-fields-record" class="transaction-fields" x-show="selectedTransactionType === 'Assignment'" x-transition>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div class="space-y-1">
-                <label for="trans-assignor-record" class="text-sm" x-text="partyLabels.firstParty"></label>
-                <input id="trans-assignor-record" name="Assignor" class="form-input text-sm" :placeholder="`Enter ${partyLabels.firstParty.toLowerCase()} name`">
-            </div>
-            <div class="space-y-1">
-                <label for="trans-assignee-record" class="text-sm" x-text="partyLabels.secondParty"></label>
-                <input id="trans-assignee-record" name="Assignee" class="form-input text-sm" :placeholder="`Enter ${partyLabels.secondParty.toLowerCase()} name`">
+        <!-- Transaction Specific Fields -->
+        <div id="transaction-specific-fields-record" class="form-section" x-show="selectedTransactionType" x-transition>
+            <h4 class="form-section-title">Transaction Details</h4>
+            
+            <!-- Default/Grant fields -->
+            <div id="default-fields-record" class="transaction-fields" x-show="shouldShowDefaultFields" x-transition>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="space-y-1">
+                        <label for="grantor-record" class="text-sm" x-text="partyLabels.firstParty"></label>
+                        <input id="grantor-record" name="Grantor" class="form-input text-sm" :placeholder="`Enter ${partyLabels.firstParty.toLowerCase()} name`" :value="autoFilledGrantor" :readonly="isGrantorReadonly" :class="isGrantorReadonly ? 'bg-gray-100' : ''">
+                    </div>
+                    <div class="space-y-1">
+                        <label for="grantee-record" class="text-sm" x-text="partyLabels.secondParty"></label>
+                        <input id="grantee-record" name="Grantee" class="form-input text-sm" :placeholder="`Enter ${partyLabels.secondParty.toLowerCase()} name`">
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-    
-    <!-- Mortgage fields -->
-    <div id="mortgage-fields-record" class="transaction-fields" x-show="selectedTransactionType === 'Mortgage'" x-transition>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div class="space-y-1">
-                <label for="mortgagor-record" class="text-sm" x-text="partyLabels.firstParty"></label>
-                <input id="mortgagor-record" name="Mortgagor" class="form-input text-sm" :placeholder="`Enter ${partyLabels.firstParty.toLowerCase()} name`">
-            </div>
-            <div class="space-y-1">
-                <label for="mortgagee-record" class="text-sm" x-text="partyLabels.secondParty"></label>
-                <input id="mortgagee-record" name="Mortgagee" class="form-input text-sm" :placeholder="`Enter ${partyLabels.secondParty.toLowerCase()} name`">
-            </div>
-        </div>
-    </div>
-    
-    <!-- Surrender fields -->
-    <div id="surrender-fields-record" class="transaction-fields" x-show="selectedTransactionType === 'Surrender'" x-transition>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div class="space-y-1">
-                <label for="surrenderor-record" class="text-sm" x-text="partyLabels.firstParty"></label>
-                <input id="surrenderor-record" name="Surrenderor" class="form-input text-sm" :placeholder="`Enter ${partyLabels.firstParty.toLowerCase()} name`">
-            </div>
-            <div class="space-y-1">
-                <label for="surrenderee-record" class="text-sm" x-text="partyLabels.secondParty"></label>
-                <input id="surrenderee-record" name="Surrenderee" class="form-input text-sm" :placeholder="`Enter ${partyLabels.secondParty.toLowerCase()} name`">
-            </div>
-        </div>
-    </div>
-    
-    <!-- Lease fields -->
-    <div id="lease-fields-record" class="transaction-fields" x-show="selectedTransactionType === 'Sub-Lease'" x-transition>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div class="space-y-1">
-                <label for="lessor-record" class="text-sm" x-text="partyLabels.firstParty"></label>
-                <input id="lessor-record" name="Lessor" class="form-input text-sm" :placeholder="`Enter ${partyLabels.firstParty.toLowerCase()} name`">
-            </div>
-            <div class="space-y-1">
-                <label for="lessee-record" class="text-sm" x-text="partyLabels.secondParty"></label>
-                <input id="lessee-record" name="Lessee" class="form-input text-sm" :placeholder="`Enter ${partyLabels.secondParty.toLowerCase()} name`">
-            </div>
-        </div>
-    </div>
-    
-    <!-- Default/Grant fields -->
-    <div id="default-fields-record" class="transaction-fields" x-show="shouldShowDefaultFields" x-transition>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div class="space-y-1">
-                <label for="grantor-record" class="text-sm" x-text="partyLabels.firstParty"></label>
-                <input id="grantor-record" name="Grantor" class="form-input text-sm" :placeholder="`Enter ${partyLabels.firstParty.toLowerCase()} name`" :value="autoFilledGrantor" :readonly="isGrantorReadonly" :class="isGrantorReadonly ? 'bg-gray-100' : ''">
-            </div>
-            <div class="space-y-1">
-                <label for="grantee-record" class="text-sm" x-text="partyLabels.secondParty"></label>
-                <input id="grantee-record" name="Grantee" class="form-input text-sm" :placeholder="`Enter ${partyLabels.secondParty.toLowerCase()} name`">
-            </div>
-        </div>
-    </div>
 
-</div>
-         <div class="space-y-1">
+        <div class="space-y-1">
             <label class="text-sm"> </label>
             <textarea id="property-description" name="property_description" rows="4" class="form-input text-sm" readonly x-text="description"></textarea>
             <div class="text-xs text-gray-500 italic">This field is auto-populated based on property details</div>
         </div>
-                    
     </div>
-    
+
     <div class="flex justify-end space-x-3 pt-2 border-t mt-4">
-        
         <button id="property-submit-btn" type="submit" class="btn btn-primary">Submit</button>
     </div>
 </form>
@@ -1415,7 +1348,7 @@
 function propertyRecordForm() {
     return {
         selectedTransactionType: '',
-        
+
         // Property description variables
         house: '',
         plot: '',
@@ -1423,7 +1356,7 @@ function propertyRecordForm() {
         district: '',
         lga: '',
         state: 'Kano',
-        
+
         // Component state variables
         selectedStreet: '',
         selectedDistrict: '',
@@ -1431,18 +1364,18 @@ function propertyRecordForm() {
         customStreet: '',
         showOtherDistrict: false,
         customDistrict: '',
-        
+
         // Computed property for description
         get description() {
             let desc = '';
             if (this.house) desc += `House ${this.house}`;
-            if (this.street) desc += (desc ? ', ' : '') + this.street;
-            if (this.district) desc += (desc ? ', ' : '') + this.district;
-            if (this.lga) desc += (desc ? ', ' : '') + `${this.lga} LGA`;
-            if (this.state) desc += (desc ? ', ' : '') + this.state;
+            if (this.street) desc += (desc ? ' ' : '') + this.street;
+            if (this.district) desc += (desc ? ' ' : '') + this.district;
+            if (this.lga) desc += (desc ? ' ' : '') + `${this.lga} LGA`;
+            if (this.state) desc += (desc ? ' ' : '') + this.state;
             return desc;
         },
-        
+
         // Handle street changes
         handleStreetChange(value) {
             if (value === 'other') {
@@ -1458,7 +1391,7 @@ function propertyRecordForm() {
                 this.customStreet = value;
             }
         },
-        
+
         // Handle district changes
         handleDistrictChange(value) {
             if (value === 'other') {
@@ -1474,17 +1407,17 @@ function propertyRecordForm() {
                 this.customDistrict = value;
             }
         },
-        
+
         // Handle custom street input
         handleCustomStreetInput(value) {
             this.street = value;
         },
-        
+
         // Handle custom district input
         handleCustomDistrictInput(value) {
             this.district = value;
         },
-        
+
         // Define transaction types with their corresponding party labels
         transactionTypes: {
             'Deed of Transfer': { firstParty: 'Transferor', secondParty: 'Transferee' },
@@ -1529,7 +1462,7 @@ function propertyRecordForm() {
             'ST Fragmentation': { firstParty: 'Grantor', secondParty: 'Grantee' },
             'Other': { firstParty: 'Grantor', secondParty: 'Grantee' }
         },
-        
+
         // Computed property for party labels
         get partyLabels() {
             if (this.selectedTransactionType && this.transactionTypes[this.selectedTransactionType]) {
@@ -1537,13 +1470,13 @@ function propertyRecordForm() {
             }
             return { firstParty: 'Grantor', secondParty: 'Grantee' };
         },
-        
+
         // Computed property to determine if default fields should be shown
         get shouldShowDefaultFields() {
             const specificTypes = ['Assignment', 'Mortgage', 'Surrender', 'Sub-Lease'];
             return this.selectedTransactionType && !specificTypes.includes(this.selectedTransactionType);
         },
-        
+
         // Computed property for auto-filled grantor
         get autoFilledGrantor() {
             if (this.selectedTransactionType === 'Certificate of Occupancy' || this.selectedTransactionType === 'ST Certificate of Occupancy' || this.selectedTransactionType === 'SLTR Certificate of Occupancy' || this.selectedTransactionType === 'Customary Right of Occupancy') {
@@ -1551,25 +1484,126 @@ function propertyRecordForm() {
             }
             return '';
         },
-        
+
         // Computed property for grantor readonly state
         get isGrantorReadonly() {
             return this.selectedTransactionType === 'Certificate of Occupancy' || this.selectedTransactionType === 'ST Certificate of Occupancy' || this.selectedTransactionType === 'SLTR Certificate of Occupancy' || this.selectedTransactionType === 'Customary Right of Occupancy';
         },
-        
+
         // Initialize the component
         init() {
             console.log('🚀 Alpine.js Property Record Form initialized');
-            
+
             // Watch for changes in selectedTransactionType
             this.$watch('selectedTransactionType', (value) => {
-                console.log('📝 Transaction type changed to:', value);
+                console.log('🔄 Transaction type changed to:', value);
             });
-            
+
             // Watch for changes in description
             this.$watch('description', (value) => {
-                console.log('📝 Description updated:', value);
+                console.log('🔄 Description updated:', value);
             });
+
+            // Add form submission handler
+            this.$nextTick(() => {
+                const form = document.getElementById('property-record-form');
+                if (form) {
+                    form.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        this.submitForm();
+                    });
+                }
+            });
+        },
+
+        // Handle form submission with SweetAlert
+        submitForm() {
+            const form = document.getElementById('property-record-form');
+            const formData = new FormData(form);
+
+            // Show loading
+            Swal.fire({
+                title: 'Submitting...',
+                text: 'Please wait while we save your property record',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Submit form via fetch
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: data.message || 'Property record created successfully',
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        // Reset form and close dialog
+                        form.reset();
+                        this.resetFormData();
+                        
+                        // Close dialog if it exists
+                        const dialog = document.getElementById('property-form-dialog');
+                        if (dialog) {
+                            dialog.classList.add('hidden');
+                        }
+                        
+                        // Reload page to show new record
+                        window.location.reload();
+                    });
+                } else {
+                    // Handle validation errors
+                    let errorMessage = data.message || 'An error occurred';
+                    if (data.errors) {
+                        const errorList = Object.values(data.errors).flat();
+                        errorMessage = errorList.join('\n');
+                    }
+                    
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Error',
+                        text: errorMessage,
+                        confirmButtonText: 'OK'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'An unexpected error occurred. Please try again.',
+                    confirmButtonText: 'OK'
+                });
+            });
+        },
+
+        // Reset form data
+        resetFormData() {
+            this.selectedTransactionType = '';
+            this.house = '';
+            this.plot = '';
+            this.street = '';
+            this.district = '';
+            this.lga = '';
+            this.state = 'Kano';
+            this.selectedStreet = '';
+            this.selectedDistrict = '';
+            this.showOtherStreet = false;
+            this.customStreet = '';
+            this.showOtherDistrict = false;
+            this.customDistrict = '';
         }
     }
 }

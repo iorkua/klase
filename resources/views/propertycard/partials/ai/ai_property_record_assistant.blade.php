@@ -498,7 +498,7 @@ function aiAssistant() {
     },
     
     validateFile(file) {
-      const maxSize = 10 * 3024 * 3024; // 10MB
+      const maxSize = 10 * 1024 * 1024; // 10MB
       const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
       
       if (!allowedTypes.includes(file.type)) {
@@ -507,7 +507,7 @@ function aiAssistant() {
       }
       
       if (file.size > maxSize) {
-        this.error = 'File size too large. Please upload files smaller than 30MB.';
+        this.error = 'File size too large. Please upload files smaller than 10MB.';
         return false;
       }
       
@@ -522,7 +522,7 @@ function aiAssistant() {
         
         for (let i = 1; i <= pdf.numPages; i++) {
           const page = await pdf.getPage(i);
-          const viewport = page.getViewport({ scale: 1.5 });
+          const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better OCR
           const canvas = document.createElement('canvas');
           const context = canvas.getContext('2d');
           
@@ -658,7 +658,7 @@ function aiAssistant() {
         }
         
         // Fallback to OCR if no selectable text
-        this.showToast('PDF contains scanned images. Using OCR...', 'info');
+        this.showToast('PDF contains scanned images. Using enhanced OCR...', 'info');
         return await this.performOCROnPDF();
         
       } catch (error) {
@@ -676,19 +676,27 @@ function aiAssistant() {
         this.progress = 10 + pageProgress;
         
         try {
-          const { data: { text } } = await Tesseract.recognize(this.pdfPages[i], 'eng', {
+          // Preprocess image for better OCR
+          const preprocessedImage = await this.preprocessImageForOCR(this.pdfPages[i]);
+          
+          const { data: { text, confidence } } = await Tesseract.recognize(preprocessedImage, 'eng', {
             logger: (m) => {
               if (m.status === 'recognizing text') {
                 const ocrProgress = m.progress * (40 / totalPages);
                 this.progress = 10 + pageProgress + ocrProgress;
               }
-            }
+            },
+            tessedit_pageseg_mode: Tesseract.PSM.AUTO,
+            tessedit_ocr_engine_mode: Tesseract.OEM.LSTM_ONLY,
+            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,/:-() ',
+            preserve_interword_spaces: '1'
           });
           
-          ocrText += `--- Page ${i + 1} (OCR) ---\n${text || 'No text found'}\n\n`;
+          console.log(`Page ${i + 1} OCR confidence: ${confidence}%`);
+          ocrText += `--- Page ${i + 1} (OCR - ${Math.round(confidence)}% confidence) ---\n${text || 'No text found'}\n\n`;
         } catch (error) {
           console.error(`OCR error on page ${i + 1}:`, error);
-          ocrText += `--- Page ${i + 1} (OCR) ---\nOCR failed for this page\n\n`;
+          ocrText += `--- Page ${i + 1} (OCR) ---\nOCR failed for this page: ${error.message}\n\n`;
         }
       }
       
@@ -697,19 +705,65 @@ function aiAssistant() {
     
     async extractTextFromImage() {
       try {
-        const { data: { text } } = await Tesseract.recognize(this.previewUrl, 'eng', {
+        // Preprocess image for better OCR
+        const preprocessedImage = await this.preprocessImageForOCR(this.previewUrl);
+        
+        const { data: { text, confidence } } = await Tesseract.recognize(preprocessedImage, 'eng', {
           logger: (m) => {
             if (m.status === 'recognizing text') {
               this.progress = 10 + (m.progress * 40);
             }
-          }
+          },
+          tessedit_pageseg_mode: Tesseract.PSM.AUTO,
+          tessedit_ocr_engine_mode: Tesseract.OEM.LSTM_ONLY,
+          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,/:-() ',
+          preserve_interword_spaces: '1'
         });
         
+        console.log(`Image OCR confidence: ${confidence}%`);
         return text || '';
       } catch (error) {
         console.error('Image OCR error:', error);
         throw new Error('Failed to extract text from image');
       }
+    },
+    
+    async preprocessImageForOCR(imageUrl) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // Set canvas size
+          canvas.width = img.width;
+          canvas.height = img.height;
+          
+          // Draw image
+          ctx.drawImage(img, 0, 0);
+          
+          // Apply image preprocessing for better OCR
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+          
+          // Convert to grayscale and enhance contrast
+          for (let i = 0; i < data.length; i += 4) {
+            const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+            
+            // Enhance contrast
+            const enhanced = gray > 128 ? Math.min(255, gray * 1.2) : Math.max(0, gray * 0.8);
+            
+            data[i] = enhanced;     // Red
+            data[i + 1] = enhanced; // Green
+            data[i + 2] = enhanced; // Blue
+            // Alpha channel remains unchanged
+          }
+          
+          ctx.putImageData(imageData, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img.src = imageUrl;
+      });
     },
     
     extractPropertyDetails(text) {
@@ -725,9 +779,9 @@ function aiAssistant() {
       };
       
       let foundFields = 0;
-      const totalFields = 12;
+      const totalFields = 15;
       
-      // Enhanced extraction patterns
+      // Enhanced extraction patterns with more variations
       const patterns = {
         fileNumber: [
           /(?:NEW\s+)?FILE\s+(?:NO|NUMBER)[:\s]*([A-Z0-9/\s-]+?)(?:\s+PLOT|\s+TITLE|\s*$)/i,
@@ -735,16 +789,22 @@ function aiAssistant() {
           /(LKN\/COM\/\d{4}\/\d{2,4})/i,
           /(COM\/\d{4}\/\d{2,4})/i,
           /([A-Z]{2,4}\/[A-Z]{2,4}\/\d{4}\/\d{3,4})/i,
-          /(KN\d+)/i
+          /(KN\d+)/i,
+          /([A-Z]{3,4}\s*\/\s*[A-Z]{3,4}\s*\/\s*\d{4}\s*\/\s*\d{3,4})/i,
+          /FILE\s*NO\s*[:\-]?\s*([A-Z0-9\/\s-]+)/i
         ],
         plotNumber: [
           /PLOT\s+(?:NO|NUMBER)[:\s]*([A-Z0-9\s-]+?)(?:\s+TITLE|\s+OLD|\s*$)/i,
-          /Plot[:\s]+([A-Z0-9\s-]+)/i
+          /Plot[:\s]+([A-Z0-9\s-]+)/i,
+          /PLOT[:\s]*([A-Z0-9\s-]+)/i,
+          /(?:PLOT|PLT)\s*[:\-]?\s*([A-Z0-9\s-]+)/i
         ],
         propertyHolder: [
           /TITLE[:\s]*([A-Z\s.,'-]+?)(?:\s+OLD\s+FILE|\s+TO|\s*$)/i,
           /(?:ASSIGNEE|GRANTEE|HOLDER)[:\s]*([A-Z\s.,'-]+)/i,
-          /(?:MR\.?|MRS\.?|DR\.?|PROF\.?|ALH\.?|ALHAJI)\s+([A-Z\s.,'-]+)/i
+          /(?:MR\.?|MRS\.?|DR\.?|PROF\.?|ALH\.?|ALHAJI)\s+([A-Z\s.,'-]+)/i,
+          /(?:APPLICANT|OWNER)[:\s]*([A-Z\s.,'-]+)/i,
+          /NAME[:\s]*([A-Z\s.,'-]+)/i
         ],
         instrument: [
           /(DEED\s+OF\s+ASSIGNMENT)/i,
@@ -752,15 +812,29 @@ function aiAssistant() {
           /(RIGHT\s+OF\s+OCCUPANCY)/i,
           /(DEED\s+OF\s+MORTGAGE)/i,
           /(POWER\s+OF\s+ATTORNEY)/i,
-          /(RECERTIFICATION)/i
+          /(RECERTIFICATION)/i,
+          /(DEED\s+OF\s+TRANSFER)/i,
+          /(STATUTORY\s+CERTIFICATE)/i,
+          /(CUSTOMARY\s+RIGHT)/i
         ],
         lga: [
           /(?:LGA|Local\s*Government)[:\s]*([A-Za-z\s]+?)(?:\s+State|\s*,|\s*\.|\n|$)/i,
-          /(Kano|Lagos|Abuja|Kaduna|Port\s+Harcourt)/i
+          /(Kano|Lagos|Abuja|Kaduna|Port\s+Harcourt|Municipal)/i,
+          /(?:WITHIN|IN)\s+([A-Z\s]+)\s+(?:LGA|LOCAL\s+GOVERNMENT)/i
         ],
         registration: [
           /(?:Reg|Registration)\s*(?:No|Number)[:\s]*(\d+)[\/\s]*(\d+)[\/\s]*(\d+)/i,
-          /Serial\s*No[:\s]*(\d+)\s*Page[:\s]*(\d+)\s*Volume[:\s]*(\d+)/i
+          /Serial\s*No[:\s]*(\d+)\s*Page[:\s]*(\d+)\s*Volume[:\s]*(\d+)/i,
+          /(\d+)\s*\/\s*(\d+)\s*\/\s*(\d+)/i
+        ],
+        location: [
+          /(?:SITUATED|LOCATED|AT)[:\s]*([A-Z\s,.-]+?)(?:\s+LGA|\s+STATE|\s*$)/i,
+          /LOCATION[:\s]*([A-Z\s,.-]+)/i,
+          /ADDRESS[:\s]*([A-Z\s,.-]+)/i
+        ],
+        area: [
+          /(?:AREA|SIZE)[:\s]*([0-9.,]+)\s*(HECTARES?|SQ\.?\s*M|ACRES?)/i,
+          /([0-9.,]+)\s*(HECTARES?|SQ\.?\s*M|ACRES?)/i
         ]
       };
       
@@ -768,7 +842,7 @@ function aiAssistant() {
       for (const pattern of patterns.fileNumber) {
         const match = cleanText.match(pattern);
         if (match?.[1]) {
-          data.fileNo = match[1].trim();
+          data.fileNo = match[1].trim().replace(/\s+/g, ' ');
           foundFields++;
           break;
         }
@@ -778,7 +852,7 @@ function aiAssistant() {
       for (const pattern of patterns.plotNumber) {
         const match = cleanText.match(pattern);
         if (match?.[1]) {
-          data.plotNo = match[1].trim();
+          data.plotNo = match[1].trim().replace(/\s+/g, ' ');
           foundFields++;
           break;
         }
@@ -788,7 +862,7 @@ function aiAssistant() {
       for (const pattern of patterns.propertyHolder) {
         const match = cleanText.match(pattern);
         if (match?.[1]) {
-          data.propertyHolder = match[1].trim();
+          data.propertyHolder = match[1].trim().replace(/\s+/g, ' ');
           foundFields++;
           break;
         }
@@ -808,7 +882,27 @@ function aiAssistant() {
       for (const pattern of patterns.lga) {
         const match = cleanText.match(pattern);
         if (match?.[1]) {
-          data.lgsaOrCity = match[1].trim();
+          data.lgsaOrCity = match[1].trim().replace(/\s+/g, ' ');
+          foundFields++;
+          break;
+        }
+      }
+      
+      // Extract location
+      for (const pattern of patterns.location) {
+        const match = cleanText.match(pattern);
+        if (match?.[1]) {
+          data.location = match[1].trim().replace(/\s+/g, ' ');
+          foundFields++;
+          break;
+        }
+      }
+      
+      // Extract area
+      for (const pattern of patterns.area) {
+        const match = cleanText.match(pattern);
+        if (match?.[1] && match?.[2]) {
+          data.area = `${match[1]} ${match[2]}`;
           foundFields++;
           break;
         }
@@ -827,8 +921,11 @@ function aiAssistant() {
         }
       }
       
-      // Calculate confidence
-      data.confidence = Math.min(100, Math.round((foundFields / totalFields) * 100));
+      // Calculate confidence based on found fields and text quality
+      const baseConfidence = (foundFields / totalFields) * 100;
+      const textQualityBonus = Math.min(20, cleanText.length / 100); // Bonus for longer text
+      
+      data.confidence = Math.min(100, Math.round(baseConfidence + textQualityBonus));
       data.extractionStatus = data.confidence > 70 ? 'High Confidence' :
                              data.confidence > 40 ? 'Medium Confidence' : 
                              data.confidence > 15 ? 'Low Confidence' : 'Extraction Failed';
@@ -837,17 +934,33 @@ function aiAssistant() {
     },
     
     validateExtractedData(data) {
-      // Add validation logic here
+      // Clean and validate file number
       if (data.fileNo) {
-        data.fileNo = data.fileNo.replace(/[_\s]+/g, '').trim();
+        data.fileNo = data.fileNo.replace(/[_\s]+/g, ' ').trim();
+        // Remove trailing punctuation
+        data.fileNo = data.fileNo.replace(/[,.]$/, '');
       }
       
+      // Clean and validate plot number
       if (data.plotNo) {
         data.plotNo = data.plotNo.replace(/[,.]$/, '').trim();
       }
       
+      // Clean and validate property holder
       if (data.propertyHolder) {
         data.propertyHolder = data.propertyHolder.replace(/[,.]$/, '').trim();
+        // Capitalize properly
+        data.propertyHolder = data.propertyHolder.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+      }
+      
+      // Clean and validate location
+      if (data.location) {
+        data.location = data.location.replace(/[,.]$/, '').trim();
+      }
+      
+      // Clean and validate LGA
+      if (data.lgsaOrCity) {
+        data.lgsaOrCity = data.lgsaOrCity.replace(/[,.]$/, '').trim();
       }
       
       return data;
@@ -861,28 +974,43 @@ function aiAssistant() {
       // Populate basic fields
       if (data.plotNo) {
         const plotField = document.getElementById('plotNo');
-        if (plotField) plotField.value = data.plotNo;
+        if (plotField) {
+          plotField.value = data.plotNo;
+          plotField.dispatchEvent(new Event('input'));
+        }
       }
       
       if (data.lgsaOrCity) {
         const lgaField = document.getElementById('lga');
-        if (lgaField) lgaField.value = data.lgsaOrCity;
+        if (lgaField) {
+          lgaField.value = data.lgsaOrCity;
+          lgaField.dispatchEvent(new Event('change'));
+        }
       }
       
       // Populate registration fields
       if (data.serialNo) {
         const serialField = document.getElementById('serialNo');
-        if (serialField) serialField.value = data.serialNo;
+        if (serialField) {
+          serialField.value = data.serialNo;
+          serialField.dispatchEvent(new Event('input'));
+        }
       }
       
       if (data.page) {
         const pageField = document.getElementById('pageNo');
-        if (pageField) pageField.value = data.page;
+        if (pageField) {
+          pageField.value = data.page;
+          pageField.dispatchEvent(new Event('input'));
+        }
       }
       
       if (data.vol) {
         const volField = document.getElementById('volumeNo');
-        if (volField) volField.value = data.vol;
+        if (volField) {
+          volField.value = data.vol;
+          volField.dispatchEvent(new Event('input'));
+        }
       }
       
       // Populate transaction type
@@ -895,7 +1023,10 @@ function aiAssistant() {
             'RIGHT OF OCCUPANCY': 'Customary Right of Occupancy',
             'DEED OF MORTGAGE': 'Deed of Mortgage',
             'POWER OF ATTORNEY': 'Power of Attorney',
-            'RECERTIFICATION': 'Other'
+            'RECERTIFICATION': 'Other',
+            'DEED OF TRANSFER': 'Deed of Transfer',
+            'STATUTORY CERTIFICATE': 'ST Certificate of Occupancy',
+            'CUSTOMARY RIGHT': 'Customary Right of Occupancy'
           };
           transactionField.value = mapping[data.instrument] || 'Other';
           transactionField.dispatchEvent(new Event('change'));
@@ -904,6 +1035,9 @@ function aiAssistant() {
       
       // Update registration preview
       this.updateRegNoPreview();
+      
+      // Show success message
+      this.showToast(`Successfully extracted ${data.confidence}% of property data`, 'success');
     },
     
     updateRegNoPreview() {

@@ -53,3 +53,4 @@
     <!-- Include JavaScript after all DOM elements -->
     @include('propertycard.js.javascript')
 @endsection
+@include('propertycard.partials.property_form_sweetalert')

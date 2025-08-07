@@ -18,8 +18,7 @@ class PropertyRecordController extends Controller
 
        public function index()
     {
-        $PageTitle = 'Property Record Assistant
-';
+        $PageTitle = 'Property Record Assistant';
         $PageDescription = '';
         
         // Specify the table before using get()
@@ -69,20 +68,27 @@ class PropertyRecordController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
+            // Check if request expects JSON (AJAX) or normal redirect
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+            return redirect()->back()->withErrors($validator)->withInput();
         }
 
         try {
             // Check if at least one file number is provided
             if (empty($request->mlsFNo) && empty($request->kangisFileNo) && empty($request->NewKANGISFileno)) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'At least one file number type is required'
-                ], 422);
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'At least one file number type is required'
+                    ], 422);
+                }
+                return redirect()->back()->with('error', 'At least one file number type is required')->withInput();
             }
             
             // Create registration number from components
@@ -150,17 +156,30 @@ class PropertyRecordController extends Controller
             // Insert into database
             $id = DB::connection('sqlsrv')->table('property_records')->insertGetId($data);
 
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Property record created successfully',
-                'data' => ['id' => $id]
-            ], 201);
+            // Check if request expects JSON (AJAX) or normal redirect
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Property record created successfully',
+                    'data' => ['id' => $id]
+                ], 201);
+            }
+
+            // For normal form submissions, redirect with success message
+            return redirect()->route('propertycard.index')->with('success', 'Property record created successfully');
+
         } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to create property record',
-                'error' => $e->getMessage()
-            ], 500);
+            // Check if request expects JSON (AJAX) or normal redirect
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Failed to create property record',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            // For normal form submissions, redirect with error message
+            return redirect()->back()->with('error', 'Failed to create property record: ' . $e->getMessage())->withInput();
         }
     }
 
@@ -214,17 +233,6 @@ class PropertyRecordController extends Controller
         }
 
         try {
-            // Do NOT check for file numbers here - they are read-only in edit form
-            // Remove this block to avoid validation errors
-            /*
-            if (empty($request->mlsFNo) && empty($request->kangisFileNo) && empty($request->NewKANGISFileno)) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'At least one file number type is required'
-                ], 422);
-            }
-            */
-            
             // Create registration number from components
             $regNo = $request->serialNo . '/' . $request->pageNo . '/' . $request->volumeNo;
             
