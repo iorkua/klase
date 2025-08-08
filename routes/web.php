@@ -694,10 +694,12 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'recertification'], f
     Route::get('/', function() {
         return view('recertification.index');
     })->name('recertification.index');
-    
+
     Route::get('/application', function() {
         return view('recertification.application_standalone_clean');
     })->name('recertification.application');
+
+    Route::post('/application/store', [App\Http\Controllers\RecertificationController::class, 'store'])->name('recertification.application.store');
 });
 // Page Typing Debug Routes (main routes are in apps2.php)
 Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'pagetyping'], function () {

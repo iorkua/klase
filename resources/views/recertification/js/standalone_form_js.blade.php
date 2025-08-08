@@ -5,6 +5,7 @@ const totalSteps = 6;
 
 // Form data state
 let formData = {};
+let ownersCount = 0;
 
 // Development flags
 let skipValidation = true; // Default to true for development
@@ -30,6 +31,7 @@ const sampleData = {
     cityTown: 'KANO',
     state: 'KANO',
     emailAddress: 'test@example.com',
+    applicantType: 'Individual',
     titleHolderSurname: 'IBRAHIM',
     titleHolderFirstName: 'MUHAMMAD',
     cofoNumber: 'KN/2023/001',
@@ -108,6 +110,12 @@ function setupEventListeners() {
     
     // Conditional field displays
     setupConditionalFields();
+
+    // Applicant type toggle
+    setupApplicantTypeToggle();
+
+    // Multiple owners controls
+    setupMultipleOwnersControls();
     
     // Add keyboard shortcuts
     document.addEventListener('keydown', handleKeyboardShortcuts);
@@ -199,6 +207,247 @@ function autoFillForm() {
     document.querySelectorAll('input[name="hasMortgage"]').forEach(radio => {
         if (radio.checked) radio.dispatchEvent(new Event('change'));
     });
+}
+
+function setupApplicantTypeToggle() {
+    const typeSelect = document.getElementById('applicantType');
+    const individual = document.getElementById('individual-fields');
+    const corporate = document.getElementById('corporate-fields');
+    const multipleOwners = document.getElementById('multiple-owners-fields');
+
+    const setRequired = (selectorList, required) => {
+        selectorList.forEach(sel => {
+            document.querySelectorAll(sel).forEach(el => {
+                if (required) {
+                    el.setAttribute('required', 'required');
+                } else {
+                    el.removeAttribute('required');
+                }
+            });
+        });
+    };
+
+    const updateView = (value) => {
+        // Default hide both
+        if (individual) individual.classList.add('hidden');
+        if (corporate) corporate.classList.add('hidden');
+        if (multipleOwners) multipleOwners.classList.add('hidden');
+
+        // Default: individual required
+        setRequired([
+            '#surname', '#firstName', '#occupation', '#dateOfBirth', '#nationality', '#stateOfOrigin',
+            'input[name="gender"]', 'input[name="maritalStatus"]'
+        ], false);
+        setRequired(['#organisationName', '#cacRegistrationNo', '#typeOfOrganisation', '#typeOfBusiness'], false);
+        // Clear owners required by default
+        setOwnersRequired(false);
+
+        if (value === 'Corporate') {
+            if (corporate) corporate.classList.remove('hidden');
+            setRequired(['#organisationName', '#cacRegistrationNo', '#typeOfOrganisation', '#typeOfBusiness'], true);
+        } else if (value === 'Multiple Owners') {
+            if (multipleOwners) multipleOwners.classList.remove('hidden');
+            if (ownersCount === 0) addOwnerBlock();
+            setOwnersRequired(true);
+        } else if (value === 'Individual' || value === 'Government Body') {
+            if (individual) individual.classList.remove('hidden');
+            setRequired([
+                '#surname', '#firstName', '#occupation', '#dateOfBirth', '#nationality', '#stateOfOrigin',
+                'input[name="gender"]', 'input[name="maritalStatus"]'
+            ], true);
+        }
+    };
+
+    if (typeSelect) {
+        updateView(typeSelect.value);
+        typeSelect.addEventListener('change', (e) => {
+            formData['applicantType'] = e.target.value;
+            updateView(e.target.value);
+        });
+    }
+}
+
+function setOwnersRequired(required) {
+    document.querySelectorAll('.owner-block [data-required="true"]').forEach(el => {
+        if (required) {
+            el.setAttribute('required', 'required');
+        } else {
+            el.removeAttribute('required');
+        }
+    });
+}
+
+function setupMultipleOwnersControls() {
+    const addBtn = document.getElementById('add-owner-btn');
+    if (!addBtn) return;
+
+    addBtn.addEventListener('click', () => addOwnerBlock());
+}
+
+function addOwnerBlock() {
+    ownersCount++;
+    const list = document.getElementById('owners-list');
+    if (!list) return;
+
+    const index = ownersCount;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'owner-block border border-gray-200 rounded-md p-4';
+    wrapper.dataset.index = index;
+
+    // Template replicates individual fields but with array-style names
+    wrapper.innerHTML = `
+        <div class="flex items-center justify-between mb-3">
+            <h5 class="font-semibold">Owner #${index}</h5>
+            <button type="button" class="remove-owner inline-flex items-center justify-center rounded-md font-medium text-xs px-2 py-1 transition-all cursor-pointer bg-red-600 text-white hover:bg-red-700">Remove</button>
+        </div>
+        <div class="grid grid-cols-3 gap-4">
+            <div class="form-field">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Surname <span class="text-red-500">*</span></label>
+                <input type="text" name="owners[${index}][surname]" data-required="true" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 uppercase" placeholder="SURNAME" />
+            </div>
+            <div class="form-field">
+                <label class="block text-sm font-medium text-gray-700 mb-1">First Name <span class="text-red-500">*</span></label>
+                <input type="text" name="owners[${index}][firstName]" data-required="true" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 uppercase" placeholder="FIRST NAME" />
+            </div>
+            <div class="form-field">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Other Names</label>
+                <input type="text" name="owners[${index}][middleName]" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 uppercase" placeholder="MIDDLE NAME" />
+            </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mt-3">
+            <div class="form-field">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <select name="owners[${index}][title]" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10">
+                    <option value="">Select Title</option>
+                    <option value="MR">MR</option>
+                    <option value="MRS">MRS</option>
+                    <option value="MISS">MISS</option>
+                    <option value="DR">DR</option>
+                    <option value="PROF">PROF</option>
+                    <option value="ENG">ENG</option>
+                    <option value="ARC">ARC</option>
+                    <option value="ALHAJI">ALHAJI</option>
+                    <option value="HAJIYA">HAJIYA</option>
+                </select>
+            </div>
+            <div class="form-field">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Occupation <span class="text-red-500">*</span></label>
+                <input type="text" name="owners[${index}][occupation]" data-required="true" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 uppercase" placeholder="OCCUPATION" />
+            </div>
+        </div>
+        <div class="grid grid-cols-3 gap-4 mt-3">
+            <div class="form-field">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Date of Birth <span class="text-red-500">*</span></label>
+                <input type="date" name="owners[${index}][dateOfBirth]" data-required="true" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10" />
+            </div>
+            <div class="form-field">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nationality <span class="text-red-500">*</span></label>
+                <input type="text" name="owners[${index}][nationality]" data-required="true" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 uppercase" placeholder="NIGERIAN" />
+            </div>
+            <div class="form-field">
+                <label class="block text-sm font-medium text-gray-700 mb-1">State of Origin <span class="text-red-500">*</span></label>
+                <input type="text" name="owners[${index}][stateOfOrigin]" data-required="true" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 uppercase" placeholder="STATE OF ORIGIN" />
+            </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mt-3">
+            <div class="form-field">
+                <label class="block text-sm font-medium text-gray-700 mb-1">LGA of Origin</label>
+                <input type="text" name="owners[${index}][lgaOfOrigin]" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 uppercase" placeholder="LGA OF ORIGIN" />
+            </div>
+            <div class="form-field">
+                <label class="block text-sm font-medium text-gray-700 mb-1">NIN</label>
+                <input type="text" name="owners[${index}][nin]" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10" placeholder="NATIONAL IDENTIFICATION NUMBER" />
+            </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mt-3">
+            <div class="form-field">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Gender <span class="text-red-500">*</span></label>
+                <div class="flex gap-4">
+                    <label class="radio-item">
+                        <input type="radio" name="owners[${index}][gender]" value="male" data-required="true" />
+                        <div class="radio-circle"></div>
+                        <span class="text-sm">Male</span>
+                    </label>
+                    <label class="radio-item">
+                        <input type="radio" name="owners[${index}][gender]" value="female" />
+                        <div class="radio-circle"></div>
+                        <span class="text-sm">Female</span>
+                    </label>
+                </div>
+            </div>
+            <div class="form-field">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Marital Status <span class="text-red-500">*</span></label>
+                <div class="flex gap-4 flex-wrap">
+                    <label class="radio-item">
+                        <input type="radio" name="owners[${index}][maritalStatus]" value="single" data-required="true" />
+                        <div class="radio-circle"></div>
+                        <span class="text-sm">Single</span>
+                    </label>
+                    <label class="radio-item">
+                        <input type="radio" name="owners[${index}][maritalStatus]" value="married" />
+                        <div class="radio-circle"></div>
+                        <span class="text-sm">Married</span>
+                    </label>
+                    <label class="radio-item">
+                        <input type="radio" name="owners[${index}][maritalStatus]" value="divorced" />
+                        <div class="radio-circle"></div>
+                        <span class="text-sm">Divorced</span>
+                    </label>
+                    <label class="radio-item">
+                        <input type="radio" name="owners[${index}][maritalStatus]" value="widowed" />
+                        <div class="radio-circle"></div>
+                        <span class="text-sm">Widowed</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="form-field mt-3">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Maiden Name (if applicable)</label>
+            <input type="text" name="owners[${index}][maidenName]" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 uppercase" placeholder="MAIDEN NAME" />
+        </div>
+        <div class="owner-photo-upload-area photo-upload-area mt-4">
+            <i data-lucide="camera" class="h-6 w-6 mb-2 text-gray-400"></i>
+            <div class="text-xs font-semibold mb-1">PASSPORT PHOTOGRAPH</div>
+            <div class="text-xs text-gray-500 mb-2">(2&quot; X 2&quot;)</div>
+            <input type="file" name="owners[${index}][passportPhoto]" accept="image/*" class="hidden owner-photo-input" />
+            <button type="button" class="upload-btn inline-flex items-center justify-center rounded-md font-medium text-xs px-2.5 py-1.5 transition-all cursor-pointer bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50">
+                Upload Photo
+            </button>
+            <div class="owner-photo-filename text-xs text-gray-600 mt-2 hidden"></div>
+            <div class="text-[10px] text-red-600 mt-1">NOTE: DO NOT put a staple pin over the face region of the photo</div>
+        </div>
+    `;
+
+    list.appendChild(wrapper);
+
+    // Remove owner handler
+    wrapper.querySelector('.remove-owner').addEventListener('click', () => {
+        wrapper.remove();
+        // Optional: reindex or leave gaps; keep ownersCount for unique names
+    });
+
+    // Wire up owner photo upload controls
+    const uploadBtn = wrapper.querySelector('.owner-photo-upload-area .upload-btn');
+    const fileInput = wrapper.querySelector('.owner-photo-upload-area .owner-photo-input');
+    const fileNameEl = wrapper.querySelector('.owner-photo-upload-area .owner-photo-filename');
+    if (uploadBtn && fileInput) {
+        uploadBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files && fileInput.files[0]) {
+                fileNameEl.textContent = `Selected: ${fileInput.files[0].name}`;
+                fileNameEl.classList.remove('hidden');
+            } else {
+                fileNameEl.textContent = '';
+                fileNameEl.classList.add('hidden');
+            }
+        });
+    }
+
+    // Ensure required flags are set if Multiple Owners is active
+    const typeSelect = document.getElementById('applicantType');
+    if (typeSelect && typeSelect.value === 'Multiple Owners') {
+        setOwnersRequired(true);
+    }
 }
 
 function setupConditionalFields() {
@@ -457,25 +706,30 @@ async function submitForm() {
     if (loadingSpinner) loadingSpinner.classList.remove('hidden');
     
     try {
-        // Collect all form data
+        // Collect all form data with files
         const form = document.getElementById('recertification-form');
-        const currentFormData = new FormData(form);
-        const applicationData = Object.fromEntries(currentFormData.entries());
-        
-        // Merge with tracked form data
-        const finalData = { ...formData, ...applicationData };
-        
-        // Simulate API call
-        console.log('Submitting application data:', finalData);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Show success message
-        showToast('Application submitted successfully!', 'success');
-        
-        // Redirect after delay
+        const formBody = new FormData(form);
+
+        // Post to backend
+        const response = await fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formBody
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            const msg = result?.message || 'Failed to submit application.';
+            throw new Error(msg);
+        }
+
+        showToast(`Application submitted successfully. Ref: ${result.reference}`, 'success');
+        // Redirect after short delay
         setTimeout(() => {
             window.location.href = '/recertification';
-        }, 2000);
+        }, 1500);
         
     } catch (error) {
         console.error('Error submitting application:', error);

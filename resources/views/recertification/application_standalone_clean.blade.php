@@ -103,9 +103,10 @@ tailwind.config = {
                         <div id="step-6" class="step-circle inactive">6</div>
                     </div>
                 </div>
-                
+                 
                 <div class="p-6">
-                    <form id="recertification-form">
+                    <form id="recertification-form" method="POST" action="{{ route('recertification.application.store') }}" enctype="multipart/form-data">
+                        @csrf
                         
                         <!-- Include Step Partials -->
                         @include('recertification.steps.step1_personal_details')
