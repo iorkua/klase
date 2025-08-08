@@ -20,6 +20,25 @@
                     View Application
                 </a>
             </li>
+
+                <!-- Approval -->
+                <li>
+                <a href="{{ route('actions.recommendation', ['id' => $PrimaryApplication->id]) }}?url=phy_planning"
+                    class="flex items-center gap-2 px-4 py-2 text-sm {{ $approvalStatus ? 'text-gray-400 cursor-not-allowed bg-gray-50' : 'text-gray-700 hover:bg-gray-100' }}"
+                    @if ($approvalStatus) tabindex="-1" aria-disabled="true" onclick="return false;" @endif>
+                    <i data-lucide="check-circle"
+                        class="w-4 h-4 {{ $approvalStatus ? 'text-gray-400' : 'text-green-500' }}"></i>
+                        Planning Recommendation Approval
+                </a>
+            </li>
+            <!-- Planning Recommendation -->
+            <li>
+                <a href="{{ route('actions.recommendation', ['id' => $PrimaryApplication->id]) }}?url=recommendation"
+                    class="flex items-center gap-2 px-4 py-2 text-">
+                    <i data-lucide="file-text" class="w-4 h-4 text-yellow-500"></i>
+                     View Planning Recommendation Approval
+                </a>
+            </li>
             <!-- ST Memo -->
             <li>
                 <a href="javascript:void(0)"
@@ -67,24 +86,7 @@
                     View Site Plan
                 </a>
             </li>
-            <!-- Approval -->
-            <li>
-                <a href="{{ route('actions.recommendation', ['id' => $PrimaryApplication->id]) }}?url=phy_planning"
-                    class="flex items-center gap-2 px-4 py-2 text-sm {{ $approvalStatus ? 'text-gray-400 cursor-not-allowed bg-gray-50' : 'text-gray-700 hover:bg-gray-100' }}"
-                    @if ($approvalStatus) tabindex="-1" aria-disabled="true" onclick="return false;" @endif>
-                    <i data-lucide="check-circle"
-                        class="w-4 h-4 {{ $approvalStatus ? 'text-gray-400' : 'text-green-500' }}"></i>
-                    Approval
-                </a>
-            </li>
-            <!-- Planning Recommendation -->
-            <li>
-                <a href="{{ route('actions.recommendation', ['id' => $PrimaryApplication->id]) }}?url=recommendation"
-                    class="flex items-center gap-2 px-4 py-2 text-">
-                    <i data-lucide="file-text" class="w-4 h-4 text-yellow-500"></i>
-                    Planning Recommendation
-                </a>
-            </li>
+        
         </ul>
     </div>
 </div>

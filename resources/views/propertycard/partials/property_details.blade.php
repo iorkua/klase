@@ -178,62 +178,31 @@
 
             <!-- Property Table -->
             <div class="table-container">
-                <table class="table">
+                <table id="property-records-table" class="table">
                     <thead>
                         <tr>
                             <th>File Number</th>
                             <th>Description</th>
                             <th>Location</th>
                             <th>Registration Particulars</th>
-                            <th>Transaction Type</th>
+                       
                             <th>Instrument Type</th>
+                            <th>Transaction Date</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        @forelse($Property_records as $property)
-                        <tr>
-                            <td class="font-medium">
-                                @if($property->kangisFileNo)
-                                    {{ $property->kangisFileNo }}
-                                @elseif($property->mlsFNo)
-                                    {{ $property->mlsFNo }}
-                                @elseif($property->NewKANGISFileno)
-                                    {{ $property->NewKANGISFileno }}
-                                @else
-                                    No File Number
-                                @endif
-                            </td>
-                            <td>{{ Str::limit($property->property_description, 30) ?: 'No description' }}</td>
-                            <td>{{ $property->location ?: 'N/A' }}</td>
-                            <td>{{ $property->regNo ?: 'N/A' }}</td>
-                            <td>{{ $property->transaction_type ?: 'N/A' }}</td>
-                            <td>{{ $property->instrument_type ?: 'N/A' }}</td>
-                            <td>
-                                <div class="flex items-center gap-2">
-                                    <button class="text-blue-500 hover:text-blue-700 transition-colors view-property" data-id="{{ $property->id }}">
-                                        <i data-lucide="eye" class="h-4 w-4 text-blue-500"></i>
-                                    </button>
-                                    <button class="text-green-500 hover:text-green-700 transition-colors edit-property" data-id="{{ $property->id }}">
-                                        <i data-lucide="pencil" class="h-4 w-4 text-green-500"></i>
-                                    </button>
-                                    <button class="text-red-500 hover:text-red-700 transition-colors delete-property" data-id="{{ $property->id }}">
-                                        <i data-lucide="trash-2" class="h-4 w-4 text-red-500"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="7" class="text-center py-4 text-gray-500">No property records found</td>
-                        </tr>
-                        @endforelse
-                    </tbody>
                 </table>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Include DataTables CSS and JS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Hide all property cards except the selected detail card and the add card
@@ -244,6 +213,173 @@
                 card.style.display = 'none';
             });
         }
-        // Do NOT auto-load the first property via JS, since it's rendered server-side now.
+
+        // Initialize DataTable
+        $('#property-records-table').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: '{{ route("propertycard.getData") }}',
+                type: 'GET'
+            },
+            columns: [
+                {
+                    data: null,
+                    name: 'file_number',
+                    render: function(data, type, row) {
+                        if (row.kangisFileNo) {
+                            return row.kangisFileNo;
+                        } else if (row.mlsFNo) {
+                            return row.mlsFNo;
+                        } else if (row.NewKANGISFileno) {
+                            return row.NewKANGISFileno;
+                        } else {
+                            return 'No File Number';
+                        }
+                    }
+                },
+                {
+                    data: 'property_description',
+                    name: 'property_description',
+                    render: function(data, type, row) {
+                        if (data && data.length > 30) {
+                            return data.substring(0, 30) + '...';
+                        }
+                        return data || 'No description';
+                    }
+                },
+                {
+                    data: 'location',
+                    name: 'location',
+                    render: function(data, type, row) {
+                        return data || 'N/A';
+                    }
+                },
+                {
+                    data: 'regNo',
+                    name: 'regNo',
+                    render: function(data, type, row) {
+                        return data || 'N/A';
+                    }
+                },
+               
+                {
+                    data: 'instrument_type',
+                    name: 'instrument_type',
+                    render: function(data, type, row) {
+                        return data || 'N/A';
+                    }
+                },
+                {
+                    data: 'transaction_date',
+                    name: 'transaction_date',
+                    render: function(data, type, row) {
+                        if (data) {
+                            const date = new Date(data);
+                            const formattedDate = date.toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                            });
+                            const formattedTime = date.toLocaleTimeString('en-US', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                            return `<div class="flex flex-col text-sm">
+                                        <span class="font-medium">${formattedDate}</span>
+                                        <span class="text-xs text-gray-500">${formattedTime}</span>
+                                    </div>`;
+                        }
+                        return '<span class="text-gray-400">N/A</span>';
+                    }
+                },
+                {
+                    data: 'id',
+                    name: 'actions',
+                    orderable: false,
+                    searchable: false,
+                    render: function(data, type, row) {
+                        return `
+                            <div class="flex items-center gap-2">
+                                <button class="text-blue-500 hover:text-blue-700 transition-colors view-property" data-id="${data}">
+                                    <i data-lucide="eye" class="h-4 w-4 text-blue-500"></i>
+                                </button>
+                                <button class="text-green-500 hover:text-green-700 transition-colors edit-property" data-id="${data}">
+                                    <i data-lucide="pencil" class="h-4 w-4 text-green-500"></i>
+                                </button>
+                                <button class="text-red-500 hover:text-red-700 transition-colors delete-property" data-id="${data}">
+                                    <i data-lucide="trash-2" class="h-4 w-4 text-red-500"></i>
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+            ],
+            order: [[6, 'desc']], // Order by Transaction Date column (index 6) in descending order
+            pageLength: 25,
+            responsive: true,
+            language: {
+                processing: "Loading property records...",
+                emptyTable: "No property records found",
+                zeroRecords: "No matching property records found"
+            },
+            drawCallback: function(settings) {
+                // Re-initialize Lucide icons after table redraw
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+                
+                // Re-attach event listeners to action buttons
+                setupPropertyActions();
+            }
+        });
+
+        // Setup property action buttons
+        function setupPropertyActions() {
+            // Remove existing event listeners to prevent duplicates
+            document.querySelectorAll('.view-property, .edit-property, .delete-property').forEach(button => {
+                button.replaceWith(button.cloneNode(true));
+            });
+
+            // View property details
+            document.querySelectorAll('.view-property').forEach(button => {
+                button.addEventListener('click', function() {
+                    const propertyId = this.getAttribute('data-id');
+                    viewPropertyDetails(propertyId);
+                });
+            });
+
+            // Edit property
+            document.querySelectorAll('.edit-property').forEach(button => {
+                button.addEventListener('click', function() {
+                    const propertyId = this.getAttribute('data-id');
+                    editProperty(propertyId);
+                });
+            });
+
+            // Delete property
+            document.querySelectorAll('.delete-property').forEach(button => {
+                button.addEventListener('click', function() {
+                    const propertyId = this.getAttribute('data-id');
+                    deleteProperty(propertyId);
+                });
+            });
+        }
+
+        // Placeholder functions for property actions (these should be defined in your main JS file)
+        function viewPropertyDetails(propertyId) {
+            console.log('View property:', propertyId);
+            // Add your view logic here
+        }
+
+        function editProperty(propertyId) {
+            console.log('Edit property:', propertyId);
+            // Add your edit logic here
+        }
+
+        function deleteProperty(propertyId) {
+            console.log('Delete property:', propertyId);
+            // Add your delete logic here
+        }
     });
 </script>

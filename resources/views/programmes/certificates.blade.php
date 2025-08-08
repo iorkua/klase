@@ -86,13 +86,11 @@
 
     .dropdown-content {
         display: none;
-        position: absolute;
-        right: 0;
-        top: 100%;
+        position: fixed;
         background-color: #ffffff;
         min-width: 220px;
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        z-index: 9999;
+        z-index: 99999;
         border-radius: 0.75rem;
         border: 1px solid #e2e8f0;
         overflow: hidden;
@@ -524,17 +522,65 @@
 </div>
 
 <script>
-    // Simple dropdown toggle function
+    // Enhanced dropdown toggle function with proper positioning
     function toggleDropdown(button) {
-        // Close all other dropdowns
+        // Close all other dropdowns first
         document.querySelectorAll('.dropdown').forEach(dropdown => {
             if (dropdown !== button.parentElement) {
                 dropdown.classList.remove('show');
             }
         });
         
+        const dropdown = button.parentElement;
+        const dropdownContent = dropdown.querySelector('.dropdown-content');
+        
         // Toggle current dropdown
-        button.parentElement.classList.toggle('show');
+        const isCurrentlyOpen = dropdown.classList.contains('show');
+        
+        if (isCurrentlyOpen) {
+            dropdown.classList.remove('show');
+        } else {
+            // Position the dropdown before showing it
+            positionDropdown(button, dropdownContent);
+            dropdown.classList.add('show');
+        }
+        
+        // Prevent event bubbling
+        if (event) {
+            event.stopPropagation();
+        }
+    }
+
+    // Function to position dropdown properly
+    function positionDropdown(button, dropdownContent) {
+        const buttonRect = button.getBoundingClientRect();
+        const dropdownWidth = 220; // min-width from CSS
+        const dropdownHeight = dropdownContent.scrollHeight || 150; // estimated height
+        
+        // Calculate position
+        let left = buttonRect.right - dropdownWidth;
+        let top = buttonRect.bottom + 4;
+        
+        // Adjust if dropdown would go off-screen to the left
+        if (left < 10) {
+            left = buttonRect.left;
+        }
+        
+        // Adjust if dropdown would go off-screen to the right
+        const windowWidth = window.innerWidth;
+        if (left + dropdownWidth > windowWidth - 10) {
+            left = windowWidth - dropdownWidth - 10;
+        }
+        
+        // Adjust if dropdown would go off-screen at the bottom
+        const windowHeight = window.innerHeight;
+        if (top + dropdownHeight > windowHeight - 10) {
+            top = buttonRect.top - dropdownHeight - 4;
+        }
+        
+        // Apply the calculated position
+        dropdownContent.style.left = left + 'px';
+        dropdownContent.style.top = top + 'px';
     }
 
     // Close dropdowns when clicking outside
@@ -546,6 +592,20 @@
         }
     });
 
+    // Close dropdowns on scroll to prevent misalignment
+    window.addEventListener('scroll', function() {
+        document.querySelectorAll('.dropdown').forEach(dropdown => {
+            dropdown.classList.remove('show');
+        });
+    });
+
+    // Close dropdowns on window resize
+    window.addEventListener('resize', function() {
+        document.querySelectorAll('.dropdown').forEach(dropdown => {
+            dropdown.classList.remove('show');
+        });
+    });
+
     // Tab switching functionality
     document.addEventListener('DOMContentLoaded', function() {
         const tabButtons = document.querySelectorAll('.tab-button');
@@ -553,14 +613,19 @@
         
         tabButtons.forEach(button => {
             button.addEventListener('click', function() {
+                // Close any open dropdowns when switching tabs
+                document.querySelectorAll('.dropdown').forEach(dropdown => {
+                    dropdown.classList.remove('show');
+                });
+                
                 // Remove active class from all buttons
                 tabButtons.forEach(btn => {
-                    btn.classList.remove('border-blue-500', 'text-blue-600');
+                    btn.classList.remove('active', 'border-blue-500', 'text-blue-600');
                     btn.classList.add('border-transparent', 'text-gray-500');
                 });
                 
                 // Add active class to clicked button
-                this.classList.add('border-blue-500', 'text-blue-600');
+                this.classList.add('active', 'border-blue-500', 'text-blue-600');
                 this.classList.remove('border-transparent', 'text-gray-500');
                 
                 // Hide all tab contents
@@ -570,7 +635,10 @@
                 
                 // Show the selected tab content
                 const tabKey = this.getAttribute('data-tab');
-                document.getElementById('content-' + tabKey).classList.remove('hidden');
+                const targetContent = document.getElementById('content-' + tabKey);
+                if (targetContent) {
+                    targetContent.classList.remove('hidden');
+                }
             });
         });
     });
@@ -583,7 +651,17 @@
         });
         message += '\nPlease ensure all prerequisites are completed before generating the CofO.';
         
-        alert(message);
+        // Use SweetAlert if available, otherwise fallback to alert
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'Prerequisites Missing',
+                text: message,
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
+        } else {
+            alert(message);
+        }
     }
 </script>
 @endsection

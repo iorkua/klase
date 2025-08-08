@@ -191,10 +191,14 @@
                 @forelse($approvedApplications as $app)
                 <tr class="cofo-row" data-status="{{ $app->status }}" data-id="{{ $app->id }}">
                 <td class="px-6 py-4 whitespace-nowrap">
+                  @php
+                    $isDisabled = $app->status === 'registered' || $app->instrument_type === 'Sectional Titling CofO';
+                  @endphp
                   <input type="checkbox" class="rounded main-table-checkbox" 
                          data-id="{{ $app->id }}" 
                          data-status="{{ $app->status }}"
-                         {{ $app->status === 'registered' ? 'disabled' : '' }}
+                         data-instrument-type="{{ $app->instrument_type }}"
+                         {{ $isDisabled ? 'disabled' : '' }}
                          onchange="handleMainTableCheckboxChange()">
                 </td>
                 <!-- 1. Reg Particulars - FIXED: Only show for registered instruments -->
@@ -604,9 +608,11 @@ function populateDropdownContent(app) {
     const editHref = app.status === 'pending' ? `{{ url('instrument_registration') }}/${app.id}/edit` : '#';
     const editClick = app.status !== 'pending' ? 'onclick="return false;"' : '';
     
-    const registerClass = app.status === 'pending' ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-400 cursor-not-allowed';
-    const registerIcon = app.status === 'pending' ? 'text-green-500' : 'text-gray-300';
-    const registerClick = app.status === 'pending' ? `onclick="openSingleRegisterModalWithData('${app.id}'); return false;"` : 'onclick="return false;"';
+    // Disable Register Instrument button for ST CofO or non-pending instruments
+    const canRegister = app.status === 'pending' && app.instrument_type !== 'Sectional Titling CofO';
+    const registerClass = canRegister ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-400 cursor-not-allowed';
+    const registerIcon = canRegister ? 'text-green-500' : 'text-gray-300';
+    const registerClick = canRegister ? `onclick="openSingleRegisterModalWithData('${app.id}'); return false;"` : 'onclick="showSTCofoRestrictionMessage(); return false;"';
     
     const deleteClass = app.status === 'pending' ? 'text-red-600 hover:bg-gray-100' : 'text-gray-400 cursor-not-allowed';
     const deleteIcon = app.status === 'pending' ? '' : 'text-gray-300';
@@ -696,6 +702,30 @@ function deleteInstrument(id) {
                 );
             });
         }
+    });
+}
+
+// Function to show ST CofO restriction message
+function showSTCofoRestrictionMessage() {
+    Swal.fire({
+        title: 'Registration Restriction',
+        html: `
+            <div class="text-left">
+                <p class="mb-3"><strong>ST CofO (Sectional Titling Certificate of Occupancy)</strong> cannot be registered directly.</p>
+                <p class="mb-3">To register an ST CofO, you must first ensure that the corresponding <strong>ST Assignment (Transfer of Title)</strong> has been registered.</p>
+                <div class="bg-blue-50 p-3 rounded-lg mt-4">
+                    <p class="text-sm text-blue-800"><i class="fas fa-info-circle mr-2"></i><strong>Registration Process:</strong></p>
+                    <ol class="text-sm text-blue-700 mt-2 ml-4">
+                        <li>1. Register the ST Assignment (Transfer of Title) first</li>
+                        <li>2. Once registered, the ST CofO will become available for registration</li>
+                    </ol>
+                </div>
+            </div>
+        `,
+        icon: 'info',
+        confirmButtonText: 'I Understand',
+        confirmButtonColor: '#3085d6',
+        width: '500px'
     });
 }
 

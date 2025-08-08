@@ -39,6 +39,7 @@ class FileNumberController extends Controller
             // Base query for counting (without ORDER BY)
             $baseQuery = DB::connection('sqlsrv')
                 ->table('fileNumber');
+                // Temporarily remove is_deleted filter to see all records
 
             // Get total count
             $totalRecords = $baseQuery->count();
@@ -62,12 +63,14 @@ class FileNumberController extends Controller
                 ->select([
                     'id',
                     'kangisFileNo',
+                    'mlsfNo',
                     'NewKANGISFileNo', 
                     'FileName',
-                    'mlsfNo',
+                    'type',
                     'created_by',
                     'created_at'
                 ])
+                // Temporarily remove is_deleted filter to see all records
                 ->when(!empty($searchValue), function($query) use ($searchValue) {
                     $query->where(function($q) use ($searchValue) {
                         $q->where('kangisFileNo', 'like', "%{$searchValue}%")
@@ -76,28 +79,37 @@ class FileNumberController extends Controller
                           ->orWhere('mlsfNo', 'like', "%{$searchValue}%");
                     });
                 })
-                ->orderBy('created_at', 'desc')
+                ->orderBy('id', 'desc') // Order by ID since created_at might be null
                 ->skip($start)
                 ->take($length)
                 ->get();
 
             // Format the data
             $formattedData = $data->map(function($row) {
+                // Clean and format the data
+                $kangisFileNo = trim($row->kangisFileNo ?? '');
+                $newKangisFileNo = trim($row->NewKANGISFileNo ?? '');
+                $fileName = trim($row->FileName ?? '');
+                $mlsfNo = trim($row->mlsfNo ?? '');
+                $createdBy = trim($row->created_by ?? '');
+                
+                // Display each field as-is, or show N/A if empty
                 return [
                     'id' => $row->id,
-                    'kangisFileNo' => $row->kangisFileNo ?? '-',
-                    'NewKANGISFileNo' => $row->NewKANGISFileNo ?? '-',
-                    'FileName' => $row->FileName ?? '-',
-                    'mlsfNo' => $row->mlsfNo ?? '-',
-                    'created_by' => $row->created_by ?? '-',
-                    'created_at' => $row->created_at ? date('Y-m-d H:i:s', strtotime($row->created_at)) : '-',
+                    'mlsfNo' => !empty($mlsfNo) ? $mlsfNo : 'N/A',
+                    'kangisFileNo' => !empty($kangisFileNo) ? $kangisFileNo : 'N/A',
+                    'NewKANGISFileNo' => !empty($newKangisFileNo) ? $newKangisFileNo : 'N/A',
+                    'FileName' => !empty($fileName) ? $fileName : 'N/A',
+                    'type' => trim($row->type ?? '') ?: 'N/A',
+                    'created_by' => !empty($createdBy) ? $createdBy : 'System',
+                    'created_at' => $row->created_at ? date('Y-m-d H:i:s', strtotime($row->created_at)) : 'N/A',
                     'action' => '<div class="flex justify-center space-x-2">
                         <button onclick="editRecord(' . $row->id . ')" 
-                                class="text-blue-600 hover:text-blue-800 text-sm" title="Edit">
+                                class="text-blue-600 hover:text-blue-800 text-sm px-2 py-1 rounded hover:bg-blue-50" title="Edit">
                             <i data-lucide="edit" class="w-4 h-4"></i>
                         </button>
                         <button onclick="deleteRecord(' . $row->id . ')" 
-                                class="text-red-600 hover:text-red-800 text-sm" title="Delete">
+                                class="text-red-600 hover:text-red-800 text-sm px-2 py-1 rounded hover:bg-red-50" title="Delete">
                             <i data-lucide="trash-2" class="w-4 h-4"></i>
                         </button>
                     </div>'
@@ -132,23 +144,30 @@ class FileNumberController extends Controller
         $currentYear = $request->get('year', date('Y'));
         
         try {
-            // Get the highest serial number for the current year
-            $lastRecord = DB::connection('sqlsrv')
+            // Get all records for the current year and extract serial numbers
+            $records = DB::connection('sqlsrv')
                 ->table('fileNumber')
                 ->where('mlsfNo', 'like', '%-' . $currentYear . '-%')
-                ->orderByRaw('CAST(SUBSTRING(mlsfNo, LEN(mlsfNo) - 3, 4) AS INT) DESC')
-                ->first();
+                ->whereNotNull('mlsfNo')
+                ->where('mlsfNo', '!=', '')
+                ->get();
 
-            $nextSerial = 1;
+            $maxSerial = 0;
             
-            if ($lastRecord && $lastRecord->mlsfNo) {
-                // Extract the serial number from the MLS File number (last 4 digits)
-                preg_match('/-(\d{4})(?:\(T\))?(?:\s+AND\s+EXTENSION)?$/', $lastRecord->mlsfNo, $matches);
-                if (isset($matches[1])) {
-                    $lastSerial = (int) $matches[1];
-                    $nextSerial = $lastSerial + 1;
+            foreach ($records as $record) {
+                if ($record->mlsfNo) {
+                    // Extract serial number from patterns like: RES-2024-0001, CON-IND-42154, etc.
+                    // Look for the last number in the string that could be a serial
+                    if (preg_match('/-(\d+)(?:\(T\))?(?:\s+AND\s+EXTENSION)?$/', $record->mlsfNo, $matches)) {
+                        $serial = (int) $matches[1];
+                        if ($serial > $maxSerial) {
+                            $maxSerial = $serial;
+                        }
+                    }
                 }
             }
+            
+            $nextSerial = $maxSerial + 1;
 
             return response()->json(['nextSerial' => $nextSerial]);
 
@@ -207,14 +226,10 @@ class FileNumberController extends Controller
         try {
             $fileOption = $request->file_option;
             $mlsfNo = '';
-            $kangisFileNo = '';
-            $newKangisFileNo = '';
 
             if ($fileOption === 'extension') {
                 // For extensions, use the existing file number with "AND EXTENSION"
                 $mlsfNo = $request->existing_file_no . ' AND EXTENSION';
-                $kangisFileNo = $request->existing_file_no;
-                $newKangisFileNo = $mlsfNo;
             } else {
                 // Generate new file number
                 $serialNo = str_pad($request->serial_no, 4, '0', STR_PAD_LEFT);
@@ -223,9 +238,6 @@ class FileNumberController extends Controller
                 if ($fileOption === 'temporary') {
                     $mlsfNo .= '(T)';
                 }
-                
-                $kangisFileNo = $mlsfNo;
-                $newKangisFileNo = $mlsfNo;
             }
 
             // Check if file number already exists (only for non-extension files)
@@ -243,13 +255,13 @@ class FileNumberController extends Controller
                 }
             }
 
-            // Insert new record
+            // Insert new record - only populate mlsfNo field, leave others null
             $id = DB::connection('sqlsrv')
                 ->table('fileNumber')
                 ->insertGetId([
                     'mlsfNo' => $mlsfNo,
-                    'kangisFileNo' => $kangisFileNo,
-                    'NewKANGISFileNo' => $newKangisFileNo,
+                    'kangisFileNo' => null,  // Leave empty
+                    'NewKANGISFileNo' => null,  // Leave empty
                     'FileName' => $request->file_name,
                     'type' => 'Generated',
                     'location' => $request->land_use,
@@ -264,8 +276,8 @@ class FileNumberController extends Controller
                 'data' => [
                     'id' => $id,
                     'mlsfNo' => $mlsfNo,
-                    'kangisFileNo' => $kangisFileNo,
-                    'NewKANGISFileNo' => $newKangisFileNo,
+                    'kangisFileNo' => null,
+                    'NewKANGISFileNo' => null,
                     'FileName' => $request->file_name
                 ]
             ]);
@@ -280,111 +292,199 @@ class FileNumberController extends Controller
     }
 
     /**
-     * Migrate data from Excel file
+     * Migrate data from CSV file (simple and efficient)
      */
     public function migrate(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'excel_file' => 'required|file|mimes:xlsx,xls,csv|max:10240'
+            'excel_file' => 'required|file|mimes:csv,txt|max:20480' // Only CSV files, 20MB max
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Please upload a valid Excel file (xlsx, xls, or csv)',
+                'message' => 'Please upload a valid CSV file. Max size: 20MB',
                 'errors' => $validator->errors()
             ], 422);
         }
 
         try {
-            $file = $request->file('excel_file');
-            $spreadsheet = IOFactory::load($file->getPathname());
-            $worksheet = $spreadsheet->getActiveSheet();
-            $rows = $worksheet->toArray();
+            // Increase memory limit and execution time for large files
+            ini_set('memory_limit', '512M');
+            ini_set('max_execution_time', 300); // 5 minutes
 
-            // Remove header row
-            $header = array_shift($rows);
+            $file = $request->file('excel_file');
+            $filePath = $file->getPathname();
+            
+            \Log::info("CSV Migration started for file: " . $file->getClientOriginalName());
             
             $imported = 0;
             $duplicates = 0;
             $errors = 0;
+            $batchSize = 100;
+            $batch = [];
+            $rowNumber = 0;
+            
+            // Get existing records to check for duplicates
+            $existingMlsfNos = DB::connection('sqlsrv')
+                ->table('fileNumber')
+                ->whereNotNull('mlsfNo')
+                ->where('mlsfNo', '!=', '')
+                ->pluck('mlsfNo')
+                ->toArray();
+            
+            $existingKangisNos = DB::connection('sqlsrv')
+                ->table('fileNumber')
+                ->whereNotNull('kangisFileNo')
+                ->where('kangisFileNo', '!=', '')
+                ->pluck('kangisFileNo')
+                ->toArray();
+            
+            $existingNewKangisNos = DB::connection('sqlsrv')
+                ->table('fileNumber')
+                ->whereNotNull('NewKANGISFileNo')
+                ->where('NewKANGISFileNo', '!=', '')
+                ->pluck('NewKANGISFileNo')
+                ->toArray();
 
-            foreach ($rows as $row) {
-                try {
-                    // Skip empty rows
-                    if (empty(array_filter($row))) {
-                        continue;
+            // Open and read CSV file
+            if (($handle = fopen($filePath, 'r')) !== FALSE) {
+                
+                // Read header row to understand column structure
+                $header = fgetcsv($handle, 1000, ',');
+                
+                if (!$header) {
+                    throw new \Exception('Could not read CSV header row');
+                }
+                
+                \Log::info("CSV Header: " . implode(', ', $header));
+                
+                // Find column indexes (case insensitive)
+                $mlsfNoIndex = -1;
+                $kangisFileIndex = -1;
+                $newKangisFileNoIndex = -1;
+                $fileNameIndex = -1;
+                
+                foreach ($header as $index => $column) {
+                    $column = strtolower(trim($column));
+                    if (in_array($column, ['mlsfno', 'mls_file_no', 'mlsfileno'])) {
+                        $mlsfNoIndex = $index;
+                    } elseif (in_array($column, ['kangisfile', 'kangis_file', 'kangisfileno'])) {
+                        $kangisFileIndex = $index;
+                    } elseif (in_array($column, ['newkangisfileno', 'new_kangis_file_no', 'newkangisfile'])) {
+                        $newKangisFileNoIndex = $index;
+                    } elseif (in_array($column, ['filename', 'file_name', 'name'])) {
+                        $fileNameIndex = $index;
                     }
-
-                    // Map columns: mlsfNo, kangisFile, NewKANGISFileNo, FileName
-                    $mlsfNo = trim($row[0] ?? '');
-                    $kangisFileNo = trim($row[1] ?? '');
-                    $newKangisFileNo = trim($row[2] ?? '');
-                    $fileName = trim($row[3] ?? '');
-
-                    // Skip if essential data is missing
-                    if (empty($mlsfNo) && empty($kangisFileNo) && empty($newKangisFileNo)) {
-                        continue;
-                    }
-
-                    // Check for duplicates
-                    $exists = DB::connection('sqlsrv')
-                        ->table('fileNumber')
-                        ->where(function($query) use ($mlsfNo, $kangisFileNo, $newKangisFileNo) {
-                            if (!empty($mlsfNo)) {
-                                $query->orWhere('mlsfNo', $mlsfNo);
-                            }
-                            if (!empty($kangisFileNo)) {
-                                $query->orWhere('kangisFileNo', $kangisFileNo);
-                            }
-                            if (!empty($newKangisFileNo)) {
-                                $query->orWhere('NewKANGISFileNo', $newKangisFileNo);
-                            }
-                        })
-                        ->exists();
-
-                    if ($exists) {
-                        $duplicates++;
-                        continue;
-                    }
-
-                    // Insert record
-                    DB::connection('sqlsrv')
-                        ->table('fileNumber')
-                        ->insert([
-                            'mlsfNo' => $mlsfNo ?: null,
-                            'kangisFileNo' => $kangisFileNo ?: null,
-                            'NewKANGISFileNo' => $newKangisFileNo ?: null,
-                            'FileName' => $fileName ?: null,
+                }
+                
+                \Log::info("Column mapping - mlsfNo: {$mlsfNoIndex}, kangisFile: {$kangisFileIndex}, newKangisFileNo: {$newKangisFileNoIndex}, fileName: {$fileNameIndex}");
+                
+                // Process each data row
+                while (($row = fgetcsv($handle, 1000, ',')) !== FALSE) {
+                    $rowNumber++;
+                    
+                    try {
+                        // Skip empty rows
+                        if (empty(array_filter($row))) {
+                            continue;
+                        }
+                        
+                        // Extract data based on column indexes
+                        $mlsfNo = trim($row[$mlsfNoIndex] ?? '');
+                        $kangisFileNo = trim($row[$kangisFileIndex] ?? '');
+                        $newKangisFileNo = trim($row[$newKangisFileNoIndex] ?? '');
+                        $fileName = trim($row[$fileNameIndex] ?? '');
+                        
+                        // Skip if all essential data is missing
+                        if (empty($mlsfNo) && empty($kangisFileNo) && empty($newKangisFileNo)) {
+                            continue;
+                        }
+                        
+                        // Check for duplicates
+                        $isDuplicate = false;
+                        if (!empty($mlsfNo) && in_array($mlsfNo, $existingMlsfNos)) {
+                            $isDuplicate = true;
+                        } elseif (!empty($kangisFileNo) && in_array($kangisFileNo, $existingKangisNos)) {
+                            $isDuplicate = true;
+                        } elseif (!empty($newKangisFileNo) && in_array($newKangisFileNo, $existingNewKangisNos)) {
+                            $isDuplicate = true;
+                        }
+                        
+                        if ($isDuplicate) {
+                            $duplicates++;
+                            continue;
+                        }
+                        
+                        // Add to batch
+                        $batch[] = [
+                            'mlsfNo' => !empty($mlsfNo) ? $mlsfNo : null,
+                            'kangisFileNo' => !empty($kangisFileNo) ? $kangisFileNo : null,
+                            'NewKANGISFileNo' => !empty($newKangisFileNo) ? $newKangisFileNo : null,
+                            'FileName' => !empty($fileName) ? $fileName : null,
                             'type' => 'Migrated',
                             'created_by' => 'Migrated',
                             'created_at' => now(),
                             'updated_at' => now()
-                        ]);
-
-                    $imported++;
-
-                } catch (\Exception $e) {
-                    \Log::error('Error importing row: ' . $e->getMessage(), ['row' => $row]);
-                    $errors++;
+                        ];
+                        
+                        // Update existing arrays to prevent duplicates within the same import
+                        if (!empty($mlsfNo)) $existingMlsfNos[] = $mlsfNo;
+                        if (!empty($kangisFileNo)) $existingKangisNos[] = $kangisFileNo;
+                        if (!empty($newKangisFileNo)) $existingNewKangisNos[] = $newKangisFileNo;
+                        
+                        // Insert batch when it reaches the batch size
+                        if (count($batch) >= $batchSize) {
+                            DB::connection('sqlsrv')->table('fileNumber')->insert($batch);
+                            $imported += count($batch);
+                            $batch = [];
+                            
+                            // Log progress every 1000 records
+                            if ($imported % 1000 == 0) {
+                                \Log::info("Migration progress: {$imported} records imported");
+                            }
+                        }
+                        
+                    } catch (\Exception $e) {
+                        \Log::error("Error importing CSV row {$rowNumber}: " . $e->getMessage());
+                        $errors++;
+                    }
                 }
+                
+                // Insert remaining batch
+                if (!empty($batch)) {
+                    DB::connection('sqlsrv')->table('fileNumber')->insert($batch);
+                    $imported += count($batch);
+                }
+                
+                fclose($handle);
+                
+            } else {
+                throw new \Exception('Could not open CSV file for reading');
             }
-
+            
+            // Clean up memory
+            unset($existingMlsfNos, $existingKangisNos, $existingNewKangisNos, $batch);
+            
+            \Log::info("CSV Migration completed: {$imported} imported, {$duplicates} duplicates, {$errors} errors");
+            
             return response()->json([
                 'success' => true,
-                'message' => "Migration completed. Imported: {$imported}, Duplicates skipped: {$duplicates}, Errors: {$errors}",
+                'message' => "CSV migration completed successfully! Imported: {$imported}, Duplicates skipped: {$duplicates}, Errors: {$errors}",
                 'data' => [
                     'imported' => $imported,
                     'duplicates' => $duplicates,
-                    'errors' => $errors
+                    'errors' => $errors,
+                    'total_processed' => $imported + $duplicates + $errors,
+                    'rows_processed' => $rowNumber
                 ]
             ]);
-
+            
         } catch (\Exception $e) {
-            \Log::error('Error during migration: ' . $e->getMessage());
+            \Log::error('Error during CSV migration: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error during migration: ' . $e->getMessage()
+                'message' => 'Error during CSV migration: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -418,10 +518,22 @@ class FileNumberController extends Controller
     }
 
     /**
-     * Update a record
+     * Update a record (only file name can be updated)
      */
     public function update(Request $request, $id)
     {
+        $validator = Validator::make($request->all(), [
+            'file_name' => 'required|string|max:255'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
         try {
             $record = DB::connection('sqlsrv')
                 ->table('fileNumber')
@@ -435,18 +547,19 @@ class FileNumberController extends Controller
                 ], 404);
             }
 
-            // Update the record
+            // Update only the file name
             DB::connection('sqlsrv')
                 ->table('fileNumber')
                 ->where('id', $id)
                 ->update([
+                    'FileName' => $request->file_name,
                     'updated_by' => Auth::user()->name ?? Auth::user()->email ?? 'System',
                     'updated_at' => now()
                 ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Record updated successfully'
+                'message' => 'File name updated successfully'
             ]);
 
         } catch (\Exception $e) {
@@ -458,7 +571,7 @@ class FileNumberController extends Controller
     }
 
     /**
-     * Delete a record
+     * Delete a record (hard delete since we're not using soft delete filtering)
      */
     public function destroy($id)
     {
@@ -510,6 +623,56 @@ class FileNumberController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error getting count: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Test database connection and table structure
+     */
+    public function testDatabase()
+    {
+        try {
+            // Test connection
+            $connectionTest = DB::connection('sqlsrv')->getPdo();
+            
+            // Test table existence
+            $tableExists = DB::connection('sqlsrv')
+                ->select("SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'fileNumber'");
+            
+            // Get table structure
+            $columns = DB::connection('sqlsrv')
+                ->select("SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'fileNumber'");
+            
+            // Get record count
+            $recordCount = 0;
+            $sampleRecords = [];
+            
+            if ($tableExists[0]->count > 0) {
+                $recordCount = DB::connection('sqlsrv')->table('fileNumber')->count();
+                $sampleRecords = DB::connection('sqlsrv')
+                    ->table('fileNumber')
+                    ->limit(5)
+                    ->get()
+                    ->toArray();
+            }
+            
+            return response()->json([
+                'success' => true,
+                'connection' => 'Connected successfully',
+                'table_exists' => $tableExists[0]->count > 0,
+                'columns' => $columns,
+                'record_count' => $recordCount,
+                'sample_records' => $sampleRecords,
+                'database_name' => DB::connection('sqlsrv')->getDatabaseName(),
+                'server_info' => DB::connection('sqlsrv')->select('SELECT @@VERSION as version')[0]->version ?? 'Unknown'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ], 500);
         }
     }

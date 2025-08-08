@@ -132,12 +132,21 @@ window.populateAvailablePropertiesTable = function() {
     
     const isAlreadySelected = selectedBatchProperties.some(prop => String(prop.id) === String(item.id));
     
+    // Check if this is an ST CofO instrument - disable checkbox if it is
+    const isSTCofo = item.instrumentType === 'Sectional Titling CofO';
+    const checkboxDisabled = isAlreadySelected || isSTCofo;
+    const checkboxClass = isSTCofo ? 'rounded available-property-checkbox cursor-not-allowed' : 'rounded available-property-checkbox';
+    
     const row = document.createElement('tr');
     row.className = 'hover:bg-gray-50';
     row.innerHTML = `
       <td class="px-6 py-4 whitespace-nowrap">
-        <input type="checkbox" class="rounded available-property-checkbox" 
-          data-id="${item.id}" ${isAlreadySelected ? 'disabled checked' : ''}>
+        <input type="checkbox" class="${checkboxClass}" 
+          data-id="${item.id}" 
+          data-instrument-type="${item.instrumentType || ''}"
+          ${checkboxDisabled ? 'disabled' : ''} 
+          ${isAlreadySelected ? 'checked' : ''}
+          ${isSTCofo ? 'title="ST CofO instruments cannot be registered directly. Please register the corresponding ST Assignment first."' : ''}>
       </td>
       <td class="px-6 py-4 whitespace-nowrap text-sm">${item.fileNo || 'N/A'}</td>
       <td class="px-6 py-4 whitespace-nowrap text-sm">${item.grantor || 'N/A'}</td>
@@ -1278,7 +1287,11 @@ function backToUnitSearch() {
 function toggleSelectAllAvailable(checkbox) {
   const availableCheckboxes = document.querySelectorAll('.available-property-checkbox:not([disabled])');
   availableCheckboxes.forEach(cb => {
-    cb.checked = checkbox.checked;
+    // Only check/uncheck if it's not an ST CofO instrument
+    const instrumentType = cb.getAttribute('data-instrument-type');
+    if (instrumentType !== 'Sectional Titling CofO') {
+      cb.checked = checkbox.checked;
+    }
   });
   updateSelectedCount();
 }

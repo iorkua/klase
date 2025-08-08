@@ -3,7 +3,7 @@
     {{ __('MLS File Number Generator') }}
 @endsection
 
-@section('content')
+@section('content') 
     <!-- Main Content -->
     <div class="flex-1 overflow-auto">
         <!-- Header -->
@@ -23,14 +23,26 @@
                             onclick="openGenerateModal()"
                             class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
                             <i data-lucide="plus" class="w-4 h-4"></i>
-                            <span>Generate New Application MLS File Number</span>
+                            <span>Generate New  FileNO</span>
                         </button>
-                        <button 
+                         <button 
                             onclick="openMigrationModal()"
                             class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
                             <i data-lucide="upload" class="w-4 h-4"></i>
                             <span>Migrate Data</span>
-                        </button>
+                        </button>  
+                        <!-- <button 
+                            onclick="testDatabaseConnection()"
+                            class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                            <i data-lucide="database" class="w-4 h-4"></i>
+                            <span>Test Database</span>
+                        </button> -->
+                        <!-- <button 
+                            onclick="debugTableData()"
+                            class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                            <i data-lucide="bug" class="w-4 h-4"></i>
+                            <span>Debug Data</span>
+                        </button> -->
                     </div>
                     <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 shadow-sm">
     <div class="flex items-center space-x-2">
@@ -54,9 +66,12 @@
                             <table id="mlsfTable" class="w-full table-auto">
                                 <thead>
                                     <tr class="bg-gray-50">
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">MLS File No</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KANGIS File No</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">New KANGIS File No</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File Name</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created Date</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
@@ -76,140 +91,178 @@
 
     <!-- Generate Modal -->
     <div id="generateModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
-        <div class="relative top-10 mx-auto p-5 border w-[500px] shadow-lg rounded-md bg-white">
+        <div class="relative top-5 mx-auto p-6 border w-[800px] max-w-4xl shadow-xl rounded-lg bg-white">
             <div class="mt-3">
                 <!-- Modal Header -->
-                <div class="flex items-center justify-between mb-4">
-                    <h3 id="modalTitle" class="text-lg font-medium text-gray-900">Generate New Application MLS File Number</h3>
-                    <button onclick="closeGenerateModal()" class="text-gray-400 hover:text-gray-600">
-                        <i data-lucide="x" class="w-5 h-5"></i>
+                <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+                    <div>
+                        <h3 id="modalTitle" class="text-xl font-semibold text-gray-900">Generate New Application</h3>
+                        <p class="text-sm text-gray-500 mt-1">Fill in the details to generate a new MLS file number</p>
+                    </div>
+                    <button onclick="closeGenerateModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <i data-lucide="x" class="w-6 h-6"></i>
                     </button>
                 </div>
 
                 <!-- Modal Form -->
-                <form id="generateForm" onsubmit="submitForm(event)">
+                <form id="generateForm" onsubmit="submitForm(event)" class="space-y-6">
                     @csrf
                     
                     <!-- Application Type Selection -->
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Application Type</label>
-                        <div class="flex space-x-4">
-                            <label class="flex items-center">
-                                <input type="radio" name="application_type" value="new" class="mr-2" onchange="updateApplicationType('new')" checked>
-                                <span>New Application MLS File Number</span>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">Application Type</label>
+                        <div class="flex space-x-6">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" name="application_type" value="new" class="mr-3 text-blue-600" onchange="updateApplicationType('new')" checked>
+                                <span class="text-sm font-medium">New Application</span>
                             </label>
-                            <label class="flex items-center">
-                                <input type="radio" name="application_type" value="conversion" class="mr-2" onchange="updateApplicationType('conversion')">
-                                <span>Conversion</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- File Name -->
-                    <div class="mb-4">
-                        <label for="fileName" class="block text-sm font-medium text-gray-700 mb-2">File Name</label>
-                        <input type="text" id="fileName" name="file_name" 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                               placeholder="Enter file name">
-                    </div>
-                    
-                    <!-- Land Use -->
-                    <div class="mb-4">
-                        <label for="landUse" class="block text-sm font-medium text-gray-700 mb-2">Land Use</label>
-                        <select id="landUse" name="land_use" 
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                onchange="updatePreview()">
-                            <option value="">Select Land Use</option>
-                            <!-- New Application Options -->
-                            <optgroup id="newOptions" label="New Application">
-                                <option value="RES">RES - Residential</option>
-                                <option value="COM">COM - Commercial</option>
-                                <option value="IND">IND - Industrial</option>
-                                <option value="AGR">AGR - Agricultural</option>
-                                <option value="INS">INS - Institutional</option>
-                            </optgroup> 
-                            <!-- Conversion Options -->
-                            <optgroup id="conversionOptions" label="Conversion" style="display: none;">
-                                <option value="CON-RES">CON-RES - Conversion to Residential</option>
-                                <option value="CON-COM">CON-COM - Conversion to Commercial</option>
-                                <option value="CON-IND">CON-IND - Conversion to Industrial</option>
-                                <option value="CON-AGR">CON-AGR - Conversion to Agricultural</option>
-                                <option value="CON-INS">CON-INS - Conversion to Institutional</option>
-                            </optgroup>
-                        </select>
-                    </div>
-
-                    <!-- File Options -->
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">File Options</label>
-                        <div class="space-y-2">
-                            <label class="flex items-center">
-                                <input type="radio" name="file_option" value="normal" class="mr-2" onchange="updatePreview()" checked>
-                                <span>Normal File</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="radio" name="file_option" value="temporary" class="mr-2" onchange="updatePreview()">
-                                <span>Temporary File</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="radio" name="file_option" value="extension" class="mr-2" onchange="updatePreview()">
-                                <span>Extension</span>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" name="application_type" value="conversion" class="mr-3 text-blue-600" onchange="updateApplicationType('conversion')">
+                                <span class="text-sm font-medium">Conversion</span>
                             </label>
                         </div>
                     </div>
 
-                    <!-- Extension File Selection (shown only when Extension is selected) -->
-                    <div id="extensionFileSection" class="mb-4 hidden">
-                        <label for="existingFileNo" class="block text-sm font-medium text-gray-700 mb-2">Select Existing MLS File Number</label>
-                        <select id="existingFileNo" name="existing_file_no" 
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                onchange="updatePreview()">
-                            <option value="">Select existing file number...</option>
-                            <!-- Options will be populated via AJAX -->
-                        </select>
-                    </div>
+                    <!-- Main Form Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Left Column -->
+                        <div class="space-y-4">
+                            <!-- File Name -->
+                            <div>
+                                <label for="fileName" class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i data-lucide="file-text" class="w-4 h-4 inline mr-1"></i>
+                                    File Name
+                                </label>
+                                <input type="text" id="fileName" name="file_name" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                       placeholder="Enter file name">
+                            </div>
+                            
+                            <!-- Land Use -->
+                            <div>
+                                <label for="landUse" class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i data-lucide="map" class="w-4 h-4 inline mr-1"></i>
+                                    Land Use
+                                </label>
+                                <select id="landUse" name="land_use" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        onchange="updatePreview()">
+                                    <option value="">Select Land Use</option>
+                                    <!-- New Application Options -->
+                                    <optgroup id="newOptions" label="New Application">
+                                        <option value="RES">RES - Residential</option>
+                                        <option value="COM">COM - Commercial</option>
+                                        <option value="IND">IND - Industrial</option>
+                                        <option value="AGR">AGR - Agricultural</option>
+                                        <option value="INS">INS - Institutional</option>
+                                    </optgroup> 
+                                    <!-- Conversion Options -->
+                                    <optgroup id="conversionOptions" label="Conversion" style="display: none;">
+                                        <option value="CON-RES">CON-RES - Conversion to Residential</option>
+                                        <option value="CON-COM">CON-COM - Conversion to Commercial</option>
+                                        <option value="CON-IND">CON-IND - Conversion to Industrial</option>
+                                        <option value="CON-AGR">CON-AGR - Conversion to Agricultural</option>
+                                        <option value="CON-INS">CON-INS - Conversion to Institutional</option>
+                                    </optgroup>
+                                </select>
+                            </div>
 
-                    <!-- Year -->
-                    <div class="mb-4">
-                        <label for="year" class="block text-sm font-medium text-gray-700 mb-2">Year</label>
-                        <input type="number" id="year" name="year" 
-                               value="{{ date('Y') }}"
-                               class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-600"
-                               min="2020" max="2050" readonly>
-                        <p class="text-xs text-gray-500 mt-1">Current year (auto-filled)</p>
-                    </div>
+                            <!-- File Options -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-3">
+                                    <i data-lucide="settings" class="w-4 h-4 inline mr-1"></i>
+                                    File Options
+                                </label>
+                                <div class="space-y-2">
+                                    <label class="flex items-center cursor-pointer p-2 rounded hover:bg-gray-50">
+                                        <input type="radio" name="file_option" value="normal" class="mr-3 text-blue-600" onchange="updatePreview()" checked>
+                                        <span class="text-sm">Normal File</span>
+                                    </label>
+                                    <label class="flex items-center cursor-pointer p-2 rounded hover:bg-gray-50">
+                                        <input type="radio" name="file_option" value="temporary" class="mr-3 text-blue-600" onchange="updatePreview()">
+                                        <span class="text-sm">Temporary File</span>
+                                    </label>
+                                    <label class="flex items-center cursor-pointer p-2 rounded hover:bg-gray-50">
+                                        <input type="radio" name="file_option" value="extension" class="mr-3 text-blue-600" onchange="updatePreview()">
+                                        <span class="text-sm">Extension</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
 
-                    <!-- Serial Number -->
-                    <div class="mb-4">
-                        <label for="serialNo" class="block text-sm font-medium text-gray-700 mb-2">Serial Number</label>
-                        <input type="number" id="serialNo" name="serial_no" 
-                               class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-600"
-                               readonly>
-                        <p class="text-xs text-gray-500 mt-1">Auto-generated based on last serial number</p>
-                    </div>
+                        <!-- Right Column -->
+                        <div class="space-y-4">
+                            <!-- Extension File Selection (shown only when Extension is selected) -->
+                            <div id="extensionFileSection" class="hidden">
+                                <label for="existingFileNo" class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i data-lucide="link" class="w-4 h-4 inline mr-1"></i>
+                                    Select Existing MLS File Number
+                                </label>
+                                <select id="existingFileNo" name="existing_file_no" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        onchange="updatePreview()">
+                                    <option value="">Select existing file number...</option>
+                                    <!-- Options will be populated via AJAX -->
+                                </select>
+                            </div>
 
-                    <!-- Full File Number Preview -->
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Full File Number</label>
-                        <div id="mlsfPreview" class="w-full px-3 py-2 bg-blue-50 border border-blue-300 rounded-md text-lg font-mono text-center text-blue-800 font-semibold">
-                            -
+                            <!-- Year and Serial Number Grid -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <!-- Year -->
+                                <div>
+                                    <label for="year" class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i data-lucide="calendar" class="w-4 h-4 inline mr-1"></i>
+                                        Year
+                                    </label>
+                                    <input type="number" id="year" name="year" 
+                                           value="{{ date('Y') }}"
+                                           class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-600"
+                                           min="2020" max="2050" readonly>
+                                    <p class="text-xs text-gray-500 mt-1">Auto-filled</p>
+                                </div>
+
+                                <!-- Serial Number -->
+                                <div>
+                                    <label for="serialNo" class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i data-lucide="hash" class="w-4 h-4 inline mr-1"></i>
+                                        Serial No.
+                                    </label>
+                                    <input type="number" id="serialNo" name="serial_no" 
+                                           class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-600"
+                                           readonly>
+                                    <p class="text-xs text-gray-500 mt-1">Auto-generated</p>
+                                </div>
+                            </div>
+
+                            <!-- Full File Number Preview -->
+                            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i data-lucide="eye" class="w-4 h-4 inline mr-1"></i>
+                                    Generated File Number Preview
+                                </label>
+                                <div id="mlsfPreview" class="w-full px-4 py-3 bg-white border border-blue-300 rounded-md text-lg font-mono text-center text-blue-800 font-bold shadow-sm">
+                                    -
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Form Actions -->
-                    <div class="flex justify-between">
+                    <div class="flex justify-between items-center pt-6 border-t border-gray-200">
                         <button type="button" onclick="showOverrideModal()" 
-                                class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700">
-                            Override
+                                class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors flex items-center space-x-2">
+                            <i data-lucide="edit" class="w-4 h-4"></i>
+                            <span>Override</span>
                         </button>
                         <div class="flex space-x-3">
                             <button type="button" onclick="closeGenerateModal()" 
-                                    class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                                    class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
                                 Cancel
                             </button>
                             <button type="submit" 
-                                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                                Generate
+                                    class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2">
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                                <span>Generate</span>
                             </button>
                         </div>
                     </div>
@@ -252,7 +305,7 @@
                     </div>
 
                     <!-- Extension Option -->
-                    <div class="mb-4">
+                    <div class="mb-4" style="display:none;">
                         <label class="flex items-center">
                             <input type="checkbox" id="overrideExtension" name="override_extension" class="mr-2">
                             <span>File Extension</span>
@@ -293,11 +346,11 @@
                     
                     <!-- File Upload -->
                     <div class="mb-4">
-                        <label for="excelFile" class="block text-sm font-medium text-gray-700 mb-2">Excel File</label>
+                        <label for="excelFile" class="block text-sm font-medium text-gray-700 mb-2">CSV File</label>
                         <input type="file" id="excelFile" name="excel_file" 
-                               accept=".xlsx,.xls,.csv"
+                               accept=".csv,.txt"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <p class="text-xs text-gray-500 mt-1">Upload Excel file with columns: mlsfNo, kangisFile, NewKANGISFileNo, FileName</p>
+                        <p class="text-xs text-gray-500 mt-1">Upload CSV file with columns: mlsfNo, kangisFile, NewKANGISFileNo, FileName (ignore SN column)</p>
                     </div>
 
                     <!-- Form Actions -->
@@ -322,7 +375,7 @@
             <div class="mt-3">
                 <!-- Modal Header -->
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-medium text-gray-900">Edit MLSF Number</h3>
+                    <h3 class="text-lg font-medium text-gray-900">Edit File Name</h3>
                     <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600">
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
@@ -342,12 +395,15 @@
                                readonly>
                     </div>
 
-                    <!-- Type (Read-only) -->
+                    <!-- File Name (Editable) -->
                     <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Type</label>
-                        <input type="text" id="editType" 
-                               class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md"
-                               readonly>
+                        <label for="editFileName" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i data-lucide="file-text" class="w-4 h-4 inline mr-1"></i>
+                            File Name
+                        </label>
+                        <input type="text" id="editFileName" name="file_name" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Enter file name" required>
                     </div>
 
                     <!-- Form Actions -->
@@ -358,7 +414,7 @@
                         </button>
                         <button type="submit" 
                                 class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                            Update
+                            Update File Name
                         </button>
                     </div>
                 </form>
@@ -372,6 +428,42 @@
         let nextSerialNo = 1;
         let isOverrideMode = false;
 
+        // Loading utility functions
+        function showLoadingButton(buttonElement, originalText) {
+            if (buttonElement) {
+                buttonElement.disabled = true;
+                buttonElement.innerHTML = `
+                    <i data-lucide="loader" class="w-4 h-4 mr-2 animate-spin"></i>
+                    Loading...
+                `;
+                lucide.createIcons();
+            }
+        }
+
+        function hideLoadingButton(buttonElement, originalText) {
+            if (buttonElement) {
+                buttonElement.disabled = false;
+                buttonElement.innerHTML = originalText;
+                lucide.createIcons();
+            }
+        }
+
+        function showGlobalLoading(message = 'Processing...') {
+            Swal.fire({
+                title: message,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+        }
+
+        function hideGlobalLoading() {
+            Swal.close();
+        }
+
         $(document).ready(function() {
             // Initialize DataTable
             table = $('#mlsfTable').DataTable({
@@ -380,55 +472,181 @@
                 ajax: {
                     url: '{{ route("file-numbers.data") }}',
                     type: 'GET',
+                    data: function(d) {
+                        console.log('DataTables request:', d);
+                        return d;
+                    },
+                    dataSrc: function(json) {
+                        console.log('DataTables response:', json);
+                        if (json.error) {
+                            console.error('Server error:', json.error);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Server Error',
+                                text: json.error,
+                                confirmButtonColor: '#ef4444'
+                            });
+                        }
+                        return json.data || [];
+                    },
                     error: function(xhr, error, code) {
-                        console.error('DataTables error:', error);
+                        console.error('DataTables AJAX error:', error);
+                        console.error('Status:', xhr.status);
                         console.error('Response:', xhr.responseText);
+                        
+                        let errorMessage = 'Failed to load file numbers. Please check your connection and try again.';
+                        
+                        if (xhr.status === 500) {
+                            errorMessage = 'Server error occurred. Please contact the administrator.';
+                        } else if (xhr.status === 404) {
+                            errorMessage = 'Data endpoint not found. Please contact the administrator.';
+                        } else if (xhr.status === 0) {
+                            errorMessage = 'Network connection error. Please check your internet connection.';
+                        }
                         
                         Swal.fire({
                             icon: 'error',
                             title: 'Error Loading Data',
-                            text: 'Failed to load file numbers. Please refresh the page.',
-                            confirmButtonColor: '#ef4444'
+                            text: errorMessage,
+                            confirmButtonColor: '#ef4444',
+                            footer: `<small>Error Code: ${xhr.status} - ${error}</small>`
                         });
                     }
                 },
                 columns: [
                     { 
+                        data: 'mlsfNo', 
+                        name: 'mlsfNo',
+                        title: 'MLS File No',
+                        defaultContent: 'N/A',
+                        render: function(data, type, row) {
+                            if (data && data !== 'N/A' && data.trim() !== '') {
+                                return data;
+                            }
+                            return 'N/A';
+                        }
+                    },
+                    { 
                         data: 'kangisFileNo', 
                         name: 'kangisFileNo',
-                        title: 'KANGIS File No'
+                        title: 'KANGIS File No',
+                        defaultContent: 'N/A',
+                        render: function(data, type, row) {
+                            if (data && data !== 'N/A' && data.trim() !== '') {
+                                return data;
+                            }
+                            return 'N/A';
+                        }
                     },
                     { 
                         data: 'NewKANGISFileNo', 
                         name: 'NewKANGISFileNo',
-                        title: 'New KANGIS File No'
+                        title: 'New KANGIS File No',
+                        defaultContent: 'N/A',
+                        render: function(data, type, row) {
+                            if (data && data !== 'N/A' && data.trim() !== '') {
+                                return data;
+                            }
+                            return 'N/A';
+                        }
                     },
                     { 
                         data: 'FileName', 
                         name: 'FileName',
-                        title: 'File Name'
+                        title: 'File Name',
+                        defaultContent: 'N/A',
+                        render: function(data, type, row) {
+                            if (data && data !== 'N/A' && data.trim() !== '') {
+                                return data;
+                            }
+                            return 'N/A';
+                        }
+                    },
+                    { 
+                        data: 'created_by', 
+                        name: 'created_by',
+                        title: 'Created By',
+                        defaultContent: 'System',
+                        render: function(data, type, row) {
+                            if (data && data.trim() !== '') {
+                                return data;
+                            }
+                            return 'System';
+                        }
+                    },
+                    { 
+                        data: 'created_at', 
+                        name: 'created_at',
+                        title: 'Created Date',
+                        defaultContent: 'N/A',
+                        render: function(data, type, row) {
+                            if (data && data.trim() !== '') {
+                                const date = new Date(data);
+                                return date.toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit',
+                                    hour12: true
+                                });
+                            }
+                            return 'N/A';
+                        }
                     },
                     { 
                         data: 'action', 
                         name: 'action', 
                         title: 'Actions',
                         orderable: false, 
-                        searchable: false
+                        searchable: false,
+                        defaultContent: '<span class="text-gray-400">No actions</span>'
                     }
                 ],
                 order: [[0, 'desc']],
                 pageLength: 25,
                 responsive: true,
                 language: {
-                    processing: "Loading file numbers...",
-                    emptyTable: "No file numbers found",
-                    zeroRecords: "No matching file numbers found"
+                    processing: '<div class="flex items-center justify-center"><i data-lucide="loader" class="w-4 h-4 mr-2 animate-spin"></i>Loading file numbers...</div>',
+                    emptyTable: '<div class="text-center py-8"><div class="text-gray-400 mb-2"><i data-lucide="database" class="w-12 h-12 mx-auto mb-2"></i></div><h3 class="text-lg font-medium text-gray-900 mb-1">No file numbers found</h3><p class="text-gray-500">Start by generating your first MLS file number using the button above.</p></div>',
+                    zeroRecords: '<div class="text-center py-8"><div class="text-gray-400 mb-2"><i data-lucide="search" class="w-12 h-12 mx-auto mb-2"></i></div><h3 class="text-lg font-medium text-gray-900 mb-1">No matching records found</h3><p class="text-gray-500">Try adjusting your search criteria.</p></div>',
+                    info: "Showing _START_ to _END_ of _TOTAL_ file numbers",
+                    infoEmpty: "No file numbers available",
+                    infoFiltered: "(filtered from _MAX_ total file numbers)",
+                    lengthMenu: "Show _MENU_ file numbers per page",
+                    search: "Search file numbers:",
+                    paginate: {
+                        first: "First",
+                        last: "Last",
+                        next: "Next",
+                        previous: "Previous"
+                    }
                 },
-                drawCallback: function() {
+                drawCallback: function(settings) {
                     // Reinitialize Lucide icons after table redraw
                     setTimeout(function() {
                         lucide.createIcons();
                     }, 100);
+                    
+                    // Log draw information for debugging
+                    console.log('DataTable draw completed:', {
+                        recordsTotal: settings.json?.recordsTotal || 0,
+                        recordsFiltered: settings.json?.recordsFiltered || 0,
+                        dataLength: settings.json?.data?.length || 0
+                    });
+                },
+                initComplete: function(settings, json) {
+                    console.log('DataTable initialized:', {
+                        recordsTotal: json?.recordsTotal || 0,
+                        recordsFiltered: json?.recordsFiltered || 0,
+                        dataLength: json?.data?.length || 0
+                    });
+                    
+                    // Show a message if no data is available
+                    if (json && json.recordsTotal === 0) {
+                        console.log('No records found in database');
+                    }
                 }
             });
 
@@ -608,6 +826,15 @@
         function submitMigrationForm(event) {
             event.preventDefault();
             
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            
+            // Show loading on button
+            showLoadingButton(submitBtn, originalText);
+            
+            // Show global loading
+            showGlobalLoading('Migrating data... Please wait.');
+            
             const formData = new FormData(document.getElementById('migrationForm'));
             
             fetch('{{ route("file-numbers.migrate") }}', {
@@ -619,6 +846,9 @@
             })
             .then(response => response.json())
             .then(data => {
+                hideGlobalLoading();
+                hideLoadingButton(submitBtn, originalText);
+                
                 if (data.success) {
                     Swal.fire({
                         icon: 'success',
@@ -639,6 +869,8 @@
                 }
             })
             .catch(error => {
+                hideGlobalLoading();
+                hideLoadingButton(submitBtn, originalText);
                 console.error('Error:', error);
                 Swal.fire({
                     icon: 'error',
@@ -652,6 +884,15 @@
         function submitForm(event) {
             event.preventDefault();
             
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            
+            // Show loading on button
+            showLoadingButton(submitBtn, originalText);
+            
+            // Show global loading
+            showGlobalLoading('Generating file number...');
+            
             const formData = new FormData(document.getElementById('generateForm'));
             
             fetch('{{ route("file-numbers.store") }}', {
@@ -663,6 +904,9 @@
             })
             .then(response => response.json())
             .then(data => {
+                hideGlobalLoading();
+                hideLoadingButton(submitBtn, originalText);
+                
                 if (data.success) {
                     Swal.fire({
                         icon: 'success',
@@ -684,6 +928,8 @@
                 }
             })
             .catch(error => {
+                hideGlobalLoading();
+                hideLoadingButton(submitBtn, originalText);
                 console.error('Error:', error);
                 Swal.fire({
                     icon: 'error',
@@ -695,15 +941,20 @@
         }
 
         function editRecord(id) {
+            // Show loading while fetching record details
+            showGlobalLoading('Loading record details...');
+            
             fetch(`{{ route("file-numbers.show", ":id") }}`.replace(':id', id))
                 .then(response => response.json())
                 .then(data => {
+                    hideGlobalLoading();
                     document.getElementById('editId').value = data.id;
                     document.getElementById('editMlsfNo').value = data.mlsfNo || data.kangisFileNo;
-                    document.getElementById('editType').value = data.type || 'Generated';
+                    document.getElementById('editFileName').value = data.FileName || '';
                     document.getElementById('editModal').classList.remove('hidden');
                 })
                 .catch(error => {
+                    hideGlobalLoading();
                     console.error('Error:', error);
                     Swal.fire({
                         icon: 'error',
@@ -721,6 +972,15 @@
         function submitEditForm(event) {
             event.preventDefault();
             
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            
+            // Show loading on button
+            showLoadingButton(submitBtn, originalText);
+            
+            // Show global loading
+            showGlobalLoading('Updating record...');
+            
             const id = document.getElementById('editId').value;
             const formData = new FormData(document.getElementById('editForm'));
             
@@ -733,6 +993,9 @@
             })
             .then(response => response.json())
             .then(data => {
+                hideGlobalLoading();
+                hideLoadingButton(submitBtn, originalText);
+                
                 if (data.success) {
                     Swal.fire({
                         icon: 'success',
@@ -752,6 +1015,8 @@
                 }
             })
             .catch(error => {
+                hideGlobalLoading();
+                hideLoadingButton(submitBtn, originalText);
                 console.error('Error:', error);
                 Swal.fire({
                     icon: 'error',
@@ -770,45 +1035,49 @@
                 showCancelButton: true,
                 confirmButtonColor: '#ef4444',
                 cancelButtonColor: '#6b7280',
-                confirmButtonText: 'Yes, delete it!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    fetch(`{{ route("file-numbers.destroy", ":id") }}`.replace(':id', id), {
+                confirmButtonText: 'Yes, delete it!',
+                showLoaderOnConfirm: true,
+                preConfirm: () => {
+                    return fetch(`{{ route("file-numbers.destroy", ":id") }}`.replace(':id', id), {
                         method: 'DELETE',
                         headers: {
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                             'Content-Type': 'application/json'
                         }
                     })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Deleted!',
-                                text: data.message,
-                                confirmButtonColor: '#10b981'
-                            });
-                            table.ajax.reload();
-                            updateTotalCount();
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error!',
-                                text: data.message || 'An error occurred',
-                                confirmButtonColor: '#ef4444'
-                            });
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(response.statusText);
                         }
+                        return response.json();
                     })
                     .catch(error => {
-                        console.error('Error:', error);
+                        Swal.showValidationMessage(
+                            `Request failed: ${error}`
+                        );
+                    });
+                },
+                allowOutsideClick: () => !Swal.isLoading()
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    const data = result.value;
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Deleted!',
+                            text: data.message,
+                            confirmButtonColor: '#10b981'
+                        });
+                        table.ajax.reload();
+                        updateTotalCount();
+                    } else {
                         Swal.fire({
                             icon: 'error',
                             title: 'Error!',
-                            text: 'An error occurred while deleting the record',
+                            text: data.message || 'An error occurred',
                             confirmButtonColor: '#ef4444'
                         });
-                    });
+                    }
                 }
             });
         }
@@ -821,6 +1090,140 @@
                 })
                 .catch(error => {
                     console.error('Error updating count:', error);
+                });
+        }
+
+        function testDatabaseConnection() {
+            // Show loading for database test
+            showGlobalLoading('Testing database connection...');
+            
+            fetch('{{ route("file-numbers.test-db") }}')
+                .then(response => response.json())
+                .then(data => {
+                    hideGlobalLoading();
+                    
+                    if (data.success) {
+                        let message = `Database Connection Test Results:\n\n`;
+                        message += `✅ Connection: ${data.connection}\n`;
+                        message += `✅ Database: ${data.database_name}\n`;
+                        message += `✅ Table Exists: ${data.table_exists ? 'Yes' : 'No'}\n`;
+                        message += `✅ Record Count: ${data.record_count}\n`;
+                        message += `✅ Server: ${data.server_info.substring(0, 50)}...\n\n`;
+                        
+                        if (data.columns && data.columns.length > 0) {
+                            message += `Table Columns:\n`;
+                            data.columns.forEach(col => {
+                                message += `- ${col.COLUMN_NAME} (${col.DATA_TYPE})\n`;
+                            });
+                        }
+                        
+                        if (data.sample_records && data.sample_records.length > 0) {
+                            message += `\nSample Records:\n`;
+                            data.sample_records.forEach((record, index) => {
+                                message += `${index + 1}. ${record.mlsfNo || record.kangisFileNo || 'No ID'}\n`;
+                            });
+                        }
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Database Test Successful',
+                            text: message,
+                            confirmButtonColor: '#10b981',
+                            customClass: {
+                                content: 'text-left'
+                            }
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Database Test Failed',
+                            text: data.error || 'Unknown error occurred',
+                            confirmButtonColor: '#ef4444',
+                            footer: '<small>Check the browser console for more details</small>'
+                        });
+                        console.error('Database test error:', data);
+                    }
+                })
+                .catch(error => {
+                    hideGlobalLoading();
+                    console.error('Database test error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Database Test Failed',
+                        text: 'Failed to connect to test endpoint: ' + error.message,
+                        confirmButtonColor: '#ef4444'
+                    });
+                });
+        }
+
+        function debugTableData() {
+            // Show loading for debug data
+            showGlobalLoading('Debugging table data...');
+            
+            fetch('{{ route("file-numbers.debug-data") }}')
+                .then(response => response.json())
+                .then(data => {
+                    hideGlobalLoading();
+                    
+                    if (data.success) {
+                        console.log('Raw Data:', data.raw_data);
+                        console.log('Formatted Data:', data.formatted_data);
+                        
+                        let message = `Debug Data Results:\n\n`;
+                        message += `Raw Records Found: ${data.raw_data.length}\n`;
+                        message += `Formatted Records: ${data.formatted_data.length}\n\n`;
+                        
+                        if (data.raw_data.length > 0) {
+                            message += `Raw Data Sample:\n`;
+                            data.raw_data.slice(0, 3).forEach((record, index) => {
+                                message += `${index + 1}. ID: ${record.id}\n`;
+                                message += `   kangisFileNo: "${record.kangisFileNo}"\n`;
+                                message += `   NewKANGISFileNo: "${record.NewKANGISFileNo}"\n`;
+                                message += `   FileName: "${record.FileName}"\n`;
+                                message += `   mlsfNo: "${record.mlsfNo}"\n\n`;
+                            });
+                        }
+                        
+                        if (data.formatted_data.length > 0) {
+                            message += `Formatted Data Sample:\n`;
+                            data.formatted_data.slice(0, 3).forEach((record, index) => {
+                                message += `${index + 1}. ID: ${record.id}\n`;
+                                message += `   kangisFileNo: "${record.kangisFileNo}"\n`;
+                                message += `   NewKANGISFileNo: "${record.NewKANGISFileNo}"\n`;
+                                message += `   FileName: "${record.FileName}"\n`;
+                                message += `   mlsfNo: "${record.mlsfNo}"\n\n`;
+                            });
+                        }
+                        
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'Debug Data Results',
+                            text: message,
+                            confirmButtonColor: '#8b5cf6',
+                            customClass: {
+                                content: 'text-left'
+                            },
+                            width: '600px'
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Debug Failed',
+                            text: data.error || 'Unknown error occurred',
+                            confirmButtonColor: '#ef4444'
+                        });
+                        console.error('Debug error:', data);
+                    }
+                })
+                .catch(error => {
+                    hideGlobalLoading();
+                    console.error('Debug error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Debug Failed',
+                        text: 'Failed to connect to debug endpoint: ' + error.message,
+                        confirmButtonColor: '#ef4444'
+                    });
                 });
         }
 

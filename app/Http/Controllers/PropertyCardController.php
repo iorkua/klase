@@ -12,116 +12,124 @@ class PropertyCardController extends Controller
 {
     public function index()
     {
-        $PageTitle = 'Property Record Assistant
-';
+        $PageTitle = 'Property Record Assistant';
         $PageDescription = '';
         $Property_records = DB::connection('sqlsrv')
             ->table('property_records')
             ->where('mlsfNo', '!=', '')
-            ->where('kangisFileNo', '!=', '')->get();
+            ->where('kangisFileNo', '!=', '')
+            ->orderBy('id', 'desc')  
+            ->get();
 
         $pageLength = 50; // set default page length
         return view('propertycard.index', compact('pageLength', 'PageTitle', 'PageDescription', 'Property_records'));
-    } 
-    
+    }
      public function capture(Request $request){
          
         
         return view('propertycard.capture');
     }
 
-
-       
-    
     public function getData(Request $request)
     {
         try {
-            // Log that we're starting the getData method
-            \Log::info('PropertyCardController getData method started');
-            
-            // Check DB connection before query
-            try {
-                DB::connection()->getPdo();
-                \Log::info('Database connection successful');
-            } catch (\Exception $e) {
-                \Log::error('Database connection failed: ' . $e->getMessage());
-                return response()->json(['success' => false, 'message' => 'Database connection failed: ' . $e->getMessage()], 500);
-            }
-            
-            // Add query logging and chunking to prevent memory issues
-            \Log::info('Starting property_records query with pagination/chunking');
-            
-            // Get parameters from DataTables request
-            $start = $request->input('start', 0);
-            $length = $request->input('length', 50);
+            // Get DataTables parameters
             $draw = $request->input('draw', 1);
+            $start = $request->input('start', 0);
+            $length = $request->input('length', 25);
             $searchValue = $request->input('search.value', '');
             
-            // Build query
-            $query = DB::table('property_records')
-                ->orderByRaw("CASE WHEN mlsfNo != '' OR kangisFileNo != '' THEN 0 ELSE 1 END");
-                
+            // Get ordering parameters
+            $orderColumn = $request->input('order.0.column', 6); // Default to transaction_date column
+            $orderDir = $request->input('order.0.dir', 'desc');
+            
+            // Define column mapping for ordering
+            $columns = [
+                0 => 'kangisFileNo', // File Number
+                1 => 'property_description',
+                2 => 'location',
+                3 => 'regNo',
+                4 => 'transaction_type',
+                5 => 'instrument_type',
+                6 => 'transaction_date',
+                7 => 'id' // Actions column
+            ];
+            
+            // Build base query
+            $query = DB::connection('sqlsrv')->table('property_records');
+            
             // Apply search if provided
             if (!empty($searchValue)) {
                 $query->where(function($q) use ($searchValue) {
                     $q->where('mlsfNo', 'like', "%{$searchValue}%")
                       ->orWhere('kangisFileNo', 'like', "%{$searchValue}%")
-                      ->orWhere('originalAllottee', 'like', "%{$searchValue}%")
-                      ->orWhere('currentAllottee', 'like', "%{$searchValue}%");
+                      ->orWhere('NewKANGISFileno', 'like', "%{$searchValue}%")
+                      ->orWhere('property_description', 'like', "%{$searchValue}%")
+                      ->orWhere('location', 'like', "%{$searchValue}%")
+                      ->orWhere('regNo', 'like', "%{$searchValue}%")
+                      ->orWhere('transaction_type', 'like', "%{$searchValue}%")
+                      ->orWhere('instrument_type', 'like', "%{$searchValue}%");
                 });
             }
             
-            // Get total counts for DataTables
-            $recordsTotal = DB::table('property_records')->count();
-            $recordsFiltered = $searchValue ? $query->count() : $recordsTotal;
-               
-            // Get only the records for current page
-            $records = $query->skip($start)->take($length)->get();
-                  
-            \Log::info('Query complete, record count: ' . $records->count());
+            // Get total count before applying pagination
+            $recordsTotal = DB::connection('sqlsrv')->table('property_records')->count();
+            $recordsFiltered = $query->count();
             
-            // Check for empty result
-            if ($records->isEmpty()) {
-                \Log::warning('No property records found');
-                return response()->json(['data' => [], 'recordsTotal' => 0, 'recordsFiltered' => 0]);
+            // Apply ordering
+            $orderColumnName = $columns[$orderColumn] ?? 'id';
+            
+            // Special handling for transaction_date ordering to prioritize newest records
+            if ($orderColumnName === 'transaction_date') {
+                // Order by transaction_date first, then by id for records with same or null transaction_date
+                $query->orderByRaw("CASE WHEN transaction_date IS NULL THEN 1 ELSE 0 END")
+                      ->orderBy('transaction_date', $orderDir)
+                      ->orderBy('id', 'desc'); // Always show newest records first as secondary sort
+            } else {
+                $query->orderBy($orderColumnName, $orderDir);
             }
             
-            return DataTables::of($records)
-                ->addColumn('actions', function ($row) {
-                    return '
-                        <div class="d-flex gap-1">
-                            <button class="btn btn-icon btn-info" data-bs-toggle="modal" data-bs-target="#viewModal' . $row->id . '" title="View Details">
-                                <i class="fa fa-eye"></i>
-                            </button>
-                            <button class="btn btn-icon btn-secondary" data-bs-toggle="tooltip" title="Edit">
-                                <i class="fa fa-pencil"></i>
-                            </button>
-                            <button class="btn btn-icon btn-danger" data-bs-toggle="tooltip" title="Delete">
-                                <i class="fa fa-trash"></i>
-                            </button>
-                        </div>
-                    ';
-                })
-                ->rawColumns(['actions'])
-                ->make(true);
+            // Apply pagination
+            $records = $query->skip($start)->take($length)->get();
+            
+            // Format the data for DataTables
+            $data = [];
+            foreach ($records as $record) {
+                $data[] = [
+                    'id' => $record->id,
+                    'kangisFileNo' => $record->kangisFileNo,
+                    'mlsFNo' => $record->mlsFNo,
+                    'NewKANGISFileno' => $record->NewKANGISFileno,
+                    'property_description' => $record->property_description,
+                    'location' => $record->location,
+                    'regNo' => $record->regNo,
+                    'transaction_type' => $record->transaction_type,
+                    'instrument_type' => $record->instrument_type,
+                    'transaction_date' => $record->transaction_date,
+                ];
+            }
+            
+            return response()->json([
+                'draw' => intval($draw),
+                'recordsTotal' => $recordsTotal,
+                'recordsFiltered' => $recordsFiltered,
+                'data' => $data
+            ]);
+            
         } catch (\Exception $e) {
-            // Log detailed error information
             \Log::error('Error in getData: ' . $e->getMessage());
             \Log::error('Error trace: ' . $e->getTraceAsString());
             
-            // Return a more informative error response
             return response()->json([
-                'success' => false, 
-                'message' => 'Error retrieving data: ' . $e->getMessage(),
-                'trace' => config('app.debug') ? $e->getTraceAsString() : 'Enable debug mode for more details'
-            ], 500);
+                'draw' => intval($request->input('draw', 1)),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'Error retrieving data: ' . $e->getMessage()
+            ]);
         }
     }
 
-
-
-
-   
 public function search(Request $request)
 {
     \Log::info('Search request received:', $request->all());
@@ -491,10 +499,6 @@ public function search(Request $request)
         return response()->json(array_merge(['success' => true, 'recordCount' => $recordCount], $mappedResult));
     }
 
-
-
-
-    
     public function getRecordDetails(Request $request)
     {
         try {
@@ -517,4 +521,3 @@ public function search(Request $request)
         }
     }
 }
-

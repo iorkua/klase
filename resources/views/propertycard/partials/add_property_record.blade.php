@@ -1368,7 +1368,7 @@ function propertyRecordForm() {
         // Computed property for description
         get description() {
             let desc = '';
-            if (this.house) desc += `House ${this.house}`;
+            if (this.house) desc += ` ${this.house}`;
             if (this.street) desc += (desc ? ' ' : '') + this.street;
             if (this.district) desc += (desc ? ' ' : '') + this.district;
             if (this.lga) desc += (desc ? ' ' : '') + `${this.lga} LGA`;
