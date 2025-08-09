@@ -35,7 +35,7 @@ function loadApplicationsData() {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center py-8">
+                <td colspan="7" class="text-center py-8">
                     <div class="loading-spinner mx-auto mb-2"></div>
                     <p class="text-gray-600">Loading applications...</p>
                 </td>
@@ -81,7 +81,7 @@ function loadApplicationsData() {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="text-center py-8">
+                    <td colspan="7" class="text-center py-8">
                         <i data-lucide="alert-circle" class="h-8 w-8 text-red-500 mx-auto mb-2"></i>
                         <p class="text-red-600">Failed to load applications</p>
                         <button onclick="loadApplicationsData()" class="mt-2 text-blue-600 hover:text-blue-800">
@@ -97,6 +97,21 @@ function loadApplicationsData() {
             }
         }
     });
+}
+
+function getApplicationTypeClass(type) {
+    switch(type) {
+        case 'Individual':
+            return 'bg-blue-100 text-blue-800';
+        case 'Corporate':
+            return 'bg-purple-100 text-purple-800';
+        case 'Government Body':
+            return 'bg-green-100 text-green-800';
+        case 'Multiple Owners':
+            return 'bg-orange-100 text-orange-800';
+        default:
+            return 'bg-gray-100 text-gray-800';
+    }
 }
 
 function renderApplicationsTable(data) {
@@ -118,27 +133,31 @@ function renderApplicationsTable(data) {
         noResults.classList.add('hidden');
     }
     
-    // Generate table rows
+    // Generate table rows with correct column alignment
     const rows = data.map(app => {
         const actionMenuId = `action-menu-${app.id}`;
         
         return `
             <tr class="table-row border-b hover:bg-gray-50">
                 <td class="p-4">
-                    <div class="font-medium text-gray-900">${app.file_number || 'N/A'}</div>
-                    <div class="text-sm text-gray-500">${app.applicant_type}</div>
+                    <div class="font-medium text-blue-900 font-mono">${app.file_number || 'N/A'}</div>
                 </td>
                 <td class="p-4">
-                    <div class="font-medium text-gray-900">${app.applicant_name}</div>
+                    <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getApplicationTypeClass(app.applicant_type)}">
+                        ${app.applicant_type || 'N/A'}
+                    </div>
                 </td>
                 <td class="p-4">
-                    <div class="text-gray-900">${app.plot_details}</div>
+                    <div class="font-medium text-gray-900">${app.applicant_name || 'N/A'}</div>
                 </td>
                 <td class="p-4">
-                    <div class="text-gray-900">${app.lga_name}</div>
+                    <div class="text-gray-900">${app.plot_details || 'N/A'}</div>
                 </td>
                 <td class="p-4">
-                    <div class="text-gray-900">${app.created_at}</div>
+                    <div class="text-gray-900">${app.lga_name || 'N/A'}</div>
+                </td>
+                <td class="p-4">
+                    <div class="text-gray-900">${app.created_at || 'N/A'}</div>
                 </td>
                 <td class="p-4">
                     <div class="relative dropdown-container">
@@ -151,9 +170,9 @@ function renderApplicationsTable(data) {
                         
                         <div id="${actionMenuId}" class="dropdown-menu hidden w-56 bg-white rounded-md shadow-xl border border-gray-200" style="position: fixed; z-index: 9999;">
                             <div class="py-1">
-                                <button onclick="viewApplication(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2">
+                                <button onclick="viewApplicationDetails(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2">
                                     <i data-lucide="eye" class="h-4 w-4"></i>
-                                    View Application
+                                    View Application Details
                                 </button>
                                 <button onclick="editApplication(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2">
                                     <i data-lucide="edit" class="h-4 w-4"></i>
@@ -210,11 +229,13 @@ function setupSearch() {
             
             const filteredData = applicationsData.filter(app => {
                 return (
+                    (app.application_reference && app.application_reference.toLowerCase().includes(searchTerm)) ||
+                    (app.applicant_name && app.applicant_name.toLowerCase().includes(searchTerm)) ||
+                    (app.plot_details && app.plot_details.toLowerCase().includes(searchTerm)) ||
+                    (app.lga_name && app.lga_name.toLowerCase().includes(searchTerm)) ||
+                    (app.cofo_number && app.cofo_number.toLowerCase().includes(searchTerm)) ||
                     (app.file_number && app.file_number.toLowerCase().includes(searchTerm)) ||
-                    app.applicant_name.toLowerCase().includes(searchTerm) ||
-                    app.plot_details.toLowerCase().includes(searchTerm) ||
-                    app.lga_name.toLowerCase().includes(searchTerm) ||
-                    (app.cofo_number && app.cofo_number.toLowerCase().includes(searchTerm))
+                    (app.applicant_type && app.applicant_type.toLowerCase().includes(searchTerm))
                 );
             });
             
@@ -334,34 +355,16 @@ function toggleActionMenu(menuId) {
 }
 
 // Application Action Functions
-function viewApplication(id) {
-    console.log('Viewing application:', id);
+function viewApplicationDetails(id) {
+    console.log('Viewing application details:', id);
     
     // Close action menu
     document.querySelectorAll('[id^="action-menu-"]').forEach(menu => {
         menu.classList.add('hidden');
     });
     
-    // Fetch application details
-    fetch(`/recertification/${id}/view`, {
-        method: 'GET',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showApplicationDetails(data.application, data.owners);
-        } else {
-            showToast('Failed to load application details', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error viewing application:', error);
-        showToast('Failed to load application details', 'error');
-    });
+    // Navigate to application details page
+    window.location.href = `/recertification/${id}/details`;
 }
 
 function editApplication(id) {
@@ -384,9 +387,16 @@ function deleteApplication(id) {
         menu.classList.add('hidden');
     });
     
-    if (!confirm('Are you sure you want to delete this application? This action cannot be undone.')) {
+    // Find the application data for confirmation
+    const app = applicationsData.find(a => a.id == id);
+    const appName = app ? app.applicant_name : 'this application';
+    
+    if (!confirm(`Are you sure you want to delete the application for ${appName}? This action cannot be undone.`)) {
         return;
     }
+    
+    // Show loading toast
+    showToast('Deleting application...', 'info');
     
     // Delete application
     fetch(`/recertification/${id}`, {
@@ -397,7 +407,12 @@ function deleteApplication(id) {
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             showToast('Application deleted successfully', 'success');
@@ -446,97 +461,7 @@ function viewAcknowledgement(id) {
     showToast('View Acknowledgement feature coming soon', 'info');
 }
 
-// Modal Functions
-function showApplicationDetails(application, owners) {
-    const modal = document.getElementById('details-modal');
-    const content = document.getElementById('application-details-content');
-    
-    if (!modal || !content) return;
-    
-    // Format application details
-    let detailsHtml = `
-        <div class="space-y-6">
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <h4 class="font-semibold text-gray-900 mb-2">Application Information</h4>
-                    <div class="space-y-2 text-sm">
-                        <div><span class="font-medium">File Number:</span> ${application.file_number || 'N/A'}</div>
-                        <div><span class="font-medium">Date:</span> ${application.application_date || 'N/A'}</div>
-                        <div><span class="font-medium">Type:</span> ${application.applicant_type || 'N/A'}</div>
-                    </div>
-                </div>
-                <div>
-                    <h4 class="font-semibold text-gray-900 mb-2">Plot Information</h4>
-                    <div class="space-y-2 text-sm">
-                        <div><span class="font-medium">Plot Number:</span> ${application.plot_number || 'N/A'}</div>
-                        <div><span class="font-medium">CofO Number:</span> ${application.cofo_number || 'N/A'}</div>
-                        <div><span class="font-medium">LGA:</span> ${application.lga_name || 'N/A'}</div>
-                    </div>
-                </div>
-            </div>
-    `;
-    
-    // Add applicant details based on type
-    if (application.applicant_type === 'Corporate') {
-        detailsHtml += `
-            <div>
-                <h4 class="font-semibold text-gray-900 mb-2">Corporate Information</h4>
-                <div class="grid grid-cols-2 gap-4 text-sm">
-                    <div><span class="font-medium">Organisation:</span> ${application.organisation_name || 'N/A'}</div>
-                    <div><span class="font-medium">CAC No:</span> ${application.cac_registration_no || 'N/A'}</div>
-                    <div><span class="font-medium">Type:</span> ${application.type_of_organisation || 'N/A'}</div>
-                    <div><span class="font-medium">Business:</span> ${application.type_of_business || 'N/A'}</div>
-                </div>
-            </div>
-        `;
-    } else if (application.applicant_type === 'Multiple Owners' && owners && owners.length > 0) {
-        detailsHtml += `
-            <div>
-                <h4 class="font-semibold text-gray-900 mb-2">Owners Information</h4>
-                <div class="space-y-3">
-        `;
-        
-        owners.forEach((owner, index) => {
-            detailsHtml += `
-                <div class="border border-gray-200 rounded p-3">
-                    <h5 class="font-medium mb-2">Owner ${index + 1}</h5>
-                    <div class="grid grid-cols-2 gap-2 text-sm">
-                        <div><span class="font-medium">Name:</span> ${(owner.surname || '') + ' ' + (owner.first_name || '')}</div>
-                        <div><span class="font-medium">Occupation:</span> ${owner.occupation || 'N/A'}</div>
-                        <div><span class="font-medium">Nationality:</span> ${owner.nationality || 'N/A'}</div>
-                        <div><span class="font-medium">State:</span> ${owner.state_of_origin || 'N/A'}</div>
-                    </div>
-                </div>
-            `;
-        });
-        
-        detailsHtml += `
-                </div>
-            </div>
-        `;
-    } else {
-        detailsHtml += `
-            <div>
-                <h4 class="font-semibold text-gray-900 mb-2">Applicant Information</h4>
-                <div class="grid grid-cols-2 gap-4 text-sm">
-                    <div><span class="font-medium">Name:</span> ${(application.surname || '') + ' ' + (application.first_name || '')}</div>
-                    <div><span class="font-medium">Occupation:</span> ${application.occupation || 'N/A'}</div>
-                    <div><span class="font-medium">Nationality:</span> ${application.nationality || 'N/A'}</div>
-                    <div><span class="font-medium">State:</span> ${application.state_of_origin || 'N/A'}</div>
-                </div>
-            </div>
-        `;
-    }
-    
-    detailsHtml += `
-        </div>
-    `;
-    
-    content.innerHTML = detailsHtml;
-    modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-}
-
+// Modal Functions (kept for backward compatibility)
 function closeDetailsModal() {
     const modal = document.getElementById('details-modal');
     if (modal) {
@@ -605,7 +530,7 @@ function removeToast(toastId) {
 
 // Make functions available globally
 window.toggleActionMenu = toggleActionMenu;
-window.viewApplication = viewApplication;
+window.viewApplicationDetails = viewApplicationDetails;
 window.editApplication = editApplication;
 window.deleteApplication = deleteApplication;
 window.captureExtantCofo = captureExtantCofo;

@@ -65,6 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set current date and update display
     setTimeout(() => {
         setCurrentDate();
+        fetchNextFileNumber();
         updateStepDisplay();
         setupDevelopmentControls();
     }, 100);
@@ -520,6 +521,61 @@ function setCurrentDate() {
     if (applicationDateField) {
         applicationDateField.value = today;
         formData.applicationDate = today;
+    }
+}
+
+// Fetch next file number for the form
+async function fetchNextFileNumber() {
+    try {
+        const response = await fetch('/recertification/next-file-number', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+        
+        if (data.success && data.file_number) {
+            const fileNumberInput = document.getElementById('fileNumber');
+            const fileNumberDisplay = document.getElementById('file-number-display');
+            
+            if (fileNumberInput) {
+                fileNumberInput.value = data.file_number;
+                fileNumberInput.placeholder = data.file_number;
+                formData.fileNumber = data.file_number;
+                console.log('File number loaded:', data.file_number);
+            }
+            
+            // Update the header display
+            if (fileNumberDisplay) {
+                fileNumberDisplay.textContent = data.file_number;
+            }
+            
+            showToast(`File number generated: ${data.file_number}`, 'success');
+        } else {
+            throw new Error('Failed to get file number from server');
+        }
+    } catch (error) {
+        console.error('Error fetching file number:', error);
+        
+        // Set fallback file number
+        const fileNumberInput = document.getElementById('fileNumber');
+        const fileNumberDisplay = document.getElementById('file-number-display');
+        const fallbackNumber = 'KN3000';
+        
+        if (fileNumberInput) {
+            fileNumberInput.value = fallbackNumber;
+            fileNumberInput.placeholder = fallbackNumber;
+            formData.fileNumber = fallbackNumber;
+        }
+        
+        if (fileNumberDisplay) {
+            fileNumberDisplay.textContent = fallbackNumber;
+        }
+        
+        showToast('Using fallback file number: ' + fallbackNumber, 'warning');
     }
 }
 

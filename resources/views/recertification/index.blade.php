@@ -261,7 +261,8 @@ input:checked + .toggle-slider:before {
           <table class="w-full">
             <thead>
               <tr class="border-b bg-gray-50">
-                <th class="text-left p-4 font-medium text-gray-700">Application Ref</th>
+                <th class="text-left p-4 font-medium text-gray-700">NewFileNo</th>
+                <th class="text-left p-4 font-medium text-gray-700">Application Type</th>
                 <th class="text-left p-4 font-medium text-gray-700">Applicant Name</th>
                 <th class="text-left p-4 font-medium text-gray-700">Plot Details</th>
                 <th class="text-left p-4 font-medium text-gray-700">LGA</th>

@@ -12,7 +12,7 @@
                 <div class="form-field">
                     <label for="plotNumber" class="block text-sm font-medium text-gray-700 mb-1">
                         Plot Number or Piece of Land <span class="text-red-500">*</span>
-                    </label>
+                    </label> 
                     <input
                         type="text"
                         id="plotNumber"
@@ -35,10 +35,10 @@
                         required
                         readonly
                         class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all bg-gray-100 text-gray-600 cursor-not-allowed uppercase"
-                        placeholder="Loading file number..."
+                        placeholder="Generating..."
                         value=""
                     />
-                    <div class="text-xs text-gray-500 mt-1">Auto-generated file number</div>
+                    <div class="text-xs text-gray-500 mt-1">Auto-generated unique file number</div>
                     <div class="error-message">File number is required</div>
                 </div>
                 

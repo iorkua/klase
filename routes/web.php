@@ -784,8 +784,13 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'propertycard'], func
 // Additional Recertification Routes
 Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'recertification'], function () {
     Route::get('/data', [App\Http\Controllers\RecertificationController::class, 'getApplicationsData'])->name('recertification.data');
+    Route::get('/migrate', [App\Http\Controllers\RecertificationController::class, 'migrate'])->name('recertification.migrate');
+    Route::post('/migrate/upload', [App\Http\Controllers\RecertificationController::class, 'uploadMigration'])->name('recertification.migrate.upload');
+    Route::get('/migrate/template', [App\Http\Controllers\RecertificationController::class, 'downloadTemplate'])->name('recertification.migrate.template');
     Route::get('/{id}/view', [App\Http\Controllers\RecertificationController::class, 'view'])->name('recertification.view');
+    Route::get('/{id}/details', [App\Http\Controllers\RecertificationController::class, 'details'])->name('recertification.details');
     Route::get('/{id}/edit', [App\Http\Controllers\RecertificationController::class, 'edit'])->name('recertification.edit');
+    Route::put('/{id}', [App\Http\Controllers\RecertificationController::class, 'update'])->name('recertification.update');
     Route::delete('/{id}', [App\Http\Controllers\RecertificationController::class, 'destroy'])->name('recertification.destroy');
 });
 Route::get('/next-file-number', [App\Http\Controllers\RecertificationController::class, 'getNextFileNumber'])->name('recertification.nextFileNumber');

@@ -34,7 +34,8 @@ class RecertificationController extends Controller
                       ->orWhere('first_name', 'like', "%{$searchValue}%")
                       ->orWhere('organisation_name', 'like', "%{$searchValue}%")
                       ->orWhere('plot_number', 'like', "%{$searchValue}%")
-                      ->orWhere('cofo_number', 'like', "%{$searchValue}%");
+                      ->orWhere('cofo_number', 'like', "%{$searchValue}%")
+                      ->orWhere('file_number', 'like', "%{$searchValue}%");
                 });
             }
 
@@ -46,9 +47,9 @@ class RecertificationController extends Controller
                 $orderColumn = $request->order[0]['column'];
                 $orderDir = $request->order[0]['dir'];
                 
-                $columns = ['id', 'application_reference', 'applicant_name', 'plot_details', 'lga_name', 'created_at'];
+                $columns = ['id', 'file_number', 'applicant_type', 'applicant_name', 'plot_details', 'lga_name', 'created_at'];
                 if (isset($columns[$orderColumn])) {
-                    if ($orderColumn == 2) { // applicant_name
+                    if ($orderColumn == 3) { // applicant_name
                         $query->orderBy('surname', $orderDir)->orderBy('first_name', $orderDir);
                     } else {
                         $query->orderBy($columns[$orderColumn], $orderDir);
@@ -93,6 +94,7 @@ class RecertificationController extends Controller
                 return [
                     'id' => $app->id,
                     'application_reference' => $app->application_reference ?? 'N/A',
+                    'file_number' => $app->file_number ?? 'N/A',
                     'applicant_name' => $applicantName,
                     'applicant_type' => $app->applicant_type ?? 'N/A',
                     'plot_details' => $plotDetails,
@@ -162,6 +164,46 @@ class RecertificationController extends Controller
             ]);
 
             return response()->json(['error' => 'Failed to load application'], 500);
+        }
+    }
+
+    /**
+     * Show application details page
+     */
+    public function details($id)
+    {
+        try {
+            $application = DB::connection('sqlsrv')
+                ->table('recertification_applications')
+                ->where('id', $id)
+                ->first();
+
+            if (!$application) {
+                abort(404, 'Application not found');
+            }
+
+            // Get owners if Multiple Owners type
+            $owners = [];
+            if ($application->applicant_type === 'Multiple Owners') {
+                $owners = DB::connection('sqlsrv')
+                    ->table('recertification_owners')
+                    ->where('application_id', $id)
+                    ->get();
+            }
+
+            $PageTitle = 'Application Details';
+            $PageDescription = 'Complete application information';
+
+            return view('recertification.details', compact('PageTitle', 'PageDescription', 'application', 'owners'));
+
+        } catch (\Exception $e) {
+            Log::error('Error loading application details', [
+                'id' => $id,
+                'message' => $e->getMessage()
+            ]);
+
+            return redirect()->route('recertification.index')
+                ->with('error', 'Failed to load application details');
         }
     }
 
@@ -244,6 +286,147 @@ class RecertificationController extends Controller
 
             return redirect()->route('recertification.index')
                 ->with('error', 'Failed to load application for editing');
+        }
+    }
+
+    /**
+     * Update an existing recertification application.
+     */
+    public function update(Request $request, $id)
+    {
+        try {
+            $application = DB::connection('sqlsrv')
+                ->table('recertification_applications')
+                ->where('id', $id)
+                ->first();
+
+            if (!$application) {
+                return response()->json(['error' => 'Application not found'], 404);
+            }
+
+            // Normalize applicant type
+            $type = $request->input('applicantType');
+
+            // Prepare payload (exclude files)
+            $payload = $request->except(['owners', '_token', '_method', 'application_id']);
+
+            // Map documents checkboxes (Step 6)
+            $documents = $request->input('documents', []);
+
+            // Update application with all structured fields
+            DB::connection('sqlsrv')->table('recertification_applications')
+                ->where('id', $id)
+                ->update([
+                    // Meta
+                    'application_date' => $request->input('applicationDate'),
+                    'applicant_type' => $type,
+                    'organisation_name' => $request->input('organisationName'),
+                    'cac_registration_no' => $request->input('cacRegistrationNo'),
+                    'type_of_organisation' => $request->input('typeOfOrganisation'),
+                    'type_of_business' => $request->input('typeOfBusiness'),
+
+                    // Step 1
+                    'surname' => $request->input('surname'),
+                    'first_name' => $request->input('firstName'),
+                    'middle_name' => $request->input('middleName'),
+                    'title' => $request->input('title'),
+                    'occupation' => $request->input('occupation'),
+                    'date_of_birth' => $request->input('dateOfBirth'),
+                    'nationality' => $request->input('nationality'),
+                    'state_of_origin' => $request->input('stateOfOrigin'),
+                    'lga_of_origin' => $request->input('lgaOfOrigin'),
+                    'nin' => $request->input('nin'),
+                    'gender' => $request->input('gender'),
+                    'marital_status' => $request->input('maritalStatus'),
+                    'maiden_name' => $request->input('maidenName'),
+
+                    // Step 2 - Applicant contact
+                    'phone_no' => $request->input('phoneNo'),
+                    'whatsapp_phone_no' => $request->input('whatsappPhoneNo'),
+                    'alternate_phone_no' => $request->input('alternatePhoneNo'),
+                    'address_line1' => $request->input('addressLine1'),
+                    'address_line2' => $request->input('addressLine2'),
+                    'city_town' => $request->input('cityTown'),
+                    'state_name' => $request->input('state'),
+                    'email_address' => $request->input('emailAddress'),
+
+                    // Step 3 - Title Holder
+                    'title_holder_surname' => $request->input('titleHolderSurname'),
+                    'title_holder_first_name' => $request->input('titleHolderFirstName'),
+                    'title_holder_middle_name' => $request->input('titleHolderMiddleName'),
+                    'title_holder_title' => $request->input('titleHolderTitle'),
+                    'cofo_number' => $request->input('cofoNumber'),
+                    'reg_no' => $request->input('registrationNo'),
+                    'reg_volume' => $request->input('registrationVolume'),
+                    'reg_page' => $request->input('registrationPage'),
+                    'reg_number' => $request->input('registrationNumber'),
+                    'is_original_owner' => $request->input('isOriginalOwner') === 'yes' ? 1 : ($request->has('isOriginalOwner') ? 0 : null),
+                    'instrument_type' => $request->input('instrumentType'),
+                    'acquired_title_holder_name' => $request->input('titleHolderName'),
+                    'commencement_date' => $request->input('commencementDate'),
+                    'grant_term' => $request->input('grantTerm'),
+
+                    // Step 4 - Mortgage & Encumbrance
+                    'is_encumbered' => $request->input('isEncumbered') === 'yes' ? 1 : ($request->has('isEncumbered') ? 0 : null),
+                    'encumbrance_reason' => $request->input('encumbranceReason'),
+                    'has_mortgage' => $request->input('hasMortgage') === 'yes' ? 1 : ($request->has('hasMortgage') ? 0 : null),
+                    'mortgagee_name' => $request->input('mortgageeName'),
+                    'mortgage_registration_no' => $request->input('mortgageRegistrationNo'),
+                    'mortgage_volume' => $request->input('mortgageVolume'),
+                    'mortgage_page' => $request->input('mortgagePage'),
+                    'mortgage_number' => $request->input('mortgageNumber'),
+                    'mortgage_released' => $request->input('mortgageReleased') === 'yes' ? 1 : ($request->has('mortgageReleased') ? 0 : null),
+
+                    // Step 5 - Plot Details
+                    'plot_number' => $request->input('plotNumber'),
+                    'file_number' => $request->input('fileNumber'),
+                    'plot_size' => $request->input('plotSize'),
+                    'layout_district' => $request->input('layoutDistrict'),
+                    'lga_name' => $request->input('lga'),
+                    'current_land_use' => $request->input('currentLandUse'),
+                    'plot_status' => $request->input('plotStatus'),
+                    'mode_of_allocation' => $request->input('modeOfAllocation'),
+                    'start_date' => $request->input('startDate'),
+                    'expiry_date' => $request->input('expiryDate'),
+                    'plot_description' => $request->input('plotDescription'),
+
+                    // Step 6 - Payment & Terms
+                    'application_type' => $request->input('applicationType'),
+                    'application_reason' => $request->input('applicationReason'),
+                    'other_reason' => $request->input('otherReason'),
+                    'payment_method' => $request->input('paymentMethod'),
+                    'receipt_no' => $request->input('receiptNo'),
+                    'bank_name' => $request->input('bankName'),
+                    'payment_amount' => $request->input('paymentAmount'),
+                    'payment_date' => $request->input('paymentDate'),
+                    'documents_json' => json_encode($documents),
+                    'agree_terms' => $request->boolean('agreeTerms'),
+                    'confirm_accuracy' => $request->boolean('confirmAccuracy'),
+
+                    // Raw payload
+                    'payload' => json_encode($payload),
+
+                    'updated_at' => now(),
+                ]);
+
+            return response()->json([
+                'success' => true,
+                'id' => $id,
+                'reference' => $application->application_reference,
+                'message' => 'Application updated successfully.'
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Recertification update error', [
+                'id' => $id,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update application',
+                'error' => app()->environment('local') ? $e->getMessage() : 'Server error'
+            ], 500);
         }
     }
 
@@ -472,15 +655,6 @@ class RecertificationController extends Controller
         }
     }
 
-    //new-application
-    
-    //   public function index() {
-    //     $PageTitle = 'Recertification Programme';
-    //     $PageDescription = ' ';
-    //     return view('recertification.index', compact('PageTitle', 'PageDescription'));
-    // }
-
-
     /**
      * Get the next file number for new applications
      */
@@ -520,4 +694,137 @@ class RecertificationController extends Controller
             ]);
         }
     }
+
+    /**
+     * Show migrate data page
+     */
+    public function migrate()
+    {
+        $PageTitle = 'Migrate Data';
+        $PageDescription = 'Import recertification applications from CSV file';
+        return view('recertification.migrate', compact('PageTitle', 'PageDescription'));
+    }
+
+    /**
+     * Download CSV template for migration
+     */
+    /**
+     * Download CSV template for migration
+     */
+    public function downloadTemplate()
+    {
+        $filename = 'recertification_template.csv';
+        
+        $columns = [
+            'application_date', 'applicant_type', 'file_number', 'surname', 'first_name', 'middle_name', 'title', 'occupation',
+            'date_of_birth', 'nationality', 'state_of_origin', 'lga_of_origin', 'nin', 'gender', 'marital_status', 'maiden_name',
+            'organisation_name', 'cac_registration_no', 'type_of_organisation', 'type_of_business', 'phone_no', 'whatsapp_phone_no',
+            'alternate_phone_no', 'address_line1', 'address_line2', 'city_town', 'state_name', 'email_address', 'rep_surname',
+            'rep_first_name', 'rep_middle_name', 'rep_title', 'rep_relationship', 'rep_phone_no', 'title_holder_surname',
+            'title_holder_first_name', 'title_holder_middle_name', 'title_holder_title', 'cofo_number', 'reg_no', 'reg_volume',
+            'reg_page', 'reg_number', 'is_original_owner', 'instrument_type', 'acquired_title_holder_name', 'commencement_date',
+            'grant_term', 'is_encumbered', 'encumbrance_reason', 'has_mortgage', 'mortgagee_name', 'mortgage_registration_no',
+            'mortgage_volume', 'mortgage_page', 'mortgage_number', 'mortgage_released', 'plot_number', 'plot_size',
+            'layout_district', 'lga_name', 'current_land_use', 'plot_status', 'mode_of_allocation', 'start_date', 'expiry_date',
+            'plot_description', 'application_type', 'application_reason', 'other_reason', 'payment_method', 'receipt_no',
+            'bank_name', 'payment_amount', 'payment_date', 'agree_terms', 'confirm_accuracy',
+            'application_status', 'recertification_date'
+        ];
+
+        $sampleData = [
+            '2024-01-15', 'Individual', 'KN3001', 'Doe', 'John', 'Michael', 'Mr', 'Engineer', '1980-05-15', 'Nigerian',
+            'Lagos', 'Lagos Island', '12345678901', 'male', 'married', '', '', '', '', '', '08012345678', '08012345678',
+            '08087654321', '123 Main Street', 'Victoria Island', 'Lagos', 'Lagos', 'john.doe@email.com', '', '', '', '',
+            '', '', 'Smith', 'Jane', 'Mary', 'Mrs', 'LAG/2023/001', 'REG001', 'Vol1', '25', 'RN001', 'yes', '', '',
+            '2020-01-01', '99', 'no', '', 'no', '', '', '', '', '', '', 'Plot 123', '500', 'Victoria Island Layout',
+            'Lagos Island', 'residential', 'allocated', 'direct-allocation', '2020-01-01', '2119-12-31',
+            'Prime residential plot', 'Recertification', 'Certificate Renewal', '', 'bank-transfer', 'RCT001',
+            'First Bank', '50000', '2024-01-10', '1', '1',
+            'RECERTIFIED', '2024-01-15'
+        ];
+
+        return response()->streamDownload(function () use ($columns, $sampleData) {
+            $handle = fopen('php://output', 'w');
+            
+            // Add BOM for Excel compatibility
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            // Add header row
+            fputcsv($handle, $columns);
+            
+            // Add sample data row
+            fputcsv($handle, $sampleData);
+            
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
+
+    /**
+     * Upload and process migration CSV file
+     */
+    public function uploadMigration(Request $request)
+    {
+        try {
+            $request->validate([
+                'csv_file' => 'required|file|mimes:csv,txt|max:10240',
+            ]);
+
+            $file = $request->file('csv_file');
+            $csv = array_map('str_getcsv', file($file->getRealPath()));
+            $header = array_shift($csv);
+            
+            $successCount = 0;
+            $errorCount = 0;
+            $errors = [];
+            
+            DB::connection('sqlsrv')->beginTransaction();
+            
+            foreach ($csv as $index => $row) {
+                try {
+                    if (empty(array_filter($row))) continue;
+                    
+                    $data = array_combine($header, $row);
+                    $data['application_reference'] = $data['application_reference'] ?? 'RC-' . date('Ymd') . '-' . strtoupper(Str::random(6));
+                    $data['is_original_owner'] = strtolower($data['is_original_owner'] ?? '') === 'yes' ? 1 : 0;
+                    $data['is_encumbered'] = strtolower($data['is_encumbered'] ?? '') === 'yes' ? 1 : 0;
+                    $data['has_mortgage'] = strtolower($data['has_mortgage'] ?? '') === 'yes' ? 1 : 0;
+                    $data['mortgage_released'] = strtolower($data['mortgage_released'] ?? '') === 'yes' ? 1 : 0;
+                    $data['agree_terms'] = ($data['agree_terms'] ?? '') == '1' ? 1 : 0;
+                    $data['confirm_accuracy'] = ($data['confirm_accuracy'] ?? '') == '1' ? 1 : 0;
+                    $data['created_at'] = now();
+                    $data['updated_at'] = now();
+                    
+                    DB::connection('sqlsrv')->table('recertification_applications')->insert($data);
+                    $successCount++;
+                    
+                } catch (\Exception $e) {
+                    $errorCount++;
+                    $errors[] = "Row " . ($index + 2) . ": " . $e->getMessage();
+                    if (count($errors) > 50) break;
+                }
+            }
+            
+            if ($errorCount > 0 && $successCount == 0) {
+                DB::connection('sqlsrv')->rollBack();
+                return response()->json(['success' => false, 'message' => 'Import failed.', 'errors' => $errors], 400);
+            }
+            
+            DB::connection('sqlsrv')->commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Import completed. {$successCount} records imported successfully.",
+                'success_count' => $successCount,
+                'error_count' => $errorCount,
+                'errors' => $errors
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::connection('sqlsrv')->rollBack();
+            return response()->json(['success' => false, 'message' => 'Upload failed: ' . $e->getMessage()], 500);
+        }
+    }
 }
+

@@ -544,7 +544,7 @@ window.NewRecertificationDialog = {
 window.testNextStep = function() {
   console.log('Testing next step...');
   nextStep();
-};
+}; 
 
 // Fetch next file number for the form
 async function fetchNextFileNumber() {
