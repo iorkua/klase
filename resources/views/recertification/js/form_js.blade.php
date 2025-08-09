@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Set current date (only if elements exist)
   setTimeout(() => {
     setCurrentDate();
+    fetchNextFileNumber();
     updateStepDisplay();
   }, 100);
 });
@@ -544,5 +545,49 @@ window.testNextStep = function() {
   console.log('Testing next step...');
   nextStep();
 };
+
+// Fetch next file number for the form
+async function fetchNextFileNumber() {
+  try {
+    const response = await fetch('/recertification/next-file-number', {
+      method: 'GET',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json'
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.success && data.file_number) {
+      const fileNumberInput = document.getElementById('fileNumber');
+      if (fileNumberInput) {
+        fileNumberInput.value = data.file_number;
+        fileNumberInput.placeholder = data.file_number;
+        formData.fileNumber = data.file_number;
+        console.log('File number loaded:', data.file_number);
+      }
+    } else {
+      console.error('Failed to fetch file number:', data);
+      // Set fallback file number
+      const fileNumberInput = document.getElementById('fileNumber');
+      if (fileNumberInput) {
+        fileNumberInput.value = 'KN3000';
+        fileNumberInput.placeholder = 'KN3000';
+        formData.fileNumber = 'KN3000';
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching file number:', error);
+    // Set fallback file number
+    const fileNumberInput = document.getElementById('fileNumber');
+    if (fileNumberInput) {
+      fileNumberInput.value = 'KN3000';
+      fileNumberInput.placeholder = 'KN3000';
+      formData.fileNumber = 'KN3000';
+    }
+  }
+}
 </script>
  
+

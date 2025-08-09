@@ -13,8 +13,238 @@ class RecertificationController extends Controller
 {  
     public function index() {
         $PageTitle = 'Recertification Programme';
-        $PageDescription = ' ';
+        $PageDescription = 'Manage approved certificate recertification and re-issuance applications';
         return view('recertification.index', compact('PageTitle', 'PageDescription'));
+    }
+
+    /**
+     * Get applications data for DataTables
+     */
+    public function getApplicationsData(Request $request)
+    {
+        try {
+            $query = DB::connection('sqlsrv')->table('recertification_applications');
+
+            // Search functionality
+            if ($request->has('search') && !empty($request->search['value'])) {
+                $searchValue = $request->search['value'];
+                $query->where(function($q) use ($searchValue) {
+                    $q->where('application_reference', 'like', "%{$searchValue}%")
+                      ->orWhere('surname', 'like', "%{$searchValue}%")
+                      ->orWhere('first_name', 'like', "%{$searchValue}%")
+                      ->orWhere('organisation_name', 'like', "%{$searchValue}%")
+                      ->orWhere('plot_number', 'like', "%{$searchValue}%")
+                      ->orWhere('cofo_number', 'like', "%{$searchValue}%");
+                });
+            }
+
+            // Get total count before pagination
+            $totalRecords = $query->count();
+
+            // Apply ordering
+            if ($request->has('order')) {
+                $orderColumn = $request->order[0]['column'];
+                $orderDir = $request->order[0]['dir'];
+                
+                $columns = ['id', 'application_reference', 'applicant_name', 'plot_details', 'lga_name', 'created_at'];
+                if (isset($columns[$orderColumn])) {
+                    if ($orderColumn == 2) { // applicant_name
+                        $query->orderBy('surname', $orderDir)->orderBy('first_name', $orderDir);
+                    } else {
+                        $query->orderBy($columns[$orderColumn], $orderDir);
+                    }
+                }
+            } else {
+                $query->orderBy('created_at', 'desc');
+            }
+
+            // Apply pagination
+            if ($request->has('start') && $request->has('length')) {
+                $query->skip($request->start)->take($request->length);
+            }
+
+            $applications = $query->get();
+
+            // Format data for DataTables
+            $data = $applications->map(function($app) {
+                // Determine applicant name based on type
+                $applicantName = '';
+                if ($app->applicant_type === 'Corporate') {
+                    $applicantName = $app->organisation_name ?? 'N/A';
+                } else {
+                    $applicantName = trim(($app->surname ?? '') . ' ' . ($app->first_name ?? ''));
+                    if (empty($applicantName)) {
+                        $applicantName = 'N/A';
+                    }
+                }
+
+                // Format plot details
+                $plotDetails = '';
+                if ($app->plot_number) {
+                    $plotDetails .= 'Plot: ' . $app->plot_number;
+                }
+                if ($app->layout_district) {
+                    $plotDetails .= ($plotDetails ? ', ' : '') . $app->layout_district;
+                }
+                if (empty($plotDetails)) {
+                    $plotDetails = 'N/A';
+                }
+
+                return [
+                    'id' => $app->id,
+                    'application_reference' => $app->application_reference ?? 'N/A',
+                    'applicant_name' => $applicantName,
+                    'applicant_type' => $app->applicant_type ?? 'N/A',
+                    'plot_details' => $plotDetails,
+                    'lga_name' => $app->lga_name ?? 'N/A',
+                    'created_at' => $app->created_at ? date('d M Y', strtotime($app->created_at)) : 'N/A',
+                    'cofo_number' => $app->cofo_number ?? 'N/A'
+                ];
+            });
+
+            return response()->json([
+                'draw' => intval($request->draw),
+                'recordsTotal' => $totalRecords,
+                'recordsFiltered' => $totalRecords,
+                'data' => $data
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching applications data', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'draw' => intval($request->draw ?? 1),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'Failed to fetch applications data'
+            ]);
+        }
+    }
+
+    /**
+     * View application details
+     */
+    public function view($id)
+    {
+        try {
+            $application = DB::connection('sqlsrv')
+                ->table('recertification_applications')
+                ->where('id', $id)
+                ->first();
+
+            if (!$application) {
+                return response()->json(['error' => 'Application not found'], 404);
+            }
+
+            // Get owners if Multiple Owners type
+            $owners = [];
+            if ($application->applicant_type === 'Multiple Owners') {
+                $owners = DB::connection('sqlsrv')
+                    ->table('recertification_owners')
+                    ->where('application_id', $id)
+                    ->get();
+            }
+
+            return response()->json([
+                'success' => true,
+                'application' => $application,
+                'owners' => $owners
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error viewing application', [
+                'id' => $id,
+                'message' => $e->getMessage()
+            ]);
+
+            return response()->json(['error' => 'Failed to load application'], 500);
+        }
+    }
+
+    /**
+     * Delete application
+     */
+    public function destroy($id)
+    {
+        try {
+            $application = DB::connection('sqlsrv')
+                ->table('recertification_applications')
+                ->where('id', $id)
+                ->first();
+
+            if (!$application) {
+                return response()->json(['error' => 'Application not found'], 404);
+            }
+
+            // Delete owners first (cascade should handle this, but being explicit)
+            DB::connection('sqlsrv')
+                ->table('recertification_owners')
+                ->where('application_id', $id)
+                ->delete();
+
+            // Delete application
+            DB::connection('sqlsrv')
+                ->table('recertification_applications')
+                ->where('id', $id)
+                ->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Application deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error deleting application', [
+                'id' => $id,
+                'message' => $e->getMessage()
+            ]);
+
+            return response()->json(['error' => 'Failed to delete application'], 500);
+        }
+    }
+
+    /**
+     * Show edit form
+     */
+    public function edit($id)
+    {
+        try {
+            $application = DB::connection('sqlsrv')
+                ->table('recertification_applications')
+                ->where('id', $id)
+                ->first();
+
+            if (!$application) {
+                abort(404, 'Application not found');
+            }
+
+            // Get owners if Multiple Owners type
+            $owners = [];
+            if ($application->applicant_type === 'Multiple Owners') {
+                $owners = DB::connection('sqlsrv')
+                    ->table('recertification_owners')
+                    ->where('application_id', $id)
+                    ->get();
+            }
+
+            $PageTitle = 'Edit Recertification Application';
+            $PageDescription = 'Update application details';
+
+            return view('recertification.edit', compact('PageTitle', 'PageDescription', 'application', 'owners'));
+
+        } catch (\Exception $e) {
+            Log::error('Error loading edit form', [
+                'id' => $id,
+                'message' => $e->getMessage()
+            ]);
+
+            return redirect()->route('recertification.index')
+                ->with('error', 'Failed to load application for editing');
+        }
     }
 
     /**
@@ -250,7 +480,44 @@ class RecertificationController extends Controller
     //     return view('recertification.index', compact('PageTitle', 'PageDescription'));
     // }
 
+
+    /**
+     * Get the next file number for new applications
+     */
+    public function getNextFileNumber()
+    {
+        try {
+            $lastFileNumber = DB::connection('sqlsrv')
+                ->table('recertification_applications')
+                ->where('file_number', 'like', 'KN%')
+                ->orderBy('file_number', 'desc')
+                ->value('file_number');
+            
+            if ($lastFileNumber) {
+                // Extract the numeric part and increment
+                $lastNumber = intval(substr($lastFileNumber, 2));
+                $newNumber = $lastNumber + 1;
+            } else {
+                // Start from KN3000 if no previous records
+                $newNumber = 3000;
+            }
+            
+            $nextFileNumber = 'KN' . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+            
+            return response()->json([
+                'success' => true,
+                'file_number' => $nextFileNumber
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error getting next file number', [
+                'message' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'file_number' => 'KN3000' // Default fallback
+            ]);
+        }
+    }
 }
-
-
-

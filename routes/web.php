@@ -780,3 +780,12 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'propertycard'], func
     Route::get('/record-details', [App\Http\Controllers\PropertyCardController::class, 'getRecordDetails'])->name('propertycard.getRecordDetails');
     Route::get('/capture', [App\Http\Controllers\PropertyCardController::class, 'capture'])->name('propertycard.capture');
 });
+
+// Additional Recertification Routes
+Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'recertification'], function () {
+    Route::get('/data', [App\Http\Controllers\RecertificationController::class, 'getApplicationsData'])->name('recertification.data');
+    Route::get('/{id}/view', [App\Http\Controllers\RecertificationController::class, 'view'])->name('recertification.view');
+    Route::get('/{id}/edit', [App\Http\Controllers\RecertificationController::class, 'edit'])->name('recertification.edit');
+    Route::delete('/{id}', [App\Http\Controllers\RecertificationController::class, 'destroy'])->name('recertification.destroy');
+});
+Route::get('/next-file-number', [App\Http\Controllers\RecertificationController::class, 'getNextFileNumber'])->name('recertification.nextFileNumber');

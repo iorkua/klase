@@ -19,9 +19,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Setup modal handlers
     setupModalHandlers();
-    
-    // Setup OCR mode toggle
-    setupOcrMode();
 });
 
 function loadApplicationsData() {
@@ -125,7 +122,7 @@ function renderApplicationsTable(data) {
         return `
             <tr class="table-row border-b hover:bg-gray-50">
                 <td class="p-4">
-                    <div class="font-medium text-gray-900">${app.file_number || 'N/A'}</div>
+                    <div class="font-medium text-gray-900">${app.application_reference}</div>
                     <div class="text-sm text-gray-500">${app.applicant_type}</div>
                 </td>
                 <td class="p-4">
@@ -141,7 +138,7 @@ function renderApplicationsTable(data) {
                     <div class="text-gray-900">${app.created_at}</div>
                 </td>
                 <td class="p-4">
-                    <div class="relative dropdown-container">
+                    <div class="relative">
                         <button 
                             onclick="toggleActionMenu('${actionMenuId}')"
                             class="inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-2 transition-all cursor-pointer bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50"
@@ -149,7 +146,7 @@ function renderApplicationsTable(data) {
                             <i data-lucide="more-horizontal" class="h-4 w-4"></i>
                         </button>
                         
-                        <div id="${actionMenuId}" class="dropdown-menu hidden w-56 bg-white rounded-md shadow-xl border border-gray-200" style="position: fixed; z-index: 9999;">
+                        <div id="${actionMenuId}" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-10">
                             <div class="py-1">
                                 <button onclick="viewApplication(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2">
                                     <i data-lucide="eye" class="h-4 w-4"></i>
@@ -210,11 +207,11 @@ function setupSearch() {
             
             const filteredData = applicationsData.filter(app => {
                 return (
-                    (app.file_number && app.file_number.toLowerCase().includes(searchTerm)) ||
+                    app.application_reference.toLowerCase().includes(searchTerm) ||
                     app.applicant_name.toLowerCase().includes(searchTerm) ||
                     app.plot_details.toLowerCase().includes(searchTerm) ||
                     app.lga_name.toLowerCase().includes(searchTerm) ||
-                    (app.cofo_number && app.cofo_number.toLowerCase().includes(searchTerm))
+                    app.cofo_number.toLowerCase().includes(searchTerm)
                 );
             });
             
@@ -233,7 +230,7 @@ function setupModalHandlers() {
     // Close modal when clicking outside
     document.addEventListener('click', function(event) {
         // Close action menus when clicking outside
-        if (!event.target.closest('.dropdown-container')) {
+        if (!event.target.closest('.relative')) {
             document.querySelectorAll('[id^="action-menu-"]').forEach(menu => {
                 menu.classList.add('hidden');
             });
@@ -251,18 +248,6 @@ function setupModalHandlers() {
         closeDetailsBtn.addEventListener('click', closeDetailsModal);
     }
     
-    // New application modal button
-    const newApplicationBtn = document.getElementById('new-application-btn');
-    if (newApplicationBtn) {
-        newApplicationBtn.addEventListener('click', function() {
-            const modal = document.getElementById('new-recertification-modal');
-            if (modal) {
-                modal.style.display = 'flex';
-                document.body.style.overflow = 'hidden';
-            }
-        });
-    }
-    
     // ESC key to close modals
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {
@@ -273,37 +258,6 @@ function setupModalHandlers() {
             });
         }
     });
-}
-
-function setupOcrMode() {
-    const ocrToggle = document.getElementById('ocr-mode-toggle');
-    const backFromOcr = document.getElementById('back-from-ocr');
-    
-    if (ocrToggle) {
-        ocrToggle.addEventListener('change', function() {
-            toggleOcrMode(this.checked);
-        });
-    }
-    
-    if (backFromOcr) {
-        backFromOcr.addEventListener('click', function() {
-            toggleOcrMode(false);
-            if (ocrToggle) ocrToggle.checked = false;
-        });
-    }
-}
-
-function toggleOcrMode(enabled) {
-    const mainView = document.querySelector('.container');
-    const ocrView = document.getElementById('ocr-mode-view');
-    
-    if (enabled) {
-        if (mainView) mainView.style.display = 'none';
-        if (ocrView) ocrView.classList.remove('hidden');
-    } else {
-        if (mainView) mainView.style.display = 'block';
-        if (ocrView) ocrView.classList.add('hidden');
-    }
 }
 
 // Action Menu Functions
@@ -317,17 +271,6 @@ function toggleActionMenu(menuId) {
             otherMenu.classList.add('hidden');
         }
     });
-    
-    // Calculate position for fixed positioning
-    const button = menu.previousElementSibling;
-    const rect = button.getBoundingClientRect();
-    
-    // Position the menu using fixed positioning to escape table overflow
-    menu.style.position = 'fixed';
-    menu.style.top = (rect.bottom + 4) + 'px';
-    menu.style.right = (window.innerWidth - rect.right) + 'px';
-    menu.style.left = 'auto';
-    menu.style.zIndex = '9999';
     
     // Toggle current menu
     menu.classList.toggle('hidden');
@@ -460,7 +403,7 @@ function showApplicationDetails(application, owners) {
                 <div>
                     <h4 class="font-semibold text-gray-900 mb-2">Application Information</h4>
                     <div class="space-y-2 text-sm">
-                        <div><span class="font-medium">File Number:</span> ${application.file_number || 'N/A'}</div>
+                        <div><span class="font-medium">Reference:</span> ${application.application_reference || 'N/A'}</div>
                         <div><span class="font-medium">Date:</span> ${application.application_date || 'N/A'}</div>
                         <div><span class="font-medium">Type:</span> ${application.applicant_type || 'N/A'}</div>
                     </div>
@@ -469,7 +412,7 @@ function showApplicationDetails(application, owners) {
                     <h4 class="font-semibold text-gray-900 mb-2">Plot Information</h4>
                     <div class="space-y-2 text-sm">
                         <div><span class="font-medium">Plot Number:</span> ${application.plot_number || 'N/A'}</div>
-                        <div><span class="font-medium">CofO Number:</span> ${application.cofo_number || 'N/A'}</div>
+                        <div><span class="font-medium">File Number:</span> ${application.file_number || 'N/A'}</div>
                         <div><span class="font-medium">LGA:</span> ${application.lga_name || 'N/A'}</div>
                     </div>
                 </div>
@@ -534,14 +477,12 @@ function showApplicationDetails(application, owners) {
     
     content.innerHTML = detailsHtml;
     modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
 }
 
 function closeDetailsModal() {
     const modal = document.getElementById('details-modal');
     if (modal) {
         modal.classList.add('hidden');
-        document.body.style.overflow = 'auto';
     }
 }
 

@@ -254,24 +254,23 @@ input:checked + .toggle-slider:before {
       </div>
     </div>
     
-    <div class="p-6">
-      <div class="rounded-md border border-gray-200">
-        <div class="overflow-x-auto">
+    <div class="rounded-md border border-gray-200" id="applications-table-container">
+      <div class="p-6">
+        <!-- Table -->
+    <div class="table-container">
           <table class="w-full">
             <thead>
               <tr class="border-b bg-gray-50">
-                
+                <th class="text-left p-4 font-medium text-gray-700">Application Ref</th>
                 <th class="text-left p-4 font-medium text-gray-700">Applicant Name</th>
                 <th class="text-left p-4 font-medium text-gray-700">Plot Details</th>
-           
                 <th class="text-left p-4 font-medium text-gray-700">LGA</th>
-                 
-                <th class="text-left p-4 font-medium text-gray-700">Approval Date</th>
+                <th class="text-left p-4 font-medium text-gray-700">Application Date</th>
                 <th class="text-left p-4 font-medium text-gray-700">Actions</th>
               </tr>
             </thead>
             <tbody id="applications-table-body">
-              <!-- Applications will be inserted here -->
+              <!-- Applications will be loaded dynamically -->
             </tbody>
           </table>
         </div>
@@ -338,7 +337,7 @@ input:checked + .toggle-slider:before {
       </div>
     </div>
   </div>
-</div>
+
 
 <!-- Toast Notifications -->
 <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2">

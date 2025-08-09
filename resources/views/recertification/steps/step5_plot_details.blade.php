@@ -33,9 +33,12 @@
                         id="fileNumber"
                         name="fileNumber"
                         required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 uppercase"
-                        placeholder="FILE NUMBER"
+                        readonly
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all bg-gray-100 text-gray-600 cursor-not-allowed uppercase"
+                        placeholder="Loading file number..."
+                        value=""
                     />
+                    <div class="text-xs text-gray-500 mt-1">Auto-generated file number</div>
                     <div class="error-message">File number is required</div>
                 </div>
                 
