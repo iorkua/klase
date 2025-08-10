@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\RecertificationController;
+use App\Http\Controllers\CertificationController;
 use Illuminate\Support\Facades\Route;
 
 // Recertification Routes
@@ -22,4 +23,13 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'recertification'], f
     Route::get('/{id}/edit', [RecertificationController::class, 'edit'])->name('recertification.edit');
     Route::put('/{id}', [RecertificationController::class, 'update'])->name('recertification.update');
     Route::delete('/{id}', [RecertificationController::class, 'destroy'])->name('recertification.destroy');
+    
+    // Certification Management Routes
+    Route::get('/certification', [CertificationController::class, 'index'])->name('recertification.certification');
+    Route::get('/certification-data', [CertificationController::class, 'getCertificationData'])->name('recertification.certification-data');
+    Route::get('/{id}/cor', [CertificationController::class, 'viewCoR'])->name('recertification.cor');
+    Route::post('/{id}/generate-cofo-front', [CertificationController::class, 'generateCofoFrontPage'])->name('recertification.generate-cofo-front');
+    Route::get('/{id}/cofo-front-page', [CertificationController::class, 'viewCofoFrontPage'])->name('recertification.cofo-front-page');
+    Route::get('/{id}/tdp', [CertificationController::class, 'viewTDP'])->name('recertification.tdp');
+    Route::get('/{id}/cofo', [CertificationController::class, 'viewCofo'])->name('recertification.cofo');
 });

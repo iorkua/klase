@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('page-title')
-    {{ __($PageTitle) }}
+    {{ __('Vetting Sheet') }}
 @endsection
 
 @section('content')
@@ -27,11 +27,6 @@ tailwind.config = {
 
 <style>
 /* Custom styles */
-.modal-backdrop {
-  background-color: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-}
-
 .badge {
   display: inline-flex;
   align-items: center;
@@ -44,6 +39,11 @@ tailwind.config = {
 .badge-success {
   background-color: #dcfce7;
   color: #166534;
+}
+
+.badge-warning {
+  background-color: #fef3c7;
+  color: #92400e;
 }
 
 .badge-default {
@@ -70,16 +70,6 @@ tailwind.config = {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
-
-/* Fade in animation */
-.fade-in {
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
 </style>
 
 <div class="flex-1 overflow-auto">
@@ -93,8 +83,8 @@ tailwind.config = {
             <!-- Header -->
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-900">{{ $PageTitle }}</h1>
-                    <p class="text-gray-600">{{ $PageDescription }}</p>
+                    <h1 class="text-3xl font-bold text-gray-900">Vetting Sheet</h1>
+                    <p class="text-gray-600">Review and vet recertification applications for processing</p>
                 </div>
                 <div class="flex gap-3">
                     <a href="{{ route('recertification.index') }}" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-4 py-2 transition-all cursor-pointer bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50 gap-2">
@@ -104,37 +94,109 @@ tailwind.config = {
                 </div>
             </div>
 
-            <!-- Verification Sheet Table -->
+            <!-- Statistics -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white rounded-lg shadow border border-gray-200 p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-blue-100 rounded-lg">
+                            <i data-lucide="clipboard-check" class="h-6 w-6 text-blue-600"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Total Applications</p>
+                            <p class="text-2xl font-bold text-gray-900" id="total-count">0</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow border border-gray-200 p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-green-100 rounded-lg">
+                            <i data-lucide="check-circle" class="h-6 w-6 text-green-600"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Vetted</p>
+                            <p class="text-2xl font-bold text-gray-900" id="vetted-count">0</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow border border-gray-200 p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-yellow-100 rounded-lg">
+                            <i data-lucide="clock" class="h-6 w-6 text-yellow-600"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Pending Vetting</p>
+                            <p class="text-2xl font-bold text-gray-900" id="pending-count">0</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow border border-gray-200 p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-purple-100 rounded-lg">
+                            <i data-lucide="calendar" class="h-6 w-6 text-purple-600"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">This Month</p>
+                            <p class="text-2xl font-bold text-gray-900" id="month-count">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search and Filters -->
+            <div class="bg-white rounded-lg shadow border border-gray-200">
+                <div class="p-6">
+                    <div class="flex gap-4 items-center">
+                        <div class="relative flex-1">
+                            <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4"></i>
+                            <input
+                                id="search-input"
+                                type="text"
+                                placeholder="Search by applicant name, file number, plot number..."
+                                class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
+                            />
+                        </div>
+                        <button class="inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-2 transition-all cursor-pointer bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50">
+                            <i data-lucide="filter" class="h-4 w-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vetting Sheet Table -->
             <div class="bg-white rounded-lg shadow border border-gray-200">
                 <div class="p-6 border-b border-gray-200">
                     <div class="flex items-center justify-between">
                         <h3 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                            <i data-lucide="clipboard-check" class="h-5 w-5 text-green-600"></i>
-                            Verification Sheet (<span id="applications-count">0</span>)
+                            <i data-lucide="clipboard-check" class="h-5 w-5 text-blue-600"></i>
+                            Vetting Sheet (<span id="applications-count">0</span>)
                         </h3>
-                        <span class="badge badge-success">
-                            Applications ready for verification
+                        <span class="badge badge-default">
+                            Applications for vetting review
                         </span>
                     </div>
                 </div>
                 
-                <div class="rounded-md border border-gray-200" id="applications-table-container">
+                <div class="rounded-md border-t-0" id="vetting-table-container">
                     <div class="p-6">
                         <!-- Table -->
                         <div class="table-container">
                             <table class="w-full">
                                 <thead>
                                     <tr class="border-b bg-gray-50">
-                                        <th class="text-left p-4 font-medium text-gray-700">NewFileNo</th>
+                                        <th class="text-left p-4 font-medium text-gray-700">File No</th>
                                         <th class="text-left p-4 font-medium text-gray-700">Application Type</th>
                                         <th class="text-left p-4 font-medium text-gray-700">Applicant Name</th>
                                         <th class="text-left p-4 font-medium text-gray-700">Plot Details</th>
                                         <th class="text-left p-4 font-medium text-gray-700">LGA</th>
                                         <th class="text-left p-4 font-medium text-gray-700">Application Date</th>
+                                        <th class="text-left p-4 font-medium text-gray-700">Status</th>
                                         <th class="text-left p-4 font-medium text-gray-700">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody id="applications-table-body">
+                                <tbody id="vetting-table-body">
                                     <!-- Applications will be loaded dynamically -->
                                 </tbody>
                             </table>
@@ -142,10 +204,10 @@ tailwind.config = {
                         
                         <!-- No results state -->
                         <div id="no-results" class="hidden text-center py-12">
-                            <i data-lucide="file-text" class="h-12 w-12 text-gray-400 mx-auto mb-4"></i>
+                            <i data-lucide="clipboard-check" class="h-12 w-12 text-gray-400 mx-auto mb-4"></i>
                             <h3 class="text-lg font-medium mb-2 text-gray-900">No applications found</h3>
                             <p id="no-results-message" class="text-gray-600">
-                                No applications available for verification
+                                No applications available for vetting
                             </p>
                         </div>
                     </div>
@@ -164,45 +226,35 @@ tailwind.config = {
 </div>
 
 <script>
-// Verification Sheet Applications Table Management
-let applicationsData = [];
+// Vetting Sheet Table Management
+let vettingData = [];
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Verification sheet table script loaded');
+    console.log('Vetting sheet table script loaded');
     
     // Initialize Lucide icons
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
     }
     
-    // Load applications data
-    loadVerificationData();
+    // Load vetting data
+    loadVettingData();
+    
+    // Setup search functionality
+    setupSearch();
     
     // Setup modal handlers
     setupModalHandlers();
 });
 
-function loadVerificationData() {
-    console.log('Loading verification data...');
+function loadVettingData() {
+    console.log('Loading vetting data...');
     
     // Show loading state
-    const tableBody = document.getElementById('applications-table-body');
-    const noResults = document.getElementById('no-results');
-    const applicationsCount = document.getElementById('applications-count');
-    
-    if (tableBody) {
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="7" class="text-center py-8">
-                    <div class="loading-spinner mx-auto mb-2"></div>
-                    <p class="text-gray-600">Loading verification data...</p>
-                </td>
-            </tr>
-        `;
-    }
+    showLoadingState('vetting-table-body');
     
     // Fetch data from backend
-    fetch('{{ route("recertification.verification-data") }}', {
+    fetch('/recertification/vetting-data', {
         method: 'GET',
         headers: {
             'X-Requested-With': 'XMLHttpRequest',
@@ -216,45 +268,63 @@ function loadVerificationData() {
         return response.json();
     })
     .then(data => {
-        console.log('Verification data received:', data);
-        applicationsData = data.data || [];
+        console.log('Vetting data received:', data);
+        vettingData = data.data || [];
         
-        // Update count
-        if (applicationsCount) {
-            applicationsCount.textContent = applicationsData.length;
-        }
+        // Update statistics
+        updateStatistics(data.statistics || {});
         
         // Render table
-        renderVerificationTable(applicationsData);
-        
-        // Hide no results initially
-        if (noResults) {
-            noResults.classList.add('hidden');
-        }
+        renderVettingTable();
     })
     .catch(error => {
-        console.error('Error loading verification data:', error);
-        
-        // Show error state
-        if (tableBody) {
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="7" class="text-center py-8">
-                        <i data-lucide="alert-circle" class="h-8 w-8 text-red-500 mx-auto mb-2"></i>
-                        <p class="text-red-600">Failed to load verification data</p>
-                        <button onclick="loadVerificationData()" class="mt-2 text-blue-600 hover:text-blue-800">
-                            Try Again
-                        </button>
-                    </td>
-                </tr>
-            `;
-            
-            // Reinitialize icons
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
-        }
+        console.error('Error loading vetting data:', error);
+        showErrorState('vetting-table-body');
     });
+}
+
+function showLoadingState(tableBodyId) {
+    const tableBody = document.getElementById(tableBodyId);
+    if (tableBody) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-8">
+                    <div class="loading-spinner mx-auto mb-2"></div>
+                    <p class="text-gray-600">Loading vetting data...</p>
+                </td>
+            </tr>
+        `;
+    }
+}
+
+function showErrorState(tableBodyId) {
+    const tableBody = document.getElementById(tableBodyId);
+    if (tableBody) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-8">
+                    <i data-lucide="alert-circle" class="h-8 w-8 text-red-500 mx-auto mb-2"></i>
+                    <p class="text-red-600">Failed to load vetting data</p>
+                    <button onclick="loadVettingData()" class="mt-2 text-blue-600 hover:text-blue-800">
+                        Try Again
+                    </button>
+                </td>
+            </tr>
+        `;
+        
+        // Reinitialize icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }
+}
+
+function updateStatistics(stats) {
+    document.getElementById('total-count').textContent = stats.total || 0;
+    document.getElementById('vetted-count').textContent = stats.vetted || 0;
+    document.getElementById('pending-count').textContent = stats.pending || 0;
+    document.getElementById('month-count').textContent = stats.thisMonth || 0;
+    document.getElementById('applications-count').textContent = stats.total || 0;
 }
 
 function getApplicationTypeClass(type) {
@@ -272,13 +342,24 @@ function getApplicationTypeClass(type) {
     }
 }
 
-function renderVerificationTable(data) {
-    const tableBody = document.getElementById('applications-table-body');
+function getStatusBadge(status) {
+    switch(status) {
+        case 'vetted':
+            return '<span class="badge badge-success">Vetted</span>';
+        case 'pending':
+            return '<span class="badge badge-warning">Pending Vetting</span>';
+        default:
+            return '<span class="badge badge-default">Unknown</span>';
+    }
+}
+
+function renderVettingTable() {
+    const tableBody = document.getElementById('vetting-table-body');
     const noResults = document.getElementById('no-results');
     
     if (!tableBody) return;
     
-    if (!data || data.length === 0) {
+    if (!vettingData || vettingData.length === 0) {
         tableBody.innerHTML = '';
         if (noResults) {
             noResults.classList.remove('hidden');
@@ -291,8 +372,8 @@ function renderVerificationTable(data) {
         noResults.classList.add('hidden');
     }
     
-    // Generate table rows with correct column alignment
-    const rows = data.map(app => {
+    // Generate table rows
+    const rows = vettingData.map(app => {
         const actionMenuId = `action-menu-${app.id}`;
         
         return `
@@ -318,6 +399,9 @@ function renderVerificationTable(data) {
                     <div class="text-gray-900">${app.created_at || 'N/A'}</div>
                 </td>
                 <td class="p-4">
+                    ${getStatusBadge(app.vetting_status)}
+                </td>
+                <td class="p-4">
                     <div class="relative">
                         <button 
                             onclick="toggleActionMenu('${actionMenuId}')"
@@ -328,9 +412,9 @@ function renderVerificationTable(data) {
                         
                         <div id="${actionMenuId}" class="hidden absolute right-0 top-full mt-1 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-50">
                             <div class="py-1">
-                                <button onclick="viewApplicationDetails(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2">
+                                <button onclick="viewApplication(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2">
                                     <i data-lucide="eye" class="h-4 w-4"></i>
-                                    View Application Details
+                                    View Application
                                 </button>
                             </div>
                         </div>
@@ -346,6 +430,41 @@ function renderVerificationTable(data) {
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
     }
+}
+
+function setupSearch() {
+    const searchInput = document.getElementById('search-input');
+    if (!searchInput) return;
+    
+    let searchTimeout;
+    
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            const searchTerm = this.value.toLowerCase().trim();
+            
+            if (searchTerm === '') {
+                renderVettingTable();
+                return;
+            }
+            
+            const filteredData = vettingData.filter(app => {
+                return (
+                    (app.file_number && app.file_number.toLowerCase().includes(searchTerm)) ||
+                    (app.applicant_name && app.applicant_name.toLowerCase().includes(searchTerm)) ||
+                    (app.plot_details && app.plot_details.toLowerCase().includes(searchTerm)) ||
+                    (app.lga_name && app.lga_name.toLowerCase().includes(searchTerm)) ||
+                    (app.applicant_type && app.applicant_type.toLowerCase().includes(searchTerm))
+                );
+            });
+            
+            // Update the global data and re-render
+            const originalData = vettingData;
+            vettingData = filteredData;
+            renderVettingTable();
+            vettingData = originalData; // Restore original data
+        }, 300);
+    });
 }
 
 function setupModalHandlers() {
@@ -424,83 +543,24 @@ function toggleActionMenu(menuId) {
 }
 
 // Application Action Functions
-function viewApplicationDetails(id) {
-    console.log('Viewing application details:', id);
-    
-    // Close action menu
-    document.querySelectorAll('[id^="action-menu-"]').forEach(menu => {
-        menu.classList.add('hidden');
-    });
-    
-    // Navigate to application details page
+function viewApplication(id) {
+    console.log('Viewing application:', id);
+    closeActionMenus();
     window.location.href = `/recertification/${id}/details`;
 }
 
-// Toast notification function
-function showToast(message, type = 'info') {
-    const toastContainer = document.getElementById('toast-container');
-    if (!toastContainer) return;
-    
-    const toastId = `toast-${Date.now()}`;
-    
-    const typeClasses = {
-        success: 'bg-green-600 text-white',
-        error: 'bg-red-600 text-white',
-        warning: 'bg-yellow-600 text-white',
-        info: 'bg-blue-600 text-white'
-    };
-    
-    const typeIcons = {
-        success: 'check-circle',
-        error: 'alert-circle',
-        warning: 'alert-triangle',
-        info: 'info'
-    };
-    
-    const toast = document.createElement('div');
-    toast.id = toastId;
-    toast.className = `${typeClasses[type]} px-4 py-2 rounded-md shadow-lg flex items-center gap-2 transform translate-x-full transition-transform duration-300`;
-    toast.innerHTML = `
-        <i data-lucide="${typeIcons[type]}" class="h-4 w-4"></i>
-        <span>${message}</span>
-        <button onclick="removeToast('${toastId}')" class="ml-2 hover:bg-black/20 rounded p-1">
-            <i data-lucide="x" class="h-3 w-3"></i>
-        </button>
-    `;
-    
-    toastContainer.appendChild(toast);
-    if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-    }
-    
-    // Animate in
-    setTimeout(() => {
-        toast.classList.remove('translate-x-full');
-    }, 100);
-    
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-        removeToast(toastId);
-    }, 5000);
-}
-
-function removeToast(toastId) {
-    const toast = document.getElementById(toastId);
-    if (toast) {
-        toast.classList.add('translate-x-full');
-        setTimeout(() => {
-            toast.remove();
-        }, 300);
-    }
+function closeActionMenus() {
+    document.querySelectorAll('[id^="action-menu-"]').forEach(menu => {
+        menu.classList.add('hidden');
+    });
 }
 
 // Make functions available globally
 window.toggleActionMenu = toggleActionMenu;
-window.viewApplicationDetails = viewApplicationDetails;
-window.removeToast = removeToast;
-window.loadVerificationData = loadVerificationData;
+window.viewApplication = viewApplication;
+window.loadVettingData = loadVettingData;
 
-console.log('Verification sheet table script initialized');
+console.log('Vetting sheet table script initialized');
 </script>
 
 @endsection

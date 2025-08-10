@@ -217,27 +217,27 @@
         <i data-lucide="check-square" class="h-3.5 w-3.5 text-purple-400"></i>
         <span>Verification Sheet</span>
         </a>
-        <a href="/programmes/recertification/gis-capture" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
+        <a href="#" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
         <i data-lucide="map" class="h-3.5 w-3.5 text-purple-400"></i>
         <span>GIS Data Capture</span>
         </a>
-        <a href="/programmes/recertification/vetting" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
+        <a href="#" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
         <i data-lucide="clipboard-check" class="h-3.5 w-3.5 text-purple-400"></i>
         <span>Vetting Sheet</span>
         </a>
-        <a href="/programmes/recertification/edms" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
+        <a href="#" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
         <i data-lucide="hard-drive" class="h-3.5 w-3.5 text-purple-400"></i>
         <span>EDMS</span>
         </a>
-        <a href="/programmes/recertification/certification" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
+        <a href="#" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
         <i data-lucide="award" class="h-3.5 w-3.5 text-purple-400"></i>
         <span>Certification</span>
         </a>
-        <a href="/programmes/recertification/dg-list" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
+        <a href="#" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
         <i data-lucide="list-end" class="h-3.5 w-3.5 text-purple-400"></i>
         <span>DG's List</span>
         </a>
-        <a href="/programmes/recertification/governors-list" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
+        <a href="#" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
         <i data-lucide="list" class="h-3.5 w-3.5 text-purple-400"></i>
         <span>Governors List</span>
         </a>

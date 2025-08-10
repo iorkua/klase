@@ -626,6 +626,8 @@
                     </div>
                     @if(isset($type) && $type === 'sub')
                         Unit Application Summary
+                    @elseif(isset($applicationType) && $applicationType === 'recertification')
+                        Recertification Application Summary
                     @else
                         Application Summary
                     @endif
@@ -633,20 +635,73 @@
                 <div class="application-id">
                     @if(isset($type) && $type === 'sub')
                         Unit ID: {{ $application->id }}
+                    @elseif(isset($applicationType) && $applicationType === 'recertification')
+                        Recert ID: {{ $application->id }}
                     @else
                         ID: {{ $application->applicationID ?? $application->id }}
                     @endif
                 </div>
             </div>
             
-            @if(isset($type) && $type === 'sub')
+            @if(isset($applicationType) && $applicationType === 'recertification')
+                <!-- Recertification application fields -->
+                <div class="application-grid">
+                    <div class="application-field">
+                        <div class="field-label">File Number</div>
+                        <div class="field-value">{{ $application->file_number ?? 'Not Assigned' }}</div>
+                    </div>
+                    
+                    <div class="application-field">
+                        <div class="field-label">Applicant Name</div>
+                        <div class="field-value">
+                            @if($application->applicant_type === 'Corporate')
+                                {{ $application->organisation_name ?? 'Corporate Applicant' }}
+                            @else
+                                {{ trim(($application->surname ?? '') . ' ' . ($application->first_name ?? '')) ?: 'Individual Applicant' }}
+                            @endif
+                        </div>
+                    </div>
+                    
+                    <div class="application-field">
+                        <div class="field-label">Plot Details</div>
+                        <div class="field-value">
+                            @php
+                                $plotDetails = '';
+                                if ($application->plot_number) {
+                                    $plotDetails .= 'Plot: ' . $application->plot_number;
+                                }
+                                if ($application->layout_district) {
+                                    $plotDetails .= ($plotDetails ? ', ' : '') . $application->layout_district;
+                                }
+                                if ($application->plot_size) {
+                                    $plotDetails .= ($plotDetails ? ', ' : '') . 'Size: ' . $application->plot_size;
+                                }
+                                if (empty($plotDetails)) {
+                                    $plotDetails = 'N/A';
+                                }
+                            @endphp
+                            {{ $plotDetails }}
+                        </div>
+                    </div>
+                    
+                    <div class="application-field">
+                        <div class="field-label">LGA</div>
+                        <div class="field-value">{{ $application->lga_name ?? 'Not Specified' }}</div>
+                    </div>
+                    
+                    <div class="application-field">
+                        <div class="field-label">Application Status</div>
+                        <div class="field-value">
+                            <span class="status-badge">
+                                <i data-lucide="info" style="width: 0.875rem; height: 0.875rem; margin-right: 0.375rem;"></i>
+                                {{ $application->application_status ?? 'Pending Review' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            @elseif(isset($type) && $type === 'sub')
                 <!-- Sub-application fields -->
                 <div class="application-grid">
-                    {{-- <div class="application-field">
-                        <div class="field-label">Unit File Number</div>
-                        <div class="field-value">{{ $application->fileno ?? 'Not Assigned' }}</div>
-                    </div> --}}
-                    
                     <div class="application-field">
                         <div class="field-label">Unit Owner</div>
                         <div class="field-value">
@@ -664,7 +719,6 @@
                             @endif
                         </div>
                     </div>
-               
                     
                     @if(isset($motherApplication))
                         <div class="application-field">
@@ -673,19 +727,19 @@
                         </div>
                         
                         <div class="application-field">
-                        <div class="field-label">Property Description</div>
-                        <div class="field-value">
-                        @php
-                        $addressParts = [];
-                        if (!empty($motherApplication->property_plot_no)) $addressParts[] = $motherApplication->property_plot_no;
-                        if (!empty($motherApplication->property_street_name)) $addressParts[] = $motherApplication->property_street_name;
-                        if (!empty($motherApplication->property_district)) $addressParts[] = $motherApplication->property_district;
-                        if (!empty($motherApplication->property_lga)) $addressParts[] = $motherApplication->property_lga;
-                        if (!empty($motherApplication->property_state)) $addressParts[] = $motherApplication->property_state;
-                        $propertyDescription = !empty($addressParts) ? implode(', ', array_filter($addressParts)) : 'Property description not available';
-                        @endphp
-                        {{ $propertyDescription }}
-                        </div>
+                            <div class="field-label">Property Description</div>
+                            <div class="field-value">
+                                @php
+                                $addressParts = [];
+                                if (!empty($motherApplication->property_plot_no)) $addressParts[] = $motherApplication->property_plot_no;
+                                if (!empty($motherApplication->property_street_name)) $addressParts[] = $motherApplication->property_street_name;
+                                if (!empty($motherApplication->property_district)) $addressParts[] = $motherApplication->property_district;
+                                if (!empty($motherApplication->property_lga)) $addressParts[] = $motherApplication->property_lga;
+                                if (!empty($motherApplication->property_state)) $addressParts[] = $motherApplication->property_state;
+                                $propertyDescription = !empty($addressParts) ? implode(', ', array_filter($addressParts)) : 'Property description not available';
+                                @endphp
+                                {{ $propertyDescription }}
+                            </div>
                         </div>
                     @endif
                          
@@ -703,6 +757,7 @@
                         <div class="field-label">Floor Number</div>
                         <div class="field-value">{{ $application->floor_number ?? 'Not Assigned' }}</div>
                     </div>
+                    
                     <div class="application-field">
                         <div class="field-label">Application Status</div>
                         <div class="field-value">
@@ -854,6 +909,11 @@
                             <div class="step-actions">
                                 @if(isset($type) && $type === 'sub')
                                     <a href="{{ route('edms.create-file-indexing', [$application->id, 'sub']) }}" class="btn btn-primary">
+                                        <i data-lucide="folder-plus" style="width: 0.875rem; height: 0.875rem;"></i>
+                                        Start Indexing
+                                    </a>
+                                @elseif(isset($applicationType) && $applicationType === 'recertification')
+                                    <a href="{{ route('edms.recertification.create-file-indexing', $application->id) }}" class="btn btn-primary">
                                         <i data-lucide="folder-plus" style="width: 0.875rem; height: 0.875rem;"></i>
                                         Start Indexing
                                     </a>
@@ -1038,7 +1098,11 @@
 
         <!-- Action Section -->
         <div class="action-section">
-            <a href="{{ route('sectionaltitling.primary', $application->id) }}" class="btn-back">
+            @if(isset($applicationType) && $applicationType === 'recertification')
+                <a href="{{ route('recertification.edms') }}" class="btn-back">
+            @else
+                <a href="{{ route('sectionaltitling.primary', $application->id) }}" class="btn-back">
+            @endif
                 <i data-lucide="arrow-left" style="width: 1rem; height: 1rem;"></i>
                 Back to Application
             </a>

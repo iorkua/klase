@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('page-title')
-    {{ __('Survey Plan Extraction') }}
+    {{ __('Recertification') }}
 @endsection
 
  
@@ -9,7 +9,7 @@
 // Tailwind config
 tailwind.config = {
   theme: {
-    extend: {
+    extend: { 
       colors: {
         primary: '#3b82f6',
         'primary-foreground': '#ffffff',

@@ -43,12 +43,12 @@
 @if($exists)
     <button class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2 opacity-50 cursor-not-allowed">
         <i data-lucide="folder-open" class="w-4 h-4 text-gray-500"></i>
-        <span>Create DMS Record</span>
+        <span>Create EDMS Record</span>
     </button>
 @else
     <a href="{{ route('edms.index', $edmsId) }}" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
         <i data-lucide="folder-open" class="w-4 h-4 text-blue-500"></i>
-        <span>Create DMS Record</span>
+        <span>Create EDMS Record</span>
     </a>
 @endif
 

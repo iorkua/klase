@@ -15,6 +15,7 @@ class FileIndexing extends Model
     protected $fillable = [
         'main_application_id',
         'subapplication_id',
+        'recertification_application_id',
         'st_fillno',
         'file_number',
         'file_title',
@@ -69,4 +70,10 @@ class FileIndexing extends Model
             return 'Indexed';
         }
     }
+
+    public function recertificationApplication()
+    {
+        return $this->belongsTo('App\Models\RecertificationApplication', 'recertification_application_id');
+    }
 }
+
