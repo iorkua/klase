@@ -205,8 +205,8 @@ tailwind.config = {
                                         <th class="text-left p-4 font-medium text-gray-700">Application Type</th>
                                         <th class="text-left p-4 font-medium text-gray-700">Applicant Name</th>
                                         <th class="text-left p-4 font-medium text-gray-700">Plot Details</th>
-                                        <th class="text-left p-4 font-medium text-gray-700">Coordinates</th>
-                                        <th class="text-left p-4 font-medium text-gray-700">Last Captured</th>
+                                        <th class="text-left p-4 font-medium text-gray-700">LGA</th>
+                                        <th class="text-left p-4 font-medium text-gray-700">Application Date</th>
                                         <th class="text-left p-4 font-medium text-gray-700">GIS Status</th>
                                         <th class="text-left p-4 font-medium text-gray-700">Actions</th>
                                     </tr>
@@ -367,10 +367,27 @@ function getGISStatusBadge(status) {
             return '<span class="badge badge-warning">Mapping</span>';
         case 'pending':
             return '<span class="badge badge-default">Pending Capture</span>';
-        case 'verified':
-            return '<span class="badge badge-green">Verified</span>';
         default:
-            return '<span class="badge badge-default">Unknown</span>';
+            return '<span class="badge badge-default">Pending Capture</span>';
+    }
+}
+
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'N/A';
+        
+        const options = { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+        };
+        return date.toLocaleDateString('en-US', options);
+    } catch (error) {
+        console.error('Error formatting date:', error);
+        return 'N/A';
     }
 }
 
@@ -414,12 +431,10 @@ function renderGISTable() {
                     <div class="text-gray-900">${app.plot_details || 'N/A'}</div>
                 </td>
                 <td class="p-4">
-                    <div class="text-gray-900 font-mono text-xs">
-                        ${app.coordinates ? `${app.coordinates.lat}, ${app.coordinates.lng}` : 'Not captured'}
-                    </div>
+                    <div class="text-gray-900">${app.lga_name || 'N/A'}</div>
                 </td>
                 <td class="p-4">
-                    <div class="text-gray-900">${app.last_captured || 'N/A'}</div>
+                    <div class="text-gray-900">${formatDate(app.application_date)}</div>
                 </td>
                 <td class="p-4">
                     ${getGISStatusBadge(app.gis_status)}
@@ -438,6 +453,10 @@ function renderGISTable() {
                                 <button onclick="viewApplication(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2">
                                     <i data-lucide="eye" class="h-4 w-4"></i>
                                     View Application
+                                </button>
+                                <button onclick="captureGISData(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2">
+                                    <i data-lucide="map" class="h-4 w-4"></i>
+                                    GIS Data Capture
                                 </button>
                             </div>
                         </div>
@@ -478,10 +497,7 @@ function setupSearch() {
                     (app.plot_details && app.plot_details.toLowerCase().includes(searchTerm)) ||
                     (app.applicant_type && app.applicant_type.toLowerCase().includes(searchTerm)) ||
                     (app.gis_status && app.gis_status.toLowerCase().includes(searchTerm)) ||
-                    (app.coordinates && (
-                        app.coordinates.lat.toString().includes(searchTerm) ||
-                        app.coordinates.lng.toString().includes(searchTerm)
-                    ))
+                    (app.lga_name && app.lga_name.toLowerCase().includes(searchTerm))
                 );
             });
             
@@ -576,6 +592,12 @@ function viewApplication(id) {
     window.location.href = `/recertification/${id}/details`;
 }
 
+function captureGISData(id) {
+    console.log('Capturing GIS data for application:', id);
+    closeActionMenus();
+    window.location.href = `/recertification/${id}/gis-capture`;
+}
+
 function closeActionMenus() {
     document.querySelectorAll('[id^="action-menu-"]').forEach(menu => {
         menu.classList.add('hidden');
@@ -585,6 +607,7 @@ function closeActionMenus() {
 // Make functions available globally
 window.toggleActionMenu = toggleActionMenu;
 window.viewApplication = viewApplication;
+window.captureGISData = captureGISData;
 window.loadGISData = loadGISData;
 
 console.log('GIS data capture table script initialized');

@@ -601,10 +601,22 @@
         <!-- Breadcrumb -->
         <nav class="breadcrumb-nav">
             <div class="flex items-center space-x-2">
-                <a href="{{ route('edms.index', ['applicationId' => $fileIndexing->main_application_id]) }}" class="breadcrumb-link">
-                    <i data-lucide="workflow" style="width: 1rem; height: 1rem; margin-right: 0.5rem;"></i>
-                    EDMS Workflow
-                </a>
+                @if($fileIndexing->recertification_application_id)
+                    <a href="{{ route('edms.recertification.index', $fileIndexing->recertification_application_id) }}" class="breadcrumb-link">
+                        <i data-lucide="workflow" style="width: 1rem; height: 1rem; margin-right: 0.5rem;"></i>
+                        EDMS Workflow
+                    </a>
+                @elseif($fileIndexing->subapplication_id)
+                    <a href="{{ route('edms.sub.index', $fileIndexing->main_application_id) }}" class="breadcrumb-link">
+                        <i data-lucide="workflow" style="width: 1rem; height: 1rem; margin-right: 0.5rem;"></i>
+                        EDMS Workflow
+                    </a>
+                @else
+                    <a href="{{ route('edms.index', $fileIndexing->main_application_id) }}" class="breadcrumb-link">
+                        <i data-lucide="workflow" style="width: 1rem; height: 1rem; margin-right: 0.5rem;"></i>
+                        EDMS Workflow
+                    </a>
+                @endif
                 <i data-lucide="chevron-right" style="width: 1rem; height: 1rem; color: #9ca3af;"></i>
                 <span style="color: #6b7280; font-weight: 600;">File Indexing</span>
             </div>
@@ -762,13 +774,18 @@
 
         <!-- Action Bar -->
         <div class="action-bar">
-            @if($fileIndexing->is_unit_own ?? false)
-                <a href="{{ route('edms.sub', $fileIndexing->main_application_id) }}" class="btn btn-outline">
+            @if($fileIndexing->recertification_application_id)
+                <a href="{{ route('edms.recertification.index', $fileIndexing->recertification_application_id) }}" class="btn btn-outline">
+                    <i data-lucide="arrow-left" style="width: 1rem; height: 1rem; margin-right: 0.5rem;"></i>
+                    Back to Workflow
+                </a>
+            @elseif($fileIndexing->subapplication_id)
+                <a href="{{ route('edms.sub.index', $fileIndexing->main_application_id) }}" class="btn btn-outline">
                     <i data-lucide="arrow-left" style="width: 1rem; height: 1rem; margin-right: 0.5rem;"></i>
                     Back to Workflow
                 </a>
             @else
-                <a href="{{ route('edms.index', ['applicationId' => $fileIndexing->main_application_id]) }}" class="btn btn-outline">
+                <a href="{{ route('edms.index', $fileIndexing->main_application_id) }}" class="btn btn-outline">
                     <i data-lucide="arrow-left" style="width: 1rem; height: 1rem; margin-right: 0.5rem;"></i>
                     Back to Workflow
                 </a>

@@ -625,11 +625,23 @@ class CertificationController extends Controller
     public function getGISData(Request $request)
     {
         try {
-            $query = DB::connection('sqlsrv')->table('recertification_applications');
-            $applications = $query->get();
+            // Get all recertification applications
+            $applications = DB::connection('sqlsrv')->table('recertification_applications')->get();
+
+            // Get all GIS capture records for recertification (if the table exists)
+            $gisRecords = collect(); // Empty collection for now
+            try {
+                $gisRecords = DB::connection('sqlsrv')
+                    ->table('gisCapture')
+                    ->where('gis_type', 'recertification')
+                    ->get()
+                    ->keyBy('mlsfNo');
+            } catch (\Exception $e) {
+                // GIS table might not exist, continue with empty collection
+            }
 
             // Format data for the GIS table
-            $data = $applications->map(function($app) {
+            $data = $applications->map(function($app) use ($gisRecords) {
                 // Determine applicant name based on type
                 $applicantName = '';
                 if ($app->applicant_type === 'Corporate') {
@@ -650,20 +662,16 @@ class CertificationController extends Controller
                     $plotDetails .= ($plotDetails ? ', ' : '') . $app->layout_district;
                 }
                 if ($app->plot_size) {
-                    $plotDetails .= ($plotDetails ? ', ' : '') . 'Size: ' . $app->plot_size;
+                    $plotDetails .= ($plotDetails ? ', ' : '') . 'Size: ' . $app->plot_size . ' Ha';
                 }
                 if (empty($plotDetails)) {
                     $plotDetails = 'N/A';
                 }
 
-                // Format coordinates
-                $coordinates = null;
-                if ($app->latitude && $app->longitude) {
-                    $coordinates = [
-                        'lat' => $app->latitude,
-                        'lng' => $app->longitude
-                    ];
-                }
+                // Check if GIS data exists for this application
+                $gisRecord = $gisRecords->get($app->file_number);
+                $gisStatus = $gisRecord ? 'captured' : 'pending';
+                $lastCaptured = $gisRecord ? date('d M Y', strtotime($gisRecord->created_at)) : 'N/A';
 
                 return [
                     'id' => $app->id,
@@ -671,9 +679,11 @@ class CertificationController extends Controller
                     'applicant_name' => $applicantName,
                     'applicant_type' => $app->applicant_type ?? 'N/A',
                     'plot_details' => $plotDetails,
-                    'coordinates' => $coordinates,
-                    'last_captured' => $app->gis_captured_date ? date('d M Y', strtotime($app->gis_captured_date)) : 'N/A',
-                    'gis_status' => $app->gis_status ?? 'pending'
+                    'lga_name' => $app->lga_name ?? 'N/A',
+                    'application_date' => $app->application_date ? date('d M Y', strtotime($app->application_date)) : ($app->created_at ? date('d M Y', strtotime($app->created_at)) : 'N/A'),
+                    'gis_status' => $gisStatus,
+                    'last_captured' => $lastCaptured,
+                    'created_at' => $app->created_at ? date('d M Y', strtotime($app->created_at)) : 'N/A'
                 ];
             });
 
@@ -681,7 +691,19 @@ class CertificationController extends Controller
             $total = $data->count();
             $captured = $data->where('gis_status', 'captured')->count();
             $pending = $total - $captured;
-            $thisMonth = $data->where('last_captured', '>=', now()->startOfMonth()->format('d M Y'))->count();
+            
+            // Count applications captured this month
+            $thisMonth = $data->filter(function($app) {
+                if ($app['last_captured'] === 'N/A') return false;
+                try {
+                    $capturedDate = \DateTime::createFromFormat('d M Y', $app['last_captured']);
+                    if (!$capturedDate) return false;
+                    $startOfMonth = new \DateTime('first day of this month');
+                    return $capturedDate >= $startOfMonth;
+                } catch (\Exception $e) {
+                    return false;
+                }
+            })->count();
 
             $statistics = [
                 'total' => $total,
@@ -692,7 +714,7 @@ class CertificationController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $data,
+                'data' => $data->values(),
                 'statistics' => $statistics
             ]);
 

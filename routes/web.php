@@ -54,6 +54,7 @@ use App\Http\Controllers\StInstrumentRegistrationController;
 |
 */
 require __DIR__ . '/auth.php';
+require __DIR__ . '/recertification_routes.php';
 Route::get('/', [HomeController::class, 'index'])->middleware(
     [
         'XSS',
@@ -205,17 +206,17 @@ Route::group(
         Route::resource('document', DocumentController::class);
         Route::get('my-document', [DocumentController::class, 'myDocument'])->name('document.my-document');
         Route::get('document/{id}/comment', [DocumentController::class, 'comment'])->name('document.comment');
-        Route::post('document/{id}/comment', [DocumentController::class, 'commentData'])->name('document.comment');
+        Route::post('document/{id}/comment', [DocumentController::class, 'commentData'])->name('document.comment.store');
         Route::get('document/{id}/reminder', [DocumentController::class, 'reminder'])->name('document.reminder');
         Route::get('document/{id}/add-reminder', [DocumentController::class, 'addReminder'])->name('document.add.reminder');
         Route::get('document/{id}/version-history', [DocumentController::class, 'versionHistory'])->name('document.version.history');
         Route::post('document/{id}/version-history', [DocumentController::class, 'newVersion'])->name('document.new.version');
         Route::get('document/{id}/share', [DocumentController::class, 'shareDocument'])->name('document.share');
-        Route::post('document/{id}/share', [DocumentController::class, 'shareDocumentData'])->name('document.share');
+        Route::post('document/{id}/share', [DocumentController::class, 'shareDocumentData'])->name('document.share.store');
         Route::get('document/{id}/add-share', [DocumentController::class, 'addshareDocumentData'])->name('document.add.share');
         Route::delete('document/{id}/share/destroy', [DocumentController::class, 'shareDocumentDelete'])->name('document.share.destroy');
         Route::get('document/{id}/send-email', [DocumentController::class, 'sendEmail'])->name('document.send.email');
-        Route::post('document/{id}/send-email', [DocumentController::class, 'sendEmailData'])->name('document.send.email');
+        Route::post('document/{id}/send-email', [DocumentController::class, 'sendEmailData'])->name('document.send.email.store');
         Route::get('logged/history', [DocumentController::class, 'loggedHistory'])->name('logged.history');
         Route::get('logged/{id}/history/show', [DocumentController::class, 'loggedHistoryShow'])->name('logged.history.show');
         Route::delete('logged/{id}/history', [DocumentController::class, 'loggedHistoryDestroy'])->name('logged.history.destroy');
@@ -392,7 +393,7 @@ Route::group(['middleware' => 'web'], function () {
 Route::post('/deeds/insert', [DeedsController::class, 'insert'])->name('deeds.insert');
 Route::get('/deeds/getdeedsdublicate', [DeedsController::class, 'getDeedsDublicate'])->name('deeds.getDeedsDublicate');
 Route::post('/conveyance/update', [ConveyanceController::class, 'updateConveyance'])->name('conveyance.update');
-Route::get('/sectionaltitling/generate-bill/{id?}', [SubApplicationController::class, 'GenerateBill'])->name('sectionaltitling.generate_bill');
+Route::get('/sectionaltitling/generate-bill/{id?}', [SubApplicationController::class, 'GenerateBill'])->name('sectionaltitling.sub.generate_bill');
 Route::get('/sectionaltitling/generate-bill', [SubApplicationController::class, 'GenerateBill'])->name('sectionaltitling.generate_bill_no_id');
 Route::get('/subapplications/{id}', [SubApplicationController::class, 'getSubApplication']);
 Route::get('sectionaltitling/viewrecorddetail_sub/{id?}',  [SubApplicationController::class, 'viewrecorddetail_sub'])->name('sectionaltitling.viewrecorddetail_sub');
@@ -429,8 +430,6 @@ Route:: get('/sectionaltitling/generate_bill_sub/{id?}', [ApplicationMotherContr
  
  
 // FileIndexing routes
-Route::get('/fileindex/index', [App\Http\Controllers\FileIndexingController::class, 'index'])->name('fileindex.index');
-Route::get('/fileindex/create', [App\Http\Controllers\FileIndexingController::class, 'create'])->name('fileindex.create');
 Route::impersonate();
 Route::resource('fileindex', 'App\Http\Controllers\FileIndexingController');
 Route::post('fileindex/save-cofo', 'App\Http\Controllers\FileIndexingController@saveCofO')->name('fileindex.save-cofo');
@@ -455,7 +454,7 @@ Route::get('/map', [\App\Http\Controllers\SectionalTitlingController::class, 'Ma
  
 // Payment filtering route
 Route::get('/programmes/payments/filter', [App\Http\Controllers\ProgrammesController::class, 'filterPayments'])->name('programmes.payments.filter');
-Route::get('/programmes/memo/{id}', 'App\Http\Controllers\ProgrammeController@viewMemo')->name('programmes.memo');
+Route::get('/programmes/memo/{id}', 'App\Http\Controllers\ProgrammeController@viewMemo')->name('programmes.view_memo_detail');
 //landing page
 Route::get('/landing', [LandingController::class, 'index'])->name('landing.index');
 Route::get('planning-recommendation/print/{id}', function($id) {
@@ -690,18 +689,6 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'file-numbers'], func
     Route::delete('/{id}', [App\Http\Controllers\FileNumberController::class, 'destroy'])->name('file-numbers.destroy');
     Route::get('/count/total', [App\Http\Controllers\FileNumberController::class, 'getCount'])->name('file-numbers.count');
 });
-// Recertification Routes
-Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'recertification'], function () {
-    Route::get('/', function() {
-        return view('recertification.index');
-    })->name('recertification.index');
-
-    Route::get('/application', function() {
-        return view('recertification.application_standalone_clean');
-    })->name('recertification.application');
-
-    Route::post('/application/store', [App\Http\Controllers\RecertificationController::class, 'store'])->name('recertification.application.store');
-});
 // Page Typing Debug Routes (main routes are in apps2.php)
 Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'pagetyping'], function () {
     Route::get('/test-routes', function() {
@@ -782,87 +769,6 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'propertycard'], func
     Route::get('/capture', [App\Http\Controllers\PropertyCardController::class, 'capture'])->name('propertycard.capture');
 });
 
-// Additional Recertification Routes
-Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'recertification'], function () {
-    Route::get('/data', [App\Http\Controllers\RecertificationController::class, 'getApplicationsData'])->name('recertification.data');
-    Route::get('/migrate', [App\Http\Controllers\RecertificationController::class, 'migrate'])->name('recertification.migrate');
-    Route::post('/migrate/upload', [App\Http\Controllers\RecertificationController::class, 'uploadMigration'])->name('recertification.migrate.upload');
-    Route::get('/migrate/template', [App\Http\Controllers\RecertificationController::class, 'downloadTemplate'])->name('recertification.migrate.template');
-    Route::get('/verification-sheet', [App\Http\Controllers\RecertificationController::class, 'verificationSheet'])->name('recertification.verification-sheet');
-    Route::get('/verification-data', [App\Http\Controllers\RecertificationController::class, 'getVerificationData'])->name('recertification.verification-data');
-    Route::get('/{id}/view', [App\Http\Controllers\RecertificationController::class, 'view'])->name('recertification.view');
-    Route::get('/{id}/details', [App\Http\Controllers\RecertificationController::class, 'details'])->name('recertification.details');
-    Route::get('/{id}/edit', [App\Http\Controllers\RecertificationController::class, 'edit'])->name('recertification.edit');
-    Route::put('/{id}', [App\Http\Controllers\RecertificationController::class, 'update'])->name('recertification.update');
-    Route::delete('/{id}', [App\Http\Controllers\RecertificationController::class, 'destroy'])->name('recertification.destroy');
-    
-});
-Route::get('/next-file-number', [App\Http\Controllers\RecertificationController::class, 'getNextFileNumber'])->name('recertification.nextFileNumber');
 
 
-// Certification Management Routes
-Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'recertification'], function () {
-    Route::get('/certification', [App\Http\Controllers\CertificationController::class, 'index'])->name('recertification.certification');
-    Route::get('/certification-data', [App\Http\Controllers\CertificationController::class, 'getCertificationData'])->name('recertification.certification-data');
-    Route::get('/{id}/cor', [App\Http\Controllers\CertificationController::class, 'viewCoR'])->name('recertification.cor');
-    Route::post('/{id}/generate-cofo-front', [App\Http\Controllers\CertificationController::class, 'generateCofoFrontPage'])->name('recertification.generate-cofo-front');
-    Route::get('/{id}/cofo-front-page', [App\Http\Controllers\CertificationController::class, 'viewCofoFrontPage'])->name('recertification.cofo-front-page');
-    Route::get('/{id}/tdp', [App\Http\Controllers\CertificationController::class, 'viewTDP'])->name('recertification.tdp');
-    Route::get('/{id}/cofo', [App\Http\Controllers\CertificationController::class, 'viewCofo'])->name('recertification.cofo');
-});
-
-
-// Additional Recertification Management Routes
-Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'recertification'], function () {
-    // Vetting Sheet Routes
-    Route::get('/vetting-sheet', [App\Http\Controllers\CertificationController::class, 'vettingSheet'])->name('recertification.vetting-sheet');
-    Route::get('/vetting-data', [App\Http\Controllers\CertificationController::class, 'getVettingData'])->name('recertification.vetting-data');
-    
-    // DG's List Routes
-    Route::get('/dg-list', [App\Http\Controllers\CertificationController::class, 'dgList'])->name('recertification.dg-list');
-    Route::get('/dg-data', [App\Http\Controllers\CertificationController::class, 'getDGData'])->name('recertification.dg-data');
-    
-    // Governors List Routes
-    Route::get('/governors-list', [App\Http\Controllers\CertificationController::class, 'governorsList'])->name('recertification.governors-list');
-    Route::get('/governors-data', [App\Http\Controllers\CertificationController::class, 'getGovernorsData'])->name('recertification.governors-data');
-});
-
-
-// Additional Recertification Management Routes
-Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'recertification'], function () {
-    // Vetting Sheet Routes
-    Route::get('/vetting-sheet', [App\Http\Controllers\CertificationController::class, 'vettingSheet'])->name('recertification.vetting-sheet');
-    Route::get('/vetting-data', [App\Http\Controllers\CertificationController::class, 'getVettingData'])->name('recertification.vetting-data');
-    
-    // DG's List Routes
-    Route::get('/dg-list', [App\Http\Controllers\CertificationController::class, 'dgList'])->name('recertification.dg-list');
-    Route::get('/dg-data', [App\Http\Controllers\CertificationController::class, 'getDGData'])->name('recertification.dg-data');
-    
-    // Governors List Routes
-    Route::get('/governors-list', [App\Http\Controllers\CertificationController::class, 'governorsList'])->name('recertification.governors-list');
-    Route::get('/governors-data', [App\Http\Controllers\CertificationController::class, 'getGovernorsData'])->name('recertification.governors-data');
-});
-
-
-// EDMS and GIS Data Capture Routes
-Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'recertification'], function () {
-    // EDMS Routes
-    Route::get('/edms', [App\Http\Controllers\CertificationController::class, 'edms'])->name('recertification.edms');
-    Route::get('/edms-data', [App\Http\Controllers\CertificationController::class, 'getEDMSData'])->name('recertification.edms-data');
-    
-    // GIS Data Capture Routes
-    Route::get('/gis-data-capture', [App\Http\Controllers\CertificationController::class, 'gisDataCapture'])->name('recertification.gis-data-capture');
-    Route::get('/gis-data', [App\Http\Controllers\CertificationController::class, 'getGISData'])->name('recertification.gis-data');
-});
-
-
-
-
-
-// EDMS Routes for Recertification
-Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'edms'], function () {
-    Route::get('/{applicationId}/recertification', [App\Http\Controllers\EdmsController::class, 'recertificationIndex'])->name('edms.recertification.index');
-    Route::get('/{applicationId}/recertification/create-file-indexing', [App\Http\Controllers\EdmsController::class, 'createRecertificationFileIndexing'])->name('edms.recertification.create-file-indexing');
-    Route::post('/{applicationId}/recertification/create-file-indexing', [App\Http\Controllers\EdmsController::class, 'createRecertificationFileIndexing']);
-});
 

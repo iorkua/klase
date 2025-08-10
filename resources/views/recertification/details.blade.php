@@ -139,6 +139,10 @@ tailwind.config = {
                         <i data-lucide="printer" class="h-4 w-4"></i>
                         Print Details
                     </button> -->
+                    <a href="{{ route('recertification.gis-capture', $application->id) }}" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-4 py-2 transition-all cursor-pointer bg-green-600 text-white hover:bg-green-700 gap-2">
+                        <i data-lucide="map" class="h-4 w-4"></i>
+                        GIS Data Capture
+                    </a>
                     <a href="{{ url('/recertification/' . $application->id . '/edit') }}" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-4 py-2 transition-all cursor-pointer bg-blue-600 text-white hover:bg-blue-700 gap-2">
                         <i data-lucide="edit" class="h-4 w-4"></i>
                         Edit Application

@@ -142,6 +142,16 @@
     </div>
   </div>
 
+  <!-- Debug Info -->
+  <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4" x-show="true">
+    <div class="text-sm">
+      <p><strong>Debug Info:</strong></p>
+      <p>Selected File: <span x-text="selectedFile ? selectedFile.name : 'None'"></span></p>
+      <p>Processing: <span x-text="processing"></span></p>
+      <p>Button Should Be: <span x-text="(!selectedFile || processing) ? 'DISABLED' : 'ENABLED'"></span></p>
+    </div>
+  </div>
+
   <!-- Enhanced File Upload Card -->
   <div class="bg-white rounded-lg shadow-lg border border-gray-200">
     <div class="p-6 border-b border-gray-200">
@@ -435,7 +445,19 @@ function aiAssistant() {
         console.log('Processing file for preview...');
         // Clear any previous errors immediately
         this.error = null;
-        // Process the file for preview only (don't auto-extract)
+        
+        // Validate file first
+        if (!this.validateFile(file)) {
+          console.log('File validation failed');
+          return;
+        }
+        
+        // Set the selected file IMMEDIATELY after validation to enable the button
+        this.selectedFile = file;
+        this.fileInfo = `${this.formatFileSize(file.size)} • ${file.type}`;
+        console.log('Selected file set immediately:', this.selectedFile.name);
+        
+        // Process the file for preview (async, but button is already enabled)
         this.processFileForPreview(file);
       } else {
         console.log('No file selected, resetting...');
@@ -444,28 +466,14 @@ function aiAssistant() {
     },
     
     async processFileForPreview(file) {
+      console.log('Starting file preview processing for:', file.name);
+      
+      // Clear previous preview state
+      this.previewUrl = null;
+      this.pdfPages = [];
+      this.currentPdfPageIndex = 0;
+      
       try {
-        console.log('Starting file preview processing for:', file.name);
-        
-        // Validate file first
-        if (!this.validateFile(file)) {
-          return false;
-        }
-        
-        // Clear previous state
-        this.error = null;
-        this.extractedData = null;
-        this.rawText = '';
-        this.previewUrl = null;
-        this.pdfPages = [];
-        this.currentPdfPageIndex = 0;
-        
-        // Set the selected file
-        this.selectedFile = file;
-        
-        // Set file info
-        this.fileInfo = `${this.formatFileSize(file.size)} • ${file.type}`;
-        
         // Process based on file type
         if (file.type.startsWith('image/')) {
           this.fileType = 'image';
@@ -485,9 +493,10 @@ function aiAssistant() {
         console.log('File preview processing completed successfully');
         return true;
       } catch (error) {
-        console.error('Error processing file for preview:', error);
-        this.error = `Failed to process file: ${error.message}`;
-        return false;
+        console.error('Error processing file preview (but file is still selected):', error);
+        // Don't show error for preview issues - file is still valid for AI processing
+        console.log('Preview failed but file remains selected for AI processing');
+        return true; // Return true because file is still valid
       }
     },
     
@@ -601,8 +610,12 @@ function aiAssistant() {
     },
     
     async startAiProcessing() {
-      if (!this.selectedFile) return;
+      if (!this.selectedFile) {
+        console.log('No file selected for AI processing');
+        return;
+      }
       
+      console.log('Starting AI processing for:', this.selectedFile.name);
       this.processing = true;
       this.progress = 0;
       this.currentStageIndex = 0;
@@ -1267,7 +1280,7 @@ if (window.pdfjsLib) {
   window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 }
 
-console.log('🚀 Enhanced AI Property Record Assistant v2 loaded successfully');
+console.log('🚀 Enhanced AI Property Record Assistant FIXED version loaded successfully');
 </script>
 </body>
 </html>

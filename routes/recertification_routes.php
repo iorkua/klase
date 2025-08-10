@@ -2,22 +2,32 @@
 
 use App\Http\Controllers\RecertificationController;
 use App\Http\Controllers\CertificationController;
+use App\Http\Controllers\EdmsController;
 use Illuminate\Support\Facades\Route;
 
 // Recertification Routes
 Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'recertification'], function () {
+    // Main Index and Application Routes
     Route::get('/', [RecertificationController::class, 'index'])->name('recertification.index');
     Route::get('/data', [RecertificationController::class, 'getApplicationsData'])->name('recertification.data');
     Route::get('/application', function() {
         return view('recertification.application_standalone_clean');
     })->name('recertification.application');
     Route::post('/application/store', [RecertificationController::class, 'store'])->name('recertification.application.store');
+    
+    // Migration Routes
     Route::get('/migrate', [RecertificationController::class, 'migrate'])->name('recertification.migrate');
     Route::post('/migrate/upload', [RecertificationController::class, 'uploadMigration'])->name('recertification.migrate.upload');
     Route::get('/migrate/template', [RecertificationController::class, 'downloadTemplate'])->name('recertification.migrate.template');
+    
+    // Verification Routes
     Route::get('/verification-sheet', [RecertificationController::class, 'verificationSheet'])->name('recertification.verification-sheet');
     Route::get('/verification-data', [RecertificationController::class, 'getVerificationData'])->name('recertification.verification-data');
+    
+    // Utility Routes
     Route::get('/next-file-number', [RecertificationController::class, 'getNextFileNumber'])->name('recertification.nextFileNumber');
+    
+    // Individual Record Routes
     Route::get('/{id}/view', [RecertificationController::class, 'view'])->name('recertification.view');
     Route::get('/{id}/details', [RecertificationController::class, 'details'])->name('recertification.details');
     Route::get('/{id}/edit', [RecertificationController::class, 'edit'])->name('recertification.edit');
@@ -32,4 +42,33 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'recertification'], f
     Route::get('/{id}/cofo-front-page', [CertificationController::class, 'viewCofoFrontPage'])->name('recertification.cofo-front-page');
     Route::get('/{id}/tdp', [CertificationController::class, 'viewTDP'])->name('recertification.tdp');
     Route::get('/{id}/cofo', [CertificationController::class, 'viewCofo'])->name('recertification.cofo');
+    
+    // Vetting Sheet Routes
+    Route::get('/vetting-sheet', [CertificationController::class, 'vettingSheet'])->name('recertification.vetting-sheet');
+    Route::get('/vetting-data', [CertificationController::class, 'getVettingData'])->name('recertification.vetting-data');
+    
+    // DG's List Routes
+    Route::get('/dg-list', [CertificationController::class, 'dgList'])->name('recertification.dg-list');
+    Route::get('/dg-data', [CertificationController::class, 'getDGData'])->name('recertification.dg-data');
+    
+    // Governors List Routes
+    Route::get('/governors-list', [CertificationController::class, 'governorsList'])->name('recertification.governors-list');
+    Route::get('/governors-data', [CertificationController::class, 'getGovernorsData'])->name('recertification.governors-data');
+    
+    // EDMS Routes
+    Route::get('/edms', [CertificationController::class, 'edms'])->name('recertification.edms');
+    Route::get('/edms-data', [CertificationController::class, 'getEDMSData'])->name('recertification.edms-data');
+    
+    // GIS Data Capture Routes
+    Route::get('/gis-data-capture', [CertificationController::class, 'gisDataCapture'])->name('recertification.gis-data-capture');
+    Route::get('/gis-data', [CertificationController::class, 'getGISData'])->name('recertification.gis-data');
+    Route::get('/{id}/gis-capture', [RecertificationController::class, 'gisCapture'])->name('recertification.gis-capture');
+    Route::post('/{id}/gis-capture', [RecertificationController::class, 'storeGisCapture'])->name('recertification.gis-capture.store');
+});
+
+// EDMS Routes for Recertification (outside the main group to avoid prefix conflicts)
+Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'edms'], function () {
+    Route::get('/{applicationId}/recertification', [EdmsController::class, 'recertificationIndex'])->name('edms.recertification.index');
+    Route::get('/{applicationId}/recertification/create-file-indexing', [EdmsController::class, 'createRecertificationFileIndexing'])->name('edms.recertification.create-file-indexing');
+    Route::post('/{applicationId}/recertification/create-file-indexing', [EdmsController::class, 'createRecertificationFileIndexing']);
 });

@@ -979,4 +979,181 @@ class RecertificationController extends Controller
             ]);
         }
     }
+
+    /**
+     * Show GIS Data Capture form for a specific recertification application
+     */
+    public function gisCapture($id)
+    {
+        try {
+            $application = DB::connection('sqlsrv')
+                ->table('recertification_applications')
+                ->where('id', $id)
+                ->first();
+
+            if (!$application) {
+                abort(404, 'Application not found');
+            }
+
+            $PageTitle = 'GIS Data Capture - Recertification';
+            $PageDescription = 'Capture GIS data for recertification application ' . ($application->file_number ?? 'N/A');
+
+            return view('recertification.gis_capture_form', compact('PageTitle', 'PageDescription', 'application'));
+
+        } catch (\Exception $e) {
+            Log::error('Error loading GIS capture form', [
+                'id' => $id,
+                'message' => $e->getMessage()
+            ]);
+
+            return redirect()->route('recertification.details', $id)
+                ->with('error', 'Failed to load GIS capture form');
+        }
+    }
+
+    /**
+     * Store GIS data for a recertification application
+     */
+    public function storeGisCapture(Request $request, $id)
+    {
+        try {
+            $application = DB::connection('sqlsrv')
+                ->table('recertification_applications')
+                ->where('id', $id)
+                ->first();
+
+            if (!$application) {
+                return response()->json(['error' => 'Application not found'], 404);
+            }
+
+            // Validate the request data
+            $validated = $request->validate([
+                'gis_type' => 'nullable|string',
+                'mlsfNo' => 'nullable|string',
+                'kangisFileNo' => 'nullable|string',
+                'NewKANGISFileno' => 'nullable|string',
+                'fileno' => 'nullable|string',
+                'plotNo' => 'nullable|string',
+                'blockNo' => 'nullable|string',
+                'approvedPlanNo' => 'nullable|string',
+                'tpPlanNo' => 'nullable|string',
+                'surveyedBy' => 'nullable|string',
+                'drawnBy' => 'nullable|string',
+                'checkedBy' => 'nullable|string',
+                'passedBy' => 'nullable|string',
+                'beaconControlName' => 'nullable|string',
+                'beaconControlX' => 'nullable|string',
+                'beaconControlY' => 'nullable|string',
+                'metricSheetIndex' => 'nullable|string',
+                'metricSheetNo' => 'nullable|string',
+                'imperialSheet' => 'nullable|string',
+                'imperialSheetNo' => 'nullable|string',
+                'layoutName' => 'nullable|string',
+                'districtName' => 'nullable|string',
+                'lgaName' => 'nullable|string',
+                'StateName' => 'nullable|string',
+                'oldTitleSerialNo' => 'nullable|string',
+                'oldTitlePageNo' => 'nullable|string',
+                'oldTitleVolumeNo' => 'nullable|string',
+                'deedsDate' => 'nullable|date',
+                'deedsTime' => 'nullable',
+                'certificateDate' => 'nullable|date',
+                'originalAllottee' => 'nullable|string',
+                'addressOfOriginalAllottee' => 'nullable|string',
+                'titleIssuedYear' => 'nullable|integer',
+                'changeOfOwnership' => 'nullable|string',
+                'reasonForChange' => 'nullable|string',
+                'currentAllottee' => 'nullable|string',
+                'addressOfCurrentAllottee' => 'nullable|string',
+                'titleOfCurrentAllottee' => 'nullable|string',
+                'phoneNo' => 'nullable|string',
+                'emailAddress' => 'nullable|email',
+                'occupation' => 'nullable|string',
+                'nationality' => 'nullable|string',
+                'specifically' => 'nullable|string',
+                'streetName' => 'nullable|string',
+                'houseNo' => 'nullable|string',
+                'houseType' => 'nullable|string',
+                'tenancy' => 'nullable|string',
+                'areaInHectares' => 'nullable|numeric',
+                'SurveyorGeneralSignatureDate' => 'nullable|date',
+                'CofOSerialNo' => 'nullable|string',
+                'CompanyRCNo' => 'nullable|string',
+                'transactionDocument' => 'nullable|file',
+                'passportPhoto' => 'nullable|file',
+                'nationalId' => 'nullable|file',
+                'internationalPassport' => 'nullable|file',
+                'businessRegCert' => 'nullable|file',
+                'formCO7AndCO4' => 'nullable|file',
+                'certOfIncorporation' => 'nullable|file',
+                'memorandumAndArticle' => 'nullable|file',
+                'letterOfAdmin' => 'nullable|file',
+                'courtAffidavit' => 'nullable|file',
+                'policeReport' => 'nullable|file',
+                'newspaperAdvert' => 'nullable|file',
+                'picture' => 'nullable|file',
+                'SurveyPlan' => 'nullable|file',
+                'recertification_application_id' => 'nullable|integer',
+            ]);
+
+            // Prepare data for GIS capture
+            $data = $validated;
+            
+            // Set specific values for recertification
+            $data['gis_type'] = 'recertification';
+            $data['mlsfNo'] = $application->file_number;
+            $data['recertification_application_id'] = $id;
+
+            // Handle file uploads
+            $fileFields = [
+                'transactionDocument', 'passportPhoto', 'nationalId', 'internationalPassport',
+                'businessRegCert', 'formCO7AndCO4', 'certOfIncorporation', 'memorandumAndArticle',
+                'letterOfAdmin', 'courtAffidavit', 'policeReport', 'newspaperAdvert', 'picture', 'SurveyPlan'
+            ];
+
+            foreach ($fileFields as $field) {
+                if ($request->hasFile($field) && $request->file($field)->isValid()) {
+                    $path = $request->file($field)->store('gis_documents', 'public');
+                    $data[$field] = $path;
+                } else {
+                    unset($data[$field]);
+                }
+            }
+
+            // Add metadata
+            $data['created_by'] = auth()->id();
+            $data['created_at'] = now();
+            $data['updated_at'] = now();
+
+            // Store in GIS database
+            $gisId = DB::connection('sqlsrv')->table('gisCapture')->insertGetId($data);
+
+            // Update recertification application status
+            DB::connection('sqlsrv')->table('recertification_applications')
+                ->where('id', $id)
+                ->update([
+                    'gis_status' => 'captured',
+                    'gis_captured_date' => now(),
+                    'updated_at' => now()
+                ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'GIS data captured successfully!',
+                'gis_id' => $gisId
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('GIS Data Capture Error for Recertification', [
+                'application_id' => $id,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to capture GIS data. Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
