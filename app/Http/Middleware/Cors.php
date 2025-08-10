@@ -16,9 +16,18 @@ class Cors
      */
     public function handle(Request $request, Closure $next)
     {
-        return $next($request)
-            ->header('Access-Control-Allow-Origin', '*')
-            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-            ->header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, X-Token-Auth, Authorization');
+        // Handle preflight requests and ensure compatibility with StreamedResponse
+        if ($request->getMethod() === 'OPTIONS') {
+            $response = response('', 204);
+        } else {
+            $response = $next($request);
+        }
+
+        // Set CORS headers via the headers bag (works for all response types, including StreamedResponse)
+        $response->headers->set('Access-Control-Allow-Origin', '*');
+        $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        $response->headers->set('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, X-Token-Auth, Authorization');
+
+        return $response;
     }
 }

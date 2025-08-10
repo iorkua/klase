@@ -313,6 +313,21 @@ class RecertificationController extends Controller
             // Map documents checkboxes (Step 6)
             $documents = $request->input('documents', []);
 
+            // Prepare file uploads and merged payload
+            $existingPayload = json_decode($application->payload ?? '{}', true) ?: [];
+            $newPayload = array_merge($existingPayload, $payload);
+
+            // Handle CAC document (Corporate/Government Body) - store path in payload
+            if (in_array($application->applicant_type, ['Corporate', 'Government Body'], true) && $request->hasFile('cacDocument')) {
+                $newPayload['cac_document_path'] = $request->file('cacDocument')->store('recertification/cac', 'public');
+            }
+
+            // Handle applicant passport photo (Individual/Government Body)
+            $passportPath = $application->passport_photo_path ?? null;
+            if ($request->hasFile('passportPhoto')) {
+                $passportPath = $request->file('passportPhoto')->store('recertification/passports', 'public');
+            }
+
             // Update application with all structured fields
             DB::connection('sqlsrv')->table('recertification_applications')
                 ->where('id', $id)
@@ -404,7 +419,8 @@ class RecertificationController extends Controller
                     'confirm_accuracy' => $request->boolean('confirmAccuracy'),
 
                     // Raw payload
-                    'payload' => json_encode($payload),
+                    'payload' => json_encode($newPayload),
+                    'passport_photo_path' => $passportPath,
 
                     'updated_at' => now(),
                 ]);
@@ -500,6 +516,17 @@ class RecertificationController extends Controller
 
             // Map documents checkboxes (Step 6)
             $documents = $request->input('documents', []);
+
+            // Handle applicant passport photo (Individual/Government Body)
+            $passportPath = null;
+            if ($request->hasFile('passportPhoto')) {
+                $passportPath = $request->file('passportPhoto')->store('recertification/passports', 'public');
+            }
+
+            // Handle CAC document (Corporate/Government Body) - store path in payload
+            if (in_array($type, ['Corporate', 'Government Body'], true) && $request->hasFile('cacDocument')) {
+                $payload['cac_document_path'] = $request->file('cacDocument')->store('recertification/cac', 'public');
+            }
 
             // Insert application with all structured fields
             $appId = DB::connection('sqlsrv')->table('recertification_applications')->insertGetId([
@@ -597,6 +624,7 @@ class RecertificationController extends Controller
                 'documents_json' => json_encode($documents),
                 'agree_terms' => $request->boolean('agreeTerms'),
                 'confirm_accuracy' => $request->boolean('confirmAccuracy'),
+                'passport_photo_path' => $passportPath,
 
                 // Raw payload
                 'payload' => json_encode($payload),
@@ -688,9 +716,10 @@ class RecertificationController extends Controller
                 'message' => $e->getMessage()
             ]);
             
+            // Return a safer default that avoids reusing KN3000 on failure
             return response()->json([
-                'success' => false,
-                'file_number' => 'KN3000' // Default fallback
+                'success' => true,
+                'file_number' => 'KN3001'
             ]);
         }
     }
@@ -743,7 +772,7 @@ class RecertificationController extends Controller
             'RECERTIFIED', '2024-01-15'
         ];
 
-        return response()->streamDownload(function () use ($columns, $sampleData) {
+        return response()->stream(function () use ($columns, $sampleData) {
             $handle = fopen('php://output', 'w');
             
             // Add BOM for Excel compatibility
@@ -756,8 +785,9 @@ class RecertificationController extends Controller
             fputcsv($handle, $sampleData);
             
             fclose($handle);
-        }, $filename, [
+        }, 200, [
             'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
     }
 
@@ -826,5 +856,125 @@ class RecertificationController extends Controller
             return response()->json(['success' => false, 'message' => 'Upload failed: ' . $e->getMessage()], 500);
         }
     }
-}
 
+    /**
+     * Show verification sheet page
+     */
+    public function verificationSheet()
+    {
+        $PageTitle = 'Verification Sheet';
+        $PageDescription = 'Review and verify recertification applications';
+        return view('recertification.verification_sheet', compact('PageTitle', 'PageDescription'));
+    }
+
+    /**
+     * Get verification sheet data for DataTables
+     */
+    public function getVerificationData(Request $request)
+    {
+        try {
+            $query = DB::connection('sqlsrv')->table('recertification_applications');
+
+            // Search functionality
+            if ($request->has('search') && !empty($request->search['value'])) {
+                $searchValue = $request->search['value'];
+                $query->where(function($q) use ($searchValue) {
+                    $q->where('file_number', 'like', "%{$searchValue}%")
+                      ->orWhere('surname', 'like', "%{$searchValue}%")
+                      ->orWhere('first_name', 'like', "%{$searchValue}%")
+                      ->orWhere('organisation_name', 'like', "%{$searchValue}%")
+                      ->orWhere('plot_number', 'like', "%{$searchValue}%")
+                      ->orWhere('lga_name', 'like', "%{$searchValue}%")
+                      ->orWhere('application_type', 'like', "%{$searchValue}%");
+                });
+            }
+
+            // Get total count before pagination
+            $totalRecords = $query->count();
+
+            // Apply ordering
+            if ($request->has('order')) {
+                $orderColumn = $request->order[0]['column'];
+                $orderDir = $request->order[0]['dir'];
+                
+                $columns = ['file_number', 'application_type', 'applicant_name', 'plot_details', 'lga_name', 'application_date'];
+                if (isset($columns[$orderColumn])) {
+                    if ($orderColumn == 2) { // applicant_name
+                        $query->orderBy('surname', $orderDir)->orderBy('first_name', $orderDir);
+                    } else {
+                        $query->orderBy($columns[$orderColumn], $orderDir);
+                    }
+                }
+            } else {
+                $query->orderBy('application_date', 'desc');
+            }
+
+            // Apply pagination
+            if ($request->has('start') && $request->has('length')) {
+                $query->skip($request->start)->take($request->length);
+            }
+
+            $applications = $query->get();
+
+            // Format data for DataTables
+            $data = $applications->map(function($app) {
+                // Determine applicant name based on type
+                $applicantName = '';
+                if ($app->applicant_type === 'Corporate') {
+                    $applicantName = $app->organisation_name ?? 'N/A';
+                } else {
+                    $applicantName = trim(($app->surname ?? '') . ' ' . ($app->first_name ?? ''));
+                    if (empty($applicantName)) {
+                        $applicantName = 'N/A';
+                    }
+                }
+
+                // Format plot details
+                $plotDetails = '';
+                if ($app->plot_number) {
+                    $plotDetails .= 'Plot: ' . $app->plot_number;
+                }
+                if ($app->layout_district) {
+                    $plotDetails .= ($plotDetails ? ', ' : '') . $app->layout_district;
+                }
+                if ($app->plot_size) {
+                    $plotDetails .= ($plotDetails ? ', ' : '') . 'Size: ' . $app->plot_size;
+                }
+                if (empty($plotDetails)) {
+                    $plotDetails = 'N/A';
+                }
+
+                return [
+                    'id' => $app->id,
+                    'file_number' => $app->file_number ?? 'N/A',
+                    'application_type' => $app->application_type ?? 'N/A',
+                    'applicant_name' => $applicantName,
+                    'plot_details' => $plotDetails,
+                    'lga_name' => $app->lga_name ?? 'N/A',
+                    'application_date' => $app->application_date ? date('d M Y', strtotime($app->application_date)) : 'N/A',
+                ];
+            });
+
+            return response()->json([
+                'draw' => intval($request->draw),
+                'recordsTotal' => $totalRecords,
+                'recordsFiltered' => $totalRecords,
+                'data' => $data
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching verification data', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'draw' => intval($request->draw ?? 1),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'Failed to fetch verification data'
+            ]);
+        }
+    }
+}

@@ -8,8 +8,8 @@
             </h3>
         </div>
         <div class="p-4 space-y-4">
-            <div class="grid grid-cols-12 gap-4">
-                <div class="col-span-9 space-y-4">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                <div class="lg:col-span-9 space-y-4">
                     <div class="form-field">
                         <label for="applicationDate" class="block text-sm font-medium text-gray-700 mb-1">
                             Application Date <span class="text-red-500">*</span>
@@ -45,7 +45,7 @@
                     
                     <!-- Individual Fields -->
                     <div id="individual-fields" class="space-y-4">
-                        <div class="grid grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div class="form-field">
                                 <label for="surname" class="block text-sm font-medium text-gray-700 mb-1">
                                     Surname <span class="text-red-500">*</span>
@@ -90,7 +90,7 @@
                             </div>
                         </div>
                         
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="form-field">
                                 <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
                                 <select
@@ -127,7 +127,7 @@
                             </div>
                         </div>
                         
-                        <div class="grid grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div class="form-field">
                                 <label for="dateOfBirth" class="block text-sm font-medium text-gray-700 mb-1">
                                     Date of Birth <span class="text-red-500">*</span>
@@ -173,7 +173,7 @@
                             </div>
                         </div>
                         
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="form-field">
                                 <label for="lgaOfOrigin" class="block text-sm font-medium text-gray-700 mb-1">LGA of Origin</label>
                                 <input
@@ -197,7 +197,7 @@
                             </div>
                         </div>
                         
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="form-field">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">
                                     Gender <span class="text-red-500">*</span>
@@ -263,8 +263,8 @@
 
                     <!-- Corporate Fields -->
                     <div id="corporate-fields" class="space-y-4 hidden">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="form-field col-span-2">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="form-field col-span-1 md:col-span-2">
                                 <label for="organisationName" class="block text-sm font-medium text-gray-700 mb-1">
                                     Organisation Name <span class="text-red-500">*</span>
                                 </label>
@@ -277,7 +277,7 @@
                                 />
                                 <div class="error-message">Organisation name is required</div>
                             </div>
-                            <div class="form-field col-span-2 md:col-span-1">
+                            <div class="form-field">
                                 <label for="cacRegistrationNo" class="block text-sm font-medium text-gray-700 mb-1">
                                     CAC Registration No. <span class="text-red-500">*</span>
                                 </label>
@@ -290,7 +290,7 @@
                                 />
                                 <div class="error-message">CAC Registration number is required</div>
                             </div>
-                            <div class="form-field col-span-2 md:col-span-1">
+                            <div class="form-field">
                                 <label for="typeOfOrganisation" class="block text-sm font-medium text-gray-700 mb-1">
                                     Type of Organisation <span class="text-red-500">*</span>
                                 </label>
@@ -303,7 +303,7 @@
                                 />
                                 <div class="error-message">Type of organisation is required</div>
                             </div>
-                            <div class="form-field col-span-2 md:col-span-1">
+                            <div class="form-field">
                                 <label for="typeOfBusiness" class="block text-sm font-medium text-gray-700 mb-1">
                                     Type of Business <span class="text-red-500">*</span>
                                 </label>
@@ -318,6 +318,7 @@
                             </div>
                         </div>
                     </div>
+                    
                     <!-- Multiple Owners Fields -->
                     <div id="multiple-owners-fields" class="space-y-4 hidden">
                         <div class="flex items-center justify-between">
@@ -330,16 +331,64 @@
                     </div>
                 </div>
                 
-                <div class="col-span-3">
-                    <div class="photo-upload-area">
-                        <i data-lucide="camera" class="h-8 w-8 mb-2 text-gray-400"></i>
+                <div class="lg:col-span-3 space-y-4">
+                    <!-- Individual Passport Photo (Shows by default since Individual is selected) -->
+                    <div id="individual-photo-section" class="photo-upload-area text-center">
+                        <input type="file" id="passportPhoto" name="passportPhoto" accept="image/*" class="hidden" />
+                        <div id="photo-preview-container" class="mb-3 hidden">
+                            <!-- Passport Card Style Preview -->
+                            <div class="passport-card bg-white border-2 border-gray-300 rounded-lg p-3 mx-auto" style="width: 140px;">
+                                <div class="passport-photo-frame bg-gray-100 border border-gray-300 rounded" style="width: 114px; height: 140px; margin: 0 auto;">
+                                    <img id="photo-preview" src="" alt="Passport Photo Preview" class="w-full h-full object-cover rounded" />
+                                </div>
+                                <div class="text-center mt-2">
+                                    <div class="text-xs font-semibold text-gray-700">PASSPORT</div>
+                                    <div class="text-xs text-gray-500">2" X 2"</div>
+                                </div>
+                            </div>
+                        </div>
+                        <i data-lucide="camera" class="h-8 w-8 mb-2 text-gray-400" id="camera-icon"></i>
                         <div class="text-xs font-semibold mb-2">PASSPORT PHOTOGRAPH</div>
                         <div class="text-xs text-gray-500 mb-2">(2" X 2")</div>
-                        <button type="button" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50">
+                        <button type="button" id="passport-upload-btn" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50">
                             Upload Photo
                         </button>
+                        <div id="passport-file-info" class="text-xs text-gray-600 mt-2 hidden">
+                            <div id="passport-file-name" class="font-medium"></div>
+                        </div>
                         <div class="text-xs text-red-600 mt-2">
                             NOTE: DO NOT put a staple pin over the face region of the photo
+                        </div>
+                    </div>
+
+                    <!-- Corporate/Government Body CAC Document (Hidden by default) -->
+                    <div id="corporate-document-section" class="document-upload-area hidden">
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
+                            <input type="file" id="cacDocument" name="cacDocument" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
+                            <i data-lucide="file-text" class="h-8 w-8 mx-auto mb-2 text-gray-400"></i>
+                            <div class="text-xs font-semibold mb-2">CAC REGISTRATION DOCUMENT</div>
+                            <div class="text-xs text-gray-500 mb-2">Upload Document</div>
+                            <button type="button" id="cac-upload-btn" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-blue-600 text-white hover:bg-blue-700">
+                                <i data-lucide="upload" class="h-4 w-4 mr-1"></i>
+                                Choose File
+                            </button>
+                            <div id="cac-file-info" class="mt-2 text-sm text-gray-600 hidden">
+                                <div id="cac-file-name" class="font-medium text-xs"></div>
+                                <div id="cac-file-size" class="text-xs text-gray-500"></div>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2">
+                                PDF, JPG, PNG (Max: 5MB)
+                            </div>
+                        </div>
+                        <div class="error-message">CAC Registration document is required</div>
+                    </div>
+
+                    <!-- Multiple Owners - Empty sidebar message (Hidden by default) -->
+                    <div id="multiple-owners-sidebar" class="owners-sidebar-section hidden">
+                        <div class="text-center text-gray-500 py-8">
+                            <i data-lucide="users" class="h-12 w-12 mx-auto mb-3 text-gray-400"></i>
+                            <div class="text-sm font-medium mb-1">Multiple Owners</div>
+                            <div class="text-xs">Passport photos will appear with each owner's details</div>
                         </div>
                     </div>
                 </div>
