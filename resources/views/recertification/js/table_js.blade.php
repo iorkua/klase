@@ -32,7 +32,7 @@ function loadApplicationsData() {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="7" class="text-center py-8">
+                <td colspan="8" class="text-center py-8">
                     <div class="loading-spinner mx-auto mb-2"></div>
                     <p class="text-gray-600">Loading applications...</p>
                 </td>
@@ -78,7 +78,7 @@ function loadApplicationsData() {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="text-center py-8">
+                    <td colspan="8" class="text-center py-8">
                         <i data-lucide="alert-circle" class="h-8 w-8 text-red-500 mx-auto mb-2"></i>
                         <p class="text-red-600">Failed to load applications</p>
                         <button onclick="loadApplicationsData()" class="mt-2 text-blue-600 hover:text-blue-800">
@@ -157,6 +157,9 @@ function renderApplicationsTable(data) {
                     <div class="text-gray-900">${app.created_at || 'N/A'}</div>
                 </td>
                 <td class="p-4">
+                    ${renderAcknowledgementBadge(app.acknowledgement)}
+                </td>
+                <td class="p-4">
                     <div class="relative">
                         <button 
                             onclick="toggleActionMenu('${actionMenuId}')"
@@ -184,11 +187,11 @@ function renderApplicationsTable(data) {
                                     <i data-lucide="camera" class="h-4 w-4"></i>
                                     Capture Extant CofO Details
                                 </button>
-                                <button onclick="generateAcknowledgement(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2">
+                                <button data-action="generate-ack" data-app-id="${app.id}" onclick="generateAcknowledgement(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2 ${ (app.acknowledgement && app.acknowledgement.toLowerCase()==='generated') ? 'opacity-50 cursor-not-allowed' : '' }" ${ (app.acknowledgement && app.acknowledgement.toLowerCase()==='generated') ? 'disabled' : ''}>
                                     <i data-lucide="file-plus" class="h-4 w-4"></i>
                                     Generate Acknowledgement
                                 </button>
-                                <button onclick="viewAcknowledgement(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2">
+                                <button data-action="view-ack" data-app-id="${app.id}" onclick="viewAcknowledgement(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2 ${ !(app.acknowledgement && app.acknowledgement.toLowerCase()==='generated') ? 'opacity-50 cursor-not-allowed' : '' }" ${ !(app.acknowledgement && app.acknowledgement.toLowerCase()==='generated') ? 'disabled' : ''}>
                                     <i data-lucide="file-text" class="h-4 w-4"></i>
                                     View Acknowledgement
                                 </button>
@@ -285,52 +288,52 @@ function setupModalHandlers() {
 function toggleActionMenu(menuId) {
     const menu = document.getElementById(menuId);
     if (!menu) return;
-    
+
     // Close all other menus
     document.querySelectorAll('[id^="action-menu-"]').forEach(otherMenu => {
         if (otherMenu.id !== menuId) {
             otherMenu.classList.add('hidden');
         }
     });
-    
-    // Toggle current menu
-    menu.classList.toggle('hidden');
-    
-    // Position menu correctly
-    if (!menu.classList.contains('hidden')) {
-        const button = menu.previousElementSibling;
-        const buttonRect = button.getBoundingClientRect();
-        const menuRect = menu.getBoundingClientRect();
-        const viewportHeight = window.innerHeight;
-        const viewportWidth = window.innerWidth;
-        
-        // Reset positioning
-        menu.style.position = 'fixed';
-        menu.style.top = '';
-        menu.style.bottom = '';
-        menu.style.left = '';
-        menu.style.right = '';
-        
-        // Calculate position
-        let top = buttonRect.bottom + 4;
-        let left = buttonRect.right - 224; // 224px = w-56 (14rem * 16px)
-        
-        // Adjust if menu goes outside viewport
-        if (top + menuRect.height > viewportHeight) {
-            top = buttonRect.top - menuRect.height - 4;
-        }
-        
-        if (left < 8) {
-            left = buttonRect.left;
-        }
-        
-        if (left + 224 > viewportWidth) {
-            left = viewportWidth - 224 - 8;
-        }
-        
-        menu.style.top = `${top}px`;
-        menu.style.left = `${left}px`;
-        menu.style.zIndex = '1000';
+
+    const button = menu.previousElementSibling;
+    const rect = button.getBoundingClientRect();
+
+    // Base styles for responsive, scrollable dropdown
+    menu.style.position = 'fixed';
+    menu.style.maxHeight = '70vh';
+    menu.style.overflowY = 'auto';
+    menu.style.zIndex = '9999';
+
+    // Toggle show/hide with measurement
+    const wasHidden = menu.classList.contains('hidden');
+    if (wasHidden) {
+        menu.classList.remove('hidden');
+        menu.style.visibility = 'hidden';
+    }
+
+    // Default: open below the button, right-aligned
+    const right = window.innerWidth - rect.right;
+    menu.style.right = right + 'px';
+    menu.style.left = 'auto';
+    menu.style.top = (rect.bottom + 4) + 'px';
+    menu.style.bottom = 'auto';
+
+    // Measure and adjust if overflowing viewport bottom
+    const margin = 8;
+    const menuRect = menu.getBoundingClientRect();
+    if (menuRect.bottom + margin > window.innerHeight) {
+        // Open upwards
+        const bottom = window.innerHeight - rect.top + 4;
+        menu.style.top = 'auto';
+        menu.style.bottom = bottom + 'px';
+    }
+
+    if (wasHidden) {
+        menu.style.visibility = 'visible';
+    } else {
+        // If already visible, hide it
+        menu.classList.add('hidden');
     }
 }
 
@@ -426,19 +429,105 @@ function generateAcknowledgement(id) {
     document.querySelectorAll('[id^="action-menu-"]').forEach(menu => {
         menu.classList.add('hidden');
     });
-    
-    showToast('Generate Acknowledgement feature coming soon', 'info');
+
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: 'Generate Acknowledgement?',
+            text: 'This will mark the acknowledgement as generated for this application.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Generate',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showToast('Generating acknowledgement...', 'info');
+                fetch(`/recertification/${id}/acknowledgement/generate`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('Acknowledgement generated', 'success');
+                        const genBtn = document.querySelector(`button[data-action="generate-ack"][data-app-id="${id}"]`);
+                        const viewBtn = document.querySelector(`button[data-action="view-ack"][data-app-id="${id}"]`);
+                        if (genBtn) { genBtn.disabled = true; genBtn.classList.add('opacity-50','cursor-not-allowed'); }
+                        if (viewBtn) { viewBtn.disabled = false; viewBtn.classList.remove('opacity-50','cursor-not-allowed'); }
+                        loadApplicationsData();
+                        const url = data.view_url || `/recertification/${id}/acknowledgement`;
+                        window.open(url, '_blank');
+                    } else {
+                        showToast(data.message || 'Failed to generate acknowledgement', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error generating acknowledgement:', error);
+                    showToast('Failed to generate acknowledgement', 'error');
+                });
+            }
+        });
+    } else {
+        // Fallback without SweetAlert
+        if (confirm('Generate acknowledgement for this application?')) {
+            showToast('Generating acknowledgement...', 'info');
+            fetch(`/recertification/${id}/acknowledgement/generate`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    const genBtn = document.querySelector(`button[data-action="generate-ack"][data-app-id="${id}"]`);
+                    const viewBtn = document.querySelector(`button[data-action="view-ack"][data-app-id="${id}"]`);
+                    if (genBtn) { genBtn.disabled = true; genBtn.classList.add('opacity-50','cursor-not-allowed'); }
+                    if (viewBtn) { viewBtn.disabled = false; viewBtn.classList.remove('opacity-50','cursor-not-allowed'); }
+                    loadApplicationsData();
+                    window.open(data.view_url || `/recertification/${id}/acknowledgement`, '_blank');
+                } else {
+                    showToast(data.message || 'Failed to generate acknowledgement', 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('Failed to generate acknowledgement', 'error');
+            });
+        }
+    }
 }
 
 function viewAcknowledgement(id) {
-    console.log('Viewing acknowledgement for application:', id);
-    
-    // Close action menu
-    document.querySelectorAll('[id^="action-menu-"]').forEach(menu => {
-        menu.classList.add('hidden');
-    });
-    
-    showToast('View Acknowledgement feature coming soon', 'info');
+console.log('Viewing acknowledgement for application:', id);
+
+// Close action menu
+document.querySelectorAll('[id^="action-menu-"]').forEach(menu => {
+menu.classList.add('hidden');
+});
+
+// Guard: only allow view when generated
+const app = applicationsData.find(a => a.id == id);
+const isGenerated = app && app.acknowledgement && app.acknowledgement.toLowerCase() === 'generated';
+if (!isGenerated) {
+if (typeof Swal !== 'undefined') {
+Swal.fire({
+icon: 'warning',
+title: 'Acknowledgement not generated',
+text: 'Please generate the acknowledgement first.'
+});
+} else {
+alert('Acknowledgement not generated. Please generate first.');
+}
+return;
+}
+
+window.open(`/recertification/${id}/acknowledgement`, '_blank');
 }
 
 // Modal Functions
@@ -505,6 +594,14 @@ function removeToast(toastId) {
             toast.remove();
         }, 300);
     }
+}
+
+function renderAcknowledgementBadge(status) {
+    const s = (status || '').toLowerCase();
+    if (s === 'generated') {
+        return '<span class="badge badge-success">Generated</span>';
+    }
+    return '<span class="badge badge-default">Pending</span>';
 }
 
 // Make functions available globally

@@ -1,8 +1,8 @@
 <div class="p-6 bg-white border-b border-gray-200">
   <div class="flex justify-between items-center">
     <div>
-      <h1 class="text-2xl font-bold">{{ $PageTitle ?? 'Confirmation Of Instrument Registration' }}</h1>
-      <p class="text-gray-500">{{ $PageDescription ?? 'Default page description' }}</p>
+      <h1 class="text-2xl font-bold">{{ $PageTitle ?? '' }}</h1>
+      <p class="text-gray-500">{{ $PageDescription ?? '' }}</p>
     </div>
     <div class="flex items-center space-x-4">
       <!-- Back Button -->

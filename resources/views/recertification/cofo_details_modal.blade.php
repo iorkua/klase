@@ -6,11 +6,12 @@
                 <i data-lucide="x" class="w-6 h-6"></i>
             </button>
         </div>
-        
+         
         <div class="px-6 py-4">
             <form id="cofoDetailsForm" enctype="application/x-www-form-urlencoded">
                 @csrf
                 <input type="hidden" id="cofoApplicationId" name="application_id" value="">
+                <input type="hidden" id="cofoFileNo" name="fileno" value="">
                 
                 <!-- Instrument Details Section -->
                 <div class="mb-6">
@@ -131,6 +132,7 @@
     function openCofoDetailsModal(applicationId, fileNo, npFileNo, applicantType, applicantData, propertyData) {
         // Set the application id
         document.getElementById('cofoApplicationId').value = applicationId;
+        document.getElementById('cofoFileNo').value = fileNo || '';
         
         // Process applicant name based on type
         let applicantName = '';
@@ -241,8 +243,14 @@
         submitBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Saving...</span>';
         submitBtn.disabled = true;
         
-        // Submit via AJAX
-        fetch('/sectionaltitling/save-cofo-details', {
+        // Map transaction date/time to deeds_date/time for PrimaryActionsController
+        const tDate = document.getElementById('cofoTransactionDate').value;
+        const tTime = document.getElementById('cofoTransactionTime').value;
+        if (tDate) urlEncodedData.append('deeds_date', tDate);
+        if (tTime) urlEncodedData.append('deeds_time', tTime);
+
+        // Submit via AJAX to PrimaryActionsController
+        fetch('/recertification/cofo/store-deeds', {
             method: 'POST',
             body: urlEncodedData,
             headers: {

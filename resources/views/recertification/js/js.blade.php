@@ -35,7 +35,7 @@ function loadApplicationsData() {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="7" class="text-center py-8">
+                <td colspan="8" class="text-center py-8">
                     <div class="loading-spinner mx-auto mb-2"></div>
                     <p class="text-gray-600">Loading applications...</p>
                 </td>
@@ -81,7 +81,7 @@ function loadApplicationsData() {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="text-center py-8">
+                    <td colspan="8" class="text-center py-8">
                         <i data-lucide="alert-circle" class="h-8 w-8 text-red-500 mx-auto mb-2"></i>
                         <p class="text-red-600">Failed to load applications</p>
                         <button onclick="loadApplicationsData()" class="mt-2 text-blue-600 hover:text-blue-800">
@@ -160,6 +160,9 @@ function renderApplicationsTable(data) {
                     <div class="text-gray-900">${app.created_at || 'N/A'}</div>
                 </td>
                 <td class="p-4">
+                    ${renderAcknowledgementBadge(app.acknowledgement)}
+                </td>
+                <td class="p-4">
                     <div class="relative dropdown-container">
                         <button 
                             onclick="toggleActionMenu('${actionMenuId}')"
@@ -183,15 +186,15 @@ function renderApplicationsTable(data) {
                                     Delete Application
                                 </button>
                                 <hr class="my-1">
-                                <button onclick="captureExtantCofo(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2">
+                                <button onclick="captureExtantCofo(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2 ${ app.cofo_exists ? 'opacity-50 cursor-not-allowed' : '' }" ${ app.cofo_exists ? 'disabled' : '' }>
                                     <i data-lucide="camera" class="h-4 w-4"></i>
                                     Capture Extant CofO Details
                                 </button>
-                                <button onclick="generateAcknowledgement(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2">
+                                <button data-action="generate-ack" data-app-id="${app.id}" onclick="generateAcknowledgement(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2 ${ (app.acknowledgement && app.acknowledgement.toLowerCase()==='generated') ? 'opacity-50 cursor-not-allowed' : '' }" ${ (app.acknowledgement && app.acknowledgement.toLowerCase()==='generated') ? 'disabled' : ''}>
                                     <i data-lucide="file-plus" class="h-4 w-4"></i>
                                     Generate Acknowledgement
                                 </button>
-                                <button onclick="viewAcknowledgement(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2">
+                                <button data-action="view-ack" data-app-id="${app.id}" onclick="viewAcknowledgement(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2 ${ !(app.acknowledgement && app.acknowledgement.toLowerCase()==='generated') ? 'opacity-50 cursor-not-allowed' : '' }" ${ !(app.acknowledgement && app.acknowledgement.toLowerCase()==='generated') ? 'disabled' : ''}>
                                     <i data-lucide="file-text" class="h-4 w-4"></i>
                                     View Acknowledgement
                                 </button>
@@ -331,27 +334,53 @@ function toggleOcrMode(enabled) {
 function toggleActionMenu(menuId) {
     const menu = document.getElementById(menuId);
     if (!menu) return;
-    
+
     // Close all other menus
     document.querySelectorAll('[id^="action-menu-"]').forEach(otherMenu => {
         if (otherMenu.id !== menuId) {
             otherMenu.classList.add('hidden');
         }
     });
-    
-    // Calculate position for fixed positioning
+
     const button = menu.previousElementSibling;
     const rect = button.getBoundingClientRect();
-    
-    // Position the menu using fixed positioning to escape table overflow
+
+    // Base styles for responsive, scrollable dropdown
     menu.style.position = 'fixed';
-    menu.style.top = (rect.bottom + 4) + 'px';
-    menu.style.right = (window.innerWidth - rect.right) + 'px';
-    menu.style.left = 'auto';
+    menu.style.maxHeight = '70vh';
+    menu.style.overflowY = 'auto';
     menu.style.zIndex = '9999';
-    
-    // Toggle current menu
-    menu.classList.toggle('hidden');
+
+    // Toggle show/hide with measurement
+    const wasHidden = menu.classList.contains('hidden');
+    if (wasHidden) {
+        menu.classList.remove('hidden');
+        menu.style.visibility = 'hidden';
+    }
+
+    // Default: open below the button, right-aligned
+    const right = window.innerWidth - rect.right;
+    menu.style.right = right + 'px';
+    menu.style.left = 'auto';
+    menu.style.top = (rect.bottom + 4) + 'px';
+    menu.style.bottom = 'auto';
+
+    // Measure and adjust if overflowing viewport bottom
+    const margin = 8;
+    const menuRect = menu.getBoundingClientRect();
+    if (menuRect.bottom + margin > window.innerHeight) {
+        // Open upwards
+        const bottom = window.innerHeight - rect.top + 4;
+        menu.style.top = 'auto';
+        menu.style.bottom = bottom + 'px';
+    }
+
+    if (wasHidden) {
+        menu.style.visibility = 'visible';
+    } else {
+        // If already visible, hide it
+        menu.classList.add('hidden');
+    }
 }
 
 // Application Action Functions
@@ -430,24 +459,70 @@ function deleteApplication(id) {
 
 function captureExtantCofo(id) {
     console.log('Capturing Extant CofO for application:', id);
-    
+
     // Close action menu
     document.querySelectorAll('[id^="action-menu-"]').forEach(menu => {
         menu.classList.add('hidden');
     });
-    
-    showToast('Capture Extant CofO Details feature coming soon', 'info');
+
+    // Find the application data for the row
+    const app = applicationsData.find(a => a.id == id);
+    if (!app) {
+        showToast('Application data not found', 'error');
+        return;
+    }
+
+    // Build applicant info
+    let applicantType = (app.applicant_type || '').toLowerCase();
+    let applicantData = null;
+    if (applicantType === 'corporate') {
+        applicantData = { corporate_name: app.applicant_name };
+    } else if (applicantType === 'multiple owners' || applicantType === 'multiple') {
+        applicantData = [];
+    } else {
+        // individual default: split by space to mimic title/first/middle/surname best effort
+        const parts = (app.applicant_name || '').split(' ');
+        applicantData = { applicant_title: parts[0] || '', first_name: parts[1] || '', middle_name: parts[2] || '', surname: parts.slice(3).join(' ') };
+    }
+
+    // Build property info
+    const prop = {
+        property_house_no: '',
+        property_street_name: '',
+        property_district: (app.plot_details || '').replace(/^Plot:\s*/i, ''),
+        property_lga: app.lga_name || '',
+        property_state: 'Kano',
+        land_use: ''
+    };
+
+    // If CofO exists, do not open modal
+    if (app.cofo_exists) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({ icon: 'info', title: 'Already captured', text: 'Extant CofO has already been captured for this file.' });
+        } else {
+            alert('Extant CofO already captured for this file.');
+        }
+        return;
+    }
+
+    // Open the modal
+    if (typeof openCofoDetailsModal === 'function') {
+        openCofoDetailsModal(id, app.file_number || '', '', applicantType, applicantData, prop);
+    } else {
+        showToast('CofO modal not available on this page', 'error');
+    }
 }
 
 function generateAcknowledgement(id) {
-    console.log('Generating acknowledgement for application:', id);
-    
+    console.log('Generate Acknowledgement clicked for application:', id);
     // Close action menu
-    document.querySelectorAll('[id^="action-menu-"]').forEach(menu => {
-        menu.classList.add('hidden');
-    });
-    
-    showToast('Generate Acknowledgement feature coming soon', 'info');
+    document.querySelectorAll('[id^="action-menu-"]').forEach(menu => menu.classList.add('hidden'));
+    // Open Title Document Status modal
+    if (typeof openAckModal === 'function') {
+        openAckModal(id);
+    } else {
+        if (typeof showToast === 'function') showToast('Acknowledgement modal not available on this page', 'error');
+    }
 }
 
 function viewAcknowledgement(id) {
@@ -457,8 +532,25 @@ function viewAcknowledgement(id) {
     document.querySelectorAll('[id^="action-menu-"]').forEach(menu => {
         menu.classList.add('hidden');
     });
-    
-    showToast('View Acknowledgement feature coming soon', 'info');
+
+    // Guard: only allow view when generated
+    const app = applicationsData.find(a => a.id == id);
+    const isGenerated = app && app.acknowledgement && app.acknowledgement.toLowerCase() === 'generated';
+    if (!isGenerated) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Acknowledgement not generated',
+                text: 'Please generate the acknowledgement first.'
+            });
+        } else {
+            alert('Acknowledgement not generated. Please generate first.');
+        }
+        return;
+    }
+
+    // Open the acknowledgement view in a new tab
+    window.open(`/recertification/${id}/acknowledgement`, '_blank');
 }
 
 // Modal Functions (kept for backward compatibility)
@@ -526,6 +618,14 @@ function removeToast(toastId) {
             toast.remove();
         }, 300);
     }
+}
+
+function renderAcknowledgementBadge(status) {
+    const s = (status || '').toLowerCase();
+    if (s === 'generated') {
+        return '<span class="badge badge-success">Generated</span>';
+    }
+    return '<span class="badge badge-default">Pending</span>';
 }
 
 // Make functions available globally

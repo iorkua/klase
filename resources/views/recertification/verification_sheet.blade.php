@@ -131,6 +131,7 @@ tailwind.config = {
                                         <th class="text-left p-4 font-medium text-gray-700">Plot Details</th>
                                         <th class="text-left p-4 font-medium text-gray-700">LGA</th>
                                         <th class="text-left p-4 font-medium text-gray-700">Application Date</th>
+                                        <th class="text-left p-4 font-medium text-gray-700">Verification Status</th>
                                         <th class="text-left p-4 font-medium text-gray-700">Actions</th>
                                     </tr>
                                 </thead>
@@ -163,6 +164,7 @@ tailwind.config = {
     <!-- Toast messages will be inserted here -->
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 // Verification Sheet Applications Table Management
 let applicationsData = [];
@@ -193,7 +195,7 @@ function loadVerificationData() {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="7" class="text-center py-8">
+                <td colspan="8" class="text-center py-8">
                     <div class="loading-spinner mx-auto mb-2"></div>
                     <p class="text-gray-600">Loading verification data...</p>
                 </td>
@@ -239,7 +241,7 @@ function loadVerificationData() {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="text-center py-8">
+                    <td colspan="8" class="text-center py-8">
                         <i data-lucide="alert-circle" class="h-8 w-8 text-red-500 mx-auto mb-2"></i>
                         <p class="text-red-600">Failed to load verification data</p>
                         <button onclick="loadVerificationData()" class="mt-2 text-blue-600 hover:text-blue-800">
@@ -272,6 +274,20 @@ function getApplicationTypeClass(type) {
     }
 }
 
+function getVerificationStatusBadge(status) {
+    let label = 'Pending';
+    if (typeof status === 'string') {
+        label = status.trim() || 'Pending';
+    } else if (status === true || status === 1) {
+        label = 'Verified';
+    }
+    const isVerified = label.toLowerCase() === 'verified';
+    if (isVerified) {
+        return `<span class="badge badge-success">Verified</span>`;
+    }
+    return `<span class="badge badge-default">Pending</span>`;
+}
+
 function renderVerificationTable(data) {
     const tableBody = document.getElementById('applications-table-body');
     const noResults = document.getElementById('no-results');
@@ -294,6 +310,7 @@ function renderVerificationTable(data) {
     // Generate table rows with correct column alignment
     const rows = data.map(app => {
         const actionMenuId = `action-menu-${app.id}`;
+        const isVerified = (typeof app.verification === 'string' && app.verification.toLowerCase() === 'verified') || app.verification === true || app.verification === 1;
         
         return `
             <tr class="table-row border-b hover:bg-gray-50">
@@ -318,6 +335,9 @@ function renderVerificationTable(data) {
                     <div class="text-gray-900">${app.created_at || 'N/A'}</div>
                 </td>
                 <td class="p-4">
+                    ${getVerificationStatusBadge(app.verification)}
+                </td>
+                <td class="p-4">
                     <div class="relative">
                         <button 
                             onclick="toggleActionMenu('${actionMenuId}')"
@@ -327,11 +347,13 @@ function renderVerificationTable(data) {
                         </button>
                         
                         <div id="${actionMenuId}" class="hidden absolute right-0 top-full mt-1 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-50">
-                            <div class="py-1">
-                                <button onclick="viewApplicationDetails(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2">
-                                    <i data-lucide="eye" class="h-4 w-4"></i>
-                                    View Application Details
+                                
+                                ${!isVerified ? `
+                                <button onclick="markAsVerified(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-green-700 hover:bg-green-50 gap-2">
+                                    <i data-lucide="check-circle" class="h-4 w-4"></i>
+                                   Generate Verification
                                 </button>
+                                ` : ''}
                             </div>
                         </div>
                     </div>
@@ -424,6 +446,11 @@ function toggleActionMenu(menuId) {
 }
 
 // Application Action Functions
+function generateVerificationSheet(id) {
+    // Open verification template (printable) in new tab
+    window.open(`/recertification/${id}/verification`, '_blank');
+}
+
 function viewApplicationDetails(id) {
     console.log('Viewing application details:', id);
     
@@ -434,6 +461,65 @@ function viewApplicationDetails(id) {
     
     // Navigate to application details page
     window.location.href = `/recertification/${id}/details`;
+}
+
+function verifyUrl(id) {
+    return `{{ url('/recertification') }}/${id}/verify`;
+}
+
+function markAsVerified(id) {
+    // Close action menus
+    document.querySelectorAll('[id^="action-menu-"]').forEach(menu => menu.classList.add('hidden'));
+
+    if (typeof Swal === 'undefined') {
+        if (!confirm('Mark this application as Verified?')) return;
+        return submitVerification(id);
+    }
+    Swal.fire({
+        title: 'Generate Verification?',
+        
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, verify',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            submitVerification(id);
+        }
+    });
+}
+
+function submitVerification(id) {
+    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    fetch(verifyUrl(id), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            ...(token ? { 'X-CSRF-TOKEN': token } : {})
+        },
+        body: JSON.stringify({ verification: 'Verified' })
+    })
+    .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return response.json().catch(() => ({}));
+    })
+    .then(() => {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire('Updated', 'Verification set to Verified', 'success');
+        } else {
+            showToast('Verification set to Verified', 'success');
+        }
+        loadVerificationData();
+    })
+    .catch(error => {
+        console.error('Error updating verification:', error);
+        if (typeof Swal !== 'undefined') {
+            Swal.fire('Error', 'Failed to update verification status', 'error');
+        } else {
+            showToast('Failed to update verification status', 'error');
+        }
+    });
 }
 
 // Toast notification function
@@ -499,6 +585,7 @@ window.toggleActionMenu = toggleActionMenu;
 window.viewApplicationDetails = viewApplicationDetails;
 window.removeToast = removeToast;
 window.loadVerificationData = loadVerificationData;
+window.markAsVerified = markAsVerified;
 
 console.log('Verification sheet table script initialized');
 </script>

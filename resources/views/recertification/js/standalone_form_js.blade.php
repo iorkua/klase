@@ -1,7 +1,7 @@
 <script>
 // Application state
 let currentStep = 1;
-const totalSteps = 6;
+const totalSteps = 7;
 
 // Form data state
 let formData = {};
@@ -918,6 +918,12 @@ async function nextStep(event) {
         if (skipValidation || forceSkip || validateCurrentStep()) {
             console.log('Moving to next step...');
             currentStep++;
+            
+            // If moving to step 7 (summary), populate the summary
+            if (currentStep === 7) {
+                populateApplicationSummary();
+            }
+            
             updateStepDisplay();
             
             if (forceSkip) {
@@ -1184,8 +1190,8 @@ function handleKeyboardShortcuts(event) {
         }
     }
     
-    // Number keys to jump to steps (Ctrl/Cmd + 1-6)
-    if (event.key >= '1' && event.key <= '6' && (event.ctrlKey || event.metaKey)) {
+    // Number keys to jump to steps (Ctrl/Cmd + 1-7)
+    if (event.key >= '1' && event.key <= '7' && (event.ctrlKey || event.metaKey)) {
         event.preventDefault();
         goToStep(parseInt(event.key));
     }
@@ -1259,6 +1265,208 @@ window.testValidation = function() {
     if (checkbox) checkbox.checked = skipValidation;
     showToast(`Validation ${skipValidation ? 'disabled' : 'enabled'}`, 'info');
 };
+
+// Function to populate application summary
+function populateApplicationSummary() {
+    console.log('Populating application summary...');
+    
+    // Get form data
+    const form = document.getElementById('recertification-form');
+    if (!form) return;
+    
+    const formData = new FormData(form);
+    
+    // Helper function to get form value
+    const getValue = (name) => {
+        const element = form.querySelector(`[name="${name}"]`);
+        if (!element) return '-';
+        
+        if (element.type === 'radio') {
+            const checked = form.querySelector(`[name="${name}"]:checked`);
+            return checked ? checked.value : '-';
+        } else if (element.type === 'checkbox') {
+            return element.checked ? 'Yes' : 'No';
+        } else {
+            return element.value || '-';
+        }
+    };
+    
+    // Helper function to format text
+    const formatText = (text) => {
+        if (!text || text === '-') return '-';
+        return text.toString().toUpperCase();
+    };
+    
+    // Helper function to format currency
+    const formatCurrency = (amount) => {
+        if (!amount || amount === '-') return '-';
+        return `₦${parseFloat(amount).toLocaleString()}`;
+    };
+    
+    // Application Information
+    document.getElementById('summary-application-date').textContent = getValue('applicationDate') || '-';
+    document.getElementById('summary-file-number').textContent = getValue('fileNumber') || '-';
+    document.getElementById('summary-application-type').textContent = formatText(getValue('applicationType'));
+    document.getElementById('summary-application-reason').textContent = formatText(getValue('applicationReason'));
+    
+    // Applicant Details - depends on applicant type
+    const applicantType = getValue('applicantType');
+    const applicantDetailsContainer = document.getElementById('summary-applicant-details');
+    
+    if (applicantType === 'Corporate') {
+        applicantDetailsContainer.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div><span class="font-medium text-gray-700">Applicant Type:</span> <span class="ml-2 text-gray-900">Corporate</span></div>
+                <div><span class="font-medium text-gray-700">Organisation Name:</span> <span class="ml-2 text-gray-900">${formatText(getValue('organisationName'))}</span></div>
+                <div><span class="font-medium text-gray-700">CAC Registration No:</span> <span class="ml-2 text-gray-900">${formatText(getValue('cacRegistrationNo'))}</span></div>
+                <div><span class="font-medium text-gray-700">Type of Organisation:</span> <span class="ml-2 text-gray-900">${formatText(getValue('typeOfOrganisation'))}</span></div>
+                <div><span class="font-medium text-gray-700">Type of Business:</span> <span class="ml-2 text-gray-900">${formatText(getValue('typeOfBusiness'))}</span></div>
+            </div>
+        `;
+    } else if (applicantType === 'Multiple Owners') {
+        let ownersHtml = '<div class="text-sm"><span class="font-medium text-gray-700">Applicant Type:</span> <span class="ml-2 text-gray-900">Multiple Owners</span></div>';
+        ownersHtml += '<div class="mt-3"><span class="font-medium text-gray-700">Owners:</span></div>';
+        ownersHtml += '<div class="mt-2 space-y-2">';
+        
+        // Get all owner blocks
+        const ownerBlocks = document.querySelectorAll('.owner-block');
+        ownerBlocks.forEach((block, index) => {
+            const surname = block.querySelector(`[name="owners[${index + 1}][surname]"]`)?.value || '';
+            const firstName = block.querySelector(`[name="owners[${index + 1}][firstName]"]`)?.value || '';
+            const occupation = block.querySelector(`[name="owners[${index + 1}][occupation]"]`)?.value || '';
+            
+            if (surname || firstName) {
+                ownersHtml += `<div class="bg-white p-2 rounded border text-xs">
+                    <strong>Owner ${index + 1}:</strong> ${formatText(surname)} ${formatText(firstName)} - ${formatText(occupation)}
+                </div>`;
+            }
+        });
+        
+        ownersHtml += '</div>';
+        applicantDetailsContainer.innerHTML = ownersHtml;
+    } else {
+        // Individual or Government Body
+        applicantDetailsContainer.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div><span class="font-medium text-gray-700">Applicant Type:</span> <span class="ml-2 text-gray-900">${formatText(applicantType)}</span></div>
+                <div><span class="font-medium text-gray-700">Full Name:</span> <span class="ml-2 text-gray-900">${formatText(getValue('surname'))} ${formatText(getValue('firstName'))} ${formatText(getValue('middleName'))}</span></div>
+                <div><span class="font-medium text-gray-700">Title:</span> <span class="ml-2 text-gray-900">${formatText(getValue('title'))}</span></div>
+                <div><span class="font-medium text-gray-700">Occupation:</span> <span class="ml-2 text-gray-900">${formatText(getValue('occupation'))}</span></div>
+                <div><span class="font-medium text-gray-700">Date of Birth:</span> <span class="ml-2 text-gray-900">${getValue('dateOfBirth')}</span></div>
+                <div><span class="font-medium text-gray-700">Nationality:</span> <span class="ml-2 text-gray-900">${formatText(getValue('nationality'))}</span></div>
+                <div><span class="font-medium text-gray-700">State of Origin:</span> <span class="ml-2 text-gray-900">${formatText(getValue('stateOfOrigin'))}</span></div>
+                <div><span class="font-medium text-gray-700">Gender:</span> <span class="ml-2 text-gray-900">${formatText(getValue('gender'))}</span></div>
+                <div><span class="font-medium text-gray-700">Marital Status:</span> <span class="ml-2 text-gray-900">${formatText(getValue('maritalStatus'))}</span></div>
+                <div><span class="font-medium text-gray-700">NIN:</span> <span class="ml-2 text-gray-900">${getValue('nin')}</span></div>
+            </div>
+        `;
+    }
+    
+    // Contact Information
+    const address = [getValue('addressLine1'), getValue('addressLine2'), getValue('cityTown'), getValue('state')].filter(x => x !== '-').join(', ');
+    document.getElementById('summary-phone').textContent = getValue('phoneNo');
+    document.getElementById('summary-email').textContent = getValue('emailAddress');
+    document.getElementById('summary-address').textContent = address || '-';
+    
+    // Title Holder Information
+    const titleHolder = [getValue('titleHolderTitle'), getValue('titleHolderSurname'), getValue('titleHolderFirstName'), getValue('titleHolderMiddleName')].filter(x => x !== '-').join(' ');
+    document.getElementById('summary-title-holder').textContent = titleHolder || '-';
+    document.getElementById('summary-cofo-number').textContent = getValue('cofoNumber');
+    document.getElementById('summary-original-owner').textContent = getValue('isOriginalOwner') === 'yes' ? 'Yes' : 'No';
+    document.getElementById('summary-instrument-type').textContent = formatText(getValue('instrumentType'));
+    
+    // Plot Details
+    document.getElementById('summary-plot-number').textContent = formatText(getValue('plotNumber'));
+    document.getElementById('summary-plot-size').textContent = getValue('plotSize') !== '-' ? getValue('plotSize') + ' hectares' : '-';
+    document.getElementById('summary-layout-district').textContent = formatText(getValue('layoutDistrict'));
+    document.getElementById('summary-lga').textContent = formatText(getValue('lga'));
+    document.getElementById('summary-land-use').textContent = formatText(getValue('currentLandUse'));
+    document.getElementById('summary-plot-status').textContent = formatText(getValue('plotStatus'));
+    
+    // Payment Information
+    document.getElementById('summary-payment-method').textContent = formatText(getValue('paymentMethod'));
+    document.getElementById('summary-payment-amount').textContent = formatCurrency(getValue('paymentAmount'));
+    document.getElementById('summary-receipt-no').textContent = getValue('receiptNo');
+    document.getElementById('summary-bank-name').textContent = formatText(getValue('bankName'));
+    
+    // Supporting Documents
+    const documentsContainer = document.getElementById('summary-documents');
+    const selectedDocuments = form.querySelectorAll('input[name="documents[]"]:checked');
+    
+    if (selectedDocuments.length > 0) {
+        let documentsHtml = '';
+        selectedDocuments.forEach(doc => {
+            documentsHtml += `<div class="flex items-center gap-2">
+                <i data-lucide="check-circle" class="h-4 w-4 text-green-600"></i>
+                <span class="text-gray-900">${doc.value.replace(/-/g, ' ').toUpperCase()}</span>
+            </div>`;
+        });
+        documentsContainer.innerHTML = documentsHtml;
+    } else {
+        documentsContainer.innerHTML = '<div class="text-gray-500 italic">No documents selected</div>';
+    }
+    
+    // Uploaded Files
+    const uploadedFilesContainer = document.getElementById('summary-uploaded-files');
+    let uploadedFilesHtml = '';
+    
+    // Check for passport photo
+    const passportPhoto = form.querySelector('#passportPhoto');
+    if (passportPhoto && passportPhoto.files.length > 0) {
+        uploadedFilesHtml += `<div class="flex items-center gap-2">
+            <i data-lucide="image" class="h-4 w-4 text-blue-600"></i>
+            <span class="text-gray-900">Passport Photo: ${passportPhoto.files[0].name}</span>
+        </div>`;
+    }
+    
+    // Check for CAC document
+    const cacDocument = form.querySelector('#cacDocument');
+    if (cacDocument && cacDocument.files.length > 0) {
+        uploadedFilesHtml += `<div class="flex items-center gap-2">
+            <i data-lucide="file-text" class="h-4 w-4 text-purple-600"></i>
+            <span class="text-gray-900">CAC Document: ${cacDocument.files[0].name}</span>
+        </div>`;
+    }
+    
+    // Check for owner photos
+    const ownerPhotos = form.querySelectorAll('.owner-photo-input');
+    ownerPhotos.forEach((input, index) => {
+        if (input.files.length > 0) {
+            uploadedFilesHtml += `<div class="flex items-center gap-2">
+                <i data-lucide="image" class="h-4 w-4 text-green-600"></i>
+                <span class="text-gray-900">Owner ${index + 1} Photo: ${input.files[0].name}</span>
+            </div>`;
+        }
+    });
+    
+    if (uploadedFilesHtml) {
+        uploadedFilesContainer.innerHTML = uploadedFilesHtml;
+    } else {
+        uploadedFilesContainer.innerHTML = '<div class="text-gray-500 italic">No files uploaded</div>';
+    }
+    
+    // Reinitialize Lucide icons
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+    
+    console.log('Application summary populated successfully');
+}
+
+// Function to go to a specific step (updated to handle summary population)
+function goToStep(stepNumber) {
+    if (stepNumber >= 1 && stepNumber <= totalSteps) {
+        currentStep = stepNumber;
+        
+        // If going to step 7 (summary), populate it
+        if (currentStep === 7) {
+            populateApplicationSummary();
+        }
+        
+        updateStepDisplay();
+        showToast(`Navigated to Step ${stepNumber}`, 'info');
+    }
+}
 
 console.log('Standalone form wizard initialized with development features');
 </script>

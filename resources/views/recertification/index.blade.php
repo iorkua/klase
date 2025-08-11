@@ -9,7 +9,7 @@
 // Tailwind config
 tailwind.config = {
   theme: {
-    extend: { 
+    extend: {  
       colors: {
         primary: '#3b82f6',
         'primary-foreground': '#ffffff',
@@ -25,6 +25,7 @@ tailwind.config = {
   }
 }
 </script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
 /* Custom styles */
@@ -267,6 +268,7 @@ input:checked + .toggle-slider:before {
                 <th class="text-left p-4 font-medium text-gray-700">Plot Details</th>
                 <th class="text-left p-4 font-medium text-gray-700">LGA</th>
                 <th class="text-left p-4 font-medium text-gray-700">Application Date</th>
+                <th class="text-left p-4 font-medium text-gray-700">Acknowledgement</th>
                 <th class="text-left p-4 font-medium text-gray-700">Actions</th>
               </tr>
             </thead>
@@ -349,12 +351,14 @@ input:checked + .toggle-slider:before {
     </div>
     <!-- Include the New Application  form Modal -->
 @include('recertification.application_form')
+    @include('recertification.cofo_details_modal')
     <!-- Footer -->
     @include('admin.footer')
   </div>
 
 
 
+@include('recertification.ack_modal')
 @include('recertification.js.js')
 
 @endsection

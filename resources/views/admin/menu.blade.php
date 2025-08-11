@@ -196,53 +196,71 @@
 
       <!-- Recertification Section --> 
       @if($hasRole('Recertification'))
-      <div class="sidebar-submodule-header flex items-center justify-between py-1.5 px-3 cursor-pointer rounded-md" data-section="recertification">
-        <div class="flex items-center gap-2">
-        <i data-lucide="file-cog" class="h-4 w-4 text-purple-500"></i>
-        <span>Recertification</span>
-        </div>
-        <i data-lucide="chevron-right" class="h-4 w-4 transition-transform duration-200" data-chevron="recertification"></i>
-      </div>
+  <div class="sidebar-submodule-header flex items-center justify-between py-1.5 px-3 cursor-pointer rounded-md" data-section="recertification">
+    <div class="flex items-center gap-2">
+      <i data-lucide="file-cog" class="h-4 w-4 text-purple-500"></i>
+      <span>Recertification</span>
+    </div>
+    <i data-lucide="chevron-right" class="h-4 w-4 transition-transform duration-200" data-chevron="recertification"></i>
+  </div>
 
-      <div class="pl-4 mt-1 mb-1 space-y-0.5 hidden" data-content="recertification">
-        <a href="#" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200"  {{ request()->routeIs('recertification.index') ? 'active' : '' }}>
-        <i data-lucide="file-plus" class="h-3.5 w-3.5 text-purple-400"></i>
-        <span>Application</span>
-        </a>
-        <a href="#" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200" {{ request()->routeIs('recertification.migrate') ? 'active' : '' }}>
-        <i data-lucide="database-backup" class="h-3.5 w-3.5 text-purple-400"></i>
-        <span>Application Migrate Data</span>
-        </a>
-        <a href="#" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200" {{ request()->routeIs('recertification.verification-sheet') ? 'active' : '' }}>
-        <i data-lucide="check-square" class="h-3.5 w-3.5 text-purple-400"></i>
-        <span>Verification Sheet</span>
-        </a>
-        <a href="#" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
-        <i data-lucide="map" class="h-3.5 w-3.5 text-purple-400"></i>
-        <span>GIS Data Capture</span>
-        </a>
-        <a href="#" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
-        <i data-lucide="clipboard-check" class="h-3.5 w-3.5 text-purple-400"></i>
-        <span>Vetting Sheet</span>
-        </a>
-        <a href="#" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
-        <i data-lucide="hard-drive" class="h-3.5 w-3.5 text-purple-400"></i>
-        <span>EDMS</span>
-        </a>
-        <a href="#" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
-        <i data-lucide="award" class="h-3.5 w-3.5 text-purple-400"></i>
-        <span>Certification</span>
-        </a>
-        <a href="#" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
-        <i data-lucide="list-end" class="h-3.5 w-3.5 text-purple-400"></i>
-        <span>DG's List</span>
-        </a>
-        <a href="#" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
-        <i data-lucide="list" class="h-3.5 w-3.5 text-purple-400"></i>
-        <span>Governors List</span>
-        </a>
-      </div>
-      @endif
+  <div class="pl-4 mt-1 mb-1 space-y-0.5 hidden" data-content="recertification">
+    <a href="{{ route('recertification.index') }}" 
+       class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('recertification.index') ? 'active' : '' }}">
+      <i data-lucide="file-plus" class="h-3.5 w-3.5 text-purple-400"></i>
+      <span>Application</span>
+    </a>
+
+    <a href="{{ route('recertification.migrate') }}" 
+       class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('recertification.migrate') ? 'active' : '' }}">
+      <i data-lucide="database-backup" class="h-3.5 w-3.5 text-purple-400"></i>
+      <span>Application Migrate Data</span>
+    </a>
+
+    <a href="{{ route('recertification.verification-sheet') }}" 
+       class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('recertification.verification-sheet') ? 'active' : '' }}">
+      <i data-lucide="check-square" class="h-3.5 w-3.5 text-purple-400"></i>
+      <span>Verification Sheet</span>
+    </a>
+
+    <a href="{{ route('recertification.gis-data-capture') }}" 
+       class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('recertification.gis-data-capture') ? 'active' : '' }}">
+      <i data-lucide="map" class="h-3.5 w-3.5 text-purple-400"></i>
+      <span>GIS Data Capture</span>
+    </a>
+
+    <a href="{{ route('recertification.vetting-sheet') }}" 
+       class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('recertification.vetting-sheet') ? 'active' : '' }}">
+      <i data-lucide="clipboard-check" class="h-3.5 w-3.5 text-purple-400"></i>
+      <span>Vetting Sheet</span>
+    </a>
+
+    <a href="{{ route('recertification.edms') }}" 
+       class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('recertification.edms') ? 'active' : '' }}">
+      <i data-lucide="hard-drive" class="h-3.5 w-3.5 text-purple-400"></i>
+      <span>EDMS</span>
+    </a>
+
+    <a href="{{ route('recertification.certification') }}" 
+       class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('recertification.certification') ? 'active' : '' }}">
+      <i data-lucide="award" class="h-3.5 w-3.5 text-purple-400"></i>
+      <span>Certification</span>
+    </a>
+
+    <a href="{{ route('recertification.dg-list') }}" 
+       class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('recertification.dg-list') ? 'active' : '' }}">
+      <i data-lucide="list-end" class="h-3.5 w-3.5 text-purple-400"></i>
+      <span>DG's List</span>
+    </a>
+
+    <a href="{{ route('recertification.governors-list') }}" 
+       class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('recertification.governors-list') ? 'active' : '' }}">
+      <i data-lucide="list" class="h-3.5 w-3.5 text-purple-400"></i>
+      <span>Governors List</span>
+    </a>
+  </div>
+@endif
+
 
       <!-- Conversion/Regularization Section -->
       @if($hasRole('Conversion/Regularization'))
@@ -1715,3 +1733,22 @@
 </script>
 
 
+<script>
+// Auto-expand recertification section if on recertification pages
+if (window.location.pathname.includes('/recertification')) {
+  setTimeout(() => {
+    const programmesContent = document.querySelector('[data-content="programmes"]');
+    const programmesChevron = document.querySelector('[data-chevron="programmes"]');
+    if (programmesContent && programmesChevron) {
+      programmesContent.classList.remove('hidden');
+      programmesChevron.classList.add('rotate-90');
+    }
+    const recertificationContent = document.querySelector('[data-content="recertification"]');
+    const recertificationChevron = document.querySelector('[data-chevron="recertification"]');
+    if (recertificationContent && recertificationChevron) {
+      recertificationContent.classList.remove('hidden');
+      recertificationChevron.classList.add('rotate-90');
+    }
+  }, 200);
+}
+</script>

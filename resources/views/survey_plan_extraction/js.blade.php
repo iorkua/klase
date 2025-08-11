@@ -54,13 +54,13 @@
     }
     
     if (uploadArea) {
-      // uploadArea.addEventListener('click', (e) => {
-      //   // Don't trigger if the click was on the browse button
-      //   if (e.target.closest('#browse-btn')) return;
-      //   e.preventDefault();
-      //   e.stopPropagation();
-      //   if (fileInput) fileInput.click();
-      // });
+      uploadArea.addEventListener('click', (e) => {
+        // Don't trigger if the click was on the browse button
+        if (e.target.closest('#browse-btn')) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (fileInput) fileInput.click();
+      });
       
       // Drag and drop
       uploadArea.addEventListener('dragover', handleDragOver);

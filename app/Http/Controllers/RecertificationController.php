@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class RecertificationController extends Controller
@@ -91,16 +92,36 @@ class RecertificationController extends Controller
                     $plotDetails = 'N/A';
                 }
 
+                // Check if CofO already captured (exists in legacy CofO table) using available file number
+                $fileNo = $app->file_number ?? null;
+                $cofoExists = false;
+                if ($fileNo) {
+                    try {
+                        if (Schema::connection('sqlsrv')->hasTable('Cofo')) {
+                            $cofoExists = DB::connection('sqlsrv')->table('Cofo')
+                                ->where('fileNo', $fileNo)
+                                ->orWhere('mlsFNo', $fileNo)
+                                ->orWhere('kangisFileNo', $fileNo)
+                                ->orWhere('NewKANGISFileno', $fileNo)
+                                ->exists();
+                        }
+                    } catch (\Throwable $e) {
+                        $cofoExists = false;
+                    }
+                }
+
                 return [
                     'id' => $app->id,
                     'application_reference' => $app->application_reference ?? 'N/A',
-                    'file_number' => $app->file_number ?? 'N/A',
+                    'file_number' => $fileNo ?? 'N/A',
                     'applicant_name' => $applicantName,
                     'applicant_type' => $app->applicant_type ?? 'N/A',
                     'plot_details' => $plotDetails,
                     'lga_name' => $app->lga_name ?? 'N/A',
                     'created_at' => $app->created_at ? date('d M Y', strtotime($app->created_at)) : 'N/A',
-                    'cofo_number' => $app->cofo_number ?? 'N/A'
+                    'cofo_number' => $app->cofo_number ?? 'N/A',
+                    'acknowledgement' => $app->acknowledgement ?? null,
+                    'cofo_exists' => $cofoExists,
                 ];
             });
 
@@ -867,6 +888,24 @@ class RecertificationController extends Controller
         return view('recertification.verification_sheet', compact('PageTitle', 'PageDescription'));
     }
 
+    public function verificationView($id)
+    {
+        // Try to get application for the printable verification view
+        $application = DB::connection('sqlsrv')
+            ->table('recertification_applications')
+            ->where('id', $id)
+            ->first();
+        if (!$application) {
+            abort(404, 'Application not found');
+        }
+        // If a dedicated verification template exists, use it; otherwise render a simple fallback
+        if (view()->exists('recertification.verification')) {
+            return view('recertification.verification', compact('application'));
+        }
+        // Fallback minimal printable verification sheet
+        return response()->view('recertification.verification_fallback', compact('application'));
+    }
+
     /**
      * Get verification sheet data for DataTables
      */
@@ -953,7 +992,7 @@ class RecertificationController extends Controller
                     'plot_details' => $plotDetails,
                     'lga_name' => $app->lga_name ?? 'N/A',
                     'created_at' => $app->created_at ? date('d M Y', strtotime($app->created_at)) : 'N/A',
-                    
+                    'verification' => $app->verification ?? null,
                 ];
             });
 
@@ -1154,6 +1193,138 @@ class RecertificationController extends Controller
                 'success' => false,
                 'message' => 'Failed to capture GIS data. Error: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Generate Acknowledgement for a recertification application
+     */
+    public function generateAcknowledgement($id)
+    {
+        // Open the modal first on the frontend, so backend here can be a no-op or can return a hint
+        return response()->json(['success' => true, 'message' => 'Open modal', 'open_modal' => true]);
+    }
+
+    public function submitAcknowledgementDocs(Request $request, $id)
+    {
+        try {
+            $application = DB::connection('sqlsrv')
+                ->table('recertification_applications')
+                ->where('id', $id)
+                ->first();
+
+            if (!$application) {
+                return response()->json(['success' => false, 'message' => 'Application not found'], 404);
+            }
+
+            // Extract flags from request
+            $docs = [
+                'doc_ro' => $request->boolean('doc_ro'),
+                'doc_cofo' => $request->boolean('doc_cofo'),
+                'doc_deed_assignment' => $request->boolean('doc_deed_assignment'),
+                'doc_deed_sublease' => $request->boolean('doc_deed_sublease'),
+                'doc_deed_mortgage' => $request->boolean('doc_deed_mortgage'),
+                'doc_deed_gift' => $request->boolean('doc_deed_gift'),
+                'doc_poa' => $request->boolean('doc_poa'),
+                'doc_devolution' => $request->boolean('doc_devolution'),
+                'doc_letter_admin' => $request->boolean('doc_letter_admin'),
+                'doc_other' => $request->boolean('doc_other'),
+                'doc_other_text' => $request->input('doc_other_text'),
+            ];
+
+            // Persist into recertification_applications
+            DB::connection('sqlsrv')->table('recertification_applications')
+                ->where('id', $id)
+                ->update([
+                    'acknowledgement' => 'Generated',
+                    'ack_docs_json' => json_encode($docs),
+                    'ack_docs_date' => now(),
+                    'updated_at' => now(),
+                ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Acknowledgement saved',
+                'ack1_url' => route('recertification.acknowledgement.view', ['id' => $id]),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error submitting acknowledgement docs', [
+                'id' => $id,
+                'message' => $e->getMessage()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save acknowledgement docs'
+            ], 500);
+        }
+    }
+
+    /**
+     * View Acknowledgement
+     */
+    public function viewAcknowledgement($id)
+    {
+        try {
+            $application = DB::connection('sqlsrv')
+                ->table('recertification_applications')
+                ->where('id', $id)
+                ->first();
+
+            if (!$application) {
+                abort(404, 'Application not found');
+            }
+
+            // Render a combined view that includes acknowledgement_1 and acknowledgement pages
+            return view('recertification.acknowledgement_full', compact('application'));
+        } catch (\Exception $e) {
+            Log::error('Error viewing acknowledgement', [
+                'id' => $id,
+                'message' => $e->getMessage()
+            ]);
+            abort(500, 'Failed to load acknowledgement');
+        }
+    }
+
+    /**
+     * Update verification status for an application
+     */
+    public function verify(Request $request, $id)
+    {
+        try {
+            $application = DB::connection('sqlsrv')
+                ->table('recertification_applications')
+                ->where('id', $id)
+                ->first();
+
+            if (!$application) {
+                return response()->json(['error' => 'Application not found'], 404);
+            }
+
+            $verification = $request->input('verification', 'Verified');
+
+            // Update verification status
+            DB::connection('sqlsrv')->table('recertification_applications')
+                ->where('id', $id)
+                ->update([
+                    'verification' => $verification,
+                    'verification_date' => now(),
+                    'updated_at' => now(),
+                ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Verification status updated successfully',
+                'verification' => $verification
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error updating verification status', [
+                'id' => $id,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json(['error' => 'Failed to update verification status'], 500);
         }
     }
 }

@@ -110,6 +110,8 @@ tailwind.config = {
                         <div id="step-5" class="step-circle inactive">5</div>
                         <div id="line-5" class="step-line inactive"></div>
                         <div id="step-6" class="step-circle inactive">6</div>
+                        <div id="line-6" class="step-line inactive"></div>
+                        <div id="step-7" class="step-circle inactive">7</div>
                     </div>
                 </div>
                  
@@ -124,6 +126,7 @@ tailwind.config = {
                         @include('recertification.steps.step4_mortgage_encumbrance')
                         @include('recertification.steps.step5_plot_details')
                         @include('recertification.steps.step6_payment_terms')
+                        @include('recertification.steps.step7_application_summary')
                         
                     </form>
 

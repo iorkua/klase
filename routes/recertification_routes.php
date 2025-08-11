@@ -23,6 +23,7 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'recertification'], f
     // Verification Routes
     Route::get('/verification-sheet', [RecertificationController::class, 'verificationSheet'])->name('recertification.verification-sheet');
     Route::get('/verification-data', [RecertificationController::class, 'getVerificationData'])->name('recertification.verification-data');
+    Route::post('/{id}/verify', [RecertificationController::class, 'verify'])->name('recertification.verify');
     
     // Utility Routes
     Route::get('/next-file-number', [RecertificationController::class, 'getNextFileNumber'])->name('recertification.nextFileNumber');
@@ -33,6 +34,12 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'recertification'], f
     Route::get('/{id}/edit', [RecertificationController::class, 'edit'])->name('recertification.edit');
     Route::put('/{id}', [RecertificationController::class, 'update'])->name('recertification.update');
     Route::delete('/{id}', [RecertificationController::class, 'destroy'])->name('recertification.destroy');
+
+    // Acknowledgement Routes
+    Route::post('/{id}/acknowledgement/generate', [RecertificationController::class, 'generateAcknowledgement'])->name('recertification.acknowledgement.generate');
+    Route::get('/{id}/acknowledgement', [RecertificationController::class, 'viewAcknowledgement'])->name('recertification.acknowledgement.view');
+    Route::post('/{id}/acknowledgement/submit', [RecertificationController::class, 'submitAcknowledgementDocs'])->name('recertification.acknowledgement.submit');
+    Route::get('/{id}/verification', [RecertificationController::class, 'verificationView'])->name('recertification.verification');
     
     // Certification Management Routes
     Route::get('/certification', [CertificationController::class, 'index'])->name('recertification.certification');
@@ -64,6 +71,9 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'recertification'], f
     Route::get('/gis-data', [CertificationController::class, 'getGISData'])->name('recertification.gis-data');
     Route::get('/{id}/gis-capture', [RecertificationController::class, 'gisCapture'])->name('recertification.gis-capture');
     Route::post('/{id}/gis-capture', [RecertificationController::class, 'storeGisCapture'])->name('recertification.gis-capture.store');
+
+    // CofO details storage (using PrimaryActionsController)
+    Route::post('/cofo/store-deeds', [\App\Http\Controllers\PrimaryActionsController::class, 'storeDeeds'])->name('recertification.cofo.store-deeds');
 });
 
 // EDMS Routes for Recertification (outside the main group to avoid prefix conflicts)

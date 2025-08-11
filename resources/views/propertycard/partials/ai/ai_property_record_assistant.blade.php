@@ -168,18 +168,21 @@
       <div class="space-y-1">
         <label class="block text-sm font-medium text-gray-700">Document File</label>
         <div 
-          class="file-drop-zone flex flex-col items-center justify-center px-6 py-8 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50"
+          class="file-drop-zone relative flex flex-col items-center justify-center px-6 py-8 border-2 border-dashed border-gray-300 rounded-lg hover:bg-gray-50"
           @drop.prevent="handleDrop($event)"
           @dragover.prevent="$event.currentTarget.classList.add('dragover')"
           @dragleave.prevent="$event.currentTarget.classList.remove('dragover')"
-          @click="triggerFileInput()"
         >
           <input
             x-ref="fileInput"
             type="file"
-            accept="image/jpeg,image/png,application/pdf"
-            class="hidden"
+            accept="image/jpeg,image/jpg,image/png,application/pdf"
+            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            tabindex="0"
+            aria-label="Choose a document file"
+            title="Choose a document file"
             @change="handleFileChange($event)"
+            @input="handleFileChange($event)"
           />
           <div class="text-center">
             <i data-lucide="file-up" class="mx-auto h-12 w-12 text-gray-400"></i>
@@ -188,6 +191,18 @@
               <p class="text-sm text-gray-500">JPEG, PNG, PDF up to 10MB</p>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Debug Information (temporary) -->
+      <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4 text-sm hidden">
+        <h4 class="font-medium text-yellow-800 mb-2">Debug Info:</h4>
+        <div class="space-y-1 text-yellow-700">
+          <div>Selected File: <span x-text="selectedFile ? selectedFile.name : 'None'"></span></div>
+          <div>File Type: <span x-text="fileType || 'None'"></span></div>
+          <div>Preview URL: <span x-text="previewUrl ? 'Set' : 'None'"></span></div>
+          <div>Error: <span x-text="error || 'None'"></span></div>
+          <div>Processing: <span x-text="processing ? 'Yes' : 'No'"></span></div>
         </div>
       </div>
 
@@ -401,46 +416,84 @@ function aiAssistant() {
     },
     
     triggerFileInput() {
-      console.log('Triggering file input...');
+      console.log('🔄 Triggering file input...');
       const fileInput = this.$refs.fileInput;
       if (fileInput) {
-        // Clear the file input first
+        console.log('✅ File input found, triggering click...');
+        // Clear any previous value to ensure change event fires
         fileInput.value = '';
-        // Force a click event
-        fileInput.click();
+        
+        // Add a temporary event listener to ensure we catch the change
+        const tempHandler = (e) => {
+          console.log('🎯 Temporary handler caught file change');
+          this.handleFileSelection(e.target.files[0]);
+          fileInput.removeEventListener('change', tempHandler);
+        };
+        
+        fileInput.addEventListener('change', tempHandler);
+        
+        try {
+          fileInput.click();
+          console.log('✅ File input clicked successfully');
+        } catch (error) {
+          console.error('❌ Error clicking file input:', error);
+          fileInput.removeEventListener('change', tempHandler);
+        }
+      } else {
+        console.error('❌ File input not found!');
       }
     },
     
     handleDrop(event) {
+      console.log('🎯 File drop event triggered');
       event.currentTarget.classList.remove('dragover');
       const files = event.dataTransfer.files;
       if (files.length > 0) {
-        console.log('File dropped:', files[0].name);
-        this.processFile(files[0]);
+        console.log('✅ File dropped:', files[0].name);
+        this.handleFileSelection(files[0]);
       }
     },
     
     handleFileChange(event) {
-      console.log('File change event triggered');
+      console.log('🎯 File change event triggered');
       const file = event.target.files[0];
-      console.log('Selected file:', file ? file.name : 'No file');
+      console.log('📁 Selected file:', file ? file.name : 'No file');
+      console.log('📊 Event target files length:', event.target.files.length);
       
-      // Prevent multiple processing of the same file
-      if (this.processing) {
-        console.log('Already processing, ignoring...');
+      this.handleFileSelection(file);
+    },
+    
+    handleFileSelection(file) {
+      console.log('🔍 Processing file selection...');
+      
+      if (!file) {
+        console.log('❌ No file provided, resetting...');
+        this.reset();
         return;
       }
       
-      if (file) {
-        console.log('Processing file for preview...');
-        // Clear any previous errors immediately
-        this.error = null;
-        // Process the file for preview only (don't auto-extract)
-        this.processFileForPreview(file);
-      } else {
-        console.log('No file selected, resetting...');
-        this.reset();
-      }
+      console.log('📋 File details:', {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: file.lastModified
+      });
+      
+      // Clear any previous errors immediately
+      this.error = null;
+      
+      // Set the selected file immediately to enable the button
+      this.selectedFile = file;
+      console.log('✅ selectedFile set to:', this.selectedFile ? this.selectedFile.name : 'null');
+      
+      // Force Alpine.js reactivity update
+      this.$nextTick(() => {
+        console.log('🔄 After nextTick - selectedFile:', this.selectedFile ? this.selectedFile.name : 'null');
+        console.log('🔄 Button should be enabled now');
+      });
+      
+      // Process the file for preview
+      this.processFileForPreview(file);
     },
     
     async processFileForPreview(file) {
@@ -547,7 +600,7 @@ function aiAssistant() {
     
     validateFile(file) {
       const maxSize = 10 * 1024 * 1024; // 10MB
-      const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/pjpeg', 'image/png', 'application/pdf'];
       
       if (!allowedTypes.includes(file.type)) {
         this.error = 'Invalid file type. Please upload JPEG, PNG, or PDF files only.';
@@ -738,6 +791,7 @@ function aiAssistant() {
             tessedit_ocr_engine_mode: Tesseract.OEM.LSTM_ONLY,
             tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,/:-()&\'"',
             preserve_interword_spaces: '1',
+            user_defined_dpi: '300',
             tessedit_do_invert: '0',
             tessedit_create_hocr: '1',
             tessedit_create_tsv: '1'
@@ -768,7 +822,8 @@ function aiAssistant() {
           tessedit_pageseg_mode: Tesseract.PSM.AUTO,
           tessedit_ocr_engine_mode: Tesseract.OEM.LSTM_ONLY,
           tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,/:-() ',
-          preserve_interword_spaces: '1'
+          preserve_interword_spaces: '1',
+          user_defined_dpi: '300'
         });
         
         console.log(`Image OCR confidence: ${confidence}%`);
@@ -786,30 +841,38 @@ function aiAssistant() {
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
           
-          // Set canvas size
-          canvas.width = img.width;
-          canvas.height = img.height;
-          
-          // Draw image
-          ctx.drawImage(img, 0, 0);
+          // Scale up small images for better OCR (up to 2000px on the longest edge, max 2x)
+          const maxEdge = Math.max(img.width, img.height);
+          const scale = Math.max(1, Math.min(2, 2000 / maxEdge));
+          const targetWidth = Math.round(img.width * scale);
+          const targetHeight = Math.round(img.height * scale);
+          canvas.width = targetWidth;
+          canvas.height = targetHeight;
+
+          // Draw image with disabled smoothing to keep edges sharp
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
           
           // Apply image preprocessing for better OCR
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           const data = imageData.data;
-          
-          // Convert to grayscale and enhance contrast
+
+          // Convert to grayscale, enhance contrast, and binarize
+          const threshold = 180;
           for (let i = 0; i < data.length; i += 4) {
-            const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
-            
-            // Enhance contrast
-            const enhanced = gray > 128 ? Math.min(255, gray * 1.2) : Math.max(0, gray * 0.8);
-            
-            data[i] = enhanced;     // Red
-            data[i + 1] = enhanced; // Green
-            data[i + 2] = enhanced; // Blue
-            // Alpha channel remains unchanged
+            const r = data[i], g = data[i + 1], b = data[i + 2];
+            const gray = r * 0.299 + g * 0.587 + b * 0.114;
+            // Contrast stretch
+            let val = (gray - 128) * 1.2 + 128;
+            val = Math.max(0, Math.min(255, val));
+            // Binarize
+            const bin = val > threshold ? 255 : 0;
+            data[i] = bin;     // Red
+            data[i + 1] = bin; // Green
+            data[i + 2] = bin; // Blue
+            // Alpha unchanged
           }
-          
+
           ctx.putImageData(imageData, 0, 0);
           resolve(canvas.toDataURL('image/png'));
         };
@@ -835,11 +898,11 @@ function aiAssistant() {
       // Enhanced extraction patterns with more variations and better accuracy
       const patterns = {
         fileNumber: [
-          // Standard file number patterns
-          /(?:NEW\s+)?FILE\s+(?:NO|NUMBER)[:\s]*([A-Z0-9/\s-]+?)(?:\s+PLOT|\s+TITLE|\s+OLD|\s*$)/i,
-          /(?:File\s*No\.?|FILE\s*NUMBER)\s*:?\s*([A-Z0-9/\s-]+?)(?:\s|$)/i,
+          // Standard file number patterns with better boundaries
+          /(?:NEW\s+)?FILE\s+(?:NO|NUMBER)[:\s]*([A-Z0-9/\s-]+?)(?:\s+(?:PLOT|TITLE|OLD|DATED|FOR|TO|BEING|SITUATE)|\s*$)/i,
+          /(?:File\s*No\.?|FILE\s*NUMBER)\s*:?\s*([A-Z0-9/\s-]+?)(?:\s+(?:PLOT|TITLE|OLD|DATED|FOR|TO|BEING|SITUATE)|\s*$)/i,
           
-          // Specific Nigerian patterns
+          // Specific Nigerian patterns with better matching
           /(LKN\/COM\/\d{4}\/\d{2,4})/i,
           /(COM\/\d{4}\/\d{2,4})/i,
           /(KAN\/[A-Z]{2,4}\/\d{4}\/\d{2,4})/i,
@@ -848,10 +911,29 @@ function aiAssistant() {
           /(KN\d{3,6})/i,
           /([A-Z]{3,4}\s*\/\s*[A-Z]{3,4}\s*\/\s*\d{4}\s*\/\s*\d{3,4})/i,
           
-          // Generic patterns
-          /FILE\s*NO\s*[:\-]?\s*([A-Z0-9\/\s-]+?)(?:\s|$)/i,
-          /F\.?\s*NO\.?\s*[:\-]?\s*([A-Z0-9\/\s-]+?)(?:\s|$)/i,
-          /REF\s*NO\s*[:\-]?\s*([A-Z0-9\/\s-]+?)(?:\s|$)/i
+          // More specific patterns for Nigerian land records
+          /(SLTR\/[A-Z]{2,4}\/\d{4}\/\d{2,4})/i,
+          /(KANO\/SLTR\/\d{4}\/\d{2,4})/i,
+          /(MUN\/[A-Z]{2,4}\/\d{4}\/\d{2,4})/i,
+          /(MISC\/[A-Z]{2,4}\/\d{4}\/\d{2,4})/i,
+          /(KANMUN\/[A-Z]{2,4}\/\d{4}\/\d{2,4})/i,
+          
+          // Enhanced patterns for various formats
+          /(?:FILE|F)\s*(?:NO|NUMBER|#)\.?\s*:?\s*([A-Z]{2,5}\/[A-Z]{2,5}\/\d{4}\/\d{2,5})/i,
+          /(?:REF|REFERENCE)\s*(?:NO|NUMBER)\.?\s*:?\s*([A-Z]{2,5}\/[A-Z]{2,5}\/\d{4}\/\d{2,5})/i,
+          
+          // Generic patterns with better boundaries
+          /FILE\s*NO\s*[:\-]?\s*([A-Z0-9\/\s-]+?)(?:\s+(?:PLOT|TITLE|OLD|DATED|FOR|TO|BEING|SITUATE)|\s*$)/i,
+          /F\.?\s*NO\.?\s*[:\-]?\s*([A-Z0-9\/\s-]+?)(?:\s+(?:PLOT|TITLE|OLD|DATED|FOR|TO|BEING|SITUATE)|\s*$)/i,
+          /REF\s*NO\s*[:\-]?\s*([A-Z0-9\/\s-]+?)(?:\s+(?:PLOT|TITLE|OLD|DATED|FOR|TO|BEING|SITUATE)|\s*$)/i,
+          
+          // Pattern for file numbers in parentheses or brackets
+          /\(([A-Z]{2,4}\/[A-Z]{2,4}\/\d{4}\/\d{2,4})\)/i,
+          /\[([A-Z]{2,4}\/[A-Z]{2,4}\/\d{4}\/\d{2,4})\]/i,
+          
+          // Additional patterns for common variations
+          /APPLICATION\s*(?:NO|NUMBER)\.?\s*:?\s*([A-Z0-9\/\s-]+?)(?:\s|$)/i,
+          /APPL\.?\s*(?:NO|NUMBER)\.?\s*:?\s*([A-Z0-9\/\s-]+?)(?:\s|$)/i
         ],
         
         plotNumber: [
@@ -866,7 +948,8 @@ function aiAssistant() {
           /BLK\s*([A-Z0-9]+)\s*PLT\s*([A-Z0-9]+)/i,
           
           // Layout patterns
-          /LAYOUT\s*([A-Z0-9\s-]+?)(?:\s|$)/i
+          /LAYOUT\s*([A-Z0-9\s-]+?)(?:\s|$)/i,
+          /PLOT\s*(?:NO\.?|NUMBER)?\s*[:\-]?\s*([A-Z0-9\-\/ ]+?)(?:\s+(?:BLOCK|TITLE|LAYOUT|DISTRICT|AREA)|\s|$)/i
         ],
         
         propertyHolder: [
@@ -903,6 +986,7 @@ function aiAssistant() {
           
           // Other instruments
           /(POWER\s+OF\s+ATTORNEY)/i,
+          /(IRREVOCABLE\s+POWER\s+OF\s+ATTORNEY)/i,
           /(RECERTIFICATION)/i,
           /(SURVEY\s+PLAN)/i,
           /(BUILDING\s+PLAN)/i,
@@ -1104,74 +1188,108 @@ function aiAssistant() {
       if (!this.extractedData) return;
       
       const data = this.extractedData;
+      let populatedFields = 0;
       
-      // Populate basic fields
-      if (data.plotNo) {
-        const plotField = document.getElementById('plotNo');
-        if (plotField) {
-          plotField.value = data.plotNo;
-          plotField.dispatchEvent(new Event('input'));
+      try {
+        // Helper function to safely populate field
+        const populateField = (fieldId, value, eventType = 'input') => {
+          if (!value) return false;
+          
+          const field = document.getElementById(fieldId);
+          if (field && field.value !== value) {
+            field.value = value;
+            field.dispatchEvent(new Event(eventType, { bubbles: true }));
+            return true;
+          }
+          return false;
+        };
+        
+        // Populate basic property fields
+        if (populateField('plotNo', data.plotNo)) {
+          populatedFields++;
+          console.log('Populated plot number:', data.plotNo);
         }
-      }
-      
-      if (data.lgsaOrCity) {
-        const lgaField = document.getElementById('lga');
-        if (lgaField) {
-          lgaField.value = data.lgsaOrCity;
-          lgaField.dispatchEvent(new Event('change'));
+        
+        if (populateField('houseNo', data.houseNo)) {
+          populatedFields++;
+          console.log('Populated house number:', data.houseNo);
         }
-      }
-      
-      // Populate registration fields
-      if (data.serialNo) {
-        const serialField = document.getElementById('serialNo');
-        if (serialField) {
-          serialField.value = data.serialNo;
-          serialField.dispatchEvent(new Event('input'));
+        
+        // Populate location fields
+        if (populateField('lga', data.lgsaOrCity, 'change')) {
+          populatedFields++;
+          console.log('Populated LGA:', data.lgsaOrCity);
         }
-      }
-      
-      if (data.page) {
-        const pageField = document.getElementById('pageNo');
-        if (pageField) {
-          pageField.value = data.page;
-          pageField.dispatchEvent(new Event('input'));
+        
+        if (populateField('state', data.state || 'Kano State')) {
+          populatedFields++;
+          console.log('Populated state:', data.state || 'Kano State');
         }
-      }
-      
-      if (data.vol) {
-        const volField = document.getElementById('volumeNo');
-        if (volField) {
-          volField.value = data.vol;
-          volField.dispatchEvent(new Event('input'));
+        
+        // Populate registration fields
+        if (populateField('serialNo', data.serialNo)) {
+          populatedFields++;
+          console.log('Populated serial number:', data.serialNo);
         }
-      }
-      
-      // Populate transaction type
-      if (data.instrument) {
-        const transactionField = document.getElementById('transactionType-record');
-        if (transactionField) {
-          const mapping = {
-            'DEED OF ASSIGNMENT': 'Deed of Assignment',
-            'CERTIFICATE OF OCCUPANCY': 'Certificate of Occupancy',
-            'RIGHT OF OCCUPANCY': 'Customary Right of Occupancy',
-            'DEED OF MORTGAGE': 'Deed of Mortgage',
-            'POWER OF ATTORNEY': 'Power of Attorney',
-            'RECERTIFICATION': 'Other',
-            'DEED OF TRANSFER': 'Deed of Transfer',
-            'STATUTORY CERTIFICATE': 'ST Certificate of Occupancy',
-            'CUSTOMARY RIGHT': 'Customary Right of Occupancy'
-          };
-          transactionField.value = mapping[data.instrument] || 'Other';
-          transactionField.dispatchEvent(new Event('change'));
+        
+        if (populateField('pageNo', data.page)) {
+          populatedFields++;
+          console.log('Populated page number:', data.page);
         }
+        
+        if (populateField('volumeNo', data.vol)) {
+          populatedFields++;
+          console.log('Populated volume number:', data.vol);
+        }
+        
+        // Populate transaction type with enhanced mapping
+        if (data.instrument) {
+          const transactionField = document.getElementById('transactionType-record');
+          if (transactionField) {
+            const mapping = {
+              'DEED OF ASSIGNMENT': 'Deed of Assignment',
+              'CERTIFICATE OF OCCUPANCY': 'Certificate of Occupancy',
+              'STATUTORY CERTIFICATE OF OCCUPANCY': 'ST Certificate of Occupancy',
+              'CUSTOMARY CERTIFICATE OF OCCUPANCY': 'Customary Right of Occupancy',
+              'RIGHT OF OCCUPANCY': 'Customary Right of Occupancy',
+              'CUSTOMARY RIGHT OF OCCUPANCY': 'Customary Right of Occupancy',
+              'DEED OF MORTGAGE': 'Deed of Mortgage',
+              'POWER OF ATTORNEY': 'Power of Attorney',
+              'IRREVOCABLE POWER OF ATTORNEY': 'Irrevocable Power of Attorney',
+              'DEED OF TRANSFER': 'Deed of Transfer',
+              'DEED OF CONVEYANCE': 'Deed of Conveyance',
+              'DEED OF GIFT': 'Deed of Gift',
+              'RECERTIFICATION': 'Other',
+              'SURVEY PLAN': 'Other',
+              'BUILDING PLAN': 'Other'
+            };
+            
+            const mappedValue = mapping[data.instrument] || 'Other';
+            if (transactionField.value !== mappedValue) {
+              transactionField.value = mappedValue;
+              transactionField.dispatchEvent(new Event('change', { bubbles: true }));
+              populatedFields++;
+              console.log('Populated transaction type:', mappedValue);
+            }
+          }
+        }
+        
+        // Update registration preview
+        this.updateRegNoPreview();
+        
+        // Show success message with details
+        const successMessage = populatedFields > 0 
+          ? `Successfully populated ${populatedFields} fields with ${data.confidence}% confidence`
+          : `AI extraction completed with ${data.confidence}% confidence, but no form fields were populated`;
+          
+        this.showToast(successMessage, populatedFields > 0 ? 'success' : 'warning');
+        
+        console.log(`Form population completed. Populated ${populatedFields} fields.`);
+        
+      } catch (error) {
+        console.error('Error populating form:', error);
+        this.showToast('Error populating form fields. Please check the extracted data manually.', 'error');
       }
-      
-      // Update registration preview
-      this.updateRegNoPreview();
-      
-      // Show success message
-      this.showToast(`Successfully extracted ${data.confidence}% of property data`, 'success');
     },
     
     updateRegNoPreview() {
