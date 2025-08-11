@@ -180,54 +180,74 @@ function setupApplicantTypeToggle() {
             console.log('Hidden multiple owners sidebar');
         }
 
-        // Clear all required fields
+        // Clear all required fields and file inputs
         setRequired([
             '#surname', '#firstName', '#occupation', '#dateOfBirth', '#nationality', '#stateOfOrigin',
             'input[name="gender"]', 'input[name="maritalStatus"]'
         ], false);
         setRequired(['#organisationName', '#cacRegistrationNo', '#typeOfOrganisation', '#typeOfBusiness'], false);
+        setRequired(['#passportPhoto', '#cacDocument'], false);
         setOwnersRequired(false);
 
         // Show appropriate sections based on applicant type
         if (value === 'Individual') {
             console.log('Showing Individual sections');
+            // Show individual form fields
             if (individual) individual.classList.remove('hidden');
+            // Show individual passport photo section ONLY
             if (individualPhotoSection) {
                 individualPhotoSection.classList.remove('hidden');
                 console.log('Showed individual photo section');
             }
+            // Set required fields for individual
             setRequired([
                 '#surname', '#firstName', '#occupation', '#dateOfBirth', '#nationality', '#stateOfOrigin',
                 'input[name="gender"]', 'input[name="maritalStatus"]'
             ], true);
+            // Passport photo is optional for individual
+            
         } else if (value === 'Corporate') {
             console.log('Showing Corporate sections');
+            // Show corporate form fields
             if (corporate) corporate.classList.remove('hidden');
+            // Show CAC document section ONLY (no passport photo)
             if (corporateDocumentSection) {
                 corporateDocumentSection.classList.remove('hidden');
                 console.log('Showed corporate document section');
             }
+            // Set required fields for corporate
             setRequired(['#organisationName', '#cacRegistrationNo', '#typeOfOrganisation', '#typeOfBusiness'], true);
+            setRequired(['#cacDocument'], true); // CAC document is required
+            
         } else if (value === 'Government Body') {
             console.log('Showing Government Body sections');
+            // Show individual form fields (for government representative)
             if (individual) individual.classList.remove('hidden');
+            // Show CAC document section ONLY (no passport photo for government body)
             if (corporateDocumentSection) {
                 corporateDocumentSection.classList.remove('hidden');
                 console.log('Showed corporate document section for Government Body');
             }
+            // Set required fields for government body
             setRequired([
                 '#surname', '#firstName', '#occupation', '#dateOfBirth', '#nationality', '#stateOfOrigin',
                 'input[name="gender"]', 'input[name="maritalStatus"]'
             ], true);
+            setRequired(['#cacDocument'], true); // CAC document is required for government body
+            
         } else if (value === 'Multiple Owners') {
             console.log('Showing Multiple Owners sections');
+            // Show multiple owners form fields
             if (multipleOwners) multipleOwners.classList.remove('hidden');
+            // Show multiple owners sidebar (no individual passport photo or CAC document)
             if (multipleOwnersSidebar) {
                 multipleOwnersSidebar.classList.remove('hidden');
                 console.log('Showed multiple owners sidebar');
             }
+            // Initialize owners if none exist
             if (ownersCount === 0) addOwnerBlock();
             setOwnersRequired(true);
+            // Each owner will have their own passport photo upload in their individual blocks
         }
     };
 

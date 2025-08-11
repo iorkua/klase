@@ -601,8 +601,15 @@ class EdmsController extends Controller
             if ($fileIndexing->recertification_application_id) {
                 return redirect()->route('edms.recertification.index', $fileIndexing->recertification_application_id)
                     ->with('success', 'Page typing completed successfully! EDMS workflow is now complete.');
-            } else {
+            } elseif ($fileIndexing->subapplication_id) {
+                return redirect()->route('edms.index', [$fileIndexing->main_application_id, 'sub'])
+                    ->with('success', 'Page typing completed successfully! EDMS workflow is now complete.');
+            } elseif ($fileIndexing->main_application_id) {
                 return redirect()->route('edms.index', $fileIndexing->main_application_id)
+                    ->with('success', 'Page typing completed successfully! EDMS workflow is now complete.');
+            } else {
+                // Fallback if no application ID is found
+                return redirect()->back()
                     ->with('success', 'Page typing completed successfully! EDMS workflow is now complete.');
             }
                 
@@ -769,6 +776,472 @@ class EdmsController extends Controller
             return "{$landUse} - {$unitInfo}";
         } else {
             return "Unit Application {$subApplication->id}";
+        }
+    }
+
+    /**
+     * Get PDF page information including page count
+     */
+    public function getPdfPageInfo($documentPath)
+    {
+        try {
+            // Default response
+            $result = [
+                'page_count' => 1,
+                'file_size' => 0,
+                'file_type' => 'unknown',
+                'error' => null
+            ];
+            
+            // Check if file exists
+            $fullPath = storage_path('app/public/' . $documentPath);
+            
+            if (!file_exists($fullPath)) {
+                Log::warning('PDF file not found for page info', ['path' => $fullPath]);
+                $result['error'] = 'File not found';
+                return $result;
+            }
+            
+            // Get file info
+            $result['file_size'] = filesize($fullPath);
+            $result['file_type'] = mime_content_type($fullPath) ?: 'application/octet-stream';
+            
+            // Check if it's actually a PDF
+            if (!str_contains(strtolower($documentPath), '.pdf') && !str_contains($result['file_type'], 'pdf')) {
+                // Not a PDF, return single page
+                $result['file_type'] = 'image';
+                return $result;
+            }
+            
+            // Try to get PDF page count using different methods
+            $pageCount = $this->getPdfPageCount($fullPath);
+            
+            if ($pageCount > 0) {
+                $result['page_count'] = $pageCount;
+            }
+            
+            Log::info('PDF page info retrieved', [
+                'path' => $documentPath,
+                'page_count' => $result['page_count'],
+                'file_size' => $result['file_size']
+            ]);
+            
+            return $result;
+            
+        } catch (Exception $e) {
+            Log::error('Error getting PDF page info', [
+                'path' => $documentPath,
+                'error' => $e->getMessage()
+            ]);
+            
+            return [
+                'page_count' => 1,
+                'file_size' => 0,
+                'file_type' => 'unknown',
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Get PDF page count using multiple methods
+     */
+    private function getPdfPageCount($filePath)
+    {
+        try {
+            // Method 1: Try using regex to count pages (fastest)
+            $pageCount = $this->getPdfPageCountRegex($filePath);
+            if ($pageCount > 0) {
+                return $pageCount;
+            }
+            
+            // Method 2: Try using shell command if available
+            if (function_exists('shell_exec') && !empty(shell_exec('which pdfinfo'))) {
+                $pageCount = $this->getPdfPageCountShell($filePath);
+                if ($pageCount > 0) {
+                    return $pageCount;
+                }
+            }
+            
+            // Method 3: Try using Imagick if available
+            if (extension_loaded('imagick')) {
+                $pageCount = $this->getPdfPageCountImagick($filePath);
+                if ($pageCount > 0) {
+                    return $pageCount;
+                }
+            }
+            
+            // Default to 1 page if all methods fail
+            return 1;
+            
+        } catch (Exception $e) {
+            Log::warning('Error counting PDF pages', [
+                'file' => $filePath,
+                'error' => $e->getMessage()
+            ]);
+            return 1;
+        }
+    }
+
+    /**
+     * Get PDF page count using regex pattern matching
+     */
+    private function getPdfPageCountRegex($filePath)
+    {
+        try {
+            // Read first 1MB of file to find page count
+            $handle = fopen($filePath, 'rb');
+            if (!$handle) {
+                return 0;
+            }
+            
+            $content = fread($handle, 1024 * 1024); // Read first 1MB
+            fclose($handle);
+            
+            if (!$content) {
+                return 0;
+            }
+            
+            // Look for /Count pattern in PDF
+            if (preg_match('/\/Count\s+(\d+)/', $content, $matches)) {
+                return (int)$matches[1];
+            }
+            
+            // Alternative pattern: look for /N pattern
+            if (preg_match('/\/N\s+(\d+)/', $content, $matches)) {
+                return (int)$matches[1];
+            }
+            
+            // Count page objects (less reliable but worth trying)
+            $pageCount = preg_match_all('/\/Type\s*\/Page[^s]/', $content);
+            if ($pageCount > 0) {
+                return $pageCount;
+            }
+            
+            return 0;
+            
+        } catch (Exception $e) {
+            Log::warning('Regex PDF page count failed', ['error' => $e->getMessage()]);
+            return 0;
+        }
+    }
+
+    /**
+     * Get PDF page count using shell command
+     */
+    private function getPdfPageCountShell($filePath)
+    {
+        try {
+            $escapedPath = escapeshellarg($filePath);
+            $output = shell_exec("pdfinfo $escapedPath 2>/dev/null | grep Pages | awk '{print $2}'");
+            
+            if ($output && is_numeric(trim($output))) {
+                return (int)trim($output);
+            }
+            
+            return 0;
+            
+        } catch (Exception $e) {
+            Log::warning('Shell PDF page count failed', ['error' => $e->getMessage()]);
+            return 0;
+        }
+    }
+
+    /**
+     * Get PDF page count using Imagick
+     */
+    private function getPdfPageCountImagick($filePath)
+    {
+        try {
+            $imagick = new \Imagick();
+            $imagick->pingImage($filePath);
+            $pageCount = $imagick->getNumberImages();
+            $imagick->clear();
+            
+            return $pageCount;
+            
+        } catch (Exception $e) {
+            Log::warning('Imagick PDF page count failed', ['error' => $e->getMessage()]);
+            return 0;
+        }
+    }
+
+    /**
+     * Save single page typing data (AJAX endpoint)
+     */
+    public function saveSinglePageTyping(Request $request, $fileIndexingId)
+    {
+        try {
+            $fileIndexing = FileIndexing::on('sqlsrv')->find($fileIndexingId);
+            
+            if (!$fileIndexing) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File indexing record not found.'
+                ], 404);
+            }
+            
+            $validated = $request->validate([
+                'file_path' => 'required|string',
+                'page_number' => 'required|integer|min:1',
+                'scanning_id' => 'required|integer',
+                'page_type' => 'required|string',
+                'page_subtype' => 'nullable|string',
+                'serial_number' => 'required|integer|min:1',
+                'page_code' => 'nullable|string'
+            ]);
+            
+            // Check if page typing already exists for this specific page
+            $existingPageTyping = PageTyping::on('sqlsrv')
+                ->where('file_indexing_id', $fileIndexingId)
+                ->where('file_path', $validated['file_path'])
+                ->where('page_number', $validated['page_number'])
+                ->first();
+            
+            if ($existingPageTyping) {
+                // Update existing record
+                $existingPageTyping->update([
+                    'page_type' => $validated['page_type'],
+                    'page_subtype' => $validated['page_subtype'],
+                    'serial_number' => $validated['serial_number'],
+                    'page_code' => $validated['page_code'],
+                    'typed_by' => Auth::id(),
+                    'updated_at' => now()
+                ]);
+                
+                $pageTyping = $existingPageTyping;
+            } else {
+                // Create new record
+                $pageTyping = PageTyping::on('sqlsrv')->create([
+                    'file_indexing_id' => $fileIndexingId,
+                    'file_path' => $validated['file_path'],
+                    'page_number' => $validated['page_number'],
+                    'page_type' => $validated['page_type'],
+                    'page_subtype' => $validated['page_subtype'],
+                    'serial_number' => $validated['serial_number'],
+                    'page_code' => $validated['page_code'],
+                    'typed_by' => Auth::id()
+                ]);
+            }
+            
+            Log::info('Single page typing saved', [
+                'file_indexing_id' => $fileIndexingId,
+                'page_typing_id' => $pageTyping->id,
+                'page_number' => $validated['page_number'],
+                'typed_by' => Auth::id()
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Page classification saved successfully!',
+                'page_typing_id' => $pageTyping->id
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Error saving single page typing', [
+                'file_indexing_id' => $fileIndexingId,
+                'error' => $e->getMessage(),
+                'request_data' => $request->all()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error saving page classification: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Batch save page typing data (AJAX endpoint)
+     */
+    public function batchSavePageTyping(Request $request, $fileIndexingId)
+    {
+        try {
+            $fileIndexing = FileIndexing::on('sqlsrv')->find($fileIndexingId);
+            
+            if (!$fileIndexing) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File indexing record not found.'
+                ], 404);
+            }
+            
+            $validated = $request->validate([
+                'pages' => 'required|array',
+                'pages.*.file_path' => 'required|string',
+                'pages.*.page_number' => 'required|integer|min:1',
+                'pages.*.scanning_id' => 'required|integer',
+                'pages.*.page_type' => 'required|string',
+                'pages.*.page_subtype' => 'nullable|string',
+                'pages.*.serial_number' => 'required|integer|min:1',
+                'pages.*.page_code' => 'nullable|string'
+            ]);
+            
+            $savedCount = 0;
+            $errors = [];
+            
+            foreach ($validated['pages'] as $index => $pageData) {
+                try {
+                    // Check if page typing already exists
+                    $existingPageTyping = PageTyping::on('sqlsrv')
+                        ->where('file_indexing_id', $fileIndexingId)
+                        ->where('file_path', $pageData['file_path'])
+                        ->where('page_number', $pageData['page_number'])
+                        ->first();
+                    
+                    if ($existingPageTyping) {
+                        // Update existing record
+                        $existingPageTyping->update([
+                            'page_type' => $pageData['page_type'],
+                            'page_subtype' => $pageData['page_subtype'],
+                            'serial_number' => $pageData['serial_number'],
+                            'page_code' => $pageData['page_code'],
+                            'typed_by' => Auth::id(),
+                            'updated_at' => now()
+                        ]);
+                    } else {
+                        // Create new record
+                        PageTyping::on('sqlsrv')->create([
+                            'file_indexing_id' => $fileIndexingId,
+                            'file_path' => $pageData['file_path'],
+                            'page_number' => $pageData['page_number'],
+                            'page_type' => $pageData['page_type'],
+                            'page_subtype' => $pageData['page_subtype'],
+                            'serial_number' => $pageData['serial_number'],
+                            'page_code' => $pageData['page_code'],
+                            'typed_by' => Auth::id()
+                        ]);
+                    }
+                    
+                    $savedCount++;
+                    
+                } catch (Exception $e) {
+                    $errors[] = [
+                        'index' => $index,
+                        'page_number' => $pageData['page_number'] ?? 'unknown',
+                        'error' => $e->getMessage()
+                    ];
+                    
+                    Log::error('Error saving page in batch', [
+                        'file_indexing_id' => $fileIndexingId,
+                        'page_index' => $index,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            
+            Log::info('Batch page typing completed', [
+                'file_indexing_id' => $fileIndexingId,
+                'total_pages' => count($validated['pages']),
+                'saved_count' => $savedCount,
+                'error_count' => count($errors),
+                'typed_by' => Auth::id()
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Batch save completed! {$savedCount} pages saved successfully.",
+                'saved_count' => $savedCount,
+                'total_count' => count($validated['pages']),
+                'errors' => $errors
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Error in batch save page typing', [
+                'file_indexing_id' => $fileIndexingId,
+                'error' => $e->getMessage(),
+                'request_data' => $request->all()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error in batch save operation: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Finish page typing and complete EDMS workflow
+     */
+    public function finishPageTyping(Request $request, $fileIndexingId)
+    {
+        try {
+            $fileIndexing = FileIndexing::on('sqlsrv')->find($fileIndexingId);
+            
+            if (!$fileIndexing) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File indexing record not found.'
+                ], 404);
+            }
+            
+            $validated = $request->validate([
+                'classifications' => 'required|array',
+                'classifications.*.file_path' => 'required|string',
+                'classifications.*.page_number' => 'required|integer|min:1',
+                'classifications.*.scanning_id' => 'required|integer',
+                'classifications.*.page_type' => 'required|string',
+                'classifications.*.page_subtype' => 'nullable|string',
+                'classifications.*.serial_number' => 'required|integer|min:1',
+                'classifications.*.page_code' => 'nullable|string'
+            ]);
+            
+            // Delete existing page typing records for this file
+            PageTyping::on('sqlsrv')->where('file_indexing_id', $fileIndexingId)->delete();
+            
+            // Create new page typing records
+            $savedCount = 0;
+            foreach ($validated['classifications'] as $classification) {
+                try {
+                    PageTyping::on('sqlsrv')->create([
+                        'file_indexing_id' => $fileIndexingId,
+                        'file_path' => $classification['file_path'],
+                        'page_number' => $classification['page_number'],
+                        'page_type' => $classification['page_type'],
+                        'page_subtype' => $classification['page_subtype'],
+                        'serial_number' => $classification['serial_number'],
+                        'page_code' => $classification['page_code'],
+                        'typed_by' => Auth::id()
+                    ]);
+                    
+                    $savedCount++;
+                } catch (Exception $e) {
+                    Log::error('Error saving classification in finish', [
+                        'file_indexing_id' => $fileIndexingId,
+                        'classification' => $classification,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            
+            // Update scanning status to completed
+            Scanning::on('sqlsrv')->where('file_indexing_id', $fileIndexingId)->update(['status' => 'completed']);
+            
+            Log::info('Page typing workflow completed', [
+                'file_indexing_id' => $fileIndexingId,
+                'total_classifications' => count($validated['classifications']),
+                'saved_count' => $savedCount,
+                'typed_by' => Auth::id()
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Page typing completed successfully! {$savedCount} pages classified.",
+                'saved_count' => $savedCount,
+                'total_count' => count($validated['classifications'])
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Error finishing page typing', [
+                'file_indexing_id' => $fileIndexingId,
+                'error' => $e->getMessage(),
+                'request_data' => $request->all()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error completing page typing: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

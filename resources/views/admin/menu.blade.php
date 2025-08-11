@@ -264,11 +264,12 @@
 
       <!-- Conversion/Regularization Section -->
       @if($hasRole('Conversion/Regularization'))
-      <a href="/programmes/regularization" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
-        <i data-lucide="file-down" class="h-4 w-4 text-purple-500"></i>
-        <span>Conversion/Regularization</span>
-      </a>
-      @endif
+    <a href="/programmes/regularization" 
+       class="sidebar-item flex items-center gap-2 py-2 rounded-md transition-all duration-200">
+        <i data-lucide="arrow-left-right" class="h-4 w-4 text-purple-500"></i>
+        <span class="truncate">Conversion/Regularization</span>
+    </a>
+@endif
 
       <!-- Land Property Enumeration Section -->
       @if($hasRole('Land Property Enumeration'))

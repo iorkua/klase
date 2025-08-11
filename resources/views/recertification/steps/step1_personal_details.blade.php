@@ -332,8 +332,8 @@
                 </div>
                 
                 <div class="lg:col-span-3 space-y-4">
-                    <!-- Individual Passport Photo (Shows by default since Individual is selected) -->
-                    <div id="individual-photo-section" class="photo-upload-area text-center">
+                    <!-- Individual Passport Photo (Shows for Individual only) -->
+                    <div id="individual-photo-section" class="photo-upload-area text-center" style="display: block;">
                         <input type="file" id="passportPhoto" name="passportPhoto" accept="image/*" class="hidden" />
                         <div id="photo-preview-container" class="mb-3 hidden">
                             <!-- Passport Card Style Preview -->
@@ -362,7 +362,7 @@
                     </div>
 
                     <!-- Corporate/Government Body CAC Document (Hidden by default) -->
-                    <div id="corporate-document-section" class="document-upload-area hidden">
+                    <div id="corporate-document-section" class="document-upload-area" style="display: none;">
                         <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
                             <input type="file" id="cacDocument" name="cacDocument" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
                             <i data-lucide="file-text" class="h-8 w-8 mx-auto mb-2 text-gray-400"></i>
@@ -384,7 +384,7 @@
                     </div>
 
                     <!-- Multiple Owners - Empty sidebar message (Hidden by default) -->
-                    <div id="multiple-owners-sidebar" class="owners-sidebar-section hidden">
+                    <div id="multiple-owners-sidebar" class="owners-sidebar-section" style="display: none;">
                         <div class="text-center text-gray-500 py-8">
                             <i data-lucide="users" class="h-12 w-12 mx-auto mb-3 text-gray-400"></i>
                             <div class="text-sm font-medium mb-1">Multiple Owners</div>
@@ -396,3 +396,73 @@
         </div>
     </div>
 </div>
+
+<script>
+// Immediate script to handle applicant type changes
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Step 1 - Setting up applicant type handler');
+    
+    const applicantTypeSelect = document.getElementById('applicantType');
+    const individualPhotoSection = document.getElementById('individual-photo-section');
+    const corporateDocumentSection = document.getElementById('corporate-document-section');
+    const multipleOwnersSidebar = document.getElementById('multiple-owners-sidebar');
+    
+    function updateFileUploadSections(applicantType) {
+        console.log('Updating file upload sections for:', applicantType);
+        
+        // Hide all sections first using inline styles to override any CSS conflicts
+        if (individualPhotoSection) {
+            individualPhotoSection.style.display = 'none';
+            console.log('Hidden individual photo section');
+        }
+        if (corporateDocumentSection) {
+            corporateDocumentSection.style.display = 'none';
+            console.log('Hidden corporate document section');
+        }
+        if (multipleOwnersSidebar) {
+            multipleOwnersSidebar.style.display = 'none';
+            console.log('Hidden multiple owners sidebar');
+        }
+        
+        // Show appropriate section based on applicant type
+        switch(applicantType) {
+            case 'Individual':
+                if (individualPhotoSection) {
+                    individualPhotoSection.style.display = 'block';
+                    console.log('Showed individual photo section');
+                }
+                break;
+                
+            case 'Corporate':
+            case 'Government Body':
+                if (corporateDocumentSection) {
+                    corporateDocumentSection.style.display = 'block';
+                    console.log('Showed corporate document section for', applicantType);
+                }
+                break;
+                
+            case 'Multiple Owners':
+                if (multipleOwnersSidebar) {
+                    multipleOwnersSidebar.style.display = 'block';
+                    console.log('Showed multiple owners sidebar');
+                }
+                break;
+        }
+    }
+    
+    if (applicantTypeSelect) {
+        // Set initial state
+        updateFileUploadSections(applicantTypeSelect.value);
+        
+        // Add change listener
+        applicantTypeSelect.addEventListener('change', function() {
+            console.log('Applicant type changed to:', this.value);
+            updateFileUploadSections(this.value);
+        });
+        
+        console.log('Applicant type handler setup complete');
+    } else {
+        console.error('Applicant type select not found!');
+    }
+});
+</script>

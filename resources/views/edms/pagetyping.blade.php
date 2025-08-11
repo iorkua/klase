@@ -839,16 +839,21 @@
         <!-- Breadcrumb -->
         <nav class="breadcrumb">
             <ol class="breadcrumb-list">
-                <li class="breadcrumb-item"@if($fileIndexing->recertification_application_id)
+                <li class="breadcrumb-item">
+                    @if($fileIndexing->recertification_application_id)
                         <a href="{{ route('edms.recertification.index', $fileIndexing->recertification_application_id) }}" class="breadcrumb-link">
                             EDMS Workflow
                         </a>
                     @elseif($fileIndexing->subapplication_id)
-                        <a href="{{ route('edms.sub.index', $fileIndexing->main_application_id) }}" class="breadcrumb-link">
+                        <a href="{{ route('edms.index', [$fileIndexing->main_application_id, 'sub']) }}" class="breadcrumb-link">
+                            EDMS Workflow
+                        </a>
+                    @elseif($fileIndexing->main_application_id)
+                        <a href="{{ route('edms.index', $fileIndexing->main_application_id) }}" class="breadcrumb-link">
                             EDMS Workflow
                         </a>
                     @else
-                        <a href="{{ route('edms.index', $fileIndexing->main_application_id) }}" class="breadcrumb-link">
+                        <a href="#" class="breadcrumb-link">
                             EDMS Workflow
                         </a>
                     @endif
@@ -1610,7 +1615,15 @@
                 if (result.success) {
                     showNotification('Page classification completed successfully!', 'success');
                     setTimeout(() => {
-                        window.location.href = `{{ route('edms.index', $fileIndexing->main_application_id) }}`;
+                        @if($fileIndexing->recertification_application_id)
+                            window.location.href = `{{ route('edms.recertification.index', $fileIndexing->recertification_application_id) }}`;
+                        @elseif($fileIndexing->subapplication_id)
+                            window.location.href = `{{ route('edms.index', [$fileIndexing->main_application_id, 'sub']) }}`;
+                        @elseif($fileIndexing->main_application_id)
+                            window.location.href = `{{ route('edms.index', $fileIndexing->main_application_id) }}`;
+                        @else
+                            window.location.href = `{{ url()->previous() }}`;
+                        @endif
                     }, 1500);
                 } else {
                     showNotification(result.message || 'Error completing classification', 'error');
