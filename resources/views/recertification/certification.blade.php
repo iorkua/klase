@@ -6,7 +6,7 @@
 @section('content')
 <script>
 // Tailwind config
-tailwind.config = {
+tailwind.config = { 
   theme: {
     extend: { 
       colors: {

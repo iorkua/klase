@@ -120,6 +120,7 @@ tailwind.config = {
                 
                 <div class="rounded-md border border-gray-200" id="applications-table-container">
                     <div class="p-6">
+                        
                         <!-- Table -->
                         <div class="table-container">
                             <table class="w-full">
@@ -347,11 +348,40 @@ function renderVerificationTable(data) {
                         </button>
                         
                         <div id="${actionMenuId}" class="hidden absolute right-0 top-full mt-1 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                            <div class="py-1">
+                                <button onclick="viewApplicationDetails(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2">
+                                    <i data-lucide="eye" class="h-4 w-4"></i>
+                                    View Application
+                                </button>
+                                
+                                ${!isVerified ? `
+                                <button onclick="generateVerificationSheet(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-blue-700 hover:bg-blue-50 gap-2">
+                                    <i data-lucide="file-plus" class="h-4 w-4"></i>
+                                    Generate Verification Sheet
+                                </button>
+                                ` : `
+                                <button onclick="generateVerificationSheet(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-400 cursor-not-allowed gap-2" disabled>
+                                    <i data-lucide="file-plus" class="h-4 w-4"></i>
+                                    Generate Verification Sheet
+                                </button>
+                                `}
+                                
+                                ${isVerified ? `
+                                <button onclick="viewVerificationSheet(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-green-700 hover:bg-green-50 gap-2">
+                                    <i data-lucide="file-text" class="h-4 w-4"></i>
+                                    View Verification Sheet
+                                </button>
+                                ` : `
+                                <button onclick="viewVerificationSheet(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-400 cursor-not-allowed gap-2" disabled>
+                                    <i data-lucide="file-text" class="h-4 w-4"></i>
+                                    View Verification Sheet
+                                </button>
+                                `}
                                 
                                 ${!isVerified ? `
                                 <button onclick="markAsVerified(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-green-700 hover:bg-green-50 gap-2">
                                     <i data-lucide="check-circle" class="h-4 w-4"></i>
-                                   Generate Verification
+                                    Mark as Verified
                                 </button>
                                 ` : ''}
                             </div>
@@ -447,7 +477,26 @@ function toggleActionMenu(menuId) {
 
 // Application Action Functions
 function generateVerificationSheet(id) {
+    console.log('Generating verification sheet for application:', id);
+    
+    // Close action menus
+    document.querySelectorAll('[id^="action-menu-"]').forEach(menu => {
+        menu.classList.add('hidden');
+    });
+    
     // Open verification template (printable) in new tab
+    window.open(`/recertification/${id}/verification`, '_blank');
+}
+
+function viewVerificationSheet(id) {
+    console.log('Viewing verification sheet for application:', id);
+    
+    // Close action menus
+    document.querySelectorAll('[id^="action-menu-"]').forEach(menu => {
+        menu.classList.add('hidden');
+    });
+    
+    // Open verification sheet in new tab
     window.open(`/recertification/${id}/verification`, '_blank');
 }
 
@@ -583,6 +632,8 @@ function removeToast(toastId) {
 // Make functions available globally
 window.toggleActionMenu = toggleActionMenu;
 window.viewApplicationDetails = viewApplicationDetails;
+window.generateVerificationSheet = generateVerificationSheet;
+window.viewVerificationSheet = viewVerificationSheet;
 window.removeToast = removeToast;
 window.loadVerificationData = loadVerificationData;
 window.markAsVerified = markAsVerified;

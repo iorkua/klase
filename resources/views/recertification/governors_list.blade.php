@@ -97,6 +97,10 @@ tailwind.config = {
                     <p class="text-gray-600">Applications forwarded to Governor for final executive approval</p>
                 </div>
                 <div class="flex gap-3">
+                    <button id="batch-process-btn" onclick="processBatch()" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-4 py-2 transition-all cursor-pointer bg-green-600 text-white hover:bg-green-700 gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                        <i data-lucide="check-circle" class="h-4 w-4"></i>
+                        Batch Processing & Approval
+                    </button>
                     <a href="{{ route('recertification.index') }}" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-4 py-2 transition-all cursor-pointer bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50 gap-2">
                         <i data-lucide="arrow-left" class="h-4 w-4"></i>
                         Back to Applications
@@ -129,7 +133,7 @@ tailwind.config = {
                         </div>
                     </div>
                 </div>
-                
+<!--                 
                 <div class="bg-white rounded-lg shadow border border-gray-200 p-6">
                     <div class="flex items-center">
                         <div class="p-2 bg-yellow-100 rounded-lg">
@@ -140,7 +144,7 @@ tailwind.config = {
                             <p class="text-2xl font-bold text-gray-900" id="pending-count">0</p>
                         </div>
                     </div>
-                </div>
+                </div> -->
                 
                 <div class="bg-white rounded-lg shadow border border-gray-200 p-6">
                     <div class="flex items-center">
@@ -180,7 +184,7 @@ tailwind.config = {
                 <div class="p-6 border-b border-gray-200">
                     <div class="flex items-center justify-between">
                         <h3 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                            <i data-lucide="list" class="h-5 w-5 text-purple-600"></i>
+                            <i data-lucide="list-end" class="h-5 w-5 text-purple-600"></i>
                             Governors List (<span id="applications-count">0</span>)
                         </h3>
                         <span class="badge badge-purple">
@@ -196,12 +200,14 @@ tailwind.config = {
                             <table class="w-full">
                                 <thead>
                                     <tr class="border-b bg-gray-50">
+                                        <th class="text-left p-4 font-medium text-gray-700">
+                                            <input type="checkbox" id="select-all" onchange="toggleSelectAll()" class="rounded border-gray-300">
+                                        </th>
                                         <th class="text-left p-4 font-medium text-gray-700">File No</th>
                                         <th class="text-left p-4 font-medium text-gray-700">Application Type</th>
                                         <th class="text-left p-4 font-medium text-gray-700">Applicant Name</th>
                                         <th class="text-left p-4 font-medium text-gray-700">Plot Details</th>
                                         <th class="text-left p-4 font-medium text-gray-700">LGA</th>
-                                        <th class="text-left p-4 font-medium text-gray-700">Submitted Date</th>
                                         <th class="text-left p-4 font-medium text-gray-700">Governor Status</th>
                                         <th class="text-left p-4 font-medium text-gray-700">Actions</th>
                                     </tr>
@@ -238,6 +244,33 @@ tailwind.config = {
 <script>
 // Governors List Table Management
 let governorsData = [];
+
+function getPrerequisitesStatus(app) {
+    const prerequisites = [
+        { key: 'acknowledgement_generated', label: 'Acknowledgement' },
+        { key: 'verification_generated', label: 'Verification Sheet' },
+        { key: 'gis_captured', label: 'GIS Captured' },
+        { key: 'vetting_generated', label: 'Vetting Sheet' },
+        { key: 'edms_captured', label: 'EDMS Captured' },
+        { key: 'cofo_front_generated', label: 'CofO Front Page' },
+        { key: 'dg_approval', label: 'DG Approval' } // Additional prerequisite for Governor's List
+    ];
+    
+    const completed = prerequisites.filter(p => app[p.key]).length;
+    const total = prerequisites.length;
+    const isComplete = completed === total;
+    
+    return {
+        completed,
+        total,
+        isComplete,
+        percentage: Math.round((completed / total) * 100),
+        details: prerequisites.map(p => ({
+            ...p,
+            status: app[p.key] ? 'completed' : 'pending'
+        }))
+    };
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Governors list table script loaded');
@@ -286,6 +319,9 @@ function loadGovernorsData() {
         
         // Render table
         renderGovernorsTable();
+        
+        // Update batch processing button
+        updateBatchProcessingButton();
     })
     .catch(error => {
         console.error('Error loading Governors data:', error);
@@ -389,9 +425,20 @@ function renderGovernorsTable() {
     // Generate table rows
     const rows = governorsData.map(app => {
         const actionMenuId = `action-menu-${app.id}`;
+        const prerequisitesStatus = getPrerequisitesStatus(app);
+        const canSelect = prerequisitesStatus.isComplete && !app.governor_approval;
         
         return `
-            <tr class="table-row border-b hover:bg-gray-50">
+            <tr class="table-row border-b hover:bg-gray-50 ${!canSelect ? 'opacity-60' : ''}">
+                <td class="p-4">
+                    <input 
+                        type="checkbox" 
+                        class="application-checkbox rounded border-gray-300" 
+                        value="${app.id}"
+                        onchange="updateBatchProcessingButton()"
+                        ${!canSelect ? 'disabled' : ''}
+                    >
+                </td>
                 <td class="p-4">
                     <div class="font-medium text-blue-900 font-mono">${app.file_number || 'N/A'}</div>
                 </td>
@@ -408,9 +455,6 @@ function renderGovernorsTable() {
                 </td>
                 <td class="p-4">
                     <div class="text-gray-900">${app.lga_name || 'N/A'}</div>
-                </td>
-                <td class="p-4">
-                    <div class="text-gray-900">${app.submitted_to_governor_date || 'N/A'}</div>
                 </td>
                 <td class="p-4">
                     ${getGovernorStatusBadge(app.governor_status)}
@@ -444,6 +488,107 @@ function renderGovernorsTable() {
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
     }
+}
+
+function updateBatchProcessingButton() {
+    const checkboxes = document.querySelectorAll('.application-checkbox:checked');
+    const batchProcessBtn = document.getElementById('batch-process-btn');
+    
+    const readyForBatch = governorsData.filter(app => {
+        const status = getPrerequisitesStatus(app);
+        return status.isComplete && !app.governor_approval;
+    }).length;
+    
+    if (batchProcessBtn) {
+        if (checkboxes.length > 0) {
+            batchProcessBtn.disabled = false;
+            batchProcessBtn.innerHTML = `
+                <i data-lucide="check-circle" class="h-4 w-4"></i>
+                Process Selected (${checkboxes.length})
+            `;
+        } else {
+            batchProcessBtn.disabled = readyForBatch === 0;
+            batchProcessBtn.innerHTML = `
+                <i data-lucide="check-circle" class="h-4 w-4"></i>
+                Batch Processing & Approval ${readyForBatch > 0 ? `(${readyForBatch} ready)` : ''}
+            `;
+        }
+        
+        // Reinitialize icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }
+}
+
+function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('select-all');
+    const applicationCheckboxes = document.querySelectorAll('.application-checkbox:not(:disabled)');
+    
+    applicationCheckboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+    
+    updateBatchProcessingButton();
+}
+
+function processBatch() {
+    const selectedCheckboxes = document.querySelectorAll('.application-checkbox:checked');
+    const batchProcessBtn = document.getElementById('batch-process-btn');
+    
+    if (selectedCheckboxes.length === 0) {
+        showToast('Please select applications to process', 'error');
+        return;
+    }
+    
+    // Show loading state
+    batchProcessBtn.disabled = true;
+    batchProcessBtn.innerHTML = `
+        <div class="loading-spinner"></div>
+        Processing...
+    `;
+    
+    // Get selected application IDs
+    const applicationIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
+    
+    // Send batch processing request
+    fetch('/recertification/batch-process-governor', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            application_ids: applicationIds
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            
+            // Reload data to reflect changes
+            loadGovernorsData();
+            
+            // Uncheck select all
+            const selectAllCheckbox = document.getElementById('select-all');
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = false;
+            }
+        } else {
+            showToast(data.message || 'Failed to process applications', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error processing batch:', error);
+        showToast('Failed to process applications', 'error');
+    })
+    .finally(() => {
+        // Reset button state
+        updateBatchProcessingButton();
+    });
 }
 
 function setupSearch() {
@@ -569,10 +714,52 @@ function closeActionMenus() {
     });
 }
 
+// Toast notification function
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    
+    const toast = document.createElement('div');
+    toast.className = `p-4 rounded-lg shadow-lg border max-w-sm ${
+        type === 'success' ? 'bg-green-50 border-green-200 text-green-800' :
+        type === 'error' ? 'bg-red-50 border-red-200 text-red-800' :
+        type === 'warning' ? 'bg-yellow-50 border-yellow-200 text-yellow-800' :
+        'bg-blue-50 border-blue-200 text-blue-800'
+    }`;
+    
+    toast.innerHTML = `
+        <div class="flex items-center gap-2">
+            <i data-lucide="${
+                type === 'success' ? 'check-circle' :
+                type === 'error' ? 'alert-circle' :
+                type === 'warning' ? 'alert-triangle' :
+                'info'
+            }" class="h-4 w-4"></i>
+            <span class="text-sm font-medium">${message}</span>
+        </div>
+    `;
+    
+    container.appendChild(toast);
+    
+    // Initialize icons
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 5000);
+}
+
 // Make functions available globally
 window.toggleActionMenu = toggleActionMenu;
 window.viewApplication = viewApplication;
 window.loadGovernorsData = loadGovernorsData;
+window.toggleSelectAll = toggleSelectAll;
+window.processBatch = processBatch;
 
 console.log('Governors list table script initialized');
 </script>

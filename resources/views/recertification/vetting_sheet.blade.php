@@ -95,7 +95,7 @@ tailwind.config = {
             </div>
 
             <!-- Statistics -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 hidden">
                 <div class="bg-white rounded-lg shadow border border-gray-200 p-6">
                     <div class="flex items-center">
                         <div class="p-2 bg-blue-100 rounded-lg">
@@ -192,7 +192,7 @@ tailwind.config = {
                                         <th class="text-left p-4 font-medium text-gray-700">Plot Details</th>
                                         <th class="text-left p-4 font-medium text-gray-700">LGA</th>
                                         <th class="text-left p-4 font-medium text-gray-700">Application Date</th>
-                                        <th class="text-left p-4 font-medium text-gray-700">Status</th>
+                                        <!-- <th class="text-left p-4 font-medium text-gray-700">Status</th> -->
                                         <th class="text-left p-4 font-medium text-gray-700">Actions</th>
                                     </tr>
                                 </thead>
@@ -398,9 +398,7 @@ function renderVettingTable() {
                 <td class="p-4">
                     <div class="text-gray-900">${app.created_at || 'N/A'}</div>
                 </td>
-                <td class="p-4">
-                    ${getStatusBadge(app.vetting_status)}
-                </td>
+                
                 <td class="p-4">
                     <div class="relative">
                         <button 
@@ -415,6 +413,10 @@ function renderVettingTable() {
                                 <button onclick="viewApplication(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2">
                                     <i data-lucide="eye" class="h-4 w-4"></i>
                                     View Application
+                                </button>
+                                <button onclick="viewPrintVettingSheet()" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2">
+                                    <i data-lucide="folder-open" class="h-4 w-4"></i>
+                                    View/Print Vetting Sheet
                                 </button>
                             </div>
                         </div>
@@ -549,6 +551,111 @@ function viewApplication(id) {
     window.location.href = `/recertification/${id}/details`;
 }
 
+function viewPrintVettingSheet() {
+    console.log('Opening Vetting Sheet folder...');
+    closeActionMenus();
+    
+    // Multiple folder path formats to try
+    const folderPaths = [
+        'file:///C:/Users/admin/Documents/',
+        'file://C:/Users/admin/Documents/',
+        'file:///C:/Users/admin/Documents',
+        'C:/Users/admin/Documents/'
+    ];
+    
+    let opened = false;
+    
+    // Try each path format
+    for (let i = 0; i < folderPaths.length && !opened; i++) {
+        try {
+            console.log(`Trying to open: ${folderPaths[i]}`);
+            
+            // Method 1: Direct window.open
+            const newWindow = window.open(folderPaths[i], '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes,toolbar=yes,location=yes');
+            
+            // Give it a moment to load
+            setTimeout(() => {
+                if (newWindow && !newWindow.closed) {
+                    console.log('Successfully opened folder with window.open');
+                    opened = true;
+                }
+            }, 100);
+            
+            if (opened) break;
+            
+            // Method 2: Create and click link
+            const link = document.createElement('a');
+            link.href = folderPaths[i];
+            link.target = '_blank';
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            
+            // Simulate user click
+            const clickEvent = new MouseEvent('click', {
+                view: window,
+                bubbles: true,
+                cancelable: true
+            });
+            
+            link.dispatchEvent(clickEvent);
+            document.body.removeChild(link);
+            
+            // Method 3: Try location.href in new window
+            if (!opened) {
+                const popup = window.open('', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes,toolbar=yes,location=yes');
+                if (popup) {
+                    popup.location.href = folderPaths[i];
+                    opened = true;
+                }
+            }
+            
+        } catch (error) {
+            console.error(`Error with path ${folderPaths[i]}:`, error);
+        }
+    }
+    
+    // If nothing worked, try Windows-specific approach
+    if (!opened) {
+        try {
+            // Try Windows explorer command
+            const explorerPath = 'file:///C:/Windows/explorer.exe?C:\\Users\\admin\\Documents';
+            window.open(explorerPath, '_blank');
+            opened = true;
+        } catch (error) {
+            console.error('Explorer method failed:', error);
+        }
+    }
+    
+    // Final fallback with more detailed instructions
+    if (!opened) {
+        const message = `Unable to open folder automatically due to browser security restrictions.
+        
+Please manually navigate to the folder using one of these methods:
+
+1. Copy and paste this path in File Explorer:
+   C:\\Users\\admin\\Documents
+
+2. Or copy and paste this in your browser address bar:
+   file:///C:/Users/admin/Documents/
+
+3. Or press Windows key + R, then type:
+   C:\\Users\\admin\\Documents
+
+Note: Some browsers block direct file system access for security reasons.`;
+        
+        alert(message);
+        
+        // Also try to copy the path to clipboard
+        try {
+            navigator.clipboard.writeText('C:\\Users\\admin\\Documents').then(() => {
+                console.log('Path copied to clipboard');
+            });
+        } catch (clipboardError) {
+            console.log('Could not copy to clipboard:', clipboardError);
+        }
+    }
+}
+
 function closeActionMenus() {
     document.querySelectorAll('[id^="action-menu-"]').forEach(menu => {
         menu.classList.add('hidden');
@@ -558,6 +665,7 @@ function closeActionMenus() {
 // Make functions available globally
 window.toggleActionMenu = toggleActionMenu;
 window.viewApplication = viewApplication;
+window.viewPrintVettingSheet = viewPrintVettingSheet;
 window.loadVettingData = loadVettingData;
 
 console.log('Vetting sheet table script initialized');

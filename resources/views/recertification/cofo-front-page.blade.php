@@ -10,7 +10,7 @@
         size: A4;
         margin: 6mm;
       }
-      /* Base document styling */
+      /* Base document styling */ 
       body {
         font-family: "Times New Roman", serif;
         margin: 0;
@@ -226,6 +226,15 @@
       </button>
     </div>
 
+
+   
+
+<script>
+    window.onload = function() {
+        window.print();
+    };
+</script>
+
     <!-- Main certificate container -->
     <div class="certificate-container">
       <!-- Header with title and passport photo -->
@@ -236,15 +245,22 @@
           </div>
           <div class="file-info">
             New FileNo: <span id="fileNumber">{{ $application->file_number ?? 'N/A' }}</span><br />
-            <span id="certificateType">{{ strtoupper($application->land_use ?? 'RESIDENTIAL') }}</span>
+            <span id="certificateType">{{ strtoupper($application->current_land_use ?? 'RESIDENTIAL') }}</span>
           </div>
         </div>
         <div class="passport-section" id="passportSection">
-          <div class="passport-slot @if($application->passport_photo_path) has-photo @endif">
-            @if($application->passport_photo_path)
-              <img src="{{ asset('storage/' . $application->passport_photo_path) }}" alt="Passport Photo" class="passport-photo">
-            @endif
-          </div>
+        <div class="passport-slot @if($application->passport_photo_path) has-photo @endif">
+    @if($application->passport_photo_path)
+        <img src="{{ asset('storage/' . $application->passport_photo_path) }}" 
+             alt="Passport Photo" 
+             class="passport-photo">
+    @else
+        <img src="https://images.vexels.com/media/users/3/129733/isolated/preview/a558682b158debb6d6f49d07d854f99f-casual-male-avatar-silhouette.png" 
+             alt="Default Avatar" 
+             class="passport-photo">
+    @endif
+</div>
+
         </div>
       </div>
 
@@ -254,7 +270,7 @@
         <div class="certify-text">
           This is to certify that:-
           <span class="holder-name" id="holderName">
-            @if($application->applicant_type === 'Corporate')
+          Whose address is  @if($application->applicant_type === 'Corporate')
               {{ strtoupper($application->organisation_name ?? 'N/A') }}
             @else
               {{ strtoupper(trim(($application->surname ?? '') . ' ' . ($application->first_name ?? ''))) ?: 'N/A' }}
@@ -262,7 +278,7 @@
           </span><br />
           Whose address is
           <span class="holder-address" id="holderAddress">
-            {{ strtoupper($application->address ?? 'N/A') }}
+            {{ strtoupper($application->address_line1 ?? 'N/A') }}, {{ strtoupper($application->city_town ?? 'N/A') }}, {{ strtoupper($application->state_name ?? 'N/A') }}
           </span>
         </div>
 
@@ -274,11 +290,12 @@
             in and over the land described in the schedule, and more
             particularly in the plan printed hereto for a term of 99 years
             commencing from <strong>
-              @if($application->commencement_date)
-                {{ strtoupper(date('jS \D\A\Y \O\F F Y', strtotime($application->commencement_date))) }}
+              @if($application->start_date)
+                {{ strtoupper(date('jS \D\A\Y \O\F F Y', strtotime($application->start_date))) }}
               @else
-                23RD DAY OF JUNE 2009
+                {{ strtoupper(date('jS \D\A\Y \O\F F Y', strtotime('2009-06-23'))) }}
               @endif
+            
             </strong> according to
             the true intent and meaning of the Land Use Act No. 6 of 1978 and
             subject to the provisions thereof and to the following special terms
@@ -361,7 +378,7 @@
               sub-lease or bequest, or otherwise howsoever without the prior
               consent of the Governor.
             </li>
-            <li>To use the said land only for {{ strtoupper($application->land_use ?? 'RESIDENTIAL') }} purpose.</li>
+            <li>To use the said land only for {{ strtoupper($application->current_land_use ?? 'RESIDENTIAL') }} purpose.</li>
             <li>
               Not to contravene any of the provisions of the Land Use Act No. 6
               of 1978 and to conform and comply with all rules and regulations

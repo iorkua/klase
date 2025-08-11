@@ -53,14 +53,17 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'recertification'], f
     // Vetting Sheet Routes
     Route::get('/vetting-sheet', [CertificationController::class, 'vettingSheet'])->name('recertification.vetting-sheet');
     Route::get('/vetting-data', [CertificationController::class, 'getVettingData'])->name('recertification.vetting-data');
+    Route::get('/vetting-sheet/browse', [CertificationController::class, 'browseVettingSheetDirectory'])->name('recertification.vetting-sheet.browse');
     
     // DG's List Routes
     Route::get('/dg-list', [CertificationController::class, 'dgList'])->name('recertification.dg-list');
     Route::get('/dg-data', [CertificationController::class, 'getDGData'])->name('recertification.dg-data');
+    Route::post('/batch-process', [CertificationController::class, 'batchProcess'])->name('recertification.batch-process');
     
     // Governors List Routes
     Route::get('/governors-list', [CertificationController::class, 'governorsList'])->name('recertification.governors-list');
     Route::get('/governors-data', [CertificationController::class, 'getGovernorsData'])->name('recertification.governors-data');
+    Route::post('/batch-process-governor', [CertificationController::class, 'batchProcessGovernor'])->name('recertification.batch-process-governor');
     
     // EDMS Routes
     Route::get('/edms', [CertificationController::class, 'edms'])->name('recertification.edms');
@@ -82,3 +85,8 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'edms'], function () 
     Route::get('/{applicationId}/recertification/create-file-indexing', [EdmsController::class, 'createRecertificationFileIndexing'])->name('edms.recertification.create-file-indexing');
     Route::post('/{applicationId}/recertification/create-file-indexing', [EdmsController::class, 'createRecertificationFileIndexing']);
 });
+
+// Vetting Sheet Directory Browser Route (outside groups to avoid prefix conflicts)
+Route::get('/vetting-sheet/browse', [CertificationController::class, 'browseVettingSheetDirectory'])
+    ->middleware(['auth', 'XSS'])
+    ->name('vetting-sheet.browse');
