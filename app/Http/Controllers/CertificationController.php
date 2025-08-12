@@ -59,6 +59,11 @@ class CertificationController extends Controller
 
                 return [
                     'id' => $app->id,
+                    'cofO_serialNo' => $app->cofo_number ?? 'N/A',
+                    'NewKANGISFileno' => $app->NewKANGISFileno ?? 'N/A',
+                    'kangisFileNo' => $app->kangisFileNo ?? 'N/A',
+                    'mlsfNo' => $app->mlsfNo ?? 'N/A',
+                    'reg_no' => $app->reg_no ?? 'N/A',
                     'file_number' => $app->file_number ?? 'N/A',
                     'applicant_name' => $applicantName,
                     'applicant_type' => $app->applicant_type ?? 'N/A',
@@ -293,6 +298,11 @@ class CertificationController extends Controller
 
                 return [
                     'id' => $app->id,
+                    'cofO_serialNo' => $app->cofo_number ?? 'N/A',
+                    'NewKANGISFileno' => $app->NewKANGISFileno ?? 'N/A',
+                    'kangisFileNo' => $app->kangisFileNo ?? 'N/A',
+                    'mlsfNo' => $app->mlsfNo ?? 'N/A',
+                    'reg_no' => $app->reg_no ?? 'N/A',
                     'file_number' => $app->file_number ?? 'N/A',
                     'applicant_name' => $applicantName,
                     'applicant_type' => $app->applicant_type ?? 'N/A',
@@ -346,12 +356,15 @@ class CertificationController extends Controller
     }
 
     /**
-     * Get DG data for the DG's list page
+     * Get DG data for the DG's list page with new fields and improved prerequisites checking
      */
     public function getDGData(Request $request)
     {
         try {
-            Log::info('DG Data Request - Simple Version Started');
+            Log::info('DG Data Request Started');
+            
+            // Development bypass setting - can be controlled via query parameter
+            $bypassPrerequisites = $request->get('bypass', 'false') === 'true'; // Default to false for production
             
             // Test database connection
             try {
@@ -374,26 +387,25 @@ class CertificationController extends Controller
                 
             Log::info('Applications fetched', ['count' => $applications->count()]);
             
-            // Simple data mapping - no complex logic
+            // Process data with new fields for DG's List
             $data = [];
             foreach ($applications as $app) {
                 try {
-                    // Basic applicant name
-                    $applicantName = 'N/A';
+                    // Parse payload to get additional fields
+                    $payload = json_decode($app->payload ?? '{}', true);
+                    
+                    // Determine applicant name based on type (Current Allottee)
+                    $currentAllottee = 'N/A';
                     if ($app->applicant_type === 'Corporate' && !empty($app->organisation_name)) {
-                        $applicantName = $app->organisation_name;
+                        $currentAllottee = $app->organisation_name;
                     } elseif (!empty($app->surname) || !empty($app->first_name)) {
-                        $applicantName = trim(($app->surname ?? '') . ' ' . ($app->first_name ?? ''));
+                        $currentAllottee = trim(($app->surname ?? '') . ' ' . ($app->first_name ?? ''));
                     }
                     
-                    // Basic plot details
-                    $plotDetails = 'N/A';
-                    if (!empty($app->plot_number)) {
-                        $plotDetails = 'Plot: ' . $app->plot_number;
-                        if (!empty($app->layout_district)) {
-                            $plotDetails .= ', ' . $app->layout_district;
-                        }
-                    }
+                    // Get additional fields from payload or direct columns
+                    $plotNo = $payload['plot_number'] ?? $app->plot_number ?? 'N/A';
+                    $landUse = $payload['land_use'] ?? $app->land_use ?? 'N/A';
+                    $layoutName = $payload['layout_name'] ?? $app->layout_name ?? $payload['layout_district'] ?? $app->layout_district ?? 'N/A';
                     
                     // Simple date formatting
                     $createdDate = 'N/A';
@@ -405,27 +417,81 @@ class CertificationController extends Controller
                         }
                     }
                     
+                    // Check prerequisites
+                    if ($bypassPrerequisites) {
+                        // Development mode - all prerequisites are automatically complete
+                        $acknowledgementGenerated = true;
+                        $verificationGenerated = true;
+                        $gisCaptured = true;
+                        $vettingGenerated = true;
+                        $edmsCaptured = true;
+                        $cofoFrontGenerated = true;
+                    } else {
+                        // Production mode - check actual database values
+                        // 1. Check certificate_generated (CofO Front Page)
+                        $cofoFrontGenerated = ($app->certificate_generated ?? 0) == 1;
+                        
+                        // 2. Check acknowledgement
+                        $acknowledgementGenerated = ($app->acknowledgement ?? '') === 'Generated';
+                        
+                        // 3. Check verification status
+                        $verificationGenerated = ($app->verification ?? '') === 'Verified';
+                        
+                        // 4. Check EDMS captured (file_indexings + pagetypings)
+                        $edmsCaptured = false;
+                        try {
+                            $fileIndexing = DB::connection('sqlsrv')->table('file_indexings')
+                                ->where('recertification_application_id', $app->id)
+                                ->first();
+                                
+                            if ($fileIndexing) {
+                                $edmsCaptured = DB::connection('sqlsrv')->table('pagetypings')
+                                    ->where('file_indexing_id', $fileIndexing->id)
+                                    ->exists();
+                            }
+                        } catch (\Throwable $e) {
+                            $edmsCaptured = false;
+                        }
+                        
+                        // 5. Check GIS captured
+                        $gisCaptured = ($app->gis_captured ?? 0) == 1;
+                        
+                        // 6. Check vetting generated
+                        $vettingGenerated = ($app->vetting_generated ?? 0) == 1;
+                    }
+                    
                     // DG approval status
                     $dgApproval = !empty($app->dg_approval) && $app->dg_approval == 1;
                     
                     $data[] = [
                         'id' => $app->id ?? 0,
                         'file_number' => $app->file_number ?? 'N/A',
-                        'applicant_name' => $applicantName,
+                        'cofo_serial_no' => $app->cofo_number ?? 'N/A',
+                        'cofO_serialNo' => $app->cofo_number ?? 'N/A', // Fallback for compatibility
+                        'NewKANGISFileno' => $app->NewKANGISFileno ?? 'N/A',
+                        'kangisFileNo' => $app->kangisFileNo ?? 'N/A',
+                        'mlsfileNo' => $app->mlsfNo ?? 'N/A',
+                        'mlsfNo' => $app->mlsfNo ?? 'N/A', // Fallback for compatibility
+                        'plotNo' => $plotNo,
+                        'plot_number' => $plotNo, // Fallback for compatibility
+                        'land_use' => $landUse,
+                        'currentAllottee' => $currentAllottee,
+                        'applicant_name' => $currentAllottee, // Fallback for compatibility
+                        'layoutName' => $layoutName,
+                        'layout_name' => $layoutName, // Fallback for compatibility
                         'applicant_type' => $app->applicant_type ?? 'N/A',
-                        'plot_details' => $plotDetails,
                         'lga_name' => $app->lga_name ?? 'N/A',
                         'submitted_to_dg_date' => $createdDate,
                         'dg_status' => $dgApproval ? 'approved' : 'pending',
                         'dg_approval' => $dgApproval,
                         'created_at' => $createdDate,
-                        // All prerequisites set to true for development
-                        'acknowledgement_generated' => true,
-                        'verification_generated' => true,
-                        'gis_captured' => true,
-                        'vetting_generated' => true,
-                        'edms_captured' => true,
-                        'cofo_front_generated' => true
+                        // Prerequisites status
+                        'acknowledgement_generated' => $acknowledgementGenerated,
+                        'verification_generated' => $verificationGenerated,
+                        'gis_captured' => $gisCaptured,
+                        'vetting_generated' => $vettingGenerated,
+                        'edms_captured' => $edmsCaptured,
+                        'cofo_front_generated' => $cofoFrontGenerated
                     ];
                     
                 } catch (\Exception $e) {
@@ -435,9 +501,25 @@ class CertificationController extends Controller
                 }
             }
             
+            // Apply filtering only if not bypassing prerequisites
+            if (!$bypassPrerequisites) {
+                $originalCount = count($data);
+                $data = array_filter($data, function($app) {
+                    // Filter to show only applications with all prerequisites completed
+                    return $app['acknowledgement_generated'] && 
+                           $app['verification_generated'] && 
+                           $app['gis_captured'] && 
+                           $app['vetting_generated'] && 
+                           $app['edms_captured'] && 
+                           $app['cofo_front_generated'];
+                });
+                $data = array_values($data); // Reset array keys after filtering
+                Log::info('Prerequisites filtering applied', ['original' => $originalCount, 'filtered' => count($data)]);
+            }
+            
             Log::info('Data processing completed', ['processed_count' => count($data)]);
             
-            // Simple statistics
+            // Calculate statistics
             $total = count($data);
             $approved = 0;
             $thisMonth = 0;
@@ -446,7 +528,7 @@ class CertificationController extends Controller
                 if ($item['dg_approval']) {
                     $approved++;
                 }
-                // Simple this month calculation
+                // This month calculation
                 if ($item['created_at'] !== 'N/A') {
                     try {
                         $itemDate = \DateTime::createFromFormat('d M Y', $item['created_at']);
@@ -476,7 +558,7 @@ class CertificationController extends Controller
             ]);
             
         } catch (\Exception $e) {
-            Log::error('Error in getDGData - Simple Version', [
+            Log::error('Error in getDGData', [
                 'message' => $e->getMessage(),
                 'line' => $e->getLine(),
                 'file' => $e->getFile()
@@ -506,7 +588,7 @@ class CertificationController extends Controller
     {
         try {
             // Development bypass setting - can be controlled via query parameter
-            $bypassPrerequisites = $request->get('bypass', 'true') === 'true'; // Default to true for testing
+            $bypassPrerequisites = $request->get('bypass', 'false') === 'true'; // Default to false for production
             
             $query = DB::connection('sqlsrv')->table('recertification_applications');
             $applications = $query->get();
@@ -731,6 +813,11 @@ class CertificationController extends Controller
 
                 return [
                     'id' => $app->id,
+                    'cofO_serialNo' => $app->cofo_number ?? 'N/A',
+                    'NewKANGISFileno' => $app->NewKANGISFileno ?? 'N/A',
+                    'kangisFileNo' => $app->kangisFileNo ?? 'N/A',
+                    'mlsfNo' => $app->mlsfNo ?? 'N/A',
+                    'reg_no' => $app->reg_no ?? 'N/A',
                     'file_number' => $app->file_number ?? 'N/A',
                     'applicant_name' => $applicantName,
                     'applicant_type' => $app->applicant_type ?? 'N/A',
@@ -839,6 +926,11 @@ class CertificationController extends Controller
 
                 return [
                     'id' => $app->id,
+                    'cofO_serialNo' => $app->cofo_number ?? 'N/A',
+                    'NewKANGISFileno' => $app->NewKANGISFileno ?? 'N/A',
+                    'kangisFileNo' => $app->kangisFileNo ?? 'N/A',
+                    'mlsfNo' => $app->mlsfNo ?? 'N/A',
+                    'reg_no' => $app->reg_no ?? 'N/A',
                     'file_number' => $app->file_number ?? 'N/A',
                     'applicant_name' => $applicantName,
                     'applicant_type' => $app->applicant_type ?? 'N/A',

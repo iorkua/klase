@@ -46,6 +46,11 @@ try {
 
         return [
             'id' => $app->id,
+            'cofO_serialNo' => $app->cofo_number ?? 'N/A',
+            'NewKANGISFileno' => $app->NewKANGISFileno ?? 'N/A',
+            'kangisFileNo' => $app->kangisFileNo ?? 'N/A',
+            'mlsfNo' => $app->mlsfNo ?? 'N/A',
+            'reg_no' => $app->reg_no ?? 'N/A',
             'application_reference' => $app->application_reference ?? 'N/A',
             'file_number' => $app->file_number ?? 'N/A',
             'applicant_name' => $applicantName,
@@ -56,12 +61,6 @@ try {
             'cofo_number' => $app->cofo_number ?? 'N/A',
             'acknowledgement' => $app->acknowledgement ?? null,
             'cofo_exists' => false,
-            // Add the missing fields with correct database field names
-            'cofO_serialNo' => $app->cofO_serialNo ?? 'N/A',
-            'NewKANGISFileno' => $app->NewKANGISFileno ?? 'N/A',
-            'kangisFileNo' => $app->kangisFileNo ?? 'N/A',
-            'mlsfNo' => $app->mlsfNo ?? 'N/A',
-            'reg_no' => $app->reg_no ?? 'N/A',
             'verification' => $app->verification ?? null,
         ];
     });

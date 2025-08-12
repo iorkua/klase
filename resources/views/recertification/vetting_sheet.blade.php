@@ -186,20 +186,18 @@ tailwind.config = {
                             <table class="min-w-full divide-y divide-gray-200" id="vetting-sheet-table">
                                 <thead class="bg-gray-50">
                                     <tr>
+                                         
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                                            CofO Serial No
+                                            New KANGIS FileNo
                                         </th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                                            New KANGIS File No
+                                            KANGIS FileNo
                                         </th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                                            KANGIS File No
+                                            MLS FileNo
                                         </th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                                            MLSF No
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                                            Reg No
+                                            RegNo
                                         </th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                                             Application Type
@@ -403,11 +401,9 @@ function renderVettingTable() {
         
         return `
             <tr class="table-row border-b hover:bg-gray-50">
+              
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">${app.cofO_serialNo || 'N/A'}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">${app.NewKANGISFileno || app.newkangisfileno || app.new_kangis_file_no || 'N/A'}</div>
+                    <div class="text-sm text-gray-900">${app.NewKANGISFileno || 'N/A'}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-900">${app.kangisFileNo || 'N/A'}</div>

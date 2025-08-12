@@ -197,15 +197,15 @@ tailwind.config = {
                 <div class="rounded-md border-t-0" id="gis-table-container">
                     <div class="p-6">
                         <!-- Table -->
-                        <div class="table-container">
-                            <table class="w-full" id="gis-data-capture-table">
+                        <div class="table-container overflow-x-auto">
+                            <table class="w-full min-w-max" id="gis-data-capture-table">
                                 <thead>
                                     <tr class="border-b bg-gray-50">
-                                        <th class="text-left p-4 font-medium text-gray-700">cofO_serialNo</th>
+                                         
                                         <th class="text-left p-4 font-medium text-gray-700">NewKANGISFileno</th>
                                         <th class="text-left p-4 font-medium text-gray-700">kangisFileNo</th>
                                         <th class="text-left p-4 font-medium text-gray-700">mlsfNo</th>
-                                        <th class="text-left p-4 font-medium text-gray-700">reg_no</th>
+                                        <th class="text-left p-4 font-medium text-gray-700">RegNo</th>
                                         <th class="text-left p-4 font-medium text-gray-700">Application Type</th>
                                         <th class="text-left p-4 font-medium text-gray-700">Applicant Name</th>
                                         <th class="text-left p-4 font-medium text-gray-700">Plot Details</th>
@@ -307,7 +307,7 @@ function showLoadingState(tableBodyId) {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="8" class="text-center py-8">
+                <td colspan="12" class="text-center py-8">
                     <div class="loading-spinner mx-auto mb-2"></div>
                     <p class="text-gray-600">Loading GIS data...</p>
                 </td>
@@ -321,7 +321,7 @@ function showErrorState(tableBodyId) {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="8" class="text-center py-8">
+                <td colspan="12" class="text-center py-8">
                     <i data-lucide="alert-circle" class="h-8 w-8 text-red-500 mx-auto mb-2"></i>
                     <p class="text-red-600">Failed to load GIS data</p>
                     <button onclick="loadGISData()" class="mt-2 text-blue-600 hover:text-blue-800">
@@ -420,8 +420,18 @@ function renderGISTable() {
         
         return `
             <tr class="table-row border-b hover:bg-gray-50">
+                
                 <td class="p-4">
-                    <div class="font-medium text-blue-900 font-mono">${app.file_number || 'N/A'}</div>
+                    <div class="text-sm text-gray-900">${app.NewKANGISFileno || 'N/A'}</div>
+                </td>
+                <td class="p-4">
+                    <div class="text-sm text-gray-900">${app.kangisFileNo || 'N/A'}</div>
+                </td>
+                <td class="p-4">
+                    <div class="text-sm text-gray-900">${app.mlsfNo || 'N/A'}</div>
+                </td>
+                <td class="p-4">
+                    <div class="text-sm text-gray-900">${app.reg_no || 'N/A'}</div>
                 </td>
                 <td class="p-4">
                     <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getApplicationTypeClass(app.applicant_type)}">

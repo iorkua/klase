@@ -1,27 +1,275 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Enhanced AI Property Record Assistant - SLTR</title>
+<div class="container mx-auto py-6 space-y-6 max-w-6xl px-4 sm:px-6 lg:px-8">
+  
+  <!-- Page Header -->
+  <div class="space-y-2">
+    <h1 class="text-3xl font-bold tracking-tight text-gray-900">AI Property Record Assistant</h1>
+    <p class="text-lg text-gray-600">Upload property documents for automated data extraction and record creation</p>
+  </div>
+
+  <!-- File Upload Card -->
+  <div class="bg-white rounded-lg shadow border border-gray-200">
+    <div class="p-6 border-b border-gray-200">
+      <h2 class="text-xl font-semibold text-gray-900">Upload Property Record(s) for AI Extraction</h2>
+      <p class="text-sm text-gray-600 mt-1">Upload an image (JPEG, PNG) or PDF of the property document (e.g., Deed of Assignment, C of O).</p>
+    </div>
+    
+    <div class="p-6 space-y-4">
+      <!-- Error Alert -->
+      <div id="error-alert" class="hidden bg-red-50 border border-red-200 rounded-md p-4">
+        <div class="flex">
+          <i data-lucide="alert-circle" class="h-5 w-5 text-red-400"></i>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-red-800">Error</h3>
+            <div id="error-message" class="mt-2 text-sm text-red-700"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- File Upload Area -->
+      <div class="space-y-1">
+        <label class="block text-sm font-medium text-gray-700">Document File</label>
+        <input
+          id="file-input"
+          type="file"
+          accept="image/jpeg,image/png,application/pdf"
+          class="hidden"
+        />
+        <button
+          id="file-upload-btn"
+          class="w-full flex items-center justify-start px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-left font-normal hover:bg-gray-50 transition-colors"
+        >
+          <i data-lucide="file-up" class="mr-2 h-4 w-4"></i>
+          <span id="file-upload-text">Click to select a file</span>
+        </button>
+      </div>
+
+      <!-- Image Preview -->
+      <div id="image-preview" class="hidden border p-2 rounded-md">
+        <label class="text-xs text-gray-500">Image Preview</label>
+        <img id="image-preview-img" class="max-w-full h-auto max-h-96 rounded-md mt-1" />
+      </div>
+
+      <!-- PDF Preview -->
+      <div id="pdf-preview" class="hidden border p-2 rounded-md space-y-2">
+        <label id="pdf-preview-label" class="text-xs text-gray-500">PDF Preview</label>
+        <div class="relative">
+          <img id="pdf-preview-img" class="max-w-full h-auto max-h-[30rem] rounded-md mt-1 border mx-auto" />
+        </div>
+        <div id="pdf-navigation" class="hidden flex justify-center items-center space-x-2 mt-2">
+          <button id="pdf-prev-btn" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1 transition-all cursor-pointer bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50">
+            Previous
+          </button>
+          <span id="pdf-page-info" class="text-sm text-gray-500">Page 1 / 1</span>
+          <button id="pdf-next-btn" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1 transition-all cursor-pointer bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50">
+            Next
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="px-6 pb-6 flex flex-col sm:flex-row gap-2">
+      <button
+        id="start-ai-btn"
+        class="w-full sm:w-auto inline-flex items-center justify-center rounded-md font-medium text-sm px-4 py-2 transition-all cursor-pointer border-0 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled
+      >
+        <i data-lucide="wand-2" class="mr-2 h-4 w-4"></i>
+        Extract Data with AI
+      </button>
+      <button
+        id="reset-btn"
+        class="hidden w-full sm:w-auto inline-flex items-center justify-center rounded-md font-medium text-sm px-4 py-2 transition-all cursor-pointer bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50"
+      >
+        Reset
+      </button>
+    </div>
+  </div>
+
+  <!-- AI Processing Visualizer -->
+  <div id="ai-processing" class="hidden bg-white rounded-lg shadow border border-gray-200">
+    <div class="p-6">
+      <div class="flex justify-between mb-2">
+        <span class="text-sm font-medium">Property Document AI Analysis</span>
+        <span id="ai-progress-text" class="text-sm">0% Complete</span>
+      </div>
+      <div class="relative">
+        <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div id="ai-progress-bar" class="h-full bg-blue-500 rounded-full transition-all duration-500 ease-in-out" style="width: 0%"></div>
+        </div>
+        <div class="flex justify-between mt-2">
+          <div class="flex flex-col items-center stage-indicator" data-stage="0">
+            <div class="w-4 h-4 rounded-full bg-gray-300 mb-1"></div>
+            <span class="text-xs text-gray-500">Init</span>
+          </div>
+          <div class="flex flex-col items-center stage-indicator" data-stage="1">
+            <div class="w-4 h-4 rounded-full bg-gray-300 mb-1"></div>
+            <span class="text-xs text-gray-500">OCR</span>
+          </div>
+          <div class="flex flex-col items-center stage-indicator" data-stage="2">
+            <div class="w-4 h-4 rounded-full bg-gray-300 mb-1"></div>
+            <span class="text-xs text-gray-500">Layout</span>
+          </div>
+          <div class="flex flex-col items-center stage-indicator" data-stage="3">
+            <div class="w-4 h-4 rounded-full bg-gray-300 mb-1"></div>
+            <span class="text-xs text-gray-500">Extract</span>
+          </div>
+          <div class="flex flex-col items-center stage-indicator" data-stage="4">
+            <div class="w-4 h-4 rounded-full bg-gray-300 mb-1"></div>
+            <span class="text-xs text-gray-500">Assemble</span>
+          </div>
+          <div class="flex flex-col items-center stage-indicator" data-stage="5">
+            <div class="w-4 h-4 rounded-full bg-gray-300 mb-1"></div>
+            <span class="text-xs text-gray-500">Done</span>
+          </div>
+        </div>
+      </div>
+      <div class="mt-4 flex items-start gap-3">
+        <div class="p-2 rounded-full bg-blue-100">
+          <i id="ai-stage-icon" data-lucide="brain" class="h-5 w-5 text-blue-600"></i>
+        </div>
+        <div>
+          <p id="ai-stage-title" class="text-sm font-medium mb-1">Current Stage: Initializing</p>
+          <p id="ai-stage-description" class="text-xs text-gray-600">Preparing for AI analysis...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Keyword Findings Display -->
+  <div id="keyword-findings" class="hidden bg-white rounded-lg shadow border border-gray-200">
+    <div class="p-6 border-b border-gray-200">
+      <div class="flex items-center space-x-2">
+        <i data-lucide="file-key-2" class="h-6 w-6 text-blue-600"></i>
+        <h3 class="text-xl font-semibold text-gray-900">Key Document Types Found</h3>
+      </div>
+      <p id="keyword-findings-description" class="text-sm text-gray-600 mt-1"></p>
+    </div>
+    <div class="p-6">
+      <ul id="keyword-findings-list" class="space-y-2">
+        <!-- Keyword findings will be inserted here -->
+      </ul>
+    </div>
+  </div>
+
+  <!-- Raw Extracted Text -->
+  <div id="raw-text-card" class="hidden bg-white rounded-lg shadow border border-gray-200">
+    <div class="p-6 border-b border-gray-200">
+      <div class="flex justify-between items-center">
+        <h3 class="text-xl font-semibold text-gray-900">Raw Extracted Text</h3>
+        <button id="toggle-raw-text" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1 transition-all cursor-pointer bg-transparent text-gray-700 hover:bg-gray-100">
+          <i data-lucide="chevron-down" class="h-4 w-4"></i>
+          Show
+        </button>
+      </div>
+    </div>
+    <div id="raw-text-content" class="collapsible-content">
+      <div class="p-6">
+        <textarea id="raw-text-textarea" readonly rows="10" class="w-full text-xs bg-gray-50 font-mono border border-gray-300 rounded-md p-3"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Extracted Property Details -->
+  <div id="extracted-details" class="hidden bg-white rounded-lg shadow border-l-4 border-l-green-500">
+    <div class="p-6 border-b border-gray-200">
+      <div class="flex items-center space-x-2">
+        <i data-lucide="check-circle" class="h-6 w-6 text-green-600"></i>
+        <h3 class="text-xl font-semibold text-gray-900">AI Extracted Property Details</h3>
+      </div>
+      <p id="extraction-confidence" class="text-sm text-gray-600 mt-1">
+        Review the details extracted by the AI. Add or modify instruments as needed, then save the record.
+      </p>
+    </div>
+    
+    <div class="p-6 space-y-6">
+      <!-- Property Information Form -->
+      <div class="space-y-4">
+        <h4 class="text-lg font-medium text-gray-900 border-b pb-2">Property Information</h4>
+        
+        <div class="p-6 space-y-6">
+          @include('propertycard.partials.add_property_record', ['is_ai_assistant' => true])
+        </div>
+      </div>
+
+      <!-- Instruments Manager -->
+      <div class="border-t pt-6">
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="text-lg font-medium text-gray-900">Document Instruments</h4>
+            <button id="add-instrument-btn" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1 transition-all cursor-pointer bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50 gap-2">
+              <i data-lucide="plus" class="h-4 w-4"></i>
+              Add Instrument
+            </button>
+          </div>
+          
+          <!-- No Instruments State -->
+          <div id="no-instruments" class="text-center py-8 text-gray-500 border-2 border-dashed border-gray-200 rounded-lg">
+            <i data-lucide="file-key-2" class="h-8 w-8 mx-auto mb-2 text-gray-400"></i>
+            <p class="text-sm">No instruments added yet</p>
+            <p class="text-xs text-gray-400">Click "Add Instrument" to get started</p>
+          </div>
+          
+          <!-- Instruments List -->
+          <div id="instruments-list" class="space-y-3">
+            <!-- Instruments will be inserted here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Save Button -->
+      <div class="flex justify-end pt-4 border-t">
+        <button id="save-record-btn" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-4 py-2 transition-all cursor-pointer border-0 bg-green-600 text-white hover:bg-green-700 gap-2">
+          <i data-lucide="check-circle" class="h-4 w-4"></i>
+          Save Property Record
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notifications -->
+<div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2">
+  <!-- Toast messages will be inserted here -->
+</div>
+
 <!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com"></script>
 <!-- Lucide Icons -->
 <script src="https://unpkg.com/lucide@latest"></script>
 <!-- PDF.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<!-- Enhanced Tesseract.js for better OCR -->
-<script src="https://unpkg.com/tesseract.js@5/dist/tesseract.min.js"></script>
-<!-- Alpine.js for reactive components -->
-<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<!-- Tesseract.js for OCR -->
+<script src="https://unpkg.com/tesseract.js@4/dist/tesseract.min.js"></script>
+
+<script>
+// Tailwind config
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        primary: '#3b82f6',
+        'primary-foreground': '#ffffff',
+        muted: '#f3f4f6',
+        'muted-foreground': '#6b7280',
+        border: '#e5e7eb',
+        destructive: '#ef4444',
+        'destructive-foreground': '#ffffff',
+        secondary: '#f1f5f9',
+        'secondary-foreground': '#0f172a',
+      }
+    }
+  }
+}
+</script>
 
 <style>
-/* Enhanced loading spinner */
+/* Loading spinner animation */
 .loading-spinner {
-  width: 1.5rem;
-  height: 1.5rem;
-  border: 3px solid #e5e7eb;
-  border-top: 3px solid #3b82f6;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid #3b82f6;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -31,11 +279,10 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Enhanced file drop zone */
+/* File drop zone styles */
 .file-drop-zone {
   border: 2px dashed #d1d5db;
   transition: all 0.3s ease;
-  min-height: 120px;
 }
 
 .file-drop-zone:hover {
@@ -46,315 +293,83 @@
 .file-drop-zone.dragover {
   border-color: #3b82f6;
   background-color: #eff6ff;
-  transform: scale(1.02);
 }
 
-/* Enhanced progress bar */
+/* Progress bar animation */
 .progress-bar {
-  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.5s ease-in-out;
 }
 
-/* AI stage indicators with better animations */
+/* AI stage indicator animations */
 .stage-indicator {
-  transition: all 0.4s ease;
+  transition: all 0.3s ease;
 }
 
 .stage-indicator.active {
   animation: pulse 2s infinite;
 }
 
-.stage-indicator.completed {
-  animation: bounce 0.6s ease-in-out;
-}
-
 @keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.05); }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
-@keyframes bounce {
-  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-  40% { transform: translateY(-10px); }
-  60% { transform: translateY(-5px); }
+/* Modal backdrop */
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
 }
 
-/* Enhanced collapsible content */
+/* Badge styles */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.badge-success {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.badge-warning {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.badge-error {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.badge-default {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+/* Collapsible content */
 .collapsible-content {
   max-height: 0;
   overflow: hidden;
-  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: max-height 0.3s ease;
 }
 
 .collapsible-content.expanded {
   max-height: 2000px;
 }
 
-/* Enhanced toast notifications */
-.toast-enter {
-  transform: translateX(100%);
-  opacity: 0;
+/* Instrument card styles */
+.instrument-card {
+  border-left: 4px solid #3b82f6;
 }
 
-.toast-enter-active {
-  transform: translateX(0);
-  opacity: 1;
-  transition: all 0.3s ease-out;
+.instrument-card.editing {
+  border-left-color: #10b981;
 }
-
-.toast-exit {
-  transform: translateX(0);
-  opacity: 1;
-}
-
-.toast-exit-active {
-  transform: translateX(100%);
-  opacity: 0;
-  transition: all 0.3s ease-in;
-}
-
-/* Enhanced form styling */
-.form-input:focus {
-  ring-2 ring-blue-500 ring-opacity-50;
-  border-color: #3b82f6;
-}
-
-/* Enhanced confidence indicator */
-.confidence-high { color: #059669; }
-.confidence-medium { color: #d97706; }
-.confidence-low { color: #dc2626; }
 </style>
-</head>
-<body class="min-h-screen bg-gray-50">
-
-<div class="container mx-auto py-6 space-y-6 max-w-6xl px-4 sm:px-6 lg:px-8" x-data="aiAssistant()">
-  
-  <!-- Enhanced Page Header -->
-  <div class="space-y-2">
-    <h1 class="text-3xl font-bold tracking-tight text-gray-900 flex items-center">
-      <i data-lucide="brain" class="mr-3 h-8 w-8 text-blue-600"></i>
-      Enhanced AI Property Record Assistant
-    </h1>
-    <p class="text-lg text-gray-600">Upload property documents for automated data extraction with improved AI processing</p>
-    <div class="flex items-center space-x-4 text-sm text-gray-500">
-      <span class="flex items-center"><i data-lucide="check-circle" class="mr-1 h-4 w-4"></i>Enhanced OCR</span>
-      <span class="flex items-center"><i data-lucide="zap" class="mr-1 h-4 w-4"></i>Faster Processing</span>
-      <span class="flex items-center"><i data-lucide="target" class="mr-1 h-4 w-4"></i>Better Accuracy</span>
-    </div>
-  </div>
-
-  <!-- Enhanced File Upload Card -->
-  <div class="bg-white rounded-lg shadow-lg border border-gray-200">
-    <div class="p-6 border-b border-gray-200">
-      <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-        <i data-lucide="upload" class="mr-2 h-5 w-5 text-blue-600"></i>
-        Upload Property Document
-      </h2>
-      <p class="text-sm text-gray-600 mt-1">Supports JPEG, PNG images and PDF documents. Maximum file size: 10MB</p>
-    </div>
-    
-    <div class="p-6 space-y-4">
-      <!-- Enhanced Error Alert -->
-      <div x-show="error" x-transition class="bg-red-50 border border-red-200 rounded-md p-4">
-        <div class="flex">
-          <i data-lucide="alert-circle" class="h-5 w-5 text-red-400"></i>
-          <div class="ml-3">
-            <h3 class="text-sm font-medium text-red-800">Error</h3>
-            <div x-text="error" class="mt-2 text-sm text-red-700"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Enhanced File Upload Area with Drag & Drop -->
-      <div class="space-y-1">
-        <label class="block text-sm font-medium text-gray-700">Document File</label>
-        <div 
-          class="file-drop-zone relative flex flex-col items-center justify-center px-6 py-8 border-2 border-dashed border-gray-300 rounded-lg hover:bg-gray-50"
-          @drop.prevent="handleDrop($event)"
-          @dragover.prevent="$event.currentTarget.classList.add('dragover')"
-          @dragleave.prevent="$event.currentTarget.classList.remove('dragover')"
-        >
-          <input
-            x-ref="fileInput"
-            type="file"
-            accept="image/jpeg,image/jpg,image/png,application/pdf"
-            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            tabindex="0"
-            aria-label="Choose a document file"
-            title="Choose a document file"
-            @change="handleFileChange($event)"
-            @input="handleFileChange($event)"
-          />
-          <div class="text-center">
-            <i data-lucide="file-up" class="mx-auto h-12 w-12 text-gray-400"></i>
-            <div class="mt-4">
-              <p class="text-lg font-medium text-gray-900" x-text="selectedFile ? selectedFile.name : 'Drop files here or click to browse'"></p>
-              <p class="text-sm text-gray-500">JPEG, PNG, PDF up to 10MB</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Debug Information (temporary) -->
-      <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4 text-sm hidden">
-        <h4 class="font-medium text-yellow-800 mb-2">Debug Info:</h4>
-        <div class="space-y-1 text-yellow-700">
-          <div>Selected File: <span x-text="selectedFile ? selectedFile.name : 'None'"></span></div>
-          <div>File Type: <span x-text="fileType || 'None'"></span></div>
-          <div>Preview URL: <span x-text="previewUrl ? 'Set' : 'None'"></span></div>
-          <div>Error: <span x-text="error || 'None'"></span></div>
-          <div>Processing: <span x-text="processing ? 'Yes' : 'No'"></span></div>
-        </div>
-      </div>
-
-      <!-- Enhanced Preview Section -->
-      <div x-show="previewUrl" x-transition class="border rounded-lg p-4">
-        <div class="flex items-center justify-between mb-2">
-          <label class="text-sm font-medium text-gray-700">Document Preview</label>
-          <span x-text="fileInfo" class="text-xs text-gray-500"></span>
-        </div>
-        
-        <!-- Image Preview -->
-        <div x-show="fileType === 'image'" class="text-center">
-          <img :src="previewUrl" class="max-w-full h-auto max-h-96 rounded-md mx-auto border" />
-        </div>
-        
-        <!-- PDF Preview -->
-        <div x-show="fileType === 'pdf'" class="text-center space-y-2">
-          <img :src="currentPdfPage" class="max-w-full h-auto max-h-96 rounded-md mx-auto border" />
-          <div x-show="pdfPages.length > 1" class="flex justify-center items-center space-x-2">
-            <button @click="prevPdfPage()" :disabled="currentPdfPageIndex === 0" 
-                    class="px-3 py-1 text-sm border rounded hover:bg-gray-50 disabled:opacity-50">
-              Previous
-            </button>
-            <span class="text-sm text-gray-500" x-text="`Page ${currentPdfPageIndex + 1} of ${pdfPages.length}`"></span>
-            <button @click="nextPdfPage()" :disabled="currentPdfPageIndex === pdfPages.length - 1"
-                    class="px-3 py-1 text-sm border rounded hover:bg-gray-50 disabled:opacity-50">
-              Next
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Enhanced Action Buttons -->
-    <div class="px-6 pb-6 flex flex-col sm:flex-row gap-3">
-      <button
-        @click="startAiProcessing()"
-        :disabled="!selectedFile || processing"
-        class="flex-1 sm:flex-none inline-flex items-center justify-center rounded-md font-medium text-sm px-6 py-3 transition-all cursor-pointer border-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-      >
-        <div x-show="!processing" class="flex items-center">
-          <i data-lucide="wand-2" class="mr-2 h-4 w-4"></i>
-          <span x-text="extractedData ? 'Re-process with AI' : 'Extract Data with AI'"></span>
-        </div>
-        <div x-show="processing" class="flex items-center">
-          <div class="loading-spinner mr-2"></div>
-          Processing...
-        </div>
-      </button>
-      <button
-        x-show="selectedFile || extractedData"
-        @click="reset()"
-        class="inline-flex items-center justify-center rounded-md font-medium text-sm px-4 py-3 transition-all cursor-pointer bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50"
-      >
-        <i data-lucide="refresh-cw" class="mr-2 h-4 w-4"></i>
-        Reset
-      </button>
-    </div>
-  </div>
-
-  <!-- Enhanced AI Processing Visualizer -->
-  <div x-show="processing" x-transition class="bg-white rounded-lg shadow-lg border border-gray-200">
-    <div class="p-6">
-      <div class="flex justify-between mb-4">
-        <span class="text-lg font-semibold text-gray-900">AI Document Analysis</span>
-        <span class="text-sm font-medium" x-text="`${Math.round(progress)}% Complete`"></span>
-      </div>
-      
-      <!-- Enhanced Progress Bar -->
-      <div class="relative mb-6">
-        <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
-          <div class="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full progress-bar" 
-               :style="`width: ${progress}%`"></div>
-        </div>
-      </div>
-      
-      <!-- Enhanced Stage Indicators -->
-      <div class="flex justify-between mb-6">
-        <template x-for="(stage, index) in stages" :key="index">
-          <div class="flex flex-col items-center stage-indicator" 
-               :class="{ 'active': currentStageIndex === index, 'completed': currentStageIndex > index }">
-            <div class="w-5 h-5 rounded-full mb-2 transition-all duration-300"
-                 :class="currentStageIndex > index ? 'bg-green-500' : (currentStageIndex === index ? 'bg-blue-500 ring-4 ring-blue-100' : 'bg-gray-300')">
-            </div>
-            <span class="text-xs font-medium" 
-                  :class="currentStageIndex >= index ? 'text-blue-600' : 'text-gray-500'"
-                  x-text="stage.name"></span>
-          </div>
-        </template>
-      </div>
-      
-      <!-- Current Stage Info -->
-      <div class="flex items-start gap-4 p-4 bg-blue-50 rounded-lg">
-        <div class="p-2 rounded-full bg-blue-100">
-          <i :data-lucide="currentStage.icon" class="h-6 w-6 text-blue-600"></i>
-        </div>
-        <div>
-          <p class="font-semibold text-blue-900" x-text="`Current Stage: ${currentStage.name}`"></p>
-          <p class="text-sm text-blue-700" x-text="currentStage.description"></p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Enhanced Results Section -->
-  <div x-show="extractedData" x-transition class="space-y-6">
-    
-    <!-- Document Analysis Results -->
-    <div class="bg-white rounded-lg shadow-lg border-l-4 border-l-green-500">
-      <div class="p-6 border-b border-gray-200">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center space-x-2">
-            <i data-lucide="check-circle" class="h-6 w-6 text-green-600"></i>
-            <h3 class="text-xl font-semibold text-gray-900">AI Extraction Complete</h3>
-          </div>
-          <div class="flex items-center space-x-2">
-            <span class="text-sm text-gray-500">Confidence:</span>
-            <span class="font-semibold" 
-                  :class="extractedData?.confidence > 70 ? 'confidence-high' : (extractedData?.confidence > 40 ? 'confidence-medium' : 'confidence-low')"
-                  x-text="`${extractedData?.confidence || 0}%`"></span>
-          </div>
-        </div>
-        <p class="text-sm text-gray-600 mt-2" x-text="extractionSummary"></p>
-      </div>
-     
-      <div class="p-6 space-y-6">
-        @include('propertycard.partials.add_property_record', ['is_ai_assistant' => true])
-      </div>
-    </div>
-
-    <!-- Raw Text Display -->
-    <div class="bg-white rounded-lg shadow border border-gray-200">
-      <div class="p-4 border-b border-gray-200">
-        <button @click="showRawText = !showRawText" 
-                class="flex items-center justify-between w-full text-left">
-          <h3 class="text-lg font-semibold text-gray-900">Raw Extracted Text</h3>
-          <i :data-lucide="showRawText ? 'chevron-up' : 'chevron-down'" class="h-4 w-4"></i>
-        </button>
-      </div>
-      <div x-show="showRawText" x-transition class="p-4">
-        <textarea x-model="rawText" readonly rows="10" 
-                  class="w-full text-xs bg-gray-50 font-mono border border-gray-300 rounded-md p-3"></textarea>
-      </div>
-    </div>
-  </div>
-
-</div>
-
-<!-- Enhanced Toast Container -->
-<div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2">
-  <!-- Toast messages will be inserted here -->
-</div>
 
 <script>
 function aiAssistant() {

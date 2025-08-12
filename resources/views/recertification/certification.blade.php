@@ -61,6 +61,26 @@ tailwind.config = {
   background-color: rgba(0, 0, 0, 0.025);
 }
 
+/* Responsive table styling */
+.table-container {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-container table {
+  min-width: 1200px;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .table-container th,
+  .table-container td {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+}
+
 /* Loading spinner */
 .loading-spinner {
   width: 1rem;
@@ -242,22 +262,22 @@ tailwind.config = {
                     <!-- Not Generated Tab -->
                     <div id="not-generated-content" class="tab-content active">
                         <div class="p-6">
-                            <div class="table-container">
-                                <table class="w-full" id="certification-table">
+                            <div class="table-container overflow-x-auto">
+                                <table class="w-full" id="certification-table" style="min-width: 1200px;">
                                     <thead>
                                         <tr class="border-b bg-gray-50">
-                                            <th class="text-left p-4 font-medium text-gray-700">cofO_serialNo</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">NewKANGISFileno</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">kangisFileNo</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">mlsfNo</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">reg_no</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">Application Type</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">Applicant Name</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">Plot Details</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">LGA</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">Application Date</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">Status</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">Actions</th>
+                                          
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 140px;">New KANGIS FileNo</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">KANGIS FileNo</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 100px;">MLS FileNo</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 100px;">RegNo</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">Type</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 180px;">Applicant Name</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 200px;">Plot Details</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 100px;">LGA</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">Application Date</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 100px;">Status</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 100px;">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody id="not-generated-table-body">
@@ -278,18 +298,22 @@ tailwind.config = {
                     <!-- Generated Tab -->
                     <div id="generated-content" class="tab-content">
                         <div class="p-6">
-                            <div class="table-container">
-                                <table class="w-full">
+                            <div class="table-container overflow-x-auto">
+                                <table class="w-full" style="min-width: 1000px;">
                                     <thead>
                                         <tr class="border-b bg-gray-50">
-                                            <th class="text-left p-4 font-medium text-gray-700">File No</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">Application Type</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">Applicant Name</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">Plot Details</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">LGA</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">Generated Date</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">Status</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">Actions</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">CofO Number</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 140px;">New KANGIS FileNo</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">KANGIS FileNo</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 100px;">MLS FNo</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 100px;">RegNo</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">Type</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 180px;">Applicant Name</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 200px;">Plot Details</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 100px;">LGA</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">Generated Date</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 100px;">Status</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 100px;">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody id="generated-table-body">
@@ -386,7 +410,7 @@ function showLoadingState(tableBodyId) {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="8" class="text-center py-8">
+                <td colspan="12" class="text-center py-8">
                     <div class="loading-spinner mx-auto mb-2"></div>
                     <p class="text-gray-600">Loading certification data...</p>
                 </td>
@@ -400,7 +424,7 @@ function showErrorState(tableBodyId) {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="8" class="text-center py-8">
+                <td colspan="12" class="text-center py-8">
                     <i data-lucide="alert-circle" class="h-8 w-8 text-red-500 mx-auto mb-2"></i>
                     <p class="text-red-600">Failed to load certification data</p>
                     <button onclick="loadCertificationData()" class="mt-2 text-blue-600 hover:text-blue-800">
@@ -488,36 +512,46 @@ function renderTable(tableBodyId, noResultsId, data, isGenerated) {
         
         return `
             <tr class="table-row border-b hover:bg-gray-50">
-                <td class="p-4">
-                    <div class="font-medium text-blue-900 font-mono">${app.file_number || 'N/A'}</div>
+ 
+                <td class="p-2" style="max-width: 140px;">
+                    <div class="text-xs text-gray-900 truncate" title="${app.NewKANGISFileno || 'N/A'}">${app.NewKANGISFileno || 'N/A'}</div>
                 </td>
-                <td class="p-4">
+                <td class="p-2" style="max-width: 120px;">
+                    <div class="text-xs text-gray-900 truncate" title="${app.kangisFileNo || 'N/A'}">${app.kangisFileNo || 'N/A'}</div>
+                </td>
+                <td class="p-2" style="max-width: 100px;">
+                    <div class="text-xs text-gray-900 truncate" title="${app.mlsfNo || 'N/A'}">${app.mlsfNo || 'N/A'}</div>
+                </td>
+                <td class="p-2" style="max-width: 100px;">
+                    <div class="text-xs text-gray-900 truncate" title="${app.reg_no || 'N/A'}">${app.reg_no || 'N/A'}</div>
+                </td>
+                <td class="p-2" style="max-width: 120px;">
                     <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getApplicationTypeClass(app.applicant_type)}">
                         ${app.applicant_type || 'N/A'}
                     </div>
                 </td>
-                <td class="p-4">
-                    <div class="font-medium text-gray-900">${app.applicant_name || 'N/A'}</div>
+                <td class="p-2" style="max-width: 180px;">
+                    <div class="text-xs font-medium text-gray-900 truncate" title="${app.applicant_name || 'N/A'}">${app.applicant_name || 'N/A'}</div>
                 </td>
-                <td class="p-4">
-                    <div class="text-gray-900">${app.plot_details || 'N/A'}</div>
+                <td class="p-2" style="max-width: 200px;">
+                    <div class="text-xs text-gray-900 truncate" title="${app.plot_details || 'N/A'}">${app.plot_details || 'N/A'}</div>
                 </td>
-                <td class="p-4">
-                    <div class="text-gray-900">${app.lga_name || 'N/A'}</div>
+                <td class="p-2" style="max-width: 100px;">
+                    <div class="text-xs text-gray-900 truncate">${app.lga_name || 'N/A'}</div>
                 </td>
-                <td class="p-4">
-                    <div class="text-gray-900">${dateField}</div>
+                <td class="p-2" style="max-width: 120px;">
+                    <div class="text-xs text-gray-900 truncate">${dateField}</div>
                 </td>
-                <td class="p-4">
+                <td class="p-2" style="max-width: 100px;">
                     ${getStatusBadge(isGenerated)}
                 </td>
-                <td class="p-4">
+                <td class="p-2" style="max-width: 100px;">
                     <div class="relative">
                         <button 
                             onclick="toggleActionMenu('${actionMenuId}')"
-                            class="inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-2 transition-all cursor-pointer bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50"
+                            class="inline-flex items-center justify-center rounded-md font-medium text-sm px-2 py-1 transition-all cursor-pointer bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50"
                         >
-                            <i data-lucide="more-horizontal" class="h-4 w-4"></i>
+                            <i data-lucide="more-horizontal" class="h-3 w-3"></i>
                         </button>
                         
                         <div id="${actionMenuId}" class="hidden absolute right-0 top-full mt-1 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-50">
@@ -610,7 +644,12 @@ function setupSearch() {
                     (app.plot_details && app.plot_details.toLowerCase().includes(searchTerm)) ||
                     (app.lga_name && app.lga_name.toLowerCase().includes(searchTerm)) ||
                     (app.cofo_number && app.cofo_number.toLowerCase().includes(searchTerm)) ||
-                    (app.applicant_type && app.applicant_type.toLowerCase().includes(searchTerm))
+                    (app.applicant_type && app.applicant_type.toLowerCase().includes(searchTerm)) ||
+                    (app.cofO_serialNo && app.cofO_serialNo.toLowerCase().includes(searchTerm)) ||
+                    (app.NewKANGISFileno && app.NewKANGISFileno.toLowerCase().includes(searchTerm)) ||
+                    (app.kangisFileNo && app.kangisFileNo.toLowerCase().includes(searchTerm)) ||
+                    (app.mlsfNo && app.mlsfNo.toLowerCase().includes(searchTerm)) ||
+                    (app.reg_no && app.reg_no.toLowerCase().includes(searchTerm))
                 );
             });
             

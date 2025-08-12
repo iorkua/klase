@@ -143,7 +143,7 @@ function renderApplicationsTable(data) {
                     <div class="text-sm text-gray-900">${app.cofO_serialNo || 'N/A'}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">${app.NewKANGISFileno || app.newkangisfileno || app.new_kangis_file_no || 'N/A'}</div>
+                    <div class="text-sm text-gray-900">${app.NewKANGISFileno || 'N/A'}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-900">${app.kangisFileNo || 'N/A'}</div>

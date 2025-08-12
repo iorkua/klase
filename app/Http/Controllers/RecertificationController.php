@@ -112,7 +112,11 @@ class RecertificationController extends Controller
 
                 return [
                     'id' => $app->id,
-                    'NewKANGISFileno' => $app->NewKANGISFileno,
+                    'cofO_serialNo' => $app->cofo_number ?? 'N/A',
+                    'NewKANGISFileno' => $app->NewKANGISFileno ?? 'N/A',
+                    'kangisFileNo' => $app->kangisFileNo ?? 'N/A',
+                    'mlsfNo' => $app->mlsfNo ?? 'N/A',
+                    'reg_no' => $app->reg_no ?? 'N/A',
                     'application_reference' => $app->application_reference ?? 'N/A',
                     'file_number' => $fileNo ?? 'N/A',
                     'applicant_name' => $applicantName,
@@ -986,6 +990,11 @@ class RecertificationController extends Controller
 
                 return [
                     'id' => $app->id,
+                    'cofO_serialNo' => $app->cofo_number ?? 'N/A',
+                    'NewKANGISFileno' => $app->NewKANGISFileno ?? 'N/A',
+                    'kangisFileNo' => $app->kangisFileNo ?? 'N/A',
+                    'mlsfNo' => $app->mlsfNo ?? 'N/A',
+                    'reg_no' => $app->reg_no ?? 'N/A',
                     'application_reference' => $app->application_reference ?? 'N/A',
                     'file_number' => $app->file_number ?? 'N/A',
                     'applicant_name' => $applicantName,

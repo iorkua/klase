@@ -66,6 +66,26 @@ tailwind.config = {
   background-color: rgba(0, 0, 0, 0.025);
 }
 
+/* Responsive table styling */
+.table-container {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-container table {
+  min-width: 800px;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .table-container th,
+  .table-container td {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+}
+
 /* Loading spinner */
 .loading-spinner {
   width: 1rem;
@@ -133,7 +153,7 @@ tailwind.config = {
                         </div>
                     </div>
                 </div>
-<!--                 
+                
                 <div class="bg-white rounded-lg shadow border border-gray-200 p-6">
                     <div class="flex items-center">
                         <div class="p-2 bg-yellow-100 rounded-lg">
@@ -144,7 +164,7 @@ tailwind.config = {
                             <p class="text-2xl font-bold text-gray-900" id="pending-count">0</p>
                         </div>
                     </div>
-                </div> -->
+                </div>
                 
                 <div class="bg-white rounded-lg shadow border border-gray-200 p-6">
                     <div class="flex items-center">
@@ -168,7 +188,7 @@ tailwind.config = {
                             <input
                                 id="search-input"
                                 type="text"
-                                placeholder="Search by applicant name, file number, plot number..."
+                                placeholder="Search by allottee name, CofO serial number, layout name, district..."
                                 class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
                             />
                         </div>
@@ -196,20 +216,21 @@ tailwind.config = {
                 <div class="rounded-md border-t-0" id="governors-table-container">
                     <div class="p-6">
                         <!-- Table -->
-                        <div class="table-container">
-                            <table class="w-full">
+                        <div class="table-container overflow-x-auto">
+                            <table class="w-full" style="min-width: 800px;">
                                 <thead>
                                     <tr class="border-b bg-gray-50">
-                                        <th class="text-left p-4 font-medium text-gray-700">
+                                        <th class="text-left p-2 font-medium text-gray-700 text-xs">
                                             <input type="checkbox" id="select-all" onchange="toggleSelectAll()" class="rounded border-gray-300">
                                         </th>
-                                        <th class="text-left p-4 font-medium text-gray-700">File No</th>
-                                        <th class="text-left p-4 font-medium text-gray-700">Application Type</th>
-                                        <th class="text-left p-4 font-medium text-gray-700">Applicant Name</th>
-                                        <th class="text-left p-4 font-medium text-gray-700">Plot Details</th>
-                                        <th class="text-left p-4 font-medium text-gray-700">LGA</th>
-                                        <th class="text-left p-4 font-medium text-gray-700">Governor Status</th>
-                                        <th class="text-left p-4 font-medium text-gray-700">Actions</th>
+                                        <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 60px;">SN</th>
+                                        <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 140px;">CofO Serial No</th>
+                                        <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 200px;">Name of Allottee</th>
+                                        <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 150px;">Layout Name</th>
+                                        <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">District Name</th>
+                                        <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 100px;">LGA Name</th>
+                                        
+                                        <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 100px;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="governors-table-body">
@@ -244,6 +265,7 @@ tailwind.config = {
 <script>
 // Governors List Table Management
 let governorsData = [];
+let serialCounter = 1;
 
 function getPrerequisitesStatus(app) {
     const prerequisites = [
@@ -314,6 +336,9 @@ function loadGovernorsData() {
         console.log('Governors data received:', data);
         governorsData = data.data || [];
         
+        // Reset serial counter
+        serialCounter = 1;
+        
         // Update statistics
         updateStatistics(data.statistics || {});
         
@@ -334,7 +359,7 @@ function showLoadingState(tableBodyId) {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="8" class="text-center py-8">
+                <td colspan="9" class="text-center py-8">
                     <div class="loading-spinner mx-auto mb-2"></div>
                     <p class="text-gray-600">Loading Governors list data...</p>
                 </td>
@@ -348,7 +373,7 @@ function showErrorState(tableBodyId) {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="8" class="text-center py-8">
+                <td colspan="9" class="text-center py-8">
                     <i data-lucide="alert-circle" class="h-8 w-8 text-red-500 mx-auto mb-2"></i>
                     <p class="text-red-600">Failed to load Governors list data</p>
                     <button onclick="loadGovernorsData()" class="mt-2 text-blue-600 hover:text-blue-800">
@@ -371,21 +396,6 @@ function updateStatistics(stats) {
     document.getElementById('pending-count').textContent = stats.pending || 0;
     document.getElementById('month-count').textContent = stats.thisMonth || 0;
     document.getElementById('applications-count').textContent = stats.total || 0;
-}
-
-function getApplicationTypeClass(type) {
-    switch(type) {
-        case 'Individual':
-            return 'bg-blue-100 text-blue-800';
-        case 'Corporate':
-            return 'bg-purple-100 text-purple-800';
-        case 'Government Body':
-            return 'bg-green-100 text-green-800';
-        case 'Multiple Owners':
-            return 'bg-orange-100 text-orange-800';
-        default:
-            return 'bg-gray-100 text-gray-800';
-    }
 }
 
 function getGovernorStatusBadge(status) {
@@ -422,15 +432,26 @@ function renderGovernorsTable() {
         noResults.classList.add('hidden');
     }
     
+    // Reset serial counter for rendering
+    let currentSerial = 1;
+    
     // Generate table rows
     const rows = governorsData.map(app => {
         const actionMenuId = `action-menu-${app.id}`;
         const prerequisitesStatus = getPrerequisitesStatus(app);
         const canSelect = prerequisitesStatus.isComplete && !app.governor_approval;
+        const serialNo = currentSerial++;
+        
+        // Extract fields for the new table structure
+        const cofoSerialNo = app.cofO_serialNo || app.cofo_serial_no || app.cofo_number || 'N/A';
+        const nameOfAllottee = app.applicant_name || app.currentAllottee || 'N/A';
+        const layoutName = app.layoutName || app.layout_name || app.layout_district || 'N/A';
+        const districtName = app.district_name || app.layout_district || 'N/A';
+        const lgaName = app.lga_name || 'N/A';
         
         return `
             <tr class="table-row border-b hover:bg-gray-50 ${!canSelect ? 'opacity-60' : ''}">
-                <td class="p-4">
+                <td class="p-2">
                     <input 
                         type="checkbox" 
                         class="application-checkbox rounded border-gray-300" 
@@ -439,33 +460,32 @@ function renderGovernorsTable() {
                         ${!canSelect ? 'disabled' : ''}
                     >
                 </td>
-                <td class="p-4">
-                    <div class="font-medium text-blue-900 font-mono">${app.file_number || 'N/A'}</div>
+                <td class="p-2" style="max-width: 60px;">
+                    <div class="text-xs font-medium text-gray-900">${serialNo}</div>
                 </td>
-                <td class="p-4">
-                    <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getApplicationTypeClass(app.applicant_type)}">
-                        ${app.applicant_type || 'N/A'}
-                    </div>
+                <td class="p-2" style="max-width: 140px;">
+                    <div class="text-xs text-gray-900 truncate" title="${cofoSerialNo}">${cofoSerialNo}</div>
                 </td>
-                <td class="p-4">
-                    <div class="font-medium text-gray-900">${app.applicant_name || 'N/A'}</div>
+                <td class="p-2" style="max-width: 200px;">
+                    <div class="text-xs font-medium text-gray-900 truncate" title="${nameOfAllottee}">${nameOfAllottee}</div>
                 </td>
-                <td class="p-4">
-                    <div class="text-gray-900">${app.plot_details || 'N/A'}</div>
+                <td class="p-2" style="max-width: 150px;">
+                    <div class="text-xs text-gray-900 truncate" title="${layoutName}">${layoutName}</div>
                 </td>
-                <td class="p-4">
-                    <div class="text-gray-900">${app.lga_name || 'N/A'}</div>
+                <td class="p-2" style="max-width: 120px;">
+                    <div class="text-xs text-gray-900 truncate" title="${districtName}">${districtName}</div>
                 </td>
-                <td class="p-4">
-                    ${getGovernorStatusBadge(app.governor_status)}
+                <td class="p-2" style="max-width: 100px;">
+                    <div class="text-xs text-gray-900 truncate" title="${lgaName}">${lgaName}</div>
                 </td>
-                <td class="p-4">
+ 
+                <td class="p-2" style="max-width: 100px;">
                     <div class="relative">
                         <button 
                             onclick="toggleActionMenu('${actionMenuId}')"
-                            class="inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-2 transition-all cursor-pointer bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50"
+                            class="inline-flex items-center justify-center rounded-md font-medium text-sm px-2 py-1 transition-all cursor-pointer bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50"
                         >
-                            <i data-lucide="more-horizontal" class="h-4 w-4"></i>
+                            <i data-lucide="more-horizontal" class="h-3 w-3"></i>
                         </button>
                         
                         <div id="${actionMenuId}" class="hidden absolute right-0 top-full mt-1 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-50">
@@ -611,9 +631,17 @@ function setupSearch() {
                 return (
                     (app.file_number && app.file_number.toLowerCase().includes(searchTerm)) ||
                     (app.applicant_name && app.applicant_name.toLowerCase().includes(searchTerm)) ||
+                    (app.currentAllottee && app.currentAllottee.toLowerCase().includes(searchTerm)) ||
                     (app.plot_details && app.plot_details.toLowerCase().includes(searchTerm)) ||
                     (app.lga_name && app.lga_name.toLowerCase().includes(searchTerm)) ||
-                    (app.applicant_type && app.applicant_type.toLowerCase().includes(searchTerm))
+                    (app.applicant_type && app.applicant_type.toLowerCase().includes(searchTerm)) ||
+                    (app.cofO_serialNo && app.cofO_serialNo.toLowerCase().includes(searchTerm)) ||
+                    (app.cofo_serial_no && app.cofo_serial_no.toLowerCase().includes(searchTerm)) ||
+                    (app.cofo_number && app.cofo_number.toLowerCase().includes(searchTerm)) ||
+                    (app.layoutName && app.layoutName.toLowerCase().includes(searchTerm)) ||
+                    (app.layout_name && app.layout_name.toLowerCase().includes(searchTerm)) ||
+                    (app.layout_district && app.layout_district.toLowerCase().includes(searchTerm)) ||
+                    (app.district_name && app.district_name.toLowerCase().includes(searchTerm))
                 );
             });
             
