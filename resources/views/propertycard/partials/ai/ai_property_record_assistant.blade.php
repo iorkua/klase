@@ -5,7 +5,7 @@
     <h1 class="text-3xl font-bold tracking-tight text-gray-900">AI Property Record Assistant</h1>
     <p class="text-lg text-gray-600">Upload property documents for automated data extraction and record creation</p>
   </div>
-
+ 
   <!-- File Upload Card -->
   <div class="bg-white rounded-lg shadow border border-gray-200">
     <div class="p-6 border-b border-gray-200">
@@ -279,77 +279,6 @@ tailwind.config = {
   100% { transform: rotate(360deg); }
 }
 
-/* File drop zone styles */
-.file-drop-zone {
-  border: 2px dashed #d1d5db;
-  transition: all 0.3s ease;
-}
-
-.file-drop-zone:hover {
-  border-color: #3b82f6;
-  background-color: #f8fafc;
-}
-
-.file-drop-zone.dragover {
-  border-color: #3b82f6;
-  background-color: #eff6ff;
-}
-
-/* Progress bar animation */
-.progress-bar {
-  transition: width 0.5s ease-in-out;
-}
-
-/* AI stage indicator animations */
-.stage-indicator {
-  transition: all 0.3s ease;
-}
-
-.stage-indicator.active {
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-/* Modal backdrop */
-.modal-backdrop {
-  background-color: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-}
-
-/* Badge styles */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 9999px;
-  padding: 0.25rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.badge-success {
-  background-color: #dcfce7;
-  color: #166534;
-}
-
-.badge-warning {
-  background-color: #fef3c7;
-  color: #92400e;
-}
-
-.badge-error {
-  background-color: #fee2e2;
-  color: #991b1b;
-}
-
-.badge-default {
-  background-color: #f3f4f6;
-  color: #374151;
-}
-
 /* Collapsible content */
 .collapsible-content {
   max-height: 0;
@@ -372,1035 +301,1069 @@ tailwind.config = {
 </style>
 
 <script>
-function aiAssistant() {
-  return {
-    // State
-    selectedFile: null,
-    previewUrl: null,
-    fileType: null,
-    fileInfo: '',
-    pdfPages: [],
-    currentPdfPageIndex: 0,
-    processing: false,
-    progress: 0,
-    currentStageIndex: 0,
-    extractedData: null,
-    rawText: '',
-    error: null,
-    showRawText: false,
-    
-    // Stages configuration
-    stages: [
-      { name: 'Init', icon: 'brain', description: 'Initializing AI processing...' },
-      { name: 'OCR', icon: 'scan-text', description: 'Extracting text from document...' },
-      { name: 'Parse', icon: 'file-search', description: 'Analyzing document structure...' },
-      { name: 'Extract', icon: 'layers', description: 'Extracting property details...' },
-      { name: 'Validate', icon: 'check-circle', description: 'Validating extracted data...' },
-      { name: 'Complete', icon: 'sparkles', description: 'Processing complete!' }
-    ],
-    
-    // Computed properties
-    get currentStage() {
-      return this.stages[this.currentStageIndex] || this.stages[0];
-    },
-    
-    get currentPdfPage() {
-      return this.pdfPages[this.currentPdfPageIndex] || null;
-    },
-    
-    get extractionSummary() {
-      if (!this.extractedData) return '';
-      
-      const data = this.extractedData;
-      let summary = `Extracted ${data.confidence}% of available data. `;
-      
-      if (data.fileNo) summary += `File No: ${data.fileNo}. `;
-      if (data.plotNo) summary += `Plot: ${data.plotNo}. `;
-      if (data.propertyHolder) summary += `Holder: ${data.propertyHolder}. `;
-      if (data.instrument) summary += `Type: ${data.instrument}.`;
-      
-      return summary;
-    },
-    
-    // Methods
-    init() {
-      console.log('🚀 Enhanced AI Assistant initialized');
-      this.$nextTick(() => {
-        lucide.createIcons();
-      });
-    },
-    
-    triggerFileInput() {
-      console.log('🔄 Triggering file input...');
-      const fileInput = this.$refs.fileInput;
-      if (fileInput) {
-        console.log('✅ File input found, triggering click...');
-        // Clear any previous value to ensure change event fires
-        fileInput.value = '';
-        
-        // Add a temporary event listener to ensure we catch the change
-        const tempHandler = (e) => {
-          console.log('🎯 Temporary handler caught file change');
-          this.handleFileSelection(e.target.files[0]);
-          fileInput.removeEventListener('change', tempHandler);
-        };
-        
-        fileInput.addEventListener('change', tempHandler);
-        
-        try {
-          fileInput.click();
-          console.log('✅ File input clicked successfully');
-        } catch (error) {
-          console.error('❌ Error clicking file input:', error);
-          fileInput.removeEventListener('change', tempHandler);
-        }
-      } else {
-        console.error('❌ File input not found!');
-      }
-    },
-    
-    handleDrop(event) {
-      console.log('🎯 File drop event triggered');
-      event.currentTarget.classList.remove('dragover');
-      const files = event.dataTransfer.files;
-      if (files.length > 0) {
-        console.log('✅ File dropped:', files[0].name);
-        this.handleFileSelection(files[0]);
-      }
-    },
-    
-    handleFileChange(event) {
-      console.log('🎯 File change event triggered');
-      const file = event.target.files[0];
-      console.log('📁 Selected file:', file ? file.name : 'No file');
-      console.log('📊 Event target files length:', event.target.files.length);
-      
-      this.handleFileSelection(file);
-    },
-    
-    handleFileSelection(file) {
-      console.log('🔍 Processing file selection...');
-      
-      if (!file) {
-        console.log('❌ No file provided, resetting...');
-        this.reset();
-        return;
-      }
-      
-      console.log('📋 File details:', {
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        lastModified: file.lastModified
-      });
-      
-      // Clear any previous errors immediately
-      this.error = null;
-      
-      // Set the selected file immediately to enable the button
-      this.selectedFile = file;
-      console.log('✅ selectedFile set to:', this.selectedFile ? this.selectedFile.name : 'null');
-      
-      // Force Alpine.js reactivity update
-      this.$nextTick(() => {
-        console.log('🔄 After nextTick - selectedFile:', this.selectedFile ? this.selectedFile.name : 'null');
-        console.log('🔄 Button should be enabled now');
-      });
-      
-      // Process the file for preview
-      this.processFileForPreview(file);
-    },
-    
-    async processFileForPreview(file) {
-      try {
-        console.log('Starting file preview processing for:', file.name);
-        
-        // Validate file first
-        if (!this.validateFile(file)) {
-          return false;
-        }
-        
-        // Clear previous state
-        this.error = null;
-        this.extractedData = null;
-        this.rawText = '';
-        this.previewUrl = null;
-        this.pdfPages = [];
-        this.currentPdfPageIndex = 0;
-        
-        // Set the selected file
-        this.selectedFile = file;
-        
-        // Set file info
-        this.fileInfo = `${this.formatFileSize(file.size)} • ${file.type}`;
-        
-        // Process based on file type
-        if (file.type.startsWith('image/')) {
-          this.fileType = 'image';
-          this.previewUrl = URL.createObjectURL(file);
-          console.log('Image file processed successfully for preview:', file.name);
-        } else if (file.type === 'application/pdf') {
-          this.fileType = 'pdf';
-          await this.processPDF(file);
-          console.log('PDF file processed successfully for preview:', file.name);
-        }
-        
-        // Update UI
-        this.$nextTick(() => {
-          lucide.createIcons();
-        });
-        
-        console.log('File preview processing completed successfully');
-        return true;
-      } catch (error) {
-        console.error('Error processing file for preview:', error);
-        this.error = `Failed to process file: ${error.message}`;
-        return false;
-      }
-    },
-    
-    async processFile(file) {
-      try {
-        console.log('Starting file processing for:', file.name);
-        
-        // Prevent duplicate processing
-        if (this.selectedFile && this.selectedFile.name === file.name && this.selectedFile.size === file.size) {
-          console.log('File already processed, skipping...');
-          return true;
-        }
-        
-        // Validate file first
-        if (!this.validateFile(file)) {
-          return false;
-        }
-        
-        // Clear previous state
-        this.error = null;
-        this.extractedData = null;
-        this.rawText = '';
-        this.previewUrl = null;
-        this.pdfPages = [];
-        this.currentPdfPageIndex = 0;
-        
-        // Set the selected file
-        this.selectedFile = file;
-        
-        // Set file info
-        this.fileInfo = `${this.formatFileSize(file.size)} • ${file.type}`;
-        
-        // Process based on file type
-        if (file.type.startsWith('image/')) {
-          this.fileType = 'image';
-          this.previewUrl = URL.createObjectURL(file);
-          console.log('Image file processed successfully:', file.name);
-        } else if (file.type === 'application/pdf') {
-          this.fileType = 'pdf';
-          await this.processPDF(file);
-          console.log('PDF file processed successfully:', file.name);
-        }
-        
-        // Update UI
-        this.$nextTick(() => {
-          lucide.createIcons();
-        });
-        
-        console.log('File processing completed successfully');
-        return true;
-      } catch (error) {
-        console.error('Error processing file:', error);
-        this.error = `Failed to process file: ${error.message}`;
-        return false;
-      }
-    },
-    
-    validateFile(file) {
-      const maxSize = 10 * 1024 * 1024; // 10MB
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/pjpeg', 'image/png', 'application/pdf'];
-      
-      if (!allowedTypes.includes(file.type)) {
-        this.error = 'Invalid file type. Please upload JPEG, PNG, or PDF files only.';
-        return false;
-      }
-      
-      if (file.size > maxSize) {
-        this.error = 'File size too large. Please upload files smaller than 10MB.';
-        return false;
-      }
-      
-      return true;
-    },
-    
-    async processPDF(file) {
-      try {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        this.pdfPages = [];
-        
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better OCR
-          const canvas = document.createElement('canvas');
-          const context = canvas.getContext('2d');
-          
-          canvas.height = viewport.height;
-          canvas.width = viewport.width;
-          
-          await page.render({ canvasContext: context, viewport: viewport }).promise;
-          this.pdfPages.push(canvas.toDataURL('image/png'));
-        }
-        
-        this.currentPdfPageIndex = 0;
-      } catch (error) {
-        console.error('PDF processing error:', error);
-        this.error = 'Failed to process PDF file.';
-      }
-    },
-    
-    prevPdfPage() {
-      if (this.currentPdfPageIndex > 0) {
-        this.currentPdfPageIndex--;
-      }
-    },
-    
-    nextPdfPage() {
-      if (this.currentPdfPageIndex < this.pdfPages.length - 1) {
-        this.currentPdfPageIndex++;
-      }
-    },
-    
-    async startAiProcessing() {
-      if (!this.selectedFile) return;
-      
-      this.processing = true;
-      this.progress = 0;
-      this.currentStageIndex = 0;
-      this.error = null;
-      
-      try {
-        // Stage 1: Initialize
-        await this.updateProgress(0, 10);
-        
-        // Stage 2: OCR
-        this.currentStageIndex = 1;
-        const text = await this.extractText();
-        await this.updateProgress(1, 50);
-        
-        // Stage 3: Parse
-        this.currentStageIndex = 2;
-        await this.updateProgress(2, 70);
-        
-        // Stage 4: Extract
-        this.currentStageIndex = 3;
-        const extractedData = this.extractPropertyDetails(text);
-        await this.updateProgress(3, 85);
-        
-        // Stage 5: Validate
-        this.currentStageIndex = 4;
-        const validatedData = this.validateExtractedData(extractedData);
-        await this.updateProgress(4, 95);
-        
-        // Stage 6: Complete
-        this.currentStageIndex = 5;
-        await this.updateProgress(5, 100);
-        
-        this.extractedData = validatedData;
-        this.rawText = text;
-        this.populateForm();
-        
-        this.showToast('AI processing completed successfully!', 'success');
-        
-      } catch (error) {
-        console.error('AI processing error:', error);
-        this.error = `AI Processing failed: ${error.message}`;
-        this.showToast('AI processing failed. Please try again.', 'error');
-      } finally {
-        this.processing = false;
-      }
-    },
-    
-    async updateProgress(stageIndex, targetProgress) {
-      return new Promise(resolve => {
-        const duration = 500;
-        const startProgress = this.progress;
-        const progressDiff = targetProgress - startProgress;
-        const startTime = Date.now();
-        
-        const animate = () => {
-          const elapsed = Date.now() - startTime;
-          const progress = Math.min(elapsed / duration, 1);
-          
-          this.progress = startProgress + (progressDiff * progress);
-          
-          if (progress < 1) {
-            requestAnimationFrame(animate);
-          } else {
-            resolve();
-          }
-        };
-        
-        animate();
-      });
-    },
-    
-    async extractText() {
-      if (this.fileType === 'pdf') {
-        return await this.extractTextFromPDF();
-      } else {
-        return await this.extractTextFromImage();
-      }
-    },
-    
-    async extractTextFromPDF() {
-      try {
-        const arrayBuffer = await this.selectedFile.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        let fullText = '';
-        let hasSelectableText = false;
-        
-        // First try to extract selectable text
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
-          const pageText = textContent.items.map(item => item.str).join(' ');
-          
-          if (pageText.trim().length > 0) {
-            fullText += `--- Page ${i} ---\n${pageText}\n\n`;
-            hasSelectableText = true;
-          }
-        }
-        
-        if (hasSelectableText && fullText.trim().length > 50) {
-          return fullText;
-        }
-        
-        // Fallback to OCR if no selectable text
-        this.showToast('PDF contains scanned images. Using enhanced OCR...', 'info');
-        return await this.performOCROnPDF();
-        
-      } catch (error) {
-        console.error('PDF text extraction error:', error);
-        throw new Error('Failed to extract text from PDF');
-      }
-    },
-    
-    async performOCROnPDF() {
-      let ocrText = '';
-      const totalPages = this.pdfPages.length;
-      
-      for (let i = 0; i < totalPages; i++) {
-        const pageProgress = (i / totalPages) * 40; // OCR takes 40% of total progress
-        this.progress = 10 + pageProgress;
-        
-        try {
-          // Preprocess image for better OCR
-          const preprocessedImage = await this.preprocessImageForOCR(this.pdfPages[i]);
-          
-          const { data: { text, confidence } } = await Tesseract.recognize(preprocessedImage, 'eng', {
-            logger: (m) => {
-              if (m.status === 'recognizing text') {
-                const ocrProgress = m.progress * (40 / totalPages);
-                this.progress = 10 + pageProgress + ocrProgress;
-              }
-            },
-            tessedit_pageseg_mode: Tesseract.PSM.AUTO,
-            tessedit_ocr_engine_mode: Tesseract.OEM.LSTM_ONLY,
-            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,/:-()&\'"',
-            preserve_interword_spaces: '1',
-            user_defined_dpi: '300',
-            tessedit_do_invert: '0',
-            tessedit_create_hocr: '1',
-            tessedit_create_tsv: '1'
-          });
-          
-          console.log(`Page ${i + 1} OCR confidence: ${confidence}%`);
-          ocrText += `--- Page ${i + 1} (OCR - ${Math.round(confidence)}% confidence) ---\n${text || 'No text found'}\n\n`;
-        } catch (error) {
-          console.error(`OCR error on page ${i + 1}:`, error);
-          ocrText += `--- Page ${i + 1} (OCR) ---\nOCR failed for this page: ${error.message}\n\n`;
-        }
-      }
-      
-      return ocrText;
-    },
-    
-    async extractTextFromImage() {
-      try {
-        // Preprocess image for better OCR
-        const preprocessedImage = await this.preprocessImageForOCR(this.previewUrl);
-        
-        const { data: { text, confidence } } = await Tesseract.recognize(preprocessedImage, 'eng', {
-          logger: (m) => {
-            if (m.status === 'recognizing text') {
-              this.progress = 10 + (m.progress * 40);
-            }
-          },
-          tessedit_pageseg_mode: Tesseract.PSM.AUTO,
-          tessedit_ocr_engine_mode: Tesseract.OEM.LSTM_ONLY,
-          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,/:-() ',
-          preserve_interword_spaces: '1',
-          user_defined_dpi: '300'
-        });
-        
-        console.log(`Image OCR confidence: ${confidence}%`);
-        return text || '';
-      } catch (error) {
-        console.error('Image OCR error:', error);
-        throw new Error('Failed to extract text from image');
-      }
-    },
-    
-    async preprocessImageForOCR(imageUrl) {
-      return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          
-          // Scale up small images for better OCR (up to 2000px on the longest edge, max 2x)
-          const maxEdge = Math.max(img.width, img.height);
-          const scale = Math.max(1, Math.min(2, 2000 / maxEdge));
-          const targetWidth = Math.round(img.width * scale);
-          const targetHeight = Math.round(img.height * scale);
-          canvas.width = targetWidth;
-          canvas.height = targetHeight;
-
-          // Draw image with disabled smoothing to keep edges sharp
-          ctx.imageSmoothingEnabled = false;
-          ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-          
-          // Apply image preprocessing for better OCR
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const data = imageData.data;
-
-          // Convert to grayscale, enhance contrast, and binarize
-          const threshold = 180;
-          for (let i = 0; i < data.length; i += 4) {
-            const r = data[i], g = data[i + 1], b = data[i + 2];
-            const gray = r * 0.299 + g * 0.587 + b * 0.114;
-            // Contrast stretch
-            let val = (gray - 128) * 1.2 + 128;
-            val = Math.max(0, Math.min(255, val));
-            // Binarize
-            const bin = val > threshold ? 255 : 0;
-            data[i] = bin;     // Red
-            data[i + 1] = bin; // Green
-            data[i + 2] = bin; // Blue
-            // Alpha unchanged
-          }
-
-          ctx.putImageData(imageData, 0, 0);
-          resolve(canvas.toDataURL('image/png'));
-        };
-        img.src = imageUrl;
-      });
-    },
-    
-    extractPropertyDetails(text) {
-      const cleanText = text.replace(/(\r\n|\n|\r)/gm, ' ').replace(/\s+/g, ' ').trim();
-      
-      const data = {
-        originalFileName: this.selectedFile.name,
-        extractedText: text,
-        confidence: 0,
-        fileSize: this.formatFileSize(this.selectedFile.size),
-        fileType: this.selectedFile.type,
-        pageCount: this.fileType === 'pdf' ? this.pdfPages.length : 1,
-      };
-      
-      let foundFields = 0;
-      const totalFields = 15;
-      
-      // Enhanced extraction patterns with more variations and better accuracy
-      const patterns = {
-        fileNumber: [
-          // Standard file number patterns with better boundaries
-          /(?:NEW\s+)?FILE\s+(?:NO|NUMBER)[:\s]*([A-Z0-9/\s-]+?)(?:\s+(?:PLOT|TITLE|OLD|DATED|FOR|TO|BEING|SITUATE)|\s*$)/i,
-          /(?:File\s*No\.?|FILE\s*NUMBER)\s*:?\s*([A-Z0-9/\s-]+?)(?:\s+(?:PLOT|TITLE|OLD|DATED|FOR|TO|BEING|SITUATE)|\s*$)/i,
-          
-          // Specific Nigerian patterns with better matching
-          /(LKN\/COM\/\d{4}\/\d{2,4})/i,
-          /(COM\/\d{4}\/\d{2,4})/i,
-          /(KAN\/[A-Z]{2,4}\/\d{4}\/\d{2,4})/i,
-          /(KANO\/[A-Z]{2,4}\/\d{4}\/\d{2,4})/i,
-          /([A-Z]{2,4}\/[A-Z]{2,4}\/\d{4}\/\d{3,4})/i,
-          /(KN\d{3,6})/i,
-          /([A-Z]{3,4}\s*\/\s*[A-Z]{3,4}\s*\/\s*\d{4}\s*\/\s*\d{3,4})/i,
-          
-          // More specific patterns for Nigerian land records
-          /(SLTR\/[A-Z]{2,4}\/\d{4}\/\d{2,4})/i,
-          /(KANO\/SLTR\/\d{4}\/\d{2,4})/i,
-          /(MUN\/[A-Z]{2,4}\/\d{4}\/\d{2,4})/i,
-          /(MISC\/[A-Z]{2,4}\/\d{4}\/\d{2,4})/i,
-          /(KANMUN\/[A-Z]{2,4}\/\d{4}\/\d{2,4})/i,
-          
-          // Enhanced patterns for various formats
-          /(?:FILE|F)\s*(?:NO|NUMBER|#)\.?\s*:?\s*([A-Z]{2,5}\/[A-Z]{2,5}\/\d{4}\/\d{2,5})/i,
-          /(?:REF|REFERENCE)\s*(?:NO|NUMBER)\.?\s*:?\s*([A-Z]{2,5}\/[A-Z]{2,5}\/\d{4}\/\d{2,5})/i,
-          
-          // Generic patterns with better boundaries
-          /FILE\s*NO\s*[:\-]?\s*([A-Z0-9\/\s-]+?)(?:\s+(?:PLOT|TITLE|OLD|DATED|FOR|TO|BEING|SITUATE)|\s*$)/i,
-          /F\.?\s*NO\.?\s*[:\-]?\s*([A-Z0-9\/\s-]+?)(?:\s+(?:PLOT|TITLE|OLD|DATED|FOR|TO|BEING|SITUATE)|\s*$)/i,
-          /REF\s*NO\s*[:\-]?\s*([A-Z0-9\/\s-]+?)(?:\s+(?:PLOT|TITLE|OLD|DATED|FOR|TO|BEING|SITUATE)|\s*$)/i,
-          
-          // Pattern for file numbers in parentheses or brackets
-          /\(([A-Z]{2,4}\/[A-Z]{2,4}\/\d{4}\/\d{2,4})\)/i,
-          /\[([A-Z]{2,4}\/[A-Z]{2,4}\/\d{4}\/\d{2,4})\]/i,
-          
-          // Additional patterns for common variations
-          /APPLICATION\s*(?:NO|NUMBER)\.?\s*:?\s*([A-Z0-9\/\s-]+?)(?:\s|$)/i,
-          /APPL\.?\s*(?:NO|NUMBER)\.?\s*:?\s*([A-Z0-9\/\s-]+?)(?:\s|$)/i
-        ],
-        
-        plotNumber: [
-          // Standard plot patterns
-          /PLOT\s+(?:NO|NUMBER)[:\s]*([A-Z0-9\s-]+?)(?:\s+TITLE|\s+OLD|\s+LAYOUT|\s*$)/i,
-          /Plot[:\s]+([A-Z0-9\s-]+?)(?:\s|$)/i,
-          /PLOT[:\s]*([A-Z0-9\s-]+?)(?:\s|$)/i,
-          /(?:PLOT|PLT)\s*[:\-]?\s*([A-Z0-9\s-]+?)(?:\s|$)/i,
-          
-          // Block and plot patterns
-          /BLOCK\s*([A-Z0-9]+)\s*PLOT\s*([A-Z0-9]+)/i,
-          /BLK\s*([A-Z0-9]+)\s*PLT\s*([A-Z0-9]+)/i,
-          
-          // Layout patterns
-          /LAYOUT\s*([A-Z0-9\s-]+?)(?:\s|$)/i,
-          /PLOT\s*(?:NO\.?|NUMBER)?\s*[:\-]?\s*([A-Z0-9\-\/ ]+?)(?:\s+(?:BLOCK|TITLE|LAYOUT|DISTRICT|AREA)|\s|$)/i
-        ],
-        
-        propertyHolder: [
-          // Title holder patterns
-          /(?:TITLE\s+TO|TITLE)[:\s]*([A-Z\s.,'-]+?)(?:\s+OLD\s+FILE|\s+TO|\s+PLOT|\s*$)/i,
-          /(?:ASSIGNEE|GRANTEE|HOLDER)[:\s]*([A-Z\s.,'-]+?)(?:\s|$)/i,
-          /(?:PROPERTY\s+HOLDER|OWNER)[:\s]*([A-Z\s.,'-]+?)(?:\s|$)/i,
-          
-          // Name with titles
-          /(?:MR\.?|MRS\.?|MS\.?|DR\.?|PROF\.?|ALH\.?|ALHAJI|ALHAJA|CHIEF|HON\.?)\s+([A-Z\s.,'-]+?)(?:\s|$)/i,
-          
-          // Applicant patterns
-          /(?:APPLICANT|OWNER|BENEFICIARY)[:\s]*([A-Z\s.,'-]+?)(?:\s|$)/i,
-          /NAME[:\s]*([A-Z\s.,'-]+?)(?:\s|$)/i,
-          
-          // Company patterns
-          /([A-Z\s&.,'-]+(?:LIMITED|LTD|PLC|COMPANY|CORP|ENTERPRISE|VENTURES))/i
-        ],
-        
-        instrument: [
-          // Deed types
-          /(DEED\s+OF\s+ASSIGNMENT)/i,
-          /(DEED\s+OF\s+MORTGAGE)/i,
-          /(DEED\s+OF\s+TRANSFER)/i,
-          /(DEED\s+OF\s+CONVEYANCE)/i,
-          /(DEED\s+OF\s+GIFT)/i,
-          
-          // Certificate types
-          /(CERTIFICATE\s+OF\s+OCCUPANCY)/i,
-          /(STATUTORY\s+CERTIFICATE\s+OF\s+OCCUPANCY)/i,
-          /(CUSTOMARY\s+CERTIFICATE\s+OF\s+OCCUPANCY)/i,
-          /(RIGHT\s+OF\s+OCCUPANCY)/i,
-          /(CUSTOMARY\s+RIGHT\s+OF\s+OCCUPANCY)/i,
-          
-          // Other instruments
-          /(POWER\s+OF\s+ATTORNEY)/i,
-          /(IRREVOCABLE\s+POWER\s+OF\s+ATTORNEY)/i,
-          /(RECERTIFICATION)/i,
-          /(SURVEY\s+PLAN)/i,
-          /(BUILDING\s+PLAN)/i,
-          /(DEVELOPMENT\s+PERMIT)/i
-        ],
-        
-        lga: [
-          // LGA patterns
-          /(?:LGA|Local\s*Government\s*Area)[:\s]*([A-Za-z\s]+?)(?:\s+State|\s*,|\s*\.|\n|$)/i,
-          /(?:WITHIN|IN)\s+([A-Z\s]+)\s+(?:LGA|LOCAL\s+GOVERNMENT)/i,
-          
-          // Specific Nigerian LGAs
-          /(Kano\s+Municipal|Lagos\s+Island|Lagos\s+Mainland|Abuja\s+Municipal|Kaduna\s+North|Kaduna\s+South)/i,
-          /(Municipal|Metropolitan)/i,
-          
-          // State patterns
-          /(Kano|Lagos|Abuja|Kaduna|Rivers|Ogun|Oyo|Anambra|Enugu|Delta)\s*(?:State)?/i
-        ],
-        
-        registration: [
-          // Registration number patterns
-          /(?:Reg|Registration)\s*(?:No|Number)[:\s]*(\d+)[\/\s]*(\d+)[\/\s]*(\d+)/i,
-          /Serial\s*No[:\s]*(\d+)\s*Page[:\s]*(\d+)\s*Volume[:\s]*(\d+)/i,
-          /(?:S\/N|SERIAL)[:\s]*(\d+)\s*(?:P\/N|PAGE)[:\s]*(\d+)\s*(?:V\/N|VOL)[:\s]*(\d+)/i,
-          
-          // Simple number patterns
-          /(\d{1,4})\s*\/\s*(\d{1,4})\s*\/\s*(\d{1,4})/i,
-          /NO\.\s*(\d+)\s*PAGE\s*(\d+)\s*VOL\.\s*(\d+)/i
-        ],
-        
-        location: [
-          // Location patterns
-          /(?:SITUATED|LOCATED|SITUATE)\s+(?:AT|IN)[:\s]*([A-Z\s,.-]+?)(?:\s+LGA|\s+STATE|\s*$)/i,
-          /LOCATION[:\s]*([A-Z\s,.-]+?)(?:\s+LGA|\s+STATE|\s*$)/i,
-          /ADDRESS[:\s]*([A-Z\s,.-]+?)(?:\s+LGA|\s+STATE|\s*$)/i,
-          /(?:AT|IN)\s+([A-Z\s,.-]+?)(?:\s+LGA|\s+STATE|\s*$)/i,
-          
-          // Area/District patterns
-          /(?:AREA|DISTRICT|WARD)[:\s]*([A-Z\s,.-]+?)(?:\s|$)/i
-        ],
-        
-        area: [
-          // Area/size patterns
-          /(?:AREA|SIZE|MEASURING)[:\s]*([0-9.,]+)\s*(HECTARES?|HA|SQ\.?\s*M|ACRES?|SQM)/i,
-          /([0-9.,]+)\s*(HECTARES?|HA|SQ\.?\s*M|ACRES?|SQM)/i,
-          /APPROX\.?\s*([0-9.,]+)\s*(HECTARES?|HA|SQ\.?\s*M|ACRES?|SQM)/i,
-          /APPROXIMATELY\s*([0-9.,]+)\s*(HECTARES?|HA|SQ\.?\s*M|ACRES?|SQM)/i
-        ],
-        
-        // Additional patterns for better extraction
-        date: [
-          /(?:DATE|DATED)[:\s]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
-          /(\d{1,2}(?:st|nd|rd|th)?\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{2,4})/i,
-          /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i
-        ],
-        
-        term: [
-          /(?:TERM|PERIOD)[:\s]*(\d+)\s*(YEARS?)/i,
-          /FOR\s+A\s+TERM\s+OF\s+(\d+)\s*(YEARS?)/i,
-          /(\d+)\s*YEARS?\s*TERM/i
-        ],
-        
-        consideration: [
-          /(?:CONSIDERATION|SUM|AMOUNT)[:\s]*(?:NGN|N|₦)?\s*([0-9,]+(?:\.\d{2})?)/i,
-          /(?:NGN|N|₦)\s*([0-9,]+(?:\.\d{2})?)/i,
-          /NAIRA\s*([0-9,]+(?:\.\d{2})?)/i
-        ]
-      };
-      
-      // Extract file number
-      for (const pattern of patterns.fileNumber) {
-        const match = cleanText.match(pattern);
-        if (match?.[1]) {
-          data.fileNo = match[1].trim().replace(/\s+/g, ' ');
-          foundFields++;
-          break;
-        }
-      }
-      
-      // Extract plot number
-      for (const pattern of patterns.plotNumber) {
-        const match = cleanText.match(pattern);
-        if (match?.[1]) {
-          data.plotNo = match[1].trim().replace(/\s+/g, ' ');
-          foundFields++;
-          break;
-        }
-      }
-      
-      // Extract property holder
-      for (const pattern of patterns.propertyHolder) {
-        const match = cleanText.match(pattern);
-        if (match?.[1]) {
-          data.propertyHolder = match[1].trim().replace(/\s+/g, ' ');
-          foundFields++;
-          break;
-        }
-      }
-      
-      // Extract instrument type
-      for (const pattern of patterns.instrument) {
-        const match = cleanText.match(pattern);
-        if (match?.[1]) {
-          data.instrument = match[1].trim().toUpperCase();
-          foundFields++;
-          break;
-        }
-      }
-      
-      // Extract LGA
-      for (const pattern of patterns.lga) {
-        const match = cleanText.match(pattern);
-        if (match?.[1]) {
-          data.lgsaOrCity = match[1].trim().replace(/\s+/g, ' ');
-          foundFields++;
-          break;
-        }
-      }
-      
-      // Extract location
-      for (const pattern of patterns.location) {
-        const match = cleanText.match(pattern);
-        if (match?.[1]) {
-          data.location = match[1].trim().replace(/\s+/g, ' ');
-          foundFields++;
-          break;
-        }
-      }
-      
-      // Extract area
-      for (const pattern of patterns.area) {
-        const match = cleanText.match(pattern);
-        if (match?.[1] && match?.[2]) {
-          data.area = `${match[1]} ${match[2]}`;
-          foundFields++;
-          break;
-        }
-      }
-      
-      // Extract registration details
-      for (const pattern of patterns.registration) {
-        const match = cleanText.match(pattern);
-        if (match && match.length >= 4) {
-          data.serialNo = match[1];
-          data.page = match[2];
-          data.vol = match[3];
-          data.regNo = `${match[1]}/${match[2]}/${match[3]}`;
-          foundFields += 3;
-          break;
-        }
-      }
-      
-      // Calculate confidence based on found fields and text quality
-      const baseConfidence = (foundFields / totalFields) * 100;
-      const textQualityBonus = Math.min(20, cleanText.length / 100); // Bonus for longer text
-      
-      data.confidence = Math.min(100, Math.round(baseConfidence + textQualityBonus));
-      data.extractionStatus = data.confidence > 70 ? 'High Confidence' :
-                             data.confidence > 40 ? 'Medium Confidence' : 
-                             data.confidence > 15 ? 'Low Confidence' : 'Extraction Failed';
-      
-      return data;
-    },
-    
-    validateExtractedData(data) {
-      // Clean and validate file number
-      if (data.fileNo) {
-        data.fileNo = data.fileNo.replace(/[_\s]+/g, ' ').trim();
-        // Remove trailing punctuation
-        data.fileNo = data.fileNo.replace(/[,.]$/, '');
-      }
-      
-      // Clean and validate plot number
-      if (data.plotNo) {
-        data.plotNo = data.plotNo.replace(/[,.]$/, '').trim();
-      }
-      
-      // Clean and validate property holder
-      if (data.propertyHolder) {
-        data.propertyHolder = data.propertyHolder.replace(/[,.]$/, '').trim();
-        // Capitalize properly
-        data.propertyHolder = data.propertyHolder.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
-      }
-      
-      // Clean and validate location
-      if (data.location) {
-        data.location = data.location.replace(/[,.]$/, '').trim();
-      }
-      
-      // Clean and validate LGA
-      if (data.lgsaOrCity) {
-        data.lgsaOrCity = data.lgsaOrCity.replace(/[,.]$/, '').trim();
-      }
-      
-      return data;
-    },
-    
-    populateForm() {
-      if (!this.extractedData) return;
-      
-      const data = this.extractedData;
-      let populatedFields = 0;
-      
-      try {
-        // Helper function to safely populate field
-        const populateField = (fieldId, value, eventType = 'input') => {
-          if (!value) return false;
-          
-          const field = document.getElementById(fieldId);
-          if (field && field.value !== value) {
-            field.value = value;
-            field.dispatchEvent(new Event(eventType, { bubbles: true }));
-            return true;
-          }
-          return false;
-        };
-        
-        // Populate basic property fields
-        if (populateField('plotNo', data.plotNo)) {
-          populatedFields++;
-          console.log('Populated plot number:', data.plotNo);
-        }
-        
-        if (populateField('houseNo', data.houseNo)) {
-          populatedFields++;
-          console.log('Populated house number:', data.houseNo);
-        }
-        
-        // Populate location fields
-        if (populateField('lga', data.lgsaOrCity, 'change')) {
-          populatedFields++;
-          console.log('Populated LGA:', data.lgsaOrCity);
-        }
-        
-        if (populateField('state', data.state || 'Kano State')) {
-          populatedFields++;
-          console.log('Populated state:', data.state || 'Kano State');
-        }
-        
-        // Populate registration fields
-        if (populateField('serialNo', data.serialNo)) {
-          populatedFields++;
-          console.log('Populated serial number:', data.serialNo);
-        }
-        
-        if (populateField('pageNo', data.page)) {
-          populatedFields++;
-          console.log('Populated page number:', data.page);
-        }
-        
-        if (populateField('volumeNo', data.vol)) {
-          populatedFields++;
-          console.log('Populated volume number:', data.vol);
-        }
-        
-        // Populate transaction type with enhanced mapping
-        if (data.instrument) {
-          const transactionField = document.getElementById('transactionType-record');
-          if (transactionField) {
-            const mapping = {
-              'DEED OF ASSIGNMENT': 'Deed of Assignment',
-              'CERTIFICATE OF OCCUPANCY': 'Certificate of Occupancy',
-              'STATUTORY CERTIFICATE OF OCCUPANCY': 'ST Certificate of Occupancy',
-              'CUSTOMARY CERTIFICATE OF OCCUPANCY': 'Customary Right of Occupancy',
-              'RIGHT OF OCCUPANCY': 'Customary Right of Occupancy',
-              'CUSTOMARY RIGHT OF OCCUPANCY': 'Customary Right of Occupancy',
-              'DEED OF MORTGAGE': 'Deed of Mortgage',
-              'POWER OF ATTORNEY': 'Power of Attorney',
-              'IRREVOCABLE POWER OF ATTORNEY': 'Irrevocable Power of Attorney',
-              'DEED OF TRANSFER': 'Deed of Transfer',
-              'DEED OF CONVEYANCE': 'Deed of Conveyance',
-              'DEED OF GIFT': 'Deed of Gift',
-              'RECERTIFICATION': 'Other',
-              'SURVEY PLAN': 'Other',
-              'BUILDING PLAN': 'Other'
-            };
-            
-            const mappedValue = mapping[data.instrument] || 'Other';
-            if (transactionField.value !== mappedValue) {
-              transactionField.value = mappedValue;
-              transactionField.dispatchEvent(new Event('change', { bubbles: true }));
-              populatedFields++;
-              console.log('Populated transaction type:', mappedValue);
-            }
-          }
-        }
-        
-        // Update registration preview
-        this.updateRegNoPreview();
-        
-        // Show success message with details
-        const successMessage = populatedFields > 0 
-          ? `Successfully populated ${populatedFields} fields with ${data.confidence}% confidence`
-          : `AI extraction completed with ${data.confidence}% confidence, but no form fields were populated`;
-          
-        this.showToast(successMessage, populatedFields > 0 ? 'success' : 'warning');
-        
-        console.log(`Form population completed. Populated ${populatedFields} fields.`);
-        
-      } catch (error) {
-        console.error('Error populating form:', error);
-        this.showToast('Error populating form fields. Please check the extracted data manually.', 'error');
-      }
-    },
-    
-    updateRegNoPreview() {
-      const serialNo = document.getElementById('serialNo')?.value || '';
-      const pageNo = document.getElementById('pageNo')?.value || '';
-      const volumeNo = document.getElementById('volumeNo')?.value || '';
-      
-      const regNoDisplay = [serialNo, pageNo, volumeNo].filter(Boolean).join('/') || 'Not set';
-      
-      // Update Alpine.js reactive elements
-      const alpineElements = document.querySelectorAll('[x-text*="regNoDisplay"]');
-      alpineElements.forEach(element => {
-        if (element._x_dataStack && element._x_dataStack[0]) {
-          element._x_dataStack[0].serialNo = serialNo;
-          element._x_dataStack[0].pageNo = pageNo;
-          element._x_dataStack[0].volumeNo = volumeNo;
-        }
-      });
-    },
-    
-    reset() {
-      this.selectedFile = null;
-      this.previewUrl = null;
-      this.fileType = null;
-      this.fileInfo = '';
-      this.pdfPages = [];
-      this.currentPdfPageIndex = 0;
-      this.processing = false;
-      this.progress = 0;
-      this.currentStageIndex = 0;
-      this.extractedData = null;
-      this.rawText = '';
-      this.error = null;
-      this.showRawText = false;
-      
-      // Clear file input
-      this.$refs.fileInput.value = '';
-      
-      this.$nextTick(() => {
-        lucide.createIcons();
-      });
-    },
-    
-    formatFileSize(bytes) {
-      if (bytes === 0) return '0 Bytes';
-      const k = 1024;
-      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    },
-    
-    showToast(message, type = 'info') {
-      const toastContainer = document.getElementById('toast-container');
-      const toastId = `toast-${Date.now()}`;
-      
-      const typeClasses = {
-        success: 'bg-green-600 text-white',
-        error: 'bg-red-600 text-white',
-        warning: 'bg-yellow-600 text-white',
-        info: 'bg-blue-600 text-white'
-      };
-      
-      const toast = document.createElement('div');
-      toast.id = toastId;
-      toast.className = `${typeClasses[type]} px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 transform translate-x-full transition-transform duration-300 max-w-sm`;
-      toast.innerHTML = `
-        <i data-lucide="${type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : type === 'warning' ? 'alert-triangle' : 'info'}" class="h-5 w-5 flex-shrink-0"></i>
-        <span class="text-sm font-medium">${message}</span>
-        <button onclick="this.parentElement.remove()" class="ml-auto hover:bg-black/20 rounded p-1">
-          <i data-lucide="x" class="h-4 w-4"></i>
-        </button>
-      `;
-      
-      toastContainer.appendChild(toast);
-      lucide.createIcons();
-      
-      setTimeout(() => {
-        toast.classList.remove('translate-x-full');
-      }, 100);
-      
-      setTimeout(() => {
-        if (toast.parentElement) {
-          toast.classList.add('translate-x-full');
-          setTimeout(() => toast.remove(), 300);
-        }
-      }, 5000);
-    }
-  }
-}
+// Global state
+let selectedFile = null;
+let previewUrl = null;
+let pdfPagePreviews = [];
+let currentPdfPreviewPageIdx = 0;
+let rawExtractedText = '';
+let extractedPropertyData = null;
+let keywordFindings = {};
+let currentAiStage = 'idle';
+let aiProgress = 0;
+let instruments = [];
+let editingInstrumentId = null;
 
 // Initialize PDF.js
 if (window.pdfjsLib) {
   window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 }
 
-console.log('🚀 Enhanced AI Property Record Assistant v2 loaded successfully');
+// Initialize the application
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize Lucide icons
+  lucide.createIcons();
+  
+  // Set up event listeners
+  setupEventListeners();
+  
+  // Update UI
+  updateUI();
+});
+
+function setupEventListeners() {
+  // File input
+  const fileInput = document.getElementById('file-input');
+  const fileUploadBtn = document.getElementById('file-upload-btn');
+  
+  fileInput.addEventListener('change', handleFileChange);
+  fileUploadBtn.addEventListener('click', () => fileInput.click());
+  
+  // Action buttons
+  document.getElementById('start-ai-btn').addEventListener('click', startAiPropertyProcessing);
+  document.getElementById('reset-btn').addEventListener('click', resetState);
+  
+  // PDF navigation
+  document.getElementById('pdf-prev-btn').addEventListener('click', handlePrevPdfPage);
+  document.getElementById('pdf-next-btn').addEventListener('click', handleNextPdfPage);
+  
+  // Raw text toggle
+  document.getElementById('toggle-raw-text').addEventListener('click', toggleRawText);
+  
+  // Instruments
+  document.getElementById('add-instrument-btn').addEventListener('click', addInstrument);
+  
+  // Save record
+  document.getElementById('save-record-btn').addEventListener('click', handleSaveRecord);
+}
+
+async function handleFileChange(event) {
+  const file = event.target.files?.[0];
+  if (file) {
+    if (file.type.startsWith('image/') || file.type === 'application/pdf') {
+      selectedFile = file;
+      hideError();
+      resetExtractionState();
+      
+      document.getElementById('file-upload-text').textContent = file.name;
+      
+      if (file.type === 'application/pdf') {
+        document.getElementById('image-preview').classList.add('hidden');
+        const pages = await renderPDFPagesToImages(file);
+        pdfPagePreviews = pages;
+        currentPdfPreviewPageIdx = 0;
+        if (pages.length > 0) {
+          showPdfPreview();
+        }
+      } else {
+        document.getElementById('pdf-preview').classList.add('hidden');
+        previewUrl = URL.createObjectURL(file);
+        showImagePreview();
+      }
+      
+      updateUI();
+    } else {
+      showError('Invalid file type. Please upload an image (JPEG, PNG) or PDF.');
+      resetFileState();
+    }
+  }
+}
+
+function showImagePreview() {
+  const preview = document.getElementById('image-preview');
+  const img = document.getElementById('image-preview-img');
+  img.src = previewUrl;
+  preview.classList.remove('hidden');
+}
+
+function showPdfPreview() {
+  const preview = document.getElementById('pdf-preview');
+  const img = document.getElementById('pdf-preview-img');
+  const label = document.getElementById('pdf-preview-label');
+  const navigation = document.getElementById('pdf-navigation');
+  const pageInfo = document.getElementById('pdf-page-info');
+  
+  if (pdfPagePreviews.length > 0) {
+    img.src = pdfPagePreviews[currentPdfPreviewPageIdx];
+    label.textContent = `PDF Preview (Page ${currentPdfPreviewPageIdx + 1} of ${pdfPagePreviews.length})`;
+    pageInfo.textContent = `Page ${currentPdfPreviewPageIdx + 1} / ${pdfPagePreviews.length}`;
+    
+    if (pdfPagePreviews.length > 1) {
+      navigation.classList.remove('hidden');
+    }
+    
+    preview.classList.remove('hidden');
+    updatePdfNavigation();
+  }
+}
+
+function updatePdfNavigation() {
+  const prevBtn = document.getElementById('pdf-prev-btn');
+  const nextBtn = document.getElementById('pdf-next-btn');
+  
+  prevBtn.disabled = currentPdfPreviewPageIdx === 0;
+  nextBtn.disabled = currentPdfPreviewPageIdx === pdfPagePreviews.length - 1;
+  
+  if (prevBtn.disabled) {
+    prevBtn.classList.add('opacity-50', 'cursor-not-allowed');
+  } else {
+    prevBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+  }
+  
+  if (nextBtn.disabled) {
+    nextBtn.classList.add('opacity-50', 'cursor-not-allowed');
+  } else {
+    nextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+  }
+}
+
+function handlePrevPdfPage() {
+  if (currentPdfPreviewPageIdx > 0) {
+    currentPdfPreviewPageIdx--;
+    showPdfPreview();
+  }
+}
+
+function handleNextPdfPage() {
+  if (currentPdfPreviewPageIdx < pdfPagePreviews.length - 1) {
+    currentPdfPreviewPageIdx++;
+    showPdfPreview();
+  }
+}
+
+async function renderPDFPagesToImages(file) {
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const pageImages = [];
+    
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale: 1.5 });
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      
+      if (!context) throw new Error('Could not get canvas context');
+      
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+      
+      await page.render({ canvasContext: context, viewport: viewport }).promise;
+      pageImages.push(canvas.toDataURL('image/png'));
+    }
+    
+    return pageImages;
+  } catch (error) {
+    console.error('Error rendering PDF pages:', error);
+    showToast('Failed to render PDF for preview.', 'error');
+    return [];
+  }
+}
+
+async function startAiPropertyProcessing() {
+  if (!selectedFile) {
+    showToast('Please select a document file first.', 'error');
+    return;
+  }
+  
+  currentAiStage = 'initializing';
+  aiProgress = 5;
+  
+  showAiProcessing();
+  updateAiProcessingUI();
+  
+  await new Promise(res => setTimeout(res, 200));
+  
+  aiProgress = 10;
+  currentAiStage = 'ocr';
+  updateAiProcessingUI();
+  
+  try {
+    let text = '';
+    if (selectedFile.type === 'application/pdf') {
+      text = await extractTextFromPropertyDocumentPDF(selectedFile);
+    } else if (selectedFile.type.startsWith('image/')) {
+      text = await extractTextFromPropertyDocumentImage(selectedFile);
+    } else {
+      throw new Error('Unsupported file type for AI processing.');
+    }
+    
+    rawExtractedText = text;
+    keywordFindings = analyzeTextForKeywords(text);
+    
+    currentAiStage = 'layoutAnalysis';
+    aiProgress = Math.min(65, aiProgress + 10);
+    updateAiProcessingUI();
+    
+    await new Promise(res => setTimeout(res, 100));
+    
+    currentAiStage = 'dataExtraction';
+    updateAiProcessingUI();
+    
+    const extractedDetails = extractPropertyInstrumentDetails(text, selectedFile.name);
+    
+    aiProgress = Math.min(85, aiProgress + 20);
+    currentAiStage = 'dataAssembly';
+    updateAiProcessingUI();
+    
+    const finalData = {
+      ...extractedDetails,
+      fileSize: formatFileSize(selectedFile.size),
+      fileType: selectedFile.type,
+      pageCount: selectedFile.type === 'application/pdf' ? pdfPagePreviews.length || 1 : 1,
+    };
+    
+    extractedPropertyData = finalData;
+    
+    aiProgress = 95;
+    await new Promise(res => setTimeout(res, 100));
+    
+    currentAiStage = 'complete';
+    aiProgress = 100;
+    updateAiProcessingUI();
+    
+    // Initialize instruments from extracted data
+    if (finalData.instrument) {
+      instruments = [{
+        id: Date.now().toString(),
+        type: finalData.instrument,
+        description: '',
+        parties: {
+          assignor: finalData.assignor || '',
+          assignee: finalData.assignee || ''
+        },
+        registrationDetails: {
+          serialNo: finalData.serialNo || '',
+          page: finalData.page || '',
+          vol: finalData.vol || '',
+          regNo: finalData.regNo || ''
+        },
+        notes: ''
+      }];
+    }
+    
+    showExtractionResults();
+    showToast('AI processing complete. Review extracted data.', 'success');
+    
+  } catch (err) {
+    console.error('AI Property Processing Error:', err);
+    showError(`AI Processing failed: ${err.message}`);
+    currentAiStage = 'idle';
+    aiProgress = 0;
+    hideAiProcessing();
+    showToast('AI processing failed.', 'error');
+  }
+}
+
+async function extractTextFromPropertyDocumentPDF(file) {
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+    let hasExtractableText = false;
+    
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map(item => item.str).join(' ');
+      
+      if (pageText.trim().length > 0) {
+        fullText += `--- Page ${i} ---\n${pageText}\n\n`;
+        hasExtractableText = true;
+      }
+    }
+    
+    if (hasExtractableText && fullText.trim().length > 20) {
+      aiProgress = Math.min(55, aiProgress + 40);
+      updateAiProcessingUI();
+      return fullText;
+    }
+    
+    showToast('PDF has limited selectable text. Using OCR for all pages.', 'info');
+    
+    let ocrText = '';
+    const totalPdfPagesForOcr = pdf.numPages;
+    const ocrStartProgress = aiProgress;
+    const ocrTotalProportion = 40;
+    
+    for (let i = 1; i <= totalPdfPagesForOcr; i++) {
+      const progressWithinOcrStage = ((i - 1) / totalPdfPagesForOcr) * ocrTotalProportion;
+      aiProgress = ocrStartProgress + progressWithinOcrStage;
+      updateAiProcessingUI();
+      
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale: 2.0 });
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      
+      if (!context) throw new Error('Could not get canvas context for OCR');
+      
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+      
+      await page.render({ canvasContext: context, viewport: viewport }).promise;
+      
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) {
+        ocrText += `--- Page ${i} (OCR) ---\nError creating image blob for OCR\n\n`;
+        continue;
+      }
+      
+      const imageUrl = URL.createObjectURL(blob);
+      
+      const { data: { text } } = await window.Tesseract.recognize(imageUrl, 'eng', {
+        logger: (m) => {
+          if (m.status === 'recognizing text') {
+            const pageOcrProgress = m.progress * (ocrTotalProportion / totalPdfPagesForOcr);
+            aiProgress = ocrStartProgress + progressWithinOcrStage + pageOcrProgress;
+            updateAiProcessingUI();
+          }
+        }
+      });
+      
+      URL.revokeObjectURL(imageUrl);
+      ocrText += `--- Page ${i} (OCR) ---\n${text || 'No text found by OCR'}\n\n`;
+    }
+    
+    aiProgress = Math.min(55, aiProgress + ocrTotalProportion);
+    updateAiProcessingUI();
+    return ocrText || `Scanned PDF: ${file.name}. No text found.`;
+    
+  } catch (error) {
+    console.error('Error processing PDF:', error);
+    aiProgress = Math.min(55, aiProgress + 40);
+    updateAiProcessingUI();
+    showToast(`Error processing PDF: ${error.message}`, 'error');
+    return `Error processing PDF: ${error.message}`;
+  }
+}
+
+async function extractTextFromPropertyDocumentImage(file) {
+  try {
+    const imageUrl = URL.createObjectURL(file);
+    const ocrStartProgress = aiProgress;
+    const ocrTotalProportion = 40;
+    
+    aiProgress = ocrStartProgress;
+    updateAiProcessingUI();
+    
+    const { data: { text } } = await window.Tesseract.recognize(imageUrl, 'eng', {
+      logger: (m) => {
+        if (m.status === 'recognizing text') {
+          aiProgress = ocrStartProgress + m.progress * ocrTotalProportion;
+          updateAiProcessingUI();
+        }
+      }
+    });
+    
+    URL.revokeObjectURL(imageUrl);
+    aiProgress = Math.min(55, aiProgress + ocrTotalProportion);
+    updateAiProcessingUI();
+    return text || '';
+    
+  } catch (error) {
+    console.error('Error during OCR on image:', error);
+    aiProgress = Math.min(55, aiProgress + 40);
+    updateAiProcessingUI();
+    showToast(`Error during OCR: ${error.message}`, 'error');
+    return '';
+  }
+}
+
+function extractPropertyInstrumentDetails(text, fileName) {
+  const cleanText = text
+    .replace(/(\r\n|\n|\r)/gm, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  
+  const data = {
+    originalFileName: fileName,
+    extractedText: text,
+    confidence: 0,
+    instruments: []
+  };
+  
+  let foundFields = 0;
+
+  // Enhanced extraction patterns
+  const patterns = {
+    fileNumber: [
+      /(?:File\s*No\.?|FILE\s*NUMBER|File\s*Number)\s*:?\s*(LKN\/COM\/[A-Z0-9/\s-]+)/i,
+      /(?:File\s*No\.?|FILE\s*NUMBER|File\s*Number)\s*:?\s*(COM\/[A-Z0-9/\s-]+)/i,
+      /(LKN\/COM\/\d{4}\/\d{2,4})/i,
+      /(COM\/\d{4}\/\d{2,4})/i,
+      /([A-Z]{2,4}\/[A-Z]{2,4}\/\d{4}\/\d{3,4})/i,
+    ],
+    plotNumber: [
+      /PLOT\s+(?:NO|NUMBER)[:\s]*([A-Z0-9\s-]+?)(?:\s+TITLE|\s+OLD|\s*$)/i,
+      /Plot[:\s]+([A-Z0-9\s-]+?)(?:\s|$)/i,
+      /PLOT[:\s]*([A-Z0-9\s-]+?)(?:\s|$)/i,
+    ],
+    propertyHolder: [
+      /TITLE[:\s]*([A-Z\s.,'-]+?)(?:\s+OLD\s+FILE|\s+TO|\s*$)/i,
+      /(?:ASSIGNEE|GRANTEE|HOLDER)[:\s]*([A-Z\s.,'-]+?)(?:\s|$)/i,
+      /(?:MR\.?|MRS\.?|MS\.?|DR\.?|PROF\.?|ALH\.?|ALHAJI|ALHAJA|CHIEF|HON\.?)\s+([A-Z\s.,'-]+?)(?:\s|$)/i,
+    ],
+    instrument: [
+      /(DEED\s+OF\s+ASSIGNMENT)/i,
+      /(CERTIFICATE\s+OF\s+OCCUPANCY)/i,
+      /(RIGHT\s+OF\s+OCCUPANCY)/i,
+      /(DEED\s+OF\s+MORTGAGE)/i,
+      /(POWER\s+OF\s+ATTORNEY)/i,
+      /(IRREVOCABLE\s+POWER\s+OF\s+ATTORNEY)/i,
+      /(RECERTIFICATION)/i,
+      /(SURVEY\s+PLAN)/i,
+    ],
+    lga: [
+      /(?:LGA|Local\s*Government\s*Area)\s*:?\s*([A-Za-z\s]+?)(?:\s+State|\s*,|\s*\.|\n|$)/i,
+      /(Abuja|Lagos|Kano|Ibadan|Port\s+Harcourt|Benin\s+City|Maiduguri|Zaria|Aba|Jos|Ilorin|Oyo|Enugu|Abeokuta|Sokoto|Katsina|Bauchi|Akure|Lokoja|Osogbo|Uyo|Calabar|Owerri|Abakaliki|Lafia|Jalingo|Yenagoa|Asaba|Awka|Makurdi|Gombe|Damaturu|Dutse|Birnin\s+Kebbi|Minna|Kaduna)/i
+    ],
+    registration: [
+      /Registered\s+as\s+No\.?\s*(\d+)\s*\/?\s*Page\s*(\d+)\s*\/?\s*Volume\s*(\d+)/i,
+      /Registration\s+No\.?\s*(\d+)\s*\/?\s*Page\s*(\d+)\s*\/?\s*Vol\.?\s*(\d+)/i,
+      /Serial\s+No\.?\s*(\d+)\s*Page\s*(\d+)\s*Volume\s*(\d+)/i
+    ]
+  };
+  
+  // Extract file number
+  for (const pattern of patterns.fileNumber) {
+    const match = cleanText.match(pattern);
+    if (match?.[1]) {
+      data.fileNo = match[1].trim();
+      foundFields++;
+      break;
+    }
+  }
+  
+  // Extract plot number
+  for (const pattern of patterns.plotNumber) {
+    const match = cleanText.match(pattern);
+    if (match?.[1]) {
+      data.plotNo = match[1].trim().replace(/[,.]$/, '');
+      foundFields++;
+      break;
+    }
+  }
+  
+  // Extract property holder
+  for (const pattern of patterns.propertyHolder) {
+    const match = cleanText.match(pattern);
+    if (match?.[1]) {
+      data.propertyHolder = match[1].trim().replace(/[,.]$/, '');
+      foundFields++;
+      break;
+    }
+  }
+  
+  // Extract instrument type
+  for (const pattern of patterns.instrument) {
+    const match = cleanText.match(pattern);
+    if (match?.[1]) {
+      data.instrument = match[1].trim().toUpperCase();
+      foundFields++;
+      break;
+    }
+  }
+  
+  // Extract LGA
+  for (const pattern of patterns.lga) {
+    const match = cleanText.match(pattern);
+    if (match?.[1]) {
+      data.lgsaOrCity = match[1].trim().replace(/[,.]$/, '');
+      foundFields++;
+      break;
+    }
+  }
+  
+  // Extract registration details
+  for (const pattern of patterns.registration) {
+    const match = cleanText.match(pattern);
+    if (match && match.length >= 4) {
+      data.serialNo = match[1];
+      data.page = match[2];
+      data.vol = match[3];
+      data.regNo = `${match[1]}/${match[2]}/${match[3]}`;
+      foundFields += 3;
+      break;
+    }
+  }
+  
+  // Calculate confidence
+  const totalPossibleFields = 8;
+  data.confidence = Math.min(100, Math.round((foundFields / totalPossibleFields) * 100));
+  data.extractionStatus = data.confidence > 70 ? 'High Confidence' :
+                         data.confidence > 40 ? 'Partially Extracted' : 
+                         data.confidence > 15 ? 'Low Confidence' : 'Extraction Failed';
+  
+  return data;
+}
+
+function analyzeTextForKeywords(text) {
+  const findings = {};
+  const keywords = [
+    'POWER OF ATTORNEY',
+    'IRREVOCABLE POWER OF ATTORNEY',
+    'DEED OF MORTGAGE',
+    'DEED OF ASSIGNMENT',
+    'DEED OF LEASE',
+    'CERTIFICATE OF OCCUPANCY',
+    'RIGHT OF OCCUPANCY',
+    'SURVEY PLAN',
+    'RECERTIFICATION'
+  ];
+  
+  keywords.forEach(keyword => {
+    if (text.toUpperCase().includes(keyword)) {
+      findings[keyword] = [1]; // Simple implementation - assume page 1
+    }
+  });
+  
+  return findings;
+}
+
+function showAiProcessing() {
+  document.getElementById('ai-processing').classList.remove('hidden');
+}
+
+function hideAiProcessing() {
+  document.getElementById('ai-processing').classList.add('hidden');
+}
+
+function updateAiProcessingUI() {
+  // Update progress bar
+  document.getElementById('ai-progress-text').textContent = `${Math.round(aiProgress)}% Complete`;
+  document.getElementById('ai-progress-bar').style.width = `${aiProgress}%`;
+  
+  // Update stage indicators
+  const stages = ['initializing', 'ocr', 'layoutAnalysis', 'dataExtraction', 'dataAssembly', 'complete'];
+  const currentStageIndex = stages.indexOf(currentAiStage);
+  
+  document.querySelectorAll('.stage-indicator').forEach((indicator, index) => {
+    const circle = indicator.querySelector('.w-4');
+    const text = indicator.querySelector('.text-xs');
+    
+    if (index < currentStageIndex) {
+      // Completed stage
+      circle.className = 'w-4 h-4 rounded-full bg-blue-500 mb-1';
+      text.className = 'text-xs font-medium text-blue-600';
+    } else if (index === currentStageIndex) {
+      // Current stage
+      circle.className = 'w-4 h-4 rounded-full bg-blue-500 ring-4 ring-blue-100 animate-pulse mb-1';
+      text.className = 'text-xs font-bold text-blue-700';
+    } else {
+      // Future stage
+      circle.className = 'w-4 h-4 rounded-full bg-gray-300 mb-1';
+      text.className = 'text-xs text-gray-500';
+    }
+  });
+  
+  // Update stage description
+  updateStageDescription();
+}
+
+function updateStageDescription() {
+  const stageTitle = document.getElementById('ai-stage-title');
+  const stageDescription = document.getElementById('ai-stage-description');
+  const stageIcon = document.getElementById('ai-stage-icon');
+  
+  const stageInfo = {
+    'initializing': {
+      title: 'Initializing',
+      description: 'Initializing AI for property document analysis...',
+      icon: 'brain'
+    },
+    'ocr': {
+      title: 'OCR',
+      description: 'Performing OCR to extract text from the document...',
+      icon: 'file-digit'
+    },
+    'layoutAnalysis': {
+      title: 'Layout Analysis',
+      description: 'Analyzing document structure...',
+      icon: 'file-search'
+    },
+    'dataExtraction': {
+      title: 'Data Extraction',
+      description: 'Extracting key property details: File No, Parties, Plot, Instrument...',
+      icon: 'layers'
+    },
+    'dataAssembly': {
+      title: 'Data Assembly',
+      description: 'Structuring extracted information...',
+      icon: 'zap'
+    },
+    'complete': {
+      title: 'Complete',
+      description: 'Property document analysis complete! Review data in the form.',
+      icon: 'sparkles'
+    }
+  };
+  
+  const info = stageInfo[currentAiStage] || stageInfo['initializing'];
+  
+  stageTitle.textContent = `Current Stage: ${info.title}`;
+  stageDescription.textContent = info.description;
+  stageIcon.setAttribute('data-lucide', info.icon);
+  
+  // Re-initialize Lucide icons
+  lucide.createIcons();
+}
+
+function showExtractionResults() {
+  // Show keyword findings
+  const instrumentsFound = Object.keys(keywordFindings).filter(keyword => keywordFindings[keyword].length > 0);
+  if (instrumentsFound.length > 0) {
+    const keywordCard = document.getElementById('keyword-findings');
+    const description = document.getElementById('keyword-findings-description');
+    const list = document.getElementById('keyword-findings-list');
+    
+    description.textContent = `This file contains ${instrumentsFound.length} ${instrumentsFound.length === 1 ? 'instrument' : 'instruments'}:`;
+    
+    instrumentsFound.sort();
+    list.innerHTML = instrumentsFound.map(instrument => `
+      <li class="flex items-center text-sm">
+        <div class="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+        <span class="font-medium text-gray-800">${instrument}</span>
+      </li>
+    `).join('');
+    
+    keywordCard.classList.remove('hidden');
+  }
+  
+  // Show raw text
+  if (rawExtractedText) {
+    const rawTextCard = document.getElementById('raw-text-card');
+    const textarea = document.getElementById('raw-text-textarea');
+    textarea.value = rawExtractedText;
+    rawTextCard.classList.remove('hidden');
+  }
+  
+  // Show extracted details
+  if (extractedPropertyData) {
+    populatePropertyForm();
+    renderInstruments();
+    document.getElementById('extracted-details').classList.remove('hidden');
+  }
+}
+
+function populatePropertyForm() {
+  if (!extractedPropertyData) return;
+  
+  const data = extractedPropertyData;
+  
+  // Set confidence display
+  let confidenceText = `Review the details extracted by the AI. Add or modify instruments as needed, then save the record. Confidence: ${data.confidence}% (${data.extractionStatus})`;
+  
+  if (data.propertyHolder) {
+    confidenceText += ` | Property Holder: ${data.propertyHolder}`;
+  }
+
+  document.getElementById('extraction-confidence').textContent = confidenceText;
+
+  // Populate the included form fields
+  if (data.plotNo) {
+    const plotField = document.getElementById('plotNo');
+    if (plotField) plotField.value = data.plotNo;
+  }
+
+  if (data.lgsaOrCity) {
+    const lgaField = document.getElementById('lga');
+    if (lgaField) {
+      lgaField.value = data.lgsaOrCity;
+      lgaField.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+
+  if (data.serialNo) {
+    const serialField = document.getElementById('serialNo');
+    if (serialField) serialField.value = data.serialNo;
+  }
+
+  if (data.page) {
+    const pageField = document.getElementById('pageNo');
+    if (pageField) pageField.value = data.page;
+  }
+
+  if (data.vol) {
+    const volField = document.getElementById('volumeNo');
+    if (volField) volField.value = data.vol;
+  }
+
+  if (data.instrument) {
+    const transactionField = document.getElementById('transactionType-record');
+    if (transactionField) {
+      const mapping = {
+        'DEED OF ASSIGNMENT': 'Deed of Assignment',
+        'CERTIFICATE OF OCCUPANCY': 'Certificate of Occupancy',
+        'RIGHT OF OCCUPANCY': 'Customary Right of Occupancy',
+        'DEED OF MORTGAGE': 'Deed of Mortgage',
+        'POWER OF ATTORNEY': 'Power of Attorney',
+        'IRREVOCABLE POWER OF ATTORNEY': 'Irrevocable Power of Attorney',
+        'RECERTIFICATION': 'Other',
+        'SURVEY PLAN': 'Other'
+      };
+      
+      const mappedValue = mapping[data.instrument] || 'Other';
+      transactionField.value = mappedValue;
+      transactionField.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+}
+
+function addInstrument() {
+  const newInstrument = {
+    id: Date.now().toString(),
+    type: extractedPropertyData?.instrument || '',
+    description: '',
+    parties: {
+      assignor: extractedPropertyData?.assignor || '',
+      assignee: extractedPropertyData?.assignee || extractedPropertyData?.propertyHolder || ''
+    },
+    registrationDetails: {
+      serialNo: extractedPropertyData?.serialNo || '',
+      page: extractedPropertyData?.page || '',
+      vol: extractedPropertyData?.vol || '',
+      regNo: extractedPropertyData?.regNo || ''
+    },
+    notes: ''
+  };
+
+  instruments.push(newInstrument);
+  editingInstrumentId = newInstrument.id;
+  renderInstruments();
+}
+
+function removeInstrument(id) {
+  instruments = instruments.filter(inst => inst.id !== id);
+  if (editingInstrumentId === id) {
+    editingInstrumentId = null;
+  }
+  renderInstruments();
+}
+
+function toggleInstrumentEdit(id) {
+  editingInstrumentId = editingInstrumentId === id ? null : id;
+  renderInstruments();
+}
+
+function updateInstrument(id, field, value) {
+  const instrument = instruments.find(inst => inst.id === id);
+  if (instrument) {
+    if (field.includes('.')) {
+      const [parent, child] = field.split('.');
+      if (!instrument[parent]) instrument[parent] = {};
+      instrument[parent][child] = value;
+      
+      // Auto-generate regNo when all parts are available
+      if (parent === 'registrationDetails') {
+        const details = instrument.registrationDetails;
+        if (details.serialNo && details.page && details.vol) {
+          details.regNo = `${details.serialNo}/${details.page}/${details.vol}`;
+        }
+      }
+    } else {
+      instrument[field] = value;
+    }
+    renderInstruments();
+  }
+}
+
+function renderInstruments() {
+  const container = document.getElementById('instruments-list');
+  const noInstruments = document.getElementById('no-instruments');
+
+  if (instruments.length === 0) {
+    container.innerHTML = '';
+    noInstruments.classList.remove('hidden');
+    return;
+  }
+
+  noInstruments.classList.add('hidden');
+
+  const instrumentTypes = [
+    'DEED OF ASSIGNMENT',
+    'CERTIFICATE OF OCCUPANCY',
+    'RIGHT OF OCCUPANCY',
+    'DEED OF MORTGAGE',
+    'POWER OF ATTORNEY',
+    'IRREVOCABLE POWER OF ATTORNEY',
+    'SURVEY PLAN',
+    'RECERTIFICATION',
+    'OTHER'
+  ];
+
+  container.innerHTML = instruments.map((instrument, index) => {
+    const isEditing = editingInstrumentId === instrument.id;
+    
+    return `
+      <div class="bg-white rounded-lg border instrument-card ${isEditing ? 'editing' : ''}">
+        <div class="p-4 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-medium">Instrument #${index + 1}</span>
+              ${instrument.type ? `<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">${instrument.type}</span>` : ''}
+            </div>
+            <div class="flex items-center gap-1">
+              <button onclick="toggleInstrumentEdit('${instrument.id}')" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-2 py-1 transition-all cursor-pointer bg-transparent text-gray-700 hover:bg-gray-100">
+                <i data-lucide="edit-3" class="h-4 w-4"></i>
+              </button>
+              <button onclick="removeInstrument('${instrument.id}')" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-2 py-1 transition-all cursor-pointer bg-transparent text-red-600 hover:bg-red-50">
+                <i data-lucide="trash-2" class="h-4 w-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        ${isEditing ? `
+          <div class="p-4 space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <label class="text-xs font-medium text-gray-700">Instrument Type</label>
+                <select onchange="updateInstrument('${instrument.id}', 'type', this.value)" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+                  <option value="">Select instrument type</option>
+                  ${instrumentTypes.map(type => `
+                    <option value="${type}" ${instrument.type === type ? 'selected' : ''}>${type}</option>
+                  `).join('')}
+                </select>
+              </div>
+              <div class="space-y-2">
+                <label class="text-xs font-medium text-gray-700">Description</label>
+                <input
+                  type="text"
+                  value="${instrument.description || ''}"
+                  onchange="updateInstrument('${instrument.id}', 'description', this.value)"
+                  placeholder="Brief description"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                />
+              </div>
+            </div>
+            
+            <div class="flex justify-end pt-2">
+              <button onclick="toggleInstrumentEdit('${instrument.id}')" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1 transition-all cursor-pointer bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50">
+                Done Editing
+              </button>
+            </div>
+          </div>
+        ` : `
+          <div class="p-4">
+            <div class="text-sm text-gray-600 space-y-1">
+              ${instrument.description ? `
+                <p><span class="font-medium">Description:</span> ${instrument.description}</p>
+              ` : ''}
+              ${instrument.registrationDetails?.regNo ? `
+                <p><span class="font-medium">Reg No:</span> ${instrument.registrationDetails.regNo}</p>
+              ` : ''}
+              ${instrument.notes ? `
+                <p><span class="font-medium">Notes:</span> ${instrument.notes}</p>
+              ` : ''}
+            </div>
+          </div>
+        `}
+      </div>
+    `;
+  }).join('');
+
+  // Re-initialize Lucide icons
+  lucide.createIcons();
+}
+
+function toggleRawText() {
+  const content = document.getElementById('raw-text-content');
+  const button = document.getElementById('toggle-raw-text');
+
+  if (content.classList.contains('expanded')) {
+    content.classList.remove('expanded');
+    button.innerHTML = '<i data-lucide="chevron-down" class="h-4 w-4"></i> Show';
+  } else {
+    content.classList.add('expanded');
+    button.innerHTML = '<i data-lucide="chevron-up" class="h-4 w-4"></i> Hide';
+  }
+
+  lucide.createIcons();
+}
+
+function handleSaveRecord() {
+  if (!extractedPropertyData) return;
+
+  // Collect form data
+  const formData = {
+    ...extractedPropertyData,
+    instruments: instruments
+  };
+
+  // Here you would typically save to your database
+  console.log('Saving property record:', formData);
+  showToast('Property record saved successfully!', 'success');
+}
+
+function resetState() {
+  selectedFile = null;
+  previewUrl = null;
+  pdfPagePreviews = [];
+  currentPdfPreviewPageIdx = 0;
+  rawExtractedText = '';
+  extractedPropertyData = null;
+  keywordFindings = {};
+  currentAiStage = 'idle';
+  aiProgress = 0;
+  instruments = [];
+  editingInstrumentId = null;
+
+  // Reset file input
+  document.getElementById('file-input').value = '';
+  document.getElementById('file-upload-text').textContent = 'Click to select a file';
+
+  // Hide all sections
+  hideError();
+  document.getElementById('image-preview').classList.add('hidden');
+  document.getElementById('pdf-preview').classList.add('hidden');
+  hideAiProcessing();
+  document.getElementById('keyword-findings').classList.add('hidden');
+  document.getElementById('raw-text-card').classList.add('hidden');
+  document.getElementById('extracted-details').classList.add('hidden');
+
+  updateUI();
+}
+
+function resetExtractionState() {
+  rawExtractedText = '';
+  extractedPropertyData = null;
+  keywordFindings = {};
+  currentAiStage = 'idle';
+  aiProgress = 0;
+  instruments = [];
+  editingInstrumentId = null;
+
+  hideAiProcessing();
+  document.getElementById('keyword-findings').classList.add('hidden');
+  document.getElementById('raw-text-card').classList.add('hidden');
+  document.getElementById('extracted-details').classList.add('hidden');
+}
+
+function resetFileState() {
+  selectedFile = null;
+  previewUrl = null;
+  pdfPagePreviews = [];
+  currentPdfPreviewPageIdx = 0;
+
+  document.getElementById('file-input').value = '';
+  document.getElementById('file-upload-text').textContent = 'Click to select a file';
+  document.getElementById('image-preview').classList.add('hidden');
+  document.getElementById('pdf-preview').classList.add('hidden');
+}
+
+function updateUI() {
+  const startBtn = document.getElementById('start-ai-btn');
+  const resetBtn = document.getElementById('reset-btn');
+
+  // Update start button state
+  if (selectedFile && (currentAiStage === 'idle' || currentAiStage === 'complete')) {
+    startBtn.disabled = false;
+    startBtn.innerHTML = currentAiStage === 'complete' ? 
+      '<i data-lucide="wand-2" class="mr-2 h-4 w-4"></i>Re-process with AI' :
+      '<i data-lucide="wand-2" class="mr-2 h-4 w-4"></i>Extract Data with AI';
+  } else if (currentAiStage !== 'idle' && currentAiStage !== 'complete') {
+    startBtn.disabled = true;
+    startBtn.innerHTML = '<div class="loading-spinner mr-2"></div>Processing...';
+  } else {
+    startBtn.disabled = true;
+    startBtn.innerHTML = '<i data-lucide="wand-2" class="mr-2 h-4 w-4"></i>Extract Data with AI';
+  }
+
+  // Update reset button visibility
+  if (currentAiStage !== 'idle' || selectedFile) {
+    resetBtn.classList.remove('hidden');
+  } else {
+    resetBtn.classList.add('hidden');
+  }
+
+  // Re-initialize Lucide icons
+  lucide.createIcons();
+}
+
+function showError(message) {
+  const errorAlert = document.getElementById('error-alert');
+  const errorMessage = document.getElementById('error-message');
+  errorMessage.textContent = message;
+  errorAlert.classList.remove('hidden');
+  lucide.createIcons();
+}
+
+function hideError() {
+  document.getElementById('error-alert').classList.add('hidden');
+}
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function showToast(message, type = 'info') {
+  const toastContainer = document.getElementById('toast-container');
+  const toastId = `toast-${Date.now()}`;
+
+  const typeClasses = {
+    success: 'bg-green-600 text-white',
+    error: 'bg-red-600 text-white',
+    warning: 'bg-yellow-600 text-white',
+    info: 'bg-blue-600 text-white'
+  };
+
+  const toast = document.createElement('div');
+  toast.id = toastId;
+  toast.className = `${typeClasses[type]} px-4 py-2 rounded-md shadow-lg flex items-center gap-2 transform translate-x-full transition-transform duration-300`;
+  toast.innerHTML = `
+    <i data-lucide="${type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : type === 'warning' ? 'alert-triangle' : 'info'}" class="h-4 w-4"></i>
+    <span>${message}</span>
+    <button onclick="removeToast('${toastId}')" class="ml-2 hover:bg-black/20 rounded p-1">
+      <i data-lucide="x" class="h-3 w-3"></i>
+    </button>
+  `;
+
+  toastContainer.appendChild(toast);
+  lucide.createIcons();
+
+  // Animate in
+  setTimeout(() => {
+    toast.classList.remove('translate-x-full');
+  }, 100);
+
+  // Auto remove after 5 seconds
+  setTimeout(() => {
+    removeToast(toastId);
+  }, 5000);
+}
+
+function removeToast(toastId) {
+  const toast = document.getElementById(toastId);
+  if (toast) {
+    toast.classList.add('translate-x-full');
+    setTimeout(() => {
+      toast.remove();
+    }, 300);
+  }
+}
 </script>
-</body>
-</html>
