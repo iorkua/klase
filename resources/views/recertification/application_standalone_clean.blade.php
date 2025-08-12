@@ -45,15 +45,7 @@ tailwind.config = {
                     <h1 class="text-3xl font-bold text-gray-900">New Recertification Application</h1>
                     <p class="text-gray-600">Complete the form below to submit a new recertification application</p>
                 </div>
-                <!-- File Number Display -->
-                <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
-                    <div class="text-xs font-medium text-blue-600 uppercase tracking-wide mb-1">Application File Number</div>
-                    <div class="flex items-center gap-2">
-                        <i data-lucide="file-text" class="h-5 w-5 text-blue-600"></i>
-                        <span id="file-number-display" class="text-lg font-bold text-blue-900 font-mono">Loading...</span>
-                    </div>
-                    <div class="text-xs text-blue-500 mt-1">Auto-generated</div>
-                </div>
+           
             </div>
 
             <!-- Development Controls -->
@@ -114,8 +106,19 @@ tailwind.config = {
                         <div id="step-7" class="step-circle inactive">7</div>
                     </div>
                 </div>
-                 
-                <div class="p-6">
+
+                <!-- File Number Display -->
+<div class="flex justify-center p-6 pb-0">
+    <div class="bg-blue-50 border border-blue-200 rounded-sm px-4 py-3">
+        <div class="text-xs font-medium text-blue-600 uppercase tracking-wide mb-1">Application File Number</div>
+        <div class="flex items-center gap-2">
+            <i data-lucide="file-text" class="h-5 w-5 text-blue-600"></i>
+            <span id="file-number-display" class="text-lg font-bold text-blue-900 font-mono">Loading...</span>
+        </div>
+        <div class="text-xs text-blue-500 mt-1">Auto-generated</div>
+    </div>
+</div>
+           <div class="p-6">
                     <form id="recertification-form" method="POST" action="{{ route('recertification.application.store') }}" enctype="multipart/form-data">
                         @csrf
                         

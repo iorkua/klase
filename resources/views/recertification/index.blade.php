@@ -26,6 +26,14 @@ tailwind.config = {
 }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- DataTables CSS -->
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
+<!-- DataTables JS -->
+<script type="text/javascript" src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
 
 <style>
 /* Custom styles */
@@ -158,13 +166,13 @@ input:checked + .toggle-slider:before {
         </label>
       </div>
       <div class="flex gap-2">
-        <button id="new-application-btn" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-4 py-2 transition-all cursor-pointer border-0 bg-blue-600 text-white hover:bg-blue-700 gap-2">
+        <!-- <button id="new-application-btn" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-4 py-2 transition-all cursor-pointer border-0 bg-blue-600 text-white hover:bg-blue-700 gap-2">
           <i data-lucide="plus" class="h-4 w-4"></i>
           New Application (Modal)
-        </button>
+        </button> -->
         <a href="{{ url('/recertification/application') }}" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-4 py-2 transition-all cursor-pointer border border-blue-600 text-blue-600 hover:bg-blue-50 gap-2">
           <i data-lucide="external-link" class="h-4 w-4"></i>
-          New Application (Page)
+          New Application  
         </a>
       </div>
     </div>
@@ -255,28 +263,54 @@ input:checked + .toggle-slider:before {
       </div>
     </div>
     
-    <div class="rounded-md border border-gray-200" id="applications-table-container">
-      <div class="p-6">
+    <div class="rounded-md border border-gray-200" id="applications-table-container"<div class="overflow-x-auto">
         <!-- Table -->
-    <div class="table-container">
-          <table class="w-full">
-            <thead>
-              <tr class="border-b bg-gray-50">
-                <th class="text-left p-4 font-medium text-gray-700">NewFileNo</th>
-                <th class="text-left p-4 font-medium text-gray-700">Application Type</th>
-                <th class="text-left p-4 font-medium text-gray-700">Applicant Name</th>
-                <th class="text-left p-4 font-medium text-gray-700">Plot Details</th>
-                <th class="text-left p-4 font-medium text-gray-700">LGA</th>
-                <th class="text-left p-4 font-medium text-gray-700">Application Date</th>
-                <th class="text-left p-4 font-medium text-gray-700">Acknowledgement</th>
-                <th class="text-left p-4 font-medium text-gray-700">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="applications-table-body">
-              <!-- Applications will be loaded dynamically -->
-            </tbody>
-          </table>
-        </div>
+        <table class="min-w-full divide-y divide-gray-200" id="recertification-table">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                CofO Number
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                New KANGIS File No
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                KANGIS File No
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                MLSF No
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                Reg No
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                Application Type
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                Applicant Name
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                Plot Details
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                LGA
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                Application Date
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                Acknowledgement
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody id="applications-table-body" class="bg-white divide-y divide-gray-200">
+            <!-- Applications will be loaded dynamically -->
+          </tbody>
+        </table>
+        </div> </div>
         
         <!-- No results state -->
         <div id="no-results" class="hidden text-center py-12">
@@ -334,13 +368,7 @@ input:checked + .toggle-slider:before {
       </div>
     </div>
     
-    <div class="p-6">
-      <div id="application-details-content">
-        <!-- Application details will be inserted here -->
-      </div>
-    </div>
-  </div>
-
+  
 
 <!-- Toast Notifications -->
 <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2">

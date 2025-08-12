@@ -112,6 +112,7 @@ class RecertificationController extends Controller
 
                 return [
                     'id' => $app->id,
+                    'NewKANGISFileno' => $app->NewKANGISFileno,
                     'application_reference' => $app->application_reference ?? 'N/A',
                     'file_number' => $fileNo ?? 'N/A',
                     'applicant_name' => $applicantName,

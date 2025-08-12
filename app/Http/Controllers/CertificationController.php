@@ -88,7 +88,7 @@ class CertificationController extends Controller
                 'success' => true,
                 'data' => $data,
                 'statistics' => $statistics
-            ]);
+            ]); 
 
         } catch (\Exception $e) {
             Log::error('Error fetching certification data', [

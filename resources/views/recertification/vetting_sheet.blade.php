@@ -182,21 +182,46 @@ tailwind.config = {
                 <div class="rounded-md border-t-0" id="vetting-table-container">
                     <div class="p-6">
                         <!-- Table -->
-                        <div class="table-container">
-                            <table class="w-full">
-                                <thead>
-                                    <tr class="border-b bg-gray-50">
-                                        <th class="text-left p-4 font-medium text-gray-700">File No</th>
-                                        <th class="text-left p-4 font-medium text-gray-700">Application Type</th>
-                                        <th class="text-left p-4 font-medium text-gray-700">Applicant Name</th>
-                                        <th class="text-left p-4 font-medium text-gray-700">Plot Details</th>
-                                        <th class="text-left p-4 font-medium text-gray-700">LGA</th>
-                                        <th class="text-left p-4 font-medium text-gray-700">Application Date</th>
-                                        <!-- <th class="text-left p-4 font-medium text-gray-700">Status</th> -->
-                                        <th class="text-left p-4 font-medium text-gray-700">Actions</th>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200" id="vetting-sheet-table">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                            CofO Serial No
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                            New KANGIS File No
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                            KANGIS File No
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                            MLSF No
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                            Reg No
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                            Application Type
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                            Applicant Name
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                            Plot Details
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                            LGA
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                            Application Date
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                            Actions
+                                        </th>
                                     </tr>
                                 </thead>
-                                <tbody id="vetting-table-body">
+                                <tbody id="vetting-table-body" class="bg-white divide-y divide-gray-200">
                                     <!-- Applications will be loaded dynamically -->
                                 </tbody>
                             </table>
@@ -378,28 +403,39 @@ function renderVettingTable() {
         
         return `
             <tr class="table-row border-b hover:bg-gray-50">
-                <td class="p-4">
-                    <div class="font-medium text-blue-900 font-mono">${app.file_number || 'N/A'}</div>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.cofO_serialNo || 'N/A'}</div>
                 </td>
-                <td class="p-4">
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.NewKANGISFileno || app.newkangisfileno || app.new_kangis_file_no || 'N/A'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.kangisFileNo || 'N/A'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.mlsfNo || 'N/A'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.reg_no || 'N/A'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
                     <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getApplicationTypeClass(app.applicant_type)}">
                         ${app.applicant_type || 'N/A'}
                     </div>
                 </td>
-                <td class="p-4">
-                    <div class="font-medium text-gray-900">${app.applicant_name || 'N/A'}</div>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900">${app.applicant_name || 'N/A'}</div>
                 </td>
-                <td class="p-4">
-                    <div class="text-gray-900">${app.plot_details || 'N/A'}</div>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.plot_details || 'N/A'}</div>
                 </td>
-                <td class="p-4">
-                    <div class="text-gray-900">${app.lga_name || 'N/A'}</div>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.lga_name || 'N/A'}</div>
                 </td>
-                <td class="p-4">
-                    <div class="text-gray-900">${app.created_at || 'N/A'}</div>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.created_at || 'N/A'}</div>
                 </td>
-                
-                <td class="p-4">
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div class="relative">
                         <button 
                             onclick="toggleActionMenu('${actionMenuId}')"

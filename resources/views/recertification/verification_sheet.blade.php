@@ -119,28 +119,53 @@ tailwind.config = {
                 </div>
                 
                 <div class="rounded-md border border-gray-200" id="applications-table-container">
-                    <div class="p-6">
-                        
+                    <div class="overflow-x-auto">
                         <!-- Table -->
-                        <div class="table-container">
-                            <table class="w-full">
-                                <thead>
-                                    <tr class="border-b bg-gray-50">
-                                        <th class="text-left p-4 font-medium text-gray-700">NewFileNo</th>
-                                        <th class="text-left p-4 font-medium text-gray-700">Application Type</th>
-                                        <th class="text-left p-4 font-medium text-gray-700">Applicant Name</th>
-                                        <th class="text-left p-4 font-medium text-gray-700">Plot Details</th>
-                                        <th class="text-left p-4 font-medium text-gray-700">LGA</th>
-                                        <th class="text-left p-4 font-medium text-gray-700">Application Date</th>
-                                        <th class="text-left p-4 font-medium text-gray-700">Verification Status</th>
-                                        <th class="text-left p-4 font-medium text-gray-700">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="applications-table-body">
-                                    <!-- Applications will be loaded dynamically -->
-                                </tbody>
-                            </table>
-                        </div>
+                        <table class="min-w-full divide-y divide-gray-200" id="verification-sheet-table">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                        CofO Serial No
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                        New KANGIS File No
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                        KANGIS File No
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                        MLSF No
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                        Reg No
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                        Application Type
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                        Applicant Name
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                        Plot Details
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                        LGA
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                        Application Date
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                        Verification Status
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                        Actions
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="applications-table-body" class="bg-white divide-y divide-gray-200">
+                                <!-- Applications will be loaded dynamically -->
+                            </tbody>
+                        </table>
                         
                         <!-- No results state -->
                         <div id="no-results" class="hidden text-center py-12">
@@ -196,7 +221,7 @@ function loadVerificationData() {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="8" class="text-center py-8">
+                <td colspan="14" class="text-center py-8">
                     <div class="loading-spinner mx-auto mb-2"></div>
                     <p class="text-gray-600">Loading verification data...</p>
                 </td>
@@ -242,7 +267,7 @@ function loadVerificationData() {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="text-center py-8">
+                    <td colspan="14" class="text-center py-8">
                         <i data-lucide="alert-circle" class="h-8 w-8 text-red-500 mx-auto mb-2"></i>
                         <p class="text-red-600">Failed to load verification data</p>
                         <button onclick="loadVerificationData()" class="mt-2 text-blue-600 hover:text-blue-800">
@@ -315,30 +340,42 @@ function renderVerificationTable(data) {
         
         return `
             <tr class="table-row border-b hover:bg-gray-50">
-                <td class="p-4">
-                    <div class="font-medium text-blue-900 font-mono">${app.file_number || 'N/A'}</div>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.cofO_serialNo || 'N/A'}</div>
                 </td>
-                <td class="p-4">
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.NewKANGISFileno || app.newkangisfileno || app.new_kangis_file_no || 'N/A'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.kangisFileNo || 'N/A'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.mlsfNo || 'N/A'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.reg_no || 'N/A'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
                     <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getApplicationTypeClass(app.applicant_type)}">
                         ${app.applicant_type || 'N/A'}
                     </div>
                 </td>
-                <td class="p-4">
-                    <div class="font-medium text-gray-900">${app.applicant_name || 'N/A'}</div>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900">${app.applicant_name || 'N/A'}</div>
                 </td>
-                <td class="p-4">
-                    <div class="text-gray-900">${app.plot_details || 'N/A'}</div>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.plot_details || 'N/A'}</div>
                 </td>
-                <td class="p-4">
-                    <div class="text-gray-900">${app.lga_name || 'N/A'}</div>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.lga_name || 'N/A'}</div>
                 </td>
-                <td class="p-4">
-                    <div class="text-gray-900">${app.created_at || 'N/A'}</div>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.created_at || 'N/A'}</div>
                 </td>
-                <td class="p-4">
+                <td class="px-6 py-4 whitespace-nowrap">
                     ${getVerificationStatusBadge(app.verification)}
                 </td>
-                <td class="p-4">
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div class="relative">
                         <button 
                             onclick="toggleActionMenu('${actionMenuId}')"

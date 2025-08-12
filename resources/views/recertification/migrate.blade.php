@@ -261,19 +261,45 @@ tailwind.config = {
                         <!-- Applications Table -->
                         <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
                             <div class="overflow-x-auto">
-                                <table class="w-full">
+                                <table class="min-w-full divide-y divide-gray-200" id="migrate-applications-table">
                                     <thead class="bg-gray-50">
                                         <tr>
-                                            <th class="text-left p-4 font-medium text-gray-700">NewFileNo</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">Application Type</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">Applicant Name</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">Plot Details</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">LGA</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">Application Status</th>
-                                            <th class="text-left p-4 font-medium text-gray-700">Date</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                                CofO Serial No
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                                New KANGIS File No
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                                KANGIS File No
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                                MLSF No
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                                Reg No
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                                Application Type
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                                Applicant Name
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                                Plot Details
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                                LGA
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                                Application Status
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                                Date
+                                            </th>
                                         </tr>
                                     </thead>
-                                    <tbody id="applications-table-body">
+                                    <tbody id="applications-table-body" class="bg-white divide-y divide-gray-200">
                                         <!-- Applications will be loaded dynamically -->
                                     </tbody>
                                 </table>
@@ -649,30 +675,42 @@ function renderApplicationsTable(data) {
     const rows = data.map(app => {
         return `
             <tr class="border-b hover:bg-gray-50">
-                <td class="p-4">
-                    <div class="font-medium text-blue-900 font-mono">${app.file_number || 'N/A'}</div>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.cofO_serialNo || 'N/A'}</div>
                 </td>
-                <td class="p-4">
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.NewKANGISFileno || app.newkangisfileno || app.new_kangis_file_no || 'N/A'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.kangisFileNo || 'N/A'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.mlsfNo || 'N/A'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.reg_no || 'N/A'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
                     <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getApplicationTypeClass(app.applicant_type)}">
                         ${app.applicant_type || 'N/A'}
                     </div>
                 </td>
-                <td class="p-4">
-                    <div class="font-medium text-gray-900">${app.applicant_name || 'N/A'}</div>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900">${app.applicant_name || 'N/A'}</div>
                 </td>
-                <td class="p-4">
-                    <div class="text-gray-900">${app.plot_details || 'N/A'}</div>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.plot_details || 'N/A'}</div>
                 </td>
-                <td class="p-4">
-                    <div class="text-gray-900">${app.lga_name || 'N/A'}</div>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.lga_name || 'N/A'}</div>
                 </td>
-                <td class="p-4">
+                <td class="px-6 py-4 whitespace-nowrap">
                     <div class="status-badge ${getStatusClass(app.application_status)}">
                         ${app.application_status || 'Pending'}
                     </div>
                 </td>
-                <td class="p-4">
-                    <div class="text-gray-900">${app.recertification_date ? new Date(app.recertification_date).toLocaleDateString() : (app.created_at ? new Date(app.created_at).toLocaleDateString() : 'N/A')}</div>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${app.recertification_date ? new Date(app.recertification_date).toLocaleDateString() : (app.created_at ? new Date(app.created_at).toLocaleDateString() : 'N/A')}</div>
                 </td>
             </tr>
         `;

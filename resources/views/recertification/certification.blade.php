@@ -243,10 +243,14 @@ tailwind.config = {
                     <div id="not-generated-content" class="tab-content active">
                         <div class="p-6">
                             <div class="table-container">
-                                <table class="w-full">
+                                <table class="w-full" id="certification-table">
                                     <thead>
                                         <tr class="border-b bg-gray-50">
-                                            <th class="text-left p-4 font-medium text-gray-700">File No</th>
+                                            <th class="text-left p-4 font-medium text-gray-700">cofO_serialNo</th>
+                                            <th class="text-left p-4 font-medium text-gray-700">NewKANGISFileno</th>
+                                            <th class="text-left p-4 font-medium text-gray-700">kangisFileNo</th>
+                                            <th class="text-left p-4 font-medium text-gray-700">mlsfNo</th>
+                                            <th class="text-left p-4 font-medium text-gray-700">reg_no</th>
                                             <th class="text-left p-4 font-medium text-gray-700">Application Type</th>
                                             <th class="text-left p-4 font-medium text-gray-700">Applicant Name</th>
                                             <th class="text-left p-4 font-medium text-gray-700">Plot Details</th>
