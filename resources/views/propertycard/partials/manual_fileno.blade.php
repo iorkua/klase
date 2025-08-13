@@ -1,8 +1,22 @@
 <div x-data="{ tab: 'mls',
-                      mlsPrefix: '', mlsNumber: '',
+                      mlsPrefix: '', mlsYear: '', mlsNumber: '', mlsType: 'regular',
                       kangisPrefix: '', kangisNumber: '',
                       newkangisPrefix: '', newkangisNumber: '',
-                      mlsPreview() { return this.mlsPrefix && this.mlsNumber ? `${this.mlsPrefix}-${this.mlsNumber}` : (this.mlsPrefix || this.mlsNumber); },
+                      mlsPreview() { 
+                        const parts = [];
+                        if (this.mlsPrefix) parts.push(this.mlsPrefix);
+                        if (this.mlsYear) parts.push(this.mlsYear);
+                        if (this.mlsNumber) parts.push(this.mlsNumber);
+                        
+                        let baseFileNo = parts.length > 0 ? parts.join('-') : '';
+                        
+                        if (baseFileNo && this.mlsType === 'temporary') {
+                          return baseFileNo + ' (T)';
+                        } else if (baseFileNo && this.mlsType === 'extension') {
+                          return baseFileNo + ' AND EXTENSION';
+                        }
+                        return baseFileNo;
+                      },
                       kangisPreview() {
                         if (this.kangisPrefix && this.kangisNumber) {
                           const n = this.kangisNumber.padStart(5, '0');
@@ -48,7 +62,27 @@
   <!-- MLS Tab Content -->
   <div x-show="tab === 'mls'" class="tab-content-panel">
     <p class="text-sm text-gray-600 mb-3">MLS File Number</p>
-    <div class="grid grid-cols-3 gap-4">
+    
+    <!-- Radio buttons for file type -->
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700 mb-2">File Type</label>
+      <div class="flex space-x-6">
+        <label class="flex items-center">
+          <input type="radio" name="mlsFileType" x-model="mlsType" value="regular" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
+          <span class="ml-2 text-sm text-gray-700">Regular File</span>
+        </label>
+        <label class="flex items-center">
+          <input type="radio" name="mlsFileType" x-model="mlsType" value="temporary" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
+          <span class="ml-2 text-sm text-gray-700">Temporary File</span>
+        </label>
+        <label class="flex items-center">
+          <input type="radio" name="mlsFileType" x-model="mlsType" value="extension" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
+          <span class="ml-2 text-sm text-gray-700">Extension</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-3 gap-3">
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">File Prefix</label>
         <select x-model="mlsPrefix" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
@@ -62,13 +96,19 @@
         </select>
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Serial Number</label>
-        <input type="text" x-model="mlsNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. 2022-572">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Year</label>
+        <input type="text" x-model="mlsYear" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. 2024" maxlength="4">
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Full FileNo</label>
-        <input type="text" :value="mlsPreview()" readonly class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Serial No</label>
+        <input type="text" x-model="mlsNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. 572">
       </div>
+    </div>
+
+    <!-- Full FileNo - Displayed prominently below -->
+    <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+      <label class="block text-lg font-semibold text-gray-800 mb-2">Full File Number</label>
+      <div class="text-lg font-semibold text-blue-700 p-3 bg-white border-2 border-blue-300 rounded-md min-h-[50px] flex items-center" x-text="mlsPreview() || 'Enter file details above'"></div>
     </div>
   </div>
 

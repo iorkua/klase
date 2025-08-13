@@ -1,4 +1,4 @@
- <div class="space-y-2" x-data="{ district: '', showOther: false, customDistrict: '' }">
+<div class="space-y-2" x-data="{ showOther: false, customDistrict: '' }">
     <label for="district" class="text-xs text-gray-600">District Name</label>
     <select id="district" x-model="district" class="form-input text-sm property-input" 
             @change="showOther = district === 'other'; if(!showOther) customDistrict = ''"

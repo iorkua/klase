@@ -11,28 +11,43 @@
         <select id="fileno-select" class="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option value="">Select File Number</option>
             @php
-                $ctApplications = DB::connection('sqlsrv')
-                    ->select("SELECT [fileno], [applicant_title], [first_name], [surname], [corporate_name], [rc_number], [multiple_owners_names] FROM [klas].[dbo].[mother_applications]");
+                $fileNumbers = DB::connection('sqlsrv')
+                    ->select("SELECT 
+                                [id],
+                                [kangisFileNo],
+                                [mlsfNo], 
+                                [NewKANGISFileNo]
+                              FROM [klas].[dbo].[fileNumber]
+                              ORDER BY [id] DESC");
             @endphp
-            @foreach($ctApplications as $application)
-                <option value="{{ $application->fileno }}" 
-                        data-fileno="{{ $application->fileno }}"
-                        data-applicant-title="{{ $application->applicant_title ?? '' }}"
-                        data-first-name="{{ $application->first_name ?? '' }}"
-                        data-surname="{{ $application->surname ?? '' }}"
-                        data-corporate-name="{{ $application->corporate_name ?? '' }}"
-                        data-rc-number="{{ $application->rc_number ?? '' }}"
-                        data-multiple-owners="{{ $application->multiple_owners_names ?? '' }}">
-                    {{ $application->fileno }} - 
-                    @if($application->corporate_name)
-                        {{ $application->corporate_name }}
-                    @else
-                        {{ $application->applicant_title ?? '' }} {{ $application->first_name ?? '' }} {{ $application->surname ?? '' }}
-                    @endif
+            @foreach($fileNumbers as $fileRecord)
+                @php
+                    // Determine which file number to display (priority: MLS -> KANGIS -> New KANGIS)
+                    $displayFileNo = '';
+                    
+                    if (!empty($fileRecord->mlsfNo)) {
+                        $displayFileNo = $fileRecord->mlsfNo;
+                    } elseif (!empty($fileRecord->kangisFileNo)) {
+                        $displayFileNo = $fileRecord->kangisFileNo;
+                    } elseif (!empty($fileRecord->NewKANGISFileNo)) {
+                        $displayFileNo = $fileRecord->NewKANGISFileNo;
+                    }
+                    
+                    // Only show records that have at least one file number
+                    if (empty($displayFileNo)) continue;
+                @endphp
+                
+                <option value="{{ $fileRecord->id }}" 
+                        data-id="{{ $fileRecord->id }}"
+                        data-fileno="{{ $displayFileNo }}"
+                        data-kangis-fileno="{{ $fileRecord->kangisFileNo ?? '' }}"
+                        data-mls-fileno="{{ $fileRecord->mlsfNo ?? '' }}"
+                        data-newkangis-fileno="{{ $fileRecord->NewKANGISFileNo ?? '' }}">
+                    {{ $displayFileNo }}
                 </option>
             @endforeach
         </select>
-        <p class="text-xs text-gray-500 mt-1">Search and select file numbers from mother applications database</p>
+        <p class="text-xs text-gray-500 mt-1">Search and select file numbers from fileNumber database</p>
         
         <!-- Selected File Number Display (in dropdown mode) -->
         <div id="selected-fileno-display" class="hidden mt-3">
@@ -47,10 +62,10 @@
                             </div>
                         </div>
                         <div class="flex-1">
-                            <h3 class="text-sm font-medium text-green-800 mb-1">Selected  File Number</h3>
+                            <h3 class="text-sm font-medium text-green-800 mb-1">Selected File Number</h3>
                             <div class="flex items-center space-x-2">
                                 <span class="text-lg font-bold text-green-900 font-mono bg-white px-3 py-1 rounded border border-green-200" id="selected-fileno-text"></span>
-                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800" id="file-type-badge">
                                     ✓ CT Ready
                                 </span>
                             </div>
@@ -65,6 +80,22 @@
                         </button>
                     </div>
                 </div>
+                
+                <!-- Show all available file numbers for this record -->
+                <!-- <div class="mt-3 pt-3 border-t border-green-200">
+                    <h4 class="text-xs font-medium text-green-700 mb-2">Available File Numbers:</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+                        <div id="mls-file-display" class="hidden">
+                            <span class="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded font-mono">MLS: <span id="mls-file-text"></span></span>
+                        </div>
+                        <div id="kangis-file-display" class="hidden">
+                            <span class="inline-block bg-purple-100 text-purple-800 px-2 py-1 rounded font-mono">KANGIS: <span id="kangis-file-text"></span></span>
+                        </div>
+                        <div id="newkangis-file-display" class="hidden">
+                            <span class="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded font-mono">New KANGIS: <span id="newkangis-file-text"></span></span>
+                        </div>
+                    </div>
+                </div> -->
             </div>
         </div>
     </div>
@@ -93,10 +124,11 @@ function smartFilenoSelector() {
                     }
                     
                     // Custom template for dropdown options
+                    const fileno = option.element.dataset.fileno || '';
+                    
                     var $option = $(
                         '<div class="select2-result-option">' +
-                            '<div class="font-medium text-blue-800">' + option.element.dataset.fileno + '</div>' +
-                            '<div class="text-sm text-gray-600">' + option.text.split(' - ')[1] + '</div>' +
+                            '<div class="font-medium text-blue-800">' + fileno + '</div>' +
                         '</div>'
                     );
                     return $option;
@@ -117,13 +149,11 @@ function smartFilenoSelector() {
                     
                     // Create application object from data attributes
                     this.selectedApplication = {
+                        id: selectedOption.getAttribute('data-id'),
                         fileno: selectedOption.getAttribute('data-fileno'),
-                        applicant_title: selectedOption.getAttribute('data-applicant-title'),
-                        first_name: selectedOption.getAttribute('data-first-name'),
-                        surname: selectedOption.getAttribute('data-surname'),
-                        corporate_name: selectedOption.getAttribute('data-corporate-name'),
-                        rc_number: selectedOption.getAttribute('data-rc-number'),
-                        multiple_owners_names: selectedOption.getAttribute('data-multiple-owners')
+                        kangisFileNo: selectedOption.getAttribute('data-kangis-fileno'),
+                        mlsfNo: selectedOption.getAttribute('data-mls-fileno'),
+                        NewKANGISFileNo: selectedOption.getAttribute('data-newkangis-fileno')
                     };
                     
                     this.handleSelection();
@@ -146,9 +176,14 @@ function smartFilenoSelector() {
             // Show selected display
             const selectedDisplay = document.getElementById('selected-fileno-display');
             const selectedText = document.getElementById('selected-fileno-text');
+            const fileTypeBadge = document.getElementById('file-type-badge');
             
             if (selectedText) selectedText.textContent = this.selectedFileno;
+            if (fileTypeBadge) fileTypeBadge.textContent = `✓ Selected`;
             if (selectedDisplay) selectedDisplay.classList.remove('hidden');
+            
+            // Show individual file numbers
+            this.displayAllFileNumbers();
             
             // Dispatch event for other components
             this.$dispatch('ct-fileno-selected', {
@@ -157,6 +192,40 @@ function smartFilenoSelector() {
             });
             
             console.log('CT File selected:', this.selectedApplication);
+        },
+        
+        displayAllFileNumbers() {
+            const app = this.selectedApplication;
+            
+            // MLS File Number
+            const mlsDisplay = document.getElementById('mls-file-display');
+            const mlsText = document.getElementById('mls-file-text');
+            if (app.mlsfNo) {
+                if (mlsText) mlsText.textContent = app.mlsfNo;
+                if (mlsDisplay) mlsDisplay.classList.remove('hidden');
+            } else {
+                if (mlsDisplay) mlsDisplay.classList.add('hidden');
+            }
+            
+            // KANGIS File Number
+            const kangisDisplay = document.getElementById('kangis-file-display');
+            const kangisText = document.getElementById('kangis-file-text');
+            if (app.kangisFileNo) {
+                if (kangisText) kangisText.textContent = app.kangisFileNo;
+                if (kangisDisplay) kangisDisplay.classList.remove('hidden');
+            } else {
+                if (kangisDisplay) kangisDisplay.classList.add('hidden');
+            }
+            
+            // New KANGIS File Number
+            const newKangisDisplay = document.getElementById('newkangis-file-display');
+            const newKangisText = document.getElementById('newkangis-file-text');
+            if (app.NewKANGISFileNo) {
+                if (newKangisText) newKangisText.textContent = app.NewKANGISFileNo;
+                if (newKangisDisplay) newKangisDisplay.classList.remove('hidden');
+            } else {
+                if (newKangisDisplay) newKangisDisplay.classList.add('hidden');
+            }
         },
         
         clearSelection() {
@@ -172,6 +241,11 @@ function smartFilenoSelector() {
             // Hide selected display
             const selectedDisplay = document.getElementById('selected-fileno-display');
             if (selectedDisplay) selectedDisplay.classList.add('hidden');
+            
+            // Hide all file number displays
+            document.getElementById('mls-file-display')?.classList.add('hidden');
+            document.getElementById('kangis-file-display')?.classList.add('hidden');
+            document.getElementById('newkangis-file-display')?.classList.add('hidden');
             
             // Clear dropdown
             const filenoSelect = document.getElementById('fileno-select');
@@ -247,5 +321,3 @@ document.addEventListener('DOMContentLoaded', function() {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 </style>
-
- 
