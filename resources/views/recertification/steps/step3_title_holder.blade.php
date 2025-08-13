@@ -87,7 +87,27 @@
                             placeholder="REG NO"
                         />
                     </div>
-                    
+                    <div class="form-field">
+                        <label for="serial_no" class="block text-sm font-medium text-gray-700 mb-1">Serial No.</label>
+                        <input
+                            type="text"
+                            id="serial_no"
+                            name="serial_no"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
+                            placeholder="Serial No"
+                        />
+                    </div>
+                 
+                    <div class="form-field">
+                        <label for="registrationPage" class="block text-sm font-medium text-gray-700 mb-1">Page</label>
+                        <input
+                            type="text"
+                            id="registrationPage"
+                            name="registrationPage"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
+                            placeholder="PAGE"
+                        />
+                    </div>
                     <div class="form-field">
                         <label for="registrationVolume" class="block text-sm font-medium text-gray-700 mb-1">Volume</label>
                         <input
@@ -99,27 +119,7 @@
                         />
                     </div>
                     
-                    <div class="form-field">
-                        <label for="registrationPage" class="block text-sm font-medium text-gray-700 mb-1">Page</label>
-                        <input
-                            type="text"
-                            id="registrationPage"
-                            name="registrationPage"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
-                            placeholder="PAGE"
-                        />
-                    </div>
-                    
-                    <div class="form-field">
-                        <label for="registrationNumber" class="block text-sm font-medium text-gray-700 mb-1">No.</label>
-                        <input
-                            type="text"
-                            id="registrationNumber"
-                            name="registrationNumber"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
-                            placeholder="NO"
-                        />
-                    </div>
+                  
                 </div>
                 
                 <div class="space-y-4">

@@ -34,23 +34,23 @@
                     <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Serial No.</label>
-                            <input type="number" id="cofoSerialNo" name="serial_no" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., 1" oninput="updateRegistrationPreview()">
+                            <input type="text" id="cofoSerialNo" name="serial_no" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" readonly placeholder="From database">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Page No.</label>
-                            <input type="number" id="cofoPageNo" name="page_no" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., 1" oninput="updateRegistrationPreview()">
+                            <input type="text" id="cofoPageNo" name="page_no" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" readonly placeholder="From database">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Volume No.</label>
-                            <input type="number" id="cofoVolumeNo" name="volume_no" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., 2" oninput="updateRegistrationPreview()">
+                            <input type="text" id="cofoVolumeNo" name="volume_no" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" readonly placeholder="From database">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Registration Date</label>
-                            <input type="date" id="cofoTransactionDate" name="transaction_date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="date" id="cofoTransactionDate" name="transaction_date" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" readonly>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Registration Time</label>
-                            <input type="time" id="cofoTransactionTime" name="transaction_time" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="time" id="cofoTransactionTime" name="transaction_time" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" readonly>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 gap-4">
@@ -129,12 +129,112 @@
 
 <script>
     // Function to open CofO Details modal
-    function openCofoDetailsModal(applicationId, fileNo, npFileNo, applicantType, applicantData, propertyData) {
+    function openCofoDetailsModal(applicationId, fileNo, npFileNo, applicantType, applicantData, propertyData, applicationRecord = null) {
         // Set the application id
         document.getElementById('cofoApplicationId').value = applicationId;
         document.getElementById('cofoFileNo').value = fileNo || '';
         
-        // Process applicant name based on type
+        // Fetch application data from database if not provided
+        if (!applicationRecord) {
+            fetch(`/recertification/application-data/${applicationId}`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.application) {
+                    populateModalWithData(data.application, applicantType, applicantData, propertyData);
+                } else {
+                    console.error('Failed to fetch application data');
+                    populateModalWithData(null, applicantType, applicantData, propertyData);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching application data:', error);
+                populateModalWithData(null, applicantType, applicantData, propertyData);
+            });
+        } else {
+            populateModalWithData(applicationRecord, applicantType, applicantData, propertyData);
+        }
+        
+        // Show the modal
+        document.getElementById('cofoDetailsModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+    
+    // Function to populate modal with data
+    function populateModalWithData(applicationRecord, applicantType, applicantData, propertyData) {
+        // Set current date and time for registration
+        const now = new Date();
+        const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+        const currentTime = now.toTimeString().split(' ')[0].substring(0, 5); // HH:MM format
+        
+        document.getElementById('cofoTransactionDate').value = currentDate;
+        document.getElementById('cofoTransactionTime').value = currentTime;
+        
+        // Populate fields from database if available
+        if (applicationRecord) {
+            // Serial No. = [serial_no]
+            document.getElementById('cofoSerialNo').value = applicationRecord.serial_no || '';
+            
+            // Page No. = [reg_page]
+            document.getElementById('cofoPageNo').value = applicationRecord.reg_page || '';
+            
+            // Volume No. = [reg_volume]
+            document.getElementById('cofoVolumeNo').value = applicationRecord.reg_volume || '';
+            
+            // Update registration number preview
+            updateRegistrationPreview();
+            
+            // Set land use from current_land_use field
+            document.getElementById('cofoLandUse').value = applicationRecord.current_land_use || '';
+            
+            // Process applicant name based on type and database fields
+            let applicantName = '';
+            
+            if (applicantType === 'individual') {
+                const nameParts = [
+                    applicationRecord.title,
+                    applicationRecord.first_name,
+                    applicationRecord.middle_name,
+                    applicationRecord.surname
+                ].filter(Boolean);
+                applicantName = nameParts.join(' ');
+            } else if (applicantType === 'corporate') {
+                applicantName = applicationRecord.organisation_name || '';
+            } else if (applicantType === 'multiple') {
+                // Handle multiple applicants - could be stored in a JSON field or concatenated
+                applicantName = applicationRecord.organisation_name || 
+                              [applicationRecord.title, applicationRecord.first_name, applicationRecord.middle_name, applicationRecord.surname].filter(Boolean).join(' ');
+            }
+            
+            // Set grantee name
+            document.getElementById('cofoGrantee').value = applicantName.toUpperCase();
+            
+            // Generate property description from database fields
+            const propertyParts = [
+                applicationRecord.plot_number ? `Plot ${applicationRecord.plot_number}` : '',
+                applicationRecord.layout_district,
+                applicationRecord.lga_name,
+                'Kano State'
+            ].filter(Boolean);
+            
+            const propertyDescription = propertyParts.join(', ');
+            document.getElementById('cofoPropertyDescription').value = propertyDescription.toUpperCase();
+            
+        } else {
+            // Fallback to provided data if database record not available
+            processApplicantName(applicantType, applicantData);
+            setLandUse(propertyData);
+            generatePropertyDescription(propertyData);
+        }
+    }
+    
+    // Fallback function to process applicant name
+    function processApplicantName(applicantType, applicantData) {
         let applicantName = '';
         
         if(applicantType === 'individual' && applicantData) {
@@ -157,15 +257,16 @@
             }
         }
         
-        // Set grantee name
-        document.getElementById('cofoGrantee').value = applicantName;
-        
-        // Set land use
+        document.getElementById('cofoGrantee').value = applicantName.toUpperCase();
+    }
+    
+    // Fallback function to set land use
+    function setLandUse(propertyData) {
         document.getElementById('cofoLandUse').value = propertyData.land_use || '';
-        
-        // Generate full property description based on available data
-        let propertyDescription = '';
-        // Format: Plot/House No, Streetname, District, LGA and State
+    }
+    
+    // Fallback function to generate property description
+    function generatePropertyDescription(propertyData) {
         const addressParts = [
             propertyData.property_house_no,
             propertyData.property_street_name,
@@ -174,15 +275,10 @@
             (propertyData.property_state || 'Kano') + ' State'
         ].filter(Boolean);
         
-        propertyDescription = addressParts.join(', ');
-        
-        // Set the property description
-        document.getElementById('cofoPropertyDescription').value = propertyDescription;
-        
-        // Show the modal
-        document.getElementById('cofoDetailsModal').classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-        }
+        const propertyDescription = addressParts.join(', ');
+        document.getElementById('cofoPropertyDescription').value = propertyDescription.toUpperCase();
+    }
+    
     // Function to close CofO Details modal
     function closeCofoDetailsModal() {
         document.getElementById('cofoDetailsModal').classList.add('hidden');

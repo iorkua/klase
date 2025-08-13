@@ -81,6 +81,7 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'recertification'], f
     // Serial Number Routes
     Route::get('/available-serial-numbers', [RecertificationController::class, 'getAvailableSerialNumbers'])->name('recertification.available-serial-numbers');
     Route::post('/assign-serial-number', [RecertificationController::class, 'assignSerialNumber'])->name('recertification.assign-serial-number');
+    Route::get('/application-data/{id}', [RecertificationController::class, 'getApplicationData'])->name('recertification.application-data');
 });
 
 // EDMS Routes for Recertification (outside the main group to avoid prefix conflicts)

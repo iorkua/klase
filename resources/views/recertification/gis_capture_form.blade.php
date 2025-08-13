@@ -35,12 +35,34 @@
             <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <h3 class="text-lg font-semibold mb-4 text-blue-800">Application Summary</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+                <div class="space-y-2">
+                        <label class="block text-sm font-medium text-blue-700">New KANGIS File No</label>
+                        <div class="w-full p-2 bg-white border border-blue-300 rounded-md text-sm font-mono">
+                            {{ $application->NewKANGISFileno ?? 'N/A' }}
+                        </div>
+                    </div>
+                    
                     <div class="space-y-2">
+                        <label class="block text-sm font-medium text-blue-700">KANGIS File No</label>
+                        <div class="w-full p-2 bg-white border border-blue-300 rounded-md text-sm font-mono">
+                            {{ $application->kangisFileNo ?? 'N/A' }}
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-blue-700">MLS File No</label>
+                        <div class="w-full p-2 bg-white border border-blue-300 rounded-md text-sm font-mono">
+                            {{ $application->mlsfNo ?? 'N/A' }}
+                        </div>
+                    </div>
+
+                    <!-- <div class="space-y-2">
                         <label class="block text-sm font-medium text-blue-700">File Number</label>
                         <div class="w-full p-2 bg-white border border-blue-300 rounded-md text-sm font-mono font-semibold text-blue-900">
                             {{ $application->file_number ?? 'N/A' }}
                         </div>
-                    </div>
+                    </div> -->
                     
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-blue-700">Applicant Name</label>
@@ -80,6 +102,8 @@
                             {{ $application->cofo_number ?? 'N/A' }}
                         </div>
                     </div>
+                    
+                  
                 </div>
             </div>
             
@@ -112,7 +136,12 @@
                         <input type="number" step="0.0001" id="areaInHectares" name="areaInHectares" value="{{ $application->plot_size }}" class="w-full p-2 border border-gray-300 rounded-md text-sm">
                     </div>
                     
-                    @include('components.landuse')
+                    <div class="space-y-2">
+                        <label for="areaInHectares" class="block text-sm font-medium text-gray-700">Land Use</label>
+                        <input type="text" step="0.0001" id="areaInHectares" name="areaInHectares" value="{{ $application->current_land_use }}" class="w-full p-2 border border-gray-300 rounded-md text-sm" readonl>
+                    </div>
+
+                    <!-- @include('components.landuse') -->
                     @include('components.specifically')
                 </div>
             </div>
@@ -163,27 +192,27 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div class="space-y-2">
                         <label for="oldTitleSerialNo" class="block text-sm font-medium text-gray-700">Old Title Serial No</label>
-                        <input type="text" id="oldTitleSerialNo" name="oldTitleSerialNo" class="w-full p-2 border border-gray-300 rounded-md text-sm">
+                        <input type="text" id="oldTitleSerialNo" name="oldTitleSerialNo" value="{{ $application->serial_no }}" class="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-100" readonly>
                     </div>
                     
                     <div class="space-y-2">
                         <label for="oldTitlePageNo" class="block text-sm font-medium text-gray-700">Old Title Page No</label>
-                        <input type="text" id="oldTitlePageNo" name="oldTitlePageNo" value="{{ $application->reg_page }}" class="w-full p-2 border border-gray-300 rounded-md text-sm">
+                        <input type="text" id="oldTitlePageNo" name="oldTitlePageNo" value="{{ $application->reg_page }}" class="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-100" readonly>
                     </div>
                     
                     <div class="space-y-2">
                         <label for="oldTitleVolumeNo" class="block text-sm font-medium text-gray-700">Old Title Volume No</label>
-                        <input type="text" id="oldTitleVolumeNo" name="oldTitleVolumeNo" value="{{ $application->reg_volume }}" class="w-full p-2 border border-gray-300 rounded-md text-sm">
+                        <input type="text" id="oldTitleVolumeNo" name="oldTitleVolumeNo" value="{{ $application->reg_volume }}" class="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-100" readonly>
                     </div>
                     
                     <div class="space-y-2">
                         <label for="deedsDate" class="block text-sm font-medium text-gray-700">Deeds Date</label>
-                        <input type="date" id="deedsDate" name="deedsDate" class="w-full p-2 border border-gray-300 rounded-md text-sm">
+                        <input type="date" id="deedsDate" name="deedsDate" value="{{ date('Y-m-d') }}" class="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-100" readonly>
                     </div>
                     
                     <div class="space-y-2">
                         <label for="deedsTime" class="block text-sm font-medium text-gray-700">Deeds Time</label>
-                        <input type="text" id="deedsTime" name="deedsTime" class="w-full p-2 border border-gray-300 rounded-md text-sm">
+                        <input type="time" id="deedsTime" name="deedsTime" value="{{ date('H:i') }}" class="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-100" readonly>
                     </div>
                     
                     <div class="space-y-2">
@@ -193,12 +222,12 @@
                     
                     <div class="space-y-2">
                         <label for="CofOSerialNo" class="block text-sm font-medium text-gray-700">CofO Serial No</label>
-                        <input type="text" id="CofOSerialNo" name="CofOSerialNo" value="{{ $application->cofo_number }}" class="w-full p-2 border border-gray-300 rounded-md text-sm">
+                        <input type="text" id="CofOSerialNo" name="CofOSerialNo" value="{{ $application->cofo_number }}" class="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-100" readonly>
                     </div>
                     
                     <div class="space-y-2">
                         <label for="titleIssuedYear" class="block text-sm font-medium text-gray-700">Title Issued Year</label>
-                        <input type="number" id="titleIssuedYear" name="titleIssuedYear" min="1900" max="2099" class="w-full p-2 border border-gray-300 rounded-md text-sm">
+                        <input type="number" id="titleIssuedYear" name="titleIssuedYear" min="1900" max="2099" value="{{ date('Y', strtotime($application->commencement_date ?? 'now')) }}" class="w-full p-2 border border-gray-300 rounded-md text-sm">
                     </div>
                 </div>
             </div>
@@ -291,7 +320,8 @@
                         <input type="text" id="nationality" name="nationality" value="{{ $application->nationality }}" class="w-full p-2 border border-gray-300 rounded-md text-sm">
                     </div>
                     
-                    <div class="space-y-2">
+                    <!-- Company RC Number - Only for Corporate/Government -->
+                    <div class="space-y-2" id="companyRCSection" style="display: {{ in_array(strtolower($application->applicant_type ?? ''), ['corporate', 'government']) ? 'block' : 'none' }};">
                         <label for="CompanyRCNo" class="block text-sm font-medium text-gray-700">Company RC Number</label>
                         <input type="text" id="CompanyRCNo" name="CompanyRCNo" value="{{ $application->cac_registration_no }}" class="w-full p-2 border border-gray-300 rounded-md text-sm">
                     </div>
@@ -312,7 +342,8 @@
                           hover:file:bg-blue-100">
                     </div>
                     
-                    <div class="space-y-2">
+                    <!-- Passport Photo - Hidden for Corporate/Government -->
+                    <div class="space-y-2" id="passportPhotoSection" style="display: {{ in_array(strtolower($application->applicant_type ?? ''), ['corporate', 'government']) ? 'none' : 'block' }};">
                         <label for="passportPhoto" class="block text-sm font-medium text-gray-700">Passport Photo</label>
                         <input type="file" id="passportPhoto" name="passportPhoto" class="block w-full text-sm text-gray-500
                           file:mr-4 file:py-2 file:px-4
@@ -342,7 +373,8 @@
                           hover:file:bg-blue-100">
                     </div>
                     
-                    <div class="space-y-2">
+                    <!-- Business Registration Certificate - Only for Corporate/Government -->
+                    <div class="space-y-2" id="businessRegCertSection" style="display: {{ in_array(strtolower($application->applicant_type ?? ''), ['corporate', 'government']) ? 'block' : 'none' }};">
                         <label for="businessRegCert" class="block text-sm font-medium text-gray-700">Business Registration Certificate</label>
                         <input type="file" id="businessRegCert" name="businessRegCert" class="block w-full text-sm text-gray-500
                           file:mr-4 file:py-2 file:px-4
@@ -362,7 +394,8 @@
                           hover:file:bg-blue-100">
                     </div>
                     
-                    <div class="space-y-2">
+                    <!-- Certificate of Incorporation - Only for Corporate/Government -->
+                    <div class="space-y-2" id="certOfIncorporationSection" style="display: {{ in_array(strtolower($application->applicant_type ?? ''), ['corporate', 'government']) ? 'block' : 'none' }};">
                         <label for="certOfIncorporation" class="block text-sm font-medium text-gray-700">Certificate of Incorporation</label>
                         <input type="file" id="certOfIncorporation" name="certOfIncorporation" class="block w-full text-sm text-gray-500
                           file:mr-4 file:py-2 file:px-4
@@ -517,7 +550,39 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initially disable save button
     if (saveButton) saveButton.disabled = true;
+    
+    // Initialize document visibility based on applicant type
+    initializeDocumentVisibility();
 });
+
+// Initialize document visibility based on applicant type
+function initializeDocumentVisibility() {
+    const applicantType = '{{ strtolower($application->applicant_type ?? "") }}';
+    const passportSection = document.getElementById('passportPhotoSection');
+    const certIncorporationSection = document.getElementById('certOfIncorporationSection');
+    const businessRegCertSection = document.getElementById('businessRegCertSection');
+    const companyRCSection = document.getElementById('companyRCSection');
+    
+    if (applicantType === 'corporate' || applicantType === 'government') {
+        // Hide passport photo for corporate/government
+        if (passportSection) passportSection.style.display = 'none';
+        // Show certificate of incorporation for corporate/government
+        if (certIncorporationSection) certIncorporationSection.style.display = 'block';
+        // Show business registration certificate for corporate/government
+        if (businessRegCertSection) businessRegCertSection.style.display = 'block';
+        // Show company RC number for corporate/government
+        if (companyRCSection) companyRCSection.style.display = 'block';
+    } else {
+        // Show passport photo for individuals
+        if (passportSection) passportSection.style.display = 'block';
+        // Hide certificate of incorporation for individuals
+        if (certIncorporationSection) certIncorporationSection.style.display = 'none';
+        // Hide business registration certificate for individuals
+        if (businessRegCertSection) businessRegCertSection.style.display = 'none';
+        // Hide company RC number for individuals
+        if (companyRCSection) companyRCSection.style.display = 'none';
+    }
+}
 
 // Survey Plan Upload Functions
 function toggleSurveyPlanSection() {

@@ -1524,41 +1524,4 @@ class RecertificationController extends Controller
             ], 500);
         }
     }
-
-    /**
-     * Get application data for CofO details modal
-     */
-    public function getApplicationData($id)
-    {
-        try {
-            $application = DB::connection('sqlsrv')
-                ->table('recertification_applications')
-                ->where('id', $id)
-                ->first();
-
-            if (!$application) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Application not found'
-                ], 404);
-            }
-
-            return response()->json([
-                'success' => true,
-                'application' => $application
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Error fetching application data for CofO modal', [
-                'application_id' => $id,
-                'error' => $e->getMessage()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred while fetching application data'
-            ], 500);
-        }
-    }
-
 }
