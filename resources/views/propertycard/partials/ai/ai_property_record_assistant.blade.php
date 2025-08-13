@@ -1234,7 +1234,7 @@ function populatePropertyForm() {
 
 function addInstrument() {
   const newInstrument = {
-    id: Date.now().toString(),
+    id: Date.now().toString() + Math.random().toString(36).substr(2, 9), // Ensure unique ID
     type: extractedPropertyData?.instrument || '',
     description: '',
     parties: {
@@ -1253,6 +1253,9 @@ function addInstrument() {
   instruments.push(newInstrument);
   editingInstrumentId = newInstrument.id;
   renderInstruments();
+  
+  // Show success message
+  showToast('New instrument card added successfully!', 'success');
 }
 
 function removeInstrument(id) {
@@ -1303,84 +1306,152 @@ function renderInstruments() {
   noInstruments.classList.add('hidden');
 
   const instrumentTypes = [
-    'DEED OF ASSIGNMENT',
-    'CERTIFICATE OF OCCUPANCY',
-    'RIGHT OF OCCUPANCY',
-    'DEED OF MORTGAGE',
-    'POWER OF ATTORNEY',
-    'IRREVOCABLE POWER OF ATTORNEY',
-    'SURVEY PLAN',
-    'RECERTIFICATION',
-    'OTHER'
+    'Deed of Transfer',
+    'Certificate of Occupancy',
+    'ST Certificate of Occupancy',
+    'SLTR Certificate of Occupancy',
+    'Irrevocable Power of Attorney',
+    'Deed of Release',
+    'Deed of Assignment',
+    'ST Assignment',
+    'Deed of Mortgage',
+    'Tripartite Mortgage',
+    'Deed of Sub Lease',
+    'Deed of Sub Under Lease',
+    'Power of Attorney',
+    'Deed of Surrender',
+    'Indenture of Lease',
+    'Deed of Variation',
+    'Customary Right of Occupancy',
+    'Vesting Assent',
+    'Court Judgement',
+    'Exchange of Letters',
+    'Tenancy Agreement',
+    'Revocation of Power of Attorney',
+    'Deed of Convenyence',
+    'Memorandom of Agreement',
+    'Quarry Lease',
+    'Private Lease',
+    'Deed of Gift',
+    'Deed of Partition',
+    'Non-European Occupational Lease',
+    'Deed of Revocation',
+    'Deed of lease',
+    'Deed of Reconveyance',
+    'Letter of Administration',
+    'Customary Inhertitance',
+    'Certificate of Purchase',
+    'Deed of Rectification',
+    'Building Lease',
+    'Memorandum of Loss',
+    'Vesting Deed',
+    'ST Fragmentation',
+    'Other'
+  ];
+
+  const landUseOptions = [
+    'RESIDENTIAL',
+    'AGRICULTURAL',
+    'COMMERCIAL',
+    'COMMERCIAL ( WARE HOUSE)',
+    'COMMERCIAL (OFFICES)',
+    'COMMERCIAL (PETROL FILLING STATION)',
+    'COMMERCIAL (RICE PROCESSING)',
+    'COMMERCIAL (SCHOOL)',
+    'COMMERCIAL (SHOPS & PUBLIC CONVINIENCE)',
+    'COMMERCIAL (SHOPS AND OFFICES)',
+    'COMMERCIAL (SHOPS)',
+    'COMMERCIAL (WAREHOUSE)',
+    'COMMERCIAL (WORKSHOP AND OFFICES)',
+    'COMMERCIAL AND RESIDENTIAL',
+    'INDUSTRIAL',
+    'INDUSTRIAL (SMALL SCALE)',
+    'RESIDENTIAL AND COMMERCIAL',
+    'RESIDENTIAL/COMMERCIAL',
+    'RESIDENTIAL/COMMERCIAL LAYOUT'
   ];
 
   container.innerHTML = instruments.map((instrument, index) => {
-    const isEditing = editingInstrumentId === instrument.id;
-    
     return `
-      <div class="bg-white rounded-lg border instrument-card ${isEditing ? 'editing' : ''}">
-        <div class="p-4 border-b border-gray-200">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <span class="text-sm font-medium">Instrument #${index + 1}</span>
-              ${instrument.type ? `<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">${instrument.type}</span>` : ''}
+      <!-- Instrument Type Section -->
+      <div class="form-section">
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="form-section-title">Instrument Type #${index + 1}</h4>
+          <button onclick="removeInstrument('${instrument.id}')" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-2 py-1 transition-all cursor-pointer bg-transparent text-red-600 hover:bg-red-50" title="Remove Instrument">
+            <i data-lucide="trash-2" class="h-4 w-4"></i>
+          </button>
+        </div>
+        <div class="space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label for="transactionType-${instrument.id}" class="text-sm">Transaction Type</label>
+              <select id="transactionType-${instrument.id}" onchange="updateInstrument('${instrument.id}', 'type', this.value)" class="form-select text-sm">
+                <option value="">Select type</option>
+                ${instrumentTypes.map(type => `
+                  <option value="${type}" ${instrument.type === type ? 'selected' : ''}>${type}</option>
+                `).join('')}
+              </select>
             </div>
-            <div class="flex items-center gap-1">
-              <button onclick="toggleInstrumentEdit('${instrument.id}')" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-2 py-1 transition-all cursor-pointer bg-transparent text-gray-700 hover:bg-gray-100">
-                <i data-lucide="edit-3" class="h-4 w-4"></i>
-              </button>
-              <button onclick="removeInstrument('${instrument.id}')" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-2 py-1 transition-all cursor-pointer bg-transparent text-red-600 hover:bg-red-50">
-                <i data-lucide="trash-2" class="h-4 w-4"></i>
-              </button>
+            <div class="space-y-1">
+              <label for="transactionDate-${instrument.id}" class="text-sm">Transaction/Certificate Date</label>
+              <input type="date" id="transactionDate-${instrument.id}" value="${instrument.transactionDate || ''}" onchange="updateInstrument('${instrument.id}', 'transactionDate', this.value)" class="form-input text-sm">
+            </div>
+          </div>
+
+          <!-- Registration Number Components -->
+          <div class="space-y-1">
+            <label class="text-sm">Registration Number Components</label>
+            <div class="grid grid-cols-5 gap-2">
+              <div>
+                <label for="serialNo-${instrument.id}" class="text-xs text-gray-600">Serial No</label>
+                <input id="serialNo-${instrument.id}" type="text" value="${instrument.registrationDetails?.serialNo || ''}" onchange="updateInstrument('${instrument.id}', 'registrationDetails.serialNo', this.value)" placeholder="Enter serial number" class="form-input text-sm">
+              </div>
+              <div>
+                <label for="pageNo-${instrument.id}" class="text-xs text-gray-600">Page No</label>
+                <input id="pageNo-${instrument.id}" type="text" value="${instrument.registrationDetails?.page || ''}" onchange="updateInstrument('${instrument.id}', 'registrationDetails.page', this.value)" placeholder="Enter page number" class="form-input text-sm">
+              </div>
+              <div>
+                <label for="volumeNo-${instrument.id}" class="text-xs text-gray-600">Volume No</label>
+                <input id="volumeNo-${instrument.id}" type="text" value="${instrument.registrationDetails?.vol || ''}" onchange="updateInstrument('${instrument.id}', 'registrationDetails.vol', this.value)" placeholder="Enter volume number" class="form-input text-sm">
+              </div>
+              <div>
+                <label for="regDate-${instrument.id}" class="text-xs text-gray-600">Reg Date</label>
+                <input id="regDate-${instrument.id}" type="date" value="${instrument.registrationDetails?.regDate || ''}" onchange="updateInstrument('${instrument.id}', 'registrationDetails.regDate', this.value)" class="form-input text-sm">
+              </div>
+              <div>
+                <label for="regTime-${instrument.id}" class="text-xs text-gray-600">Reg Time</label>
+                <input id="regTime-${instrument.id}" type="time" value="${instrument.registrationDetails?.regTime || ''}" onchange="updateInstrument('${instrument.id}', 'registrationDetails.regTime', this.value)" class="form-input text-sm">
+              </div>
+            </div>
+            ${instrument.registrationDetails?.regNo ? `
+              <div class="text-xs text-gray-600 mt-1">
+                <span class="font-medium">Auto-generated Registration No:</span> ${instrument.registrationDetails.regNo}
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="space-y-1">
+            <label for="landUse-${instrument.id}" class="text-sm">Land Use</label>
+            <select id="landUse-${instrument.id}" name="landUse" onchange="updateInstrument('${instrument.id}', 'landUse', this.value)" class="form-select text-sm">
+              <option value="">Select land use</option>
+              ${landUseOptions.map(option => `
+                <option value="${option}" ${instrument.landUse === option ? 'selected' : ''}>${option}</option>
+              `).join('')}
+            </select>
+          </div>
+
+          <div class="space-y-1">
+            <label for="period-${instrument.id}" class="text-sm">Period/Tenancy</label>
+            <div class="flex space-x-1">
+              <input id="period-${instrument.id}" type="number" value="${instrument.period || ''}" onchange="updateInstrument('${instrument.id}', 'period', this.value)" class="form-input text-sm" placeholder="Period">
+              <select id="periodUnit-${instrument.id}" onchange="updateInstrument('${instrument.id}', 'periodUnit', this.value)" class="form-select text-sm w-[90px]">
+                <option value="Days" ${instrument.periodUnit === 'Days' ? 'selected' : ''}>Days</option>
+                <option value="Months" ${instrument.periodUnit === 'Months' ? 'selected' : ''}>Months</option>
+                <option value="Years" ${instrument.periodUnit === 'Years' || !instrument.periodUnit ? 'selected' : ''}>Years</option>
+              </select>
             </div>
           </div>
         </div>
-        
-        ${isEditing ? `
-          <div class="p-4 space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="space-y-2">
-                <label class="text-xs font-medium text-gray-700">Instrument Type</label>
-                <select onchange="updateInstrument('${instrument.id}', 'type', this.value)" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
-                  <option value="">Select instrument type</option>
-                  ${instrumentTypes.map(type => `
-                    <option value="${type}" ${instrument.type === type ? 'selected' : ''}>${type}</option>
-                  `).join('')}
-                </select>
-              </div>
-              <div class="space-y-2">
-                <label class="text-xs font-medium text-gray-700">Description</label>
-                <input
-                  type="text"
-                  value="${instrument.description || ''}"
-                  onchange="updateInstrument('${instrument.id}', 'description', this.value)"
-                  placeholder="Brief description"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                />
-              </div>
-            </div>
-            
-            <div class="flex justify-end pt-2">
-              <button onclick="toggleInstrumentEdit('${instrument.id}')" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1 transition-all cursor-pointer bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50">
-                Done Editing
-              </button>
-            </div>
-          </div>
-        ` : `
-          <div class="p-4">
-            <div class="text-sm text-gray-600 space-y-1">
-              ${instrument.description ? `
-                <p><span class="font-medium">Description:</span> ${instrument.description}</p>
-              ` : ''}
-              ${instrument.registrationDetails?.regNo ? `
-                <p><span class="font-medium">Reg No:</span> ${instrument.registrationDetails.regNo}</p>
-              ` : ''}
-              ${instrument.notes ? `
-                <p><span class="font-medium">Notes:</span> ${instrument.notes}</p>
-              ` : ''}
-            </div>
-          </div>
-        `}
       </div>
     `;
   }).join('');

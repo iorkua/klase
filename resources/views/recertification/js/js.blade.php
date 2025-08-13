@@ -210,6 +210,10 @@ function renderApplicationsTable(data) {
                                     <i data-lucide="file-text" class="h-4 w-4"></i>
                                     View Acknowledgement
                                 </button>
+                                <button onclick="enterCofoSerialNumber(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2 ${ (app.cofo_number && app.cofo_number !== 'N/A') ? 'opacity-50 cursor-not-allowed' : '' }" ${ (app.cofo_number && app.cofo_number !== 'N/A') ? 'disabled' : ''}>
+                                    <i data-lucide="hash" class="h-4 w-4"></i>
+                                    Enter Cofo Serial Number
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -279,6 +283,11 @@ function setupModalHandlers() {
         if (event.target.id === 'details-modal') {
             closeDetailsModal();
         }
+        
+        // Close cofo serial modal
+        if (event.target.id === 'cofo-serial-modal') {
+            closeCofoSerialModal();
+        }
     });
     
     // Close details modal button
@@ -303,6 +312,7 @@ function setupModalHandlers() {
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {
             closeDetailsModal();
+            closeCofoSerialModal();
             // Close all action menus
             document.querySelectorAll('[id^="action-menu-"]').forEach(menu => {
                 menu.classList.add('hidden');
@@ -565,6 +575,190 @@ function viewAcknowledgement(id) {
     window.open(`/recertification/${id}/acknowledgement`, '_blank');
 }
 
+function enterCofoSerialNumber(id) {
+    console.log('Enter Cofo Serial Number for application:', id);
+    console.log('Applications data:', applicationsData);
+    
+    // Close action menu
+    document.querySelectorAll('[id^="action-menu-"]').forEach(menu => {
+        menu.classList.add('hidden');
+    });
+
+    // Check if cofo_number already exists (and is not 'N/A')
+    const app = applicationsData.find(a => a.id == id);
+    console.log('Found application:', app);
+    
+    if (app && app.cofo_number && app.cofo_number !== 'N/A') {
+        console.log('Application already has serial number:', app.cofo_number);
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'info',
+                title: 'Serial Number Already Assigned',
+                text: `This application already has Cofo Serial Number: ${app.cofo_number}`
+            });
+        } else {
+            alert(`This application already has Cofo Serial Number: ${app.cofo_number}`);
+        }
+        return;
+    }
+
+    console.log('Opening Cofo Serial Modal for application ID:', id);
+    // Open the modal
+    openCofoSerialModal(id);
+}
+
+function openCofoSerialModal(applicationId) {
+    console.log('openCofoSerialModal called with ID:', applicationId);
+    
+    // Find the Alpine component and call openModal
+    const modalElement = document.querySelector('[x-data*="cofoSerialModal"]');
+    console.log('Alpine modal element found:', modalElement);
+    
+    if (modalElement && modalElement._x_dataStack) {
+        console.log('Calling Alpine openModal method');
+        modalElement._x_dataStack[0].openModal(applicationId);
+        
+        // Force show the modal with direct DOM manipulation as backup
+        setTimeout(() => {
+            console.log('Forcing modal display as backup');
+            modalElement.style.setProperty('display', 'flex', 'important');
+            modalElement.style.setProperty('visibility', 'visible', 'important');
+            modalElement.style.setProperty('opacity', '1', 'important');
+            modalElement.style.setProperty('z-index', '9999', 'important');
+            modalElement.style.setProperty('position', 'fixed', 'important');
+            modalElement.style.setProperty('top', '0', 'important');
+            modalElement.style.setProperty('left', '0', 'important');
+            modalElement.style.setProperty('right', '0', 'important');
+            modalElement.style.setProperty('bottom', '0', 'important');
+            modalElement.classList.remove('hidden');
+            
+            document.body.style.overflow = 'hidden';
+            
+            // Reinitialize Lucide icons
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+            
+            console.log('Modal forced to display');
+        }, 100);
+        
+    } else {
+        console.error('Alpine modal component not found or not initialized');
+        alert('Modal not available. Please refresh the page and try again.');
+    }
+}
+
+function closeCofoSerialModal() {
+    // Try to close Alpine modal first
+    const modalElement = document.querySelector('[x-data*="cofoSerialModal"]');
+    if (modalElement && modalElement._x_dataStack) {
+        modalElement._x_dataStack[0].closeModal();
+    }
+    
+    // Also force hide with direct DOM manipulation
+    if (modalElement) {
+        modalElement.style.display = 'none';
+        modalElement.classList.add('hidden');
+    }
+    
+    document.body.style.overflow = 'auto';
+}
+
+function loadAvailableSerialNumbers() {
+    const dropdown = document.getElementById('cofo-serial-dropdown');
+    if (!dropdown) return;
+
+    dropdown.innerHTML = '<option value="">Loading...</option>';
+
+    // Fetch available serial numbers from backend
+    fetch('/recertification/available-serial-numbers', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        dropdown.innerHTML = '<option value="">Select a serial number...</option>';
+        
+        if (data.success && data.serialNumbers && data.serialNumbers.length > 0) {
+            data.serialNumbers.forEach(serial => {
+                const option = document.createElement('option');
+                option.value = serial;
+                option.textContent = serial;
+                dropdown.appendChild(option);
+            });
+        } else {
+            dropdown.innerHTML = '<option value="">No available serial numbers</option>';
+        }
+    })
+    .catch(error => {
+        console.error('Error loading serial numbers:', error);
+        dropdown.innerHTML = '<option value="">Error loading serial numbers</option>';
+        showToast('Failed to load available serial numbers', 'error');
+    });
+}
+
+function submitCofoSerial() {
+    const form = document.getElementById('cofo-serial-form');
+    const formData = new FormData(form);
+    const applicationId = formData.get('application_id');
+    const serialNumber = formData.get('serial_number');
+
+    if (!serialNumber) {
+        showToast('Please select a serial number', 'warning');
+        return;
+    }
+
+    // Show loading state
+    const submitBtn = document.getElementById('cofo-serial-submit-btn');
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<div class="loading-spinner mr-2"></div>Updating...';
+
+    // Submit to backend
+    fetch('/recertification/assign-serial-number', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        },
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showToast('Cofo Serial Number assigned successfully', 'success');
+            closeCofoSerialModal();
+            // Reload applications data to reflect changes
+            loadApplicationsData();
+        } else {
+            showToast(data.message || 'Failed to assign serial number', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error assigning serial number:', error);
+        showToast('Failed to assign serial number', 'error');
+    })
+    .finally(() => {
+        // Reset button state
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    });
+}
+
 // Modal Functions (kept for backward compatibility)
 function closeDetailsModal() {
     const modal = document.getElementById('details-modal');
@@ -648,6 +842,10 @@ window.deleteApplication = deleteApplication;
 window.captureExtantCofo = captureExtantCofo;
 window.generateAcknowledgement = generateAcknowledgement;
 window.viewAcknowledgement = viewAcknowledgement;
+window.enterCofoSerialNumber = enterCofoSerialNumber;
+window.openCofoSerialModal = openCofoSerialModal;
+window.closeCofoSerialModal = closeCofoSerialModal;
+window.submitCofoSerial = submitCofoSerial;
 window.removeToast = removeToast;
 window.loadApplicationsData = loadApplicationsData;
 

@@ -302,7 +302,7 @@ tailwind.config = {
                                 <table class="w-full" style="min-width: 1000px;">
                                     <thead>
                                         <tr class="border-b bg-gray-50">
-                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">CofO Number</th>
+                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">CofO Serial No</th>  
                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 140px;">New KANGIS FileNo</th>
                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">KANGIS FileNo</th>
                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 100px;">MLS FNo</th>
@@ -512,7 +512,9 @@ function renderTable(tableBodyId, noResultsId, data, isGenerated) {
         
         return `
             <tr class="table-row border-b hover:bg-gray-50">
- 
+   <td class="p-2" style="max-width: 120px;">
+                    <div class="text-xs text-gray-900 truncate" >${app.cofo_number|| 'N/A'}</div>
+                </td>
                 <td class="p-2" style="max-width: 140px;">
                     <div class="text-xs text-gray-900 truncate" title="${app.NewKANGISFileno || 'N/A'}">${app.NewKANGISFileno || 'N/A'}</div>
                 </td>

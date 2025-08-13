@@ -77,6 +77,10 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'recertification'], f
 
     // CofO details storage (using PrimaryActionsController)
     Route::post('/cofo/store-deeds', [\App\Http\Controllers\PrimaryActionsController::class, 'storeDeeds'])->name('recertification.cofo.store-deeds');
+    
+    // Serial Number Routes
+    Route::get('/available-serial-numbers', [RecertificationController::class, 'getAvailableSerialNumbers'])->name('recertification.available-serial-numbers');
+    Route::post('/assign-serial-number', [RecertificationController::class, 'assignSerialNumber'])->name('recertification.assign-serial-number');
 });
 
 // EDMS Routes for Recertification (outside the main group to avoid prefix conflicts)
