@@ -144,7 +144,19 @@
                         <div>
                           <h3 class="text-sm font-medium">{{ $file->file_number }}</h3>
                           <p class="text-sm text-gray-600">{{ $file->file_title }}</p>
-                          <p class="text-xs text-gray-500">{{ $file->pagetypings->count() }}/{{ $file->scannings->count() }} pages typed</p>
+                          @php
+                            $totalPagesForFile = 0;
+                            foreach($file->scannings as $scanning){
+                                if(str_ends_with($scanning->document_path, '.pdf')){
+                                    $pdfInfo = app('App\\Http\\Controllers\\EdmsController')->getPdfPageInfo($scanning->document_path);
+                                    $pageCount = $pdfInfo['page_count'] ?? 1;
+                                    $totalPagesForFile += $pageCount;
+                                } else {
+                                    $totalPagesForFile += 1;
+                                }
+                            }
+                          @endphp
+                          <p class="text-xs text-gray-500">{{ $file->pagetypings->count() }}/{{ $totalPagesForFile }} pages typed</p>
                         </div>
                       </div>
                       <div class="flex items-center space-x-2">
@@ -256,6 +268,37 @@
       <div class="tab-content mt-6 hidden" role="tabpanel" aria-hidden="true" data-tab-content="typing">
         <div class="card" id="typing-card">
           @if(isset($selectedFileIndexing))
+            @php
+                $allPages = [];
+                $pageIndex = 0;
+                foreach($selectedFileIndexing->scannings as $docIndex => $scanning) {
+                    if(str_ends_with($scanning->document_path, '.pdf')) {
+                        $pdfInfo = app('App\\Http\\Controllers\\EdmsController')->getPdfPageInfo($scanning->document_path);
+                        $pageCount = $pdfInfo['page_count'] ?? 1;
+                        for($page = 1; $page <= $pageCount; $page++) {
+                            $allPages[] = [
+                                'type' => 'pdf_page',
+                                'document_index' => $docIndex,
+                                'page_number' => $page,
+                                'file_path' => $scanning->document_path,
+                                'page_index' => $pageIndex++,
+                                'scanning_id' => $scanning->id
+                            ];
+                        }
+                    } else {
+                        $allPages[] = [
+                            'type' => 'image',
+                            'document_index' => $docIndex,
+                            'page_number' => 1,
+                            'file_path' => $scanning->document_path,
+                            'page_index' => $pageIndex++,
+                            'scanning_id' => $scanning->id
+                        ];
+                    }
+                }
+                $typingTotalPages = count($allPages);
+                $typingSavedCount = $selectedFileIndexing->pagetypings->count();
+            @endphp
             <!-- File Information Header -->
             <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
                 <div class="flex items-center justify-between">
@@ -526,6 +569,60 @@
 
 <!-- FIXED: Include complete typing interface JavaScript with PDF support -->
 @include('pagetyping.js.typing_interface_debug')
+
+@if(isset($selectedFileIndexing))
+<script>
+// Disable Save & Next when all pages are saved
+(function() {
+    document.addEventListener('DOMContentLoaded', function() {
+        var totalPages = {{ $typingTotalPages ?? 0 }};
+        var initialSaved = {{ $typingSavedCount ?? 0 }};
+        var saveNextBtn = document.getElementById('save-and-next');
+        var progressTextEl = document.getElementById('typing-progress');
+
+        function setSaveNextDisabled(disabled) {
+            if (!saveNextBtn) return;
+            saveNextBtn.disabled = disabled;
+            if (disabled) {
+                saveNextBtn.innerHTML = '<i data-lucide="check-circle" class="h-4 w-4 mr-2"></i> All Pages Saved';
+            } else {
+                saveNextBtn.innerHTML = '<i data-lucide="arrow-right" class="h-4 w-4 mr-2"></i> Save & Next';
+            }
+            if (window.lucide && typeof lucide.createIcons === 'function') {
+                lucide.createIcons();
+            }
+        }
+
+        function parseProgressText() {
+            if (!progressTextEl) return null;
+            var m = progressTextEl.textContent.match(/(\d+)\s*\/\s*(\d+)/);
+            if (!m) return null;
+            return { completed: parseInt(m[1], 10), total: parseInt(m[2], 10) };
+        }
+
+        function refreshStateFromProgress() {
+            var prog = parseProgressText();
+            if (prog && prog.total > 0) {
+                setSaveNextDisabled(prog.completed >= prog.total);
+            } else {
+                if (totalPages > 0) {
+                    setSaveNextDisabled(initialSaved >= totalPages);
+                }
+            }
+        }
+
+        // Initial state
+        refreshStateFromProgress();
+
+        // Observe progress text changes for live updates
+        if (progressTextEl && 'MutationObserver' in window) {
+            var obs = new MutationObserver(refreshStateFromProgress);
+            obs.observe(progressTextEl, { childList: true, subtree: true, characterData: true });
+        }
+    });
+})();
+</script>
+@endif
 @endsection
 
 

@@ -113,11 +113,11 @@ tailwind.config = {
             <!-- Header -->
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-900">Governors List</h1>
-                    <p class="text-gray-600">Applications forwarded to Governor for final executive approval</p>
+                    <h1 class="text-3xl font-bold text-gray-900">Governor's List</h1>
+                    <p class="text-gray-600">Generated per batch (150 records each), applications forwarded to Governor for final executive approval</p>
                 </div>
                 <div class="flex gap-3">
-                    <button id="batch-process-btn" onclick="processBatch()" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-4 py-2 transition-all cursor-pointer bg-green-600 text-white hover:bg-green-700 gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                    <button id="batch-process-btn" onclick="processBatch()" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-4 py-2 transition-all cursor-pointer bg-purple-600 text-white hover:bg-purple-700 gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
                         <i data-lucide="check-circle" class="h-4 w-4"></i>
                         Batch Processing & Approval
                     </button>
@@ -125,6 +125,34 @@ tailwind.config = {
                         <i data-lucide="arrow-left" class="h-4 w-4"></i>
                         Back to Applications
                     </a>
+                </div>
+            </div>
+
+            <!-- Batch Selection -->
+            <div class="bg-white rounded-lg shadow border border-gray-200 mb-6">
+                <div class="p-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="layers" class="h-5 w-5 text-purple-600"></i>
+                                <label for="batch-select" class="text-sm font-medium text-gray-700">Select Batch:</label>
+                            </div>
+                            <select id="batch-select" onchange="loadBatchData()" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/10">
+                                <option value="">Select a batch...</option>
+                                <!-- Batch options will be populated dynamically -->
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="text-sm text-gray-600">
+                                <span class="font-medium">Current Batch:</span> 
+                                <span id="current-batch-info" class="text-purple-600 font-semibold">None selected</span>
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                <span class="font-medium">Records:</span> 
+                                <span id="batch-record-count" class="text-green-600 font-semibold">0 / 150</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -189,7 +217,7 @@ tailwind.config = {
                                 id="search-input"
                                 type="text"
                                 placeholder="Search by allottee name, CofO serial number, layout name, district..."
-                                class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
+                                class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/10"
                             />
                         </div>
                         <button class="inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-2 transition-all cursor-pointer bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50">
@@ -199,13 +227,13 @@ tailwind.config = {
                 </div>
             </div>
 
-            <!-- Governors List Table -->
+            <!-- Governor's List Table -->
             <div class="bg-white rounded-lg shadow border border-gray-200">
                 <div class="p-6 border-b border-gray-200">
                     <div class="flex items-center justify-between">
                         <h3 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
                             <i data-lucide="list-end" class="h-5 w-5 text-purple-600"></i>
-                            Governors List (<span id="applications-count">0</span>)
+                            Governor's List (<span id="applications-count">0</span>)
                         </h3>
                         <span class="badge badge-purple">
                             Applications for Governor approval
@@ -263,9 +291,119 @@ tailwind.config = {
 </div>
 
 <script>
-// Governors List Table Management
+// Governor's List Table Management
 let governorsData = [];
+let allGovernorsData = []; // Store all data for batch processing
 let serialCounter = 1;
+let currentBatch = null;
+let batchSize = 150;
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Governors list table script loaded');
+    
+    // Initialize Lucide icons
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+    
+    // Initialize batch dropdown
+    initializeBatchDropdown();
+    
+    // Load Governors data
+    loadGovernorsData();
+    
+    // Setup search functionality
+    setupSearch();
+    
+    // Setup modal handlers
+    setupModalHandlers();
+});
+
+function initializeBatchDropdown() {
+    const batchSelect = document.getElementById('batch-select');
+    if (!batchSelect) return;
+    
+    // Clear existing options except the first one
+    while (batchSelect.children.length > 1) {
+        batchSelect.removeChild(batchSelect.lastChild);
+    }
+    
+    // Add batch options starting from batch 11
+    for (let i = 11; i <= 20; i++) {
+        const option = document.createElement('option');
+        option.value = i;
+        option.textContent = `Batch ${i}`;
+        batchSelect.appendChild(option);
+    }
+    
+    // Set default to batch 11
+    batchSelect.value = '11';
+    currentBatch = 11;
+    updateBatchInfo();
+}
+
+function loadBatchData() {
+    const batchSelect = document.getElementById('batch-select');
+    if (!batchSelect) return;
+    
+    const selectedBatch = parseInt(batchSelect.value);
+    if (!selectedBatch) {
+        currentBatch = null;
+        governorsData = [];
+        renderGovernorsTable();
+        updateBatchInfo();
+        return;
+    }
+    
+    currentBatch = selectedBatch;
+    
+    // Calculate batch range
+    const startIndex = (currentBatch - 11) * batchSize;
+    const endIndex = startIndex + batchSize;
+    
+    // Filter data for current batch
+    governorsData = allGovernorsData.slice(startIndex, endIndex);
+    
+    // Update UI
+    renderGovernorsTable();
+    updateBatchInfo();
+    updateBatchProcessingButton();
+    
+    // Auto-select all records in the current batch
+    setTimeout(() => {
+        autoSelectBatchRecords();
+    }, 100);
+    
+    console.log(`Loaded batch ${currentBatch}: ${governorsData.length} records`);
+}
+
+function autoSelectBatchRecords() {
+    // Auto-check the "Select All" checkbox
+    const selectAllCheckbox = document.getElementById('select-all');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.checked = true;
+        
+        // Trigger the select all function
+        toggleSelectAll();
+        
+        console.log(`Auto-selected all ${governorsData.length} records in batch ${currentBatch}`);
+    }
+}
+
+function updateBatchInfo() {
+    const currentBatchInfo = document.getElementById('current-batch-info');
+    const batchRecordCount = document.getElementById('batch-record-count');
+    
+    if (currentBatch) {
+        currentBatchInfo.textContent = `Batch ${currentBatch}`;
+        batchRecordCount.textContent = `${governorsData.length} / ${batchSize}`;
+        batchRecordCount.className = governorsData.length === batchSize ? 'text-green-600 font-semibold' : 'text-orange-600 font-semibold';
+    } else {
+        currentBatchInfo.textContent = 'None selected';
+        batchRecordCount.textContent = '0 / 150';
+        batchRecordCount.className = 'text-gray-600 font-semibold';
+    }
+}
 
 function getPrerequisitesStatus(app) {
     const prerequisites = [
@@ -294,24 +432,6 @@ function getPrerequisitesStatus(app) {
     };
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Governors list table script loaded');
-    
-    // Initialize Lucide icons
-    if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-    }
-    
-    // Load Governors data
-    loadGovernorsData();
-    
-    // Setup search functionality
-    setupSearch();
-    
-    // Setup modal handlers
-    setupModalHandlers();
-});
-
 function loadGovernorsData() {
     console.log('Loading Governors data...');
     
@@ -334,19 +454,18 @@ function loadGovernorsData() {
     })
     .then(data => {
         console.log('Governors data received:', data);
-        governorsData = data.data || [];
+        
+        // Store all data for batch processing
+        allGovernorsData = data.data || [];
         
         // Reset serial counter
         serialCounter = 1;
         
-        // Update statistics
+        // Update statistics (based on all data)
         updateStatistics(data.statistics || {});
         
-        // Render table
-        renderGovernorsTable();
-        
-        // Update batch processing button
-        updateBatchProcessingButton();
+        // Load the current batch (default is batch 11)
+        loadBatchData();
     })
     .catch(error => {
         console.error('Error loading Governors data:', error);
@@ -361,7 +480,7 @@ function showLoadingState(tableBodyId) {
             <tr>
                 <td colspan="9" class="text-center py-8">
                     <div class="loading-spinner mx-auto mb-2"></div>
-                    <p class="text-gray-600">Loading Governors list data...</p>
+                    <p class="text-gray-600">Loading Governor's list data...</p>
                 </td>
             </tr>
         `;
@@ -375,7 +494,7 @@ function showErrorState(tableBodyId) {
             <tr>
                 <td colspan="9" class="text-center py-8">
                     <i data-lucide="alert-circle" class="h-8 w-8 text-red-500 mx-auto mb-2"></i>
-                    <p class="text-red-600">Failed to load Governors list data</p>
+                    <p class="text-red-600">Failed to load Governor's list data</p>
                     <button onclick="loadGovernorsData()" class="mt-2 text-blue-600 hover:text-blue-800">
                         Try Again
                     </button>
@@ -391,11 +510,14 @@ function showErrorState(tableBodyId) {
 }
 
 function updateStatistics(stats) {
-    document.getElementById('total-count').textContent = stats.total || 0;
+    // Update overall statistics (based on all data)
+    document.getElementById('total-count').textContent = allGovernorsData.length || 0;
     document.getElementById('approved-count').textContent = stats.approved || 0;
     document.getElementById('pending-count').textContent = stats.pending || 0;
     document.getElementById('month-count').textContent = stats.thisMonth || 0;
-    document.getElementById('applications-count').textContent = stats.total || 0;
+    
+    // Update current batch count
+    document.getElementById('applications-count').textContent = governorsData.length || 0;
 }
 
 function getGovernorStatusBadge(status) {
@@ -581,13 +703,14 @@ function processBatch() {
             'Accept': 'application/json'
         },
         body: JSON.stringify({
-            application_ids: applicationIds
+            application_ids: applicationIds,
+            batch_number: currentBatch
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showToast(data.message, 'success');
+            showToast(`Successfully processed Batch ${currentBatch} with ${data.processed_count} applications`, 'success');
             
             // Reload data to reflect changes
             loadGovernorsData();
@@ -786,8 +909,10 @@ function showToast(message, type = 'info') {
 window.toggleActionMenu = toggleActionMenu;
 window.viewApplication = viewApplication;
 window.loadGovernorsData = loadGovernorsData;
+window.loadBatchData = loadBatchData;
 window.toggleSelectAll = toggleSelectAll;
 window.processBatch = processBatch;
+window.autoSelectBatchRecords = autoSelectBatchRecords;
 
 console.log('Governors list table script initialized');
 </script>

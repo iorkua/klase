@@ -210,12 +210,20 @@
       <i data-lucide="file-plus" class="h-3.5 w-3.5 text-purple-400"></i>
       <span>Application</span>
     </a>
+  
+    <a href="{{ route('recertification.bills-payments') }}" 
+       class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('recertification.bills-payments') ? 'active' : '' }}">
+      <i data-lucide="dollar-sign" class="h-3.5 w-3.5 text-purple-400"></i>
+      <span>Bills & Payments</span>
+    </a>
 
     <a href="{{ route('recertification.migrate') }}" 
        class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('recertification.migrate') ? 'active' : '' }}">
       <i data-lucide="database-backup" class="h-3.5 w-3.5 text-purple-400"></i>
       <span>Application Migrate Data</span>
     </a>
+
+
 
     <a href="{{ route('recertification.verification-sheet') }}" 
        class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('recertification.verification-sheet') ? 'active' : '' }}">

@@ -1289,44 +1289,47 @@
             if (transactionSelect && !transactionSelect.value) {
                 isValid = false;
             } else if (transactionSelect && transactionSelect.value) {
-                // Validate fields specific to the transaction type
-                const transType = transactionSelect.value.toLowerCase();
-                let partyFieldsValid = true;
-                
-                if (transType === 'assignment') {
-                    const assignorField = document.getElementById(prefix.replace('property_', '') + 'trans-assignor-record');
-                    const assigneeField = document.getElementById(prefix.replace('property_', '') + 'trans-assignee-record');
-                    if ((!assignorField || !assignorField.value.trim()) || (!assigneeField || !assigneeField.value.trim())) {
-                        partyFieldsValid = false;
+                // For create form, skip party field validation and let server enforce if needed
+                if (formId !== 'property-record-form') {
+                    // Validate fields specific to the transaction type (edit form only)
+                    const transType = transactionSelect.value.toLowerCase();
+                    let partyFieldsValid = true;
+
+                    if (transType === 'assignment') {
+                        const assignorField = document.getElementById(prefix.replace('property_', '') + 'trans-assignor-record');
+                        const assigneeField = document.getElementById(prefix.replace('property_', '') + 'trans-assignee-record');
+                        if ((!assignorField || !assignorField.value.trim()) || (!assigneeField || !assigneeField.value.trim())) {
+                            partyFieldsValid = false;
+                        }
+                    } else if (transType === 'mortgage') {
+                        const mortgagorField = document.getElementById(prefix.replace('property_', '') + 'mortgagor-record');
+                        const mortgageeField = document.getElementById(prefix.replace('property_', '') + 'mortgagee-record');
+                        if ((!mortgagorField || !mortgagorField.value.trim()) || (!mortgageeField || !mortgageeField.value.trim())) {
+                            partyFieldsValid = false;
+                        }
+                    } else if (transType === 'surrender') {
+                        const surrenderorField = document.getElementById(prefix.replace('property_', '') + 'surrenderor-record');
+                        const surrendereeField = document.getElementById(prefix.replace('property_', '') + 'surrenderee-record');
+                        if ((!surrenderorField || !surrenderorField.value.trim()) || (!surrendereeField || !surrendereeField.value.trim())) {
+                            partyFieldsValid = false;
+                        }
+                    } else if (transType === 'lease') {
+                        const lessorField = document.getElementById(prefix.replace('property_', '') + 'lessor-record');
+                        const lesseeField = document.getElementById(prefix.replace('property_', '') + 'lessee-record');
+                        if ((!lessorField || !lessorField.value.trim()) || (!lesseeField || !lesseeField.value.trim())) {
+                            partyFieldsValid = false;
+                        }
+                    } else if (transType !== 'other') { // For default fields but not "Other" type
+                        const grantorField = document.getElementById(prefix.replace('property_', '') + 'grantor-record');
+                        const granteeField = document.getElementById(prefix.replace('property_', '') + 'grantee-record');
+                        if ((!grantorField || !grantorField.value.trim()) || (!granteeField || !granteeField.value.trim())) {
+                            partyFieldsValid = false;
+                        }
                     }
-                } else if (transType === 'mortgage') {
-                    const mortgagorField = document.getElementById(prefix.replace('property_', '') + 'mortgagor-record');
-                    const mortgageeField = document.getElementById(prefix.replace('property_', '') + 'mortgagee-record');
-                    if ((!mortgagorField || !mortgagorField.value.trim()) || (!mortgageeField || !mortgageeField.value.trim())) {
-                        partyFieldsValid = false;
+
+                    if (!partyFieldsValid) {
+                        isValid = false;
                     }
-                } else if (transType === 'surrender') {
-                    const surrenderorField = document.getElementById(prefix.replace('property_', '') + 'surrenderor-record');
-                    const surrendereeField = document.getElementById(prefix.replace('property_', '') + 'surrenderee-record');
-                    if ((!surrenderorField || !surrenderorField.value.trim()) || (!surrendereeField || !surrendereeField.value.trim())) {
-                        partyFieldsValid = false;
-                    }
-                } else if (transType === 'lease') {
-                    const lessorField = document.getElementById(prefix.replace('property_', '') + 'lessor-record');
-                    const lesseeField = document.getElementById(prefix.replace('property_', '') + 'lessee-record');
-                    if ((!lessorField || !lessorField.value.trim()) || (!lesseeField || !lesseeField.value.trim())) {
-                        partyFieldsValid = false;
-                    }
-                } else if (transType !== 'other') { // For default fields but not "Other" type
-                    const grantorField = document.getElementById(prefix.replace('property_', '') + 'grantor-record');
-                    const granteeField = document.getElementById(prefix.replace('property_', '') + 'grantee-record');
-                    if ((!grantorField || !grantorField.value.trim()) || (!granteeField || !granteeField.value.trim())) {
-                        partyFieldsValid = false;
-                    }
-                }
-                
-                if (!partyFieldsValid) {
-                    isValid = false;
                 }
             }
             
@@ -1368,16 +1371,13 @@
             // Property description fields
             const requiredPropertyFields = [
                 'plotNo', 
-                'lgsaOrCity', 
-                'property-description'
+                'lgsaOrCity'
             ];
             
             // Transaction fields
             form.querySelector('select.transaction-type-select')?.setAttribute('required', 'true');
             form.querySelector('#transactionDate')?.setAttribute('required', 'true');
-            form.querySelector('#serialNo')?.setAttribute('required', 'true');
-            form.querySelector('#pageNo')?.setAttribute('required', 'true');
-            form.querySelector('#volumeNo')?.setAttribute('required', 'true');
+            // Serial/Page/Volume will be validated server-side; avoid blocking client-side submit
             
             // For each required field, add the required attribute
             requiredPropertyFields.forEach(fieldId => {

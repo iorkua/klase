@@ -12,7 +12,7 @@ tailwind.config = {
       colors: {
         primary: '#3b82f6',
         'primary-foreground': '#ffffff',
-        muted: '#f3f4f6',
+        muted: '#f3f4f6', 
         'muted-foreground': '#6b7280',
         border: '#e5e7eb',
         destructive: '#ef4444',
@@ -109,7 +109,7 @@ tailwind.config = {
             <div class="flex items-center justify-between mb-6">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900">DG's List</h1>
-                    <p class="text-gray-600">Generated per batch, listing CofOs ready for Director General's approval</p>
+                    <p class="text-gray-600">Generated per batch (150 records each), listing CofOs ready for Director General's approval</p>
                 </div>
                 <div class="flex gap-3">
                     <button id="batch-process-btn" onclick="processBatch()" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-4 py-2 transition-all cursor-pointer bg-green-600 text-white hover:bg-green-700 gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
@@ -120,6 +120,34 @@ tailwind.config = {
                         <i data-lucide="arrow-left" class="h-4 w-4"></i>
                         Back to Applications
                     </a>
+                </div>
+            </div>
+
+            <!-- Batch Selection -->
+            <div class="bg-white rounded-lg shadow border border-gray-200 mb-6">
+                <div class="p-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="layers" class="h-5 w-5 text-blue-600"></i>
+                                <label for="batch-select" class="text-sm font-medium text-gray-700">Select Batch:</label>
+                            </div>
+                            <select id="batch-select" onchange="loadBatchData()" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10">
+                                <option value="">Select a batch...</option>
+                                <!-- Batch options will be populated dynamically -->
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="text-sm text-gray-600">
+                                <span class="font-medium">Current Batch:</span> 
+                                <span id="current-batch-info" class="text-blue-600 font-semibold">None selected</span>
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                <span class="font-medium">Records:</span> 
+                                <span id="batch-record-count" class="text-green-600 font-semibold">0 / 150</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -263,7 +291,10 @@ tailwind.config = {
 <script>
 // DG's List Table Management
 let dgData = [];
+let allDGData = []; // Store all data for batch processing
 let serialCounter = 1;
+let currentBatch = null;
+let batchSize = 150;
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DG list table script loaded');
@@ -272,6 +303,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
     }
+    
+    // Initialize batch dropdown
+    initializeBatchDropdown();
     
     // Load DG data
     loadDGData();
@@ -282,6 +316,92 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup modal handlers
     setupModalHandlers();
 });
+
+function initializeBatchDropdown() {
+    const batchSelect = document.getElementById('batch-select');
+    if (!batchSelect) return;
+    
+    // Clear existing options except the first one
+    while (batchSelect.children.length > 1) {
+        batchSelect.removeChild(batchSelect.lastChild);
+    }
+    
+    // Add batch options starting from batch 11
+    for (let i = 11; i <= 20; i++) {
+        const option = document.createElement('option');
+        option.value = i;
+        option.textContent = `Batch ${i}`;
+        batchSelect.appendChild(option);
+    }
+    
+    // Set default to batch 11
+    batchSelect.value = '11';
+    currentBatch = 11;
+    updateBatchInfo();
+}
+
+function loadBatchData() {
+    const batchSelect = document.getElementById('batch-select');
+    if (!batchSelect) return;
+    
+    const selectedBatch = parseInt(batchSelect.value);
+    if (!selectedBatch) {
+        currentBatch = null;
+        dgData = [];
+        renderDGTable();
+        updateBatchInfo();
+        return;
+    }
+    
+    currentBatch = selectedBatch;
+    
+    // Calculate batch range
+    const startIndex = (currentBatch - 11) * batchSize;
+    const endIndex = startIndex + batchSize;
+    
+    // Filter data for current batch
+    dgData = allDGData.slice(startIndex, endIndex);
+    
+    // Update UI
+    renderDGTable();
+    updateBatchInfo();
+    updateBatchProcessingButton();
+    
+    // Auto-select all records in the current batch
+    setTimeout(() => {
+        autoSelectBatchRecords();
+    }, 100);
+    
+    console.log(`Loaded batch ${currentBatch}: ${dgData.length} records`);
+}
+
+function autoSelectBatchRecords() {
+    // Auto-check the "Select All" checkbox
+    const selectAllCheckbox = document.getElementById('select-all');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.checked = true;
+        
+        // Trigger the select all function
+        toggleSelectAll();
+        
+        console.log(`Auto-selected all ${dgData.length} records in batch ${currentBatch}`);
+    }
+}
+
+function updateBatchInfo() {
+    const currentBatchInfo = document.getElementById('current-batch-info');
+    const batchRecordCount = document.getElementById('batch-record-count');
+    
+    if (currentBatch) {
+        currentBatchInfo.textContent = `Batch ${currentBatch}`;
+        batchRecordCount.textContent = `${dgData.length} / ${batchSize}`;
+        batchRecordCount.className = dgData.length === batchSize ? 'text-green-600 font-semibold' : 'text-orange-600 font-semibold';
+    } else {
+        currentBatchInfo.textContent = 'None selected';
+        batchRecordCount.textContent = '0 / 150';
+        batchRecordCount.className = 'text-gray-600 font-semibold';
+    }
+}
 
 function loadDGData() {
     console.log('Loading DG data...');
@@ -305,19 +425,18 @@ function loadDGData() {
     })
     .then(data => {
         console.log('DG data received:', data);
-        dgData = data.data || [];
+        
+        // Store all data for batch processing
+        allDGData = data.data || [];
         
         // Reset serial counter
         serialCounter = 1;
         
-        // Update statistics
+        // Update statistics (based on all data)
         updateStatistics(data.statistics || {});
         
-        // Render table
-        renderDGTable();
-        
-        // Update batch processing button
-        updateBatchProcessingButton();
+        // Load the current batch (default is batch 11)
+        loadBatchData();
     })
     .catch(error => {
         console.error('Error loading DG data:', error);
@@ -362,11 +481,14 @@ function showErrorState(tableBodyId) {
 }
 
 function updateStatistics(stats) {
-    document.getElementById('total-count').textContent = stats.total || 0;
+    // Update overall statistics (based on all data)
+    document.getElementById('total-count').textContent = allDGData.length || 0;
     document.getElementById('approved-count').textContent = stats.approved || 0;
     document.getElementById('pending-count').textContent = stats.pending || 0;
     document.getElementById('month-count').textContent = stats.thisMonth || 0;
-    document.getElementById('applications-count').textContent = stats.total || 0;
+    
+    // Update current batch count
+    document.getElementById('applications-count').textContent = dgData.length || 0;
 }
 
 function getDGStatusBadge(status) {
@@ -578,13 +700,14 @@ function processBatch() {
             'Accept': 'application/json'
         },
         body: JSON.stringify({
-            application_ids: applicationIds
+            application_ids: applicationIds,
+            batch_number: currentBatch
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showToast(data.message, 'success');
+            showToast(`Successfully processed Batch ${currentBatch} with ${data.processed_count} applications`, 'success');
             
             // Reload data to reflect changes
             loadDGData();
@@ -787,8 +910,10 @@ function showToast(message, type = 'info') {
 window.toggleActionMenu = toggleActionMenu;
 window.viewApplication = viewApplication;
 window.loadDGData = loadDGData;
+window.loadBatchData = loadBatchData;
 window.toggleSelectAll = toggleSelectAll;
 window.processBatch = processBatch;
+window.autoSelectBatchRecords = autoSelectBatchRecords;
 
 console.log('DG list table script initialized');
 </script>

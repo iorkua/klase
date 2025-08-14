@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth; // Add Auth facade for user tracking
+use Illuminate\Support\Facades\Schema; // Schema facade to check columns safely
 
 class PropertyRecordController extends Controller
 {
@@ -32,42 +33,56 @@ class PropertyRecordController extends Controller
     
     public function store(Request $request)
     {
+        // Log the incoming request for debugging
+        \Log::info('Property Record Store Request:', [
+            'all_data' => $request->all(),
+            'method' => $request->method(),
+            'url' => $request->url(),
+            'user_agent' => $request->userAgent()
+        ]);
+
         // Updated validation rules for new field names
         $validator = Validator::make($request->all(), [
-            'titleType' => 'required|string|in:Customary,Statutory',
-            'mlsFNo' => 'nullable|string',
-            'kangisFileNo' => 'nullable|string',
-            'NewKANGISFileno' => 'nullable|string',
-            'transactionType' => 'required|string',
+            'mlsFNo' => 'nullable|string|max:255',
+            'kangisFileNo' => 'nullable|string|max:255',
+            'NewKANGISFileno' => 'nullable|string|max:255',
+            'fileno' => 'nullable|string|max:255',
+            'title_type' => 'nullable|string|max:255', // Add title_type validation
+            'transactionType' => 'required|string|max:255',
             'transactionDate' => 'required|date',
-            'serialNo' => 'required|string',
-            'pageNo' => 'required|string',
-            'volumeNo' => 'required|string',
-            'instrumentType' => 'nullable|string',
+            'serialNo' => 'required|string|max:50',
+            'pageNo' => 'required|string|max:50',
+            'volumeNo' => 'required|string|max:50',
+            'instrumentType' => 'nullable|string|max:255',
             'period' => 'nullable|numeric',
-            'periodUnit' => 'nullable',
+            'periodUnit' => 'nullable|string|max:50',
             // Party fields based on transaction type
-            'Assignor' => 'nullable|string',
-            'Assignee' => 'nullable|string',
-            'Mortgagor' => 'nullable|string',
-            'Mortgagee' => 'nullable|string',
-            'Surrenderor' => 'nullable|string',
-            'Surrenderee' => 'nullable|string',
-            'Lessor' => 'nullable|string',
-            'Lessee' => 'nullable|string',
-            'Grantor' => 'nullable|string',
-            'Grantee' => 'nullable|string',
+            'Assignor' => 'nullable|string|max:500',
+            'Assignee' => 'nullable|string|max:500',
+            'Mortgagor' => 'nullable|string|max:500',
+            'Mortgagee' => 'nullable|string|max:500',
+            'Surrenderor' => 'nullable|string|max:500',
+            'Surrenderee' => 'nullable|string|max:500',
+            'Lessor' => 'nullable|string|max:500',
+            'Lessee' => 'nullable|string|max:500',
+            'Grantor' => 'nullable|string|max:500',
+            'Grantee' => 'nullable|string|max:500',
             // Property details
             'property_description' => 'nullable|string',
-            'location' => 'nullable|string',
-            'plot_no' => 'nullable|string',
+            'location' => 'nullable|string|max:255',
+            'plot_no' => 'nullable|string|max:100',
             // New fields
-            'lgsaOrCity' => 'nullable|string',
-            'layout' => 'nullable|string',
-            'schedule' => 'nullable|string',
+            'lgsaOrCity' => 'nullable|string|max:255',
+            'layout' => 'nullable|string|max:255',
+            'schedule' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
+            \Log::error('Property Record Validation Failed:', [
+                'errors' => $validator->errors()->toArray(),
+                'input' => $request->all()
+            ]);
+
             // Check if request expects JSON (AJAX) or normal redirect
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
@@ -79,54 +94,77 @@ class PropertyRecordController extends Controller
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
+        // Start database transaction
+        DB::connection('sqlsrv')->beginTransaction();
+
         try {
+            // First, check if the property_records table exists
+            $tableExists = Schema::connection('sqlsrv')->hasTable('property_records');
+            if (!$tableExists) {
+                throw new \Exception('Table property_records does not exist in the database');
+            }
+
+            // Log table columns for debugging
+            $columns = Schema::connection('sqlsrv')->getColumnListing('property_records');
+            \Log::info('Property Records Table Columns:', $columns);
+
+            // Normalize file numbers coming from either manual fields or smart selector
+            $mls = trim((string) $request->input('mlsFNo', ''));
+            $kangis = trim((string) $request->input('kangisFileNo', ''));
+            $newKangis = trim((string) $request->input('NewKANGISFileno', ''));
+            $singleFileno = trim((string) $request->input('fileno', ''));
+
+            // If only a single fileno is provided via smart selector, map it to MLS by default
+            if ($mls === '' && $kangis === '' && $newKangis === '' && $singleFileno !== '') {
+                $mls = $singleFileno;
+            }
+
             // Check if at least one file number is provided
-            if (empty($request->mlsFNo) && empty($request->kangisFileNo) && empty($request->NewKANGISFileno)) {
-                if ($request->expectsJson() || $request->ajax()) {
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => 'At least one file number type is required'
-                    ], 422);
-                }
-                return redirect()->back()->with('error', 'At least one file number type is required')->withInput();
+            if ($mls === '' && $kangis === '' && $newKangis === '') {
+                throw new \Exception('At least one file number type is required');
             }
             
             // Create registration number from components
             $regNo = $request->serialNo . '/' . $request->pageNo . '/' . $request->volumeNo;
             
-            // Get transaction-specific party information
+            // Get transaction-specific party information (robust to labels and field names)
             $partyData = [];
+            $tx = strtolower((string)$request->transactionType);
             
-            switch ($request->transactionType) {
-                case 'assignment':
-                    $partyData['Assignor'] = $request->input('trans-assignor-record');
-                    $partyData['Assignee'] = $request->input('trans-assignee-record');
-                    break;
-                case 'mortgage':
-                    $partyData['Mortgagor'] = $request->input('mortgagor-record');
-                    $partyData['Mortgagee'] = $request->input('mortgagee-record');
-                    break;
-                case 'surrender':
-                    $partyData['Surrenderor'] = $request->input('surrenderor-record');
-                    $partyData['Surrenderee'] = $request->input('surrenderee-record');
-                    break;
-                case 'sublease':
-                case 'lease':
-                case 'sub-under-lease':
-                    $partyData['Lessor'] = $request->input('lessor-record');
-                    $partyData['Lessee'] = $request->input('lessee-record');
-                    break;
-                default:
-                    $partyData['Grantor'] = $request->input('grantor-record');
-                    $partyData['Grantee'] = $request->input('grantee-record');
+            \Log::info('Processing transaction type:', ['type' => $tx]);
+            
+            if (strpos($tx, 'assignment') !== false) {
+                $partyData['Assignor'] = $request->input('Assignor') ?? $request->input('trans-assignor-record');
+                $partyData['Assignee'] = $request->input('Assignee') ?? $request->input('trans-assignee-record');
+            } elseif (strpos($tx, 'mortgage') !== false) {
+                $partyData['Mortgagor'] = $request->input('Mortgagor') ?? $request->input('mortgagor-record');
+                $partyData['Mortgagee'] = $request->input('Mortgagee') ?? $request->input('mortgagee-record');
+            } elseif (strpos($tx, 'surrender') !== false) {
+                $partyData['Surrenderor'] = $request->input('Surrenderor') ?? $request->input('surrenderor-record');
+                $partyData['Surrenderee'] = $request->input('Surrenderee') ?? $request->input('surrenderee-record');
+            } elseif (strpos($tx, 'lease') !== false) {
+                $partyData['Lessor'] = $request->input('Lessor') ?? $request->input('lessor-record');
+                $partyData['Lessee'] = $request->input('Lessee') ?? $request->input('lessee-record');
+            } else {
+                $partyData['Grantor'] = $request->input('Grantor') ?? $request->input('grantor-record');
+                $partyData['Grantee'] = $request->input('Grantee') ?? $request->input('grantee-record');
             }
 
-            // Prepare data for database insertion
+            \Log::info('Party data extracted:', $partyData);
+
+            // Determine title_type based on transaction type or use provided value
+            $titleType = $request->input('title_type');
+            if (!$titleType) {
+                // Auto-determine title_type based on transaction_type
+                $titleType = $this->determineTitleType($request->transactionType);
+            }
+
+            // Prepare base data for database insertion
             $data = [
-                'mlsFNo' => $request->mlsFNo,
-                'kangisFileNo' => $request->kangisFileNo,
-                'NewKANGISFileno' => $request->NewKANGISFileno,
-                'title_type' => $request->titleType,
+                'mlsFNo' => $mls ?: null,
+                'kangisFileNo' => $kangis ?: null,
+                'NewKANGISFileno' => $newKangis ?: null,
+                'title_type' => $titleType, // Add required title_type field
                 'transaction_type' => $request->transactionType,
                 'transaction_date' => $request->transactionDate,
                 'serialNo' => $request->serialNo,
@@ -134,27 +172,46 @@ class PropertyRecordController extends Controller
                 'volumeNo' => $request->volumeNo,
                 'regNo' => $regNo,
                 'instrument_type' => $request->instrumentType,
-                'period' => $request->period,
+                'period' => $request->period ? (int)$request->period : null,
                 'period_unit' => $request->periodUnit,
                 'property_description' => $request->property_description,
-                'location' => $request->location,
                 'plot_no' => $request->plot_no,
-                // New fields
+            ];
+
+            // Conditionally include optional columns if they exist in the table
+            $optionalFields = [
+                'location' => $request->location,
                 'lgsaOrCity' => $request->lgsaOrCity,
                 'layout' => $request->layout,
                 'schedule' => $request->schedule,
-                // Add user tracking fields
-                'created_by' => Auth::id(), // Record who created the record
-                'updated_by' => Auth::id(), // Initial update is same as creator
+                'created_by' => Auth::id(),
+                'updated_by' => Auth::id(),
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
 
-            // Merge party data
-            $data = array_merge($data, $partyData);
+            foreach ($optionalFields as $field => $value) {
+                if (Schema::connection('sqlsrv')->hasColumn('property_records', $field)) {
+                    $data[$field] = $value;
+                }
+            }
+
+            // Add party data only for non-null values
+            foreach ($partyData as $key => $value) {
+                if ($value !== null && $value !== '' && Schema::connection('sqlsrv')->hasColumn('property_records', $key)) {
+                    $data[$key] = $value;
+                }
+            }
+
+            \Log::info('Final data for insertion:', $data);
 
             // Insert into database
             $id = DB::connection('sqlsrv')->table('property_records')->insertGetId($data);
+
+            // Commit the transaction
+            DB::connection('sqlsrv')->commit();
+
+            \Log::info('Property record created successfully:', ['id' => $id]);
 
             // Check if request expects JSON (AJAX) or normal redirect
             if ($request->expectsJson() || $request->ajax()) {
@@ -169,12 +226,25 @@ class PropertyRecordController extends Controller
             return redirect()->route('propertycard.index')->with('success', 'Property record created successfully');
 
         } catch (\Exception $e) {
+            // Rollback the transaction
+            DB::connection('sqlsrv')->rollback();
+
+            \Log::error('Property Record Creation Failed:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'input' => $request->all()
+            ]);
+
             // Check if request expects JSON (AJAX) or normal redirect
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Failed to create property record',
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
+                    'debug_info' => [
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine()
+                    ]
                 ], 500);
             }
 
@@ -194,7 +264,7 @@ class PropertyRecordController extends Controller
     {
         // Modified validation rules for update - make file numbers optional
         $validator = Validator::make($request->all(), [
-            'titleType' => 'required',
+           
             'transactionType' => 'required|string',
             'transactionDate' => 'required|date',
             'serialNo' => 'required|string',
@@ -281,14 +351,11 @@ class PropertyRecordController extends Controller
             // Log party data for debugging
             \Log::info('Party data to be updated: ', $partyData);
 
-            // Prepare data for database update
+            // Prepare data for database update (keep file numbers; include optional columns only if present)
             $data = [
-                // Keep existing file numbers
                 'mlsFNo' => $existingProperty->mlsFNo,
                 'kangisFileNo' => $existingProperty->kangisFileNo,
                 'NewKANGISFileno' => $existingProperty->NewKANGISFileno,
-                
-                'title_type' => $request->titleType,
                 'transaction_type' => $request->transactionType,
                 'transaction_date' => $request->transactionDate,
                 'serialNo' => $request->serialNo,
@@ -300,14 +367,22 @@ class PropertyRecordController extends Controller
                 'period_unit' => $request->periodUnit,
                 'property_description' => $request->property_description,
                 'plot_no' => $request->plot_no,
-                // New fields
-                'lgsaOrCity' => $request->lgsaOrCity,
-                'layout' => $request->layout,
-                'schedule' => $request->schedule,
-                // Update the user who modified the record
-                'updated_by' => Auth::id(),
-                'updated_at' => now(),
             ];
+            if (Schema::hasColumn('property_records', 'lgsaOrCity')) {
+                $data['lgsaOrCity'] = $request->lgsaOrCity;
+            }
+            if (Schema::hasColumn('property_records', 'layout')) {
+                $data['layout'] = $request->layout;
+            }
+            if (Schema::hasColumn('property_records', 'schedule')) {
+                $data['schedule'] = $request->schedule;
+            }
+            if (Schema::hasColumn('property_records', 'updated_by')) {
+                $data['updated_by'] = Auth::id();
+            }
+            if (Schema::hasColumn('property_records', 'updated_at')) {
+                $data['updated_at'] = now();
+            }
 
             // Merge party data only if values are not null
             foreach ($partyData as $key => $value) {
@@ -600,5 +675,59 @@ class PropertyRecordController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Determine title type based on transaction type
+     *
+     * @param string $transactionType
+     * @return string
+     */
+    private function determineTitleType($transactionType)
+    {
+        $titleTypeMap = [
+            'Certificate of Occupancy' => 'C of O',
+            'ST Certificate of Occupancy' => 'ST C of O',
+            'SLTR Certificate of Occupancy' => 'SLTR C of O',
+            'Customary Right of Occupancy' => 'Customary R of O',
+            'Deed of Assignment' => 'Assignment',
+            'ST Assignment' => 'ST Assignment',
+            'Deed of Mortgage' => 'Mortgage',
+            'Tripartite Mortgage' => 'Tripartite Mortgage',
+            'Deed of Lease' => 'Lease',
+            'Deed of Sub Lease' => 'Sub Lease',
+            'Deed of Sub Under Lease' => 'Sub Under Lease',
+            'Indenture of Lease' => 'Indenture Lease',
+            'Quarry Lease' => 'Quarry Lease',
+            'Private Lease' => 'Private Lease',
+            'Building Lease' => 'Building Lease',
+            'Tenancy Agreement' => 'Tenancy',
+            'Deed of Surrender' => 'Surrender',
+            'Deed of Transfer' => 'Transfer',
+            'Deed of Gift' => 'Gift',
+            'Power of Attorney' => 'Power of Attorney',
+            'Irrevocable Power of Attorney' => 'Irrevocable POA',
+            'Deed of Release' => 'Release',
+            'Letter of Administration' => 'Letter of Admin',
+            'Certificate of Purchase' => 'Certificate of Purchase',
+            'Deed of Variation' => 'Variation',
+            'Vesting Assent' => 'Vesting Assent',
+            'Court Judgement' => 'Court Judgement',
+            'Exchange of Letters' => 'Exchange of Letters',
+            'Revocation of Power of Attorney' => 'Revocation POA',
+            'Deed of Convenyence' => 'Convenyence',
+            'Memorandom of Agreement' => 'MOU',
+            'Deed of Partition' => 'Partition',
+            'Non-European Occupational Lease' => 'Non-European Lease',
+            'Deed of Revocation' => 'Revocation',
+            'Deed of Reconveyance' => 'Reconveyance',
+            'Customary Inhertitance' => 'Customary Inheritance',
+            'Deed of Rectification' => 'Rectification',
+            'Memorandum of Loss' => 'Memorandum of Loss',
+            'Vesting Deed' => 'Vesting Deed',
+            'ST Fragmentation' => 'ST Fragmentation',
+        ];
+
+        return $titleTypeMap[$transactionType] ?? 'Other';
     }
 }

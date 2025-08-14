@@ -95,3 +95,9 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'edms'], function () 
 Route::get('/vetting-sheet/browse', [CertificationController::class, 'browseVettingSheetDirectory'])
     ->middleware(['auth', 'XSS'])
     ->name('vetting-sheet.browse');
+// Bills & Payments Routes (added separately)
+Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'recertification'], function () {
+    Route::get('/bills-payments', [CertificationController::class, 'billsPayments'])->name('recertification.bills-payments');
+    Route::get('/bills-payments-data', [CertificationController::class, 'getBillsPaymentsData'])->name('recertification.bills-payments-data');
+    Route::get('/export-payments', [CertificationController::class, 'exportPayments'])->name('recertification.export-payments');
+});

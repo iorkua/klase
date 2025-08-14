@@ -159,7 +159,10 @@ class InstrumentRegistrationController extends Controller
                     'reg_creator_name' => $instrument->reg_creator_name ?? '',
                     'instrument_category' => 'Other Instruments',
                     'STM_Ref' => null, // Other instruments don't have STM_Ref until registered
-                    'original_instrument_id' => $instrument->id
+                    'original_instrument_id' => $instrument->id,
+                    // Add captured date and reg date fields
+                    'captured_date' => $instrument->instrumentDate ?? $instrument->created_at, // from instrument_registration.instrumentDate or created_at
+                    'reg_date' => null // Other instruments don't have reg_date until registered
                 ];
 
                 $allInstruments->push($instrumentRecord);
@@ -233,7 +236,10 @@ class InstrumentRegistrationController extends Controller
                     'reg_creator_name' => $subApp->reg_creator_name,
                     'instrument_category' => 'ST Assignment',
                     'STM_Ref' => $stRegistration->STM_Ref ?? null,
-                    'original_subapp_id' => $subApp->id
+                    'original_subapp_id' => $subApp->id,
+                    // Add captured date and reg date fields
+                    'captured_date' => $subApp->created_at, // from subapplications.created_at
+                    'reg_date' => $stRegistration->instrumentDate ?? null // from registered_instruments.instrumentDate
                 ];
 
                 // Create Sectional Titling CofO record
@@ -264,7 +270,10 @@ class InstrumentRegistrationController extends Controller
                     'reg_creator_name' => $subApp->reg_creator_name,
                     'instrument_category' => 'Sectional Titling',
                     'STM_Ref' => $sectionalRegistration->STM_Ref ?? null,
-                    'original_subapp_id' => $subApp->id
+                    'original_subapp_id' => $subApp->id,
+                    // Add captured date and reg date fields
+                    'captured_date' => $subApp->created_at, // from subapplications.created_at
+                    'reg_date' => $sectionalRegistration->instrumentDate ?? null // from registered_instruments.instrumentDate
                 ];
 
                 $allInstruments->push($stAssignmentRecord);
@@ -364,7 +373,10 @@ class InstrumentRegistrationController extends Controller
                     'reg_creator_name' => $motherApp->reg_creator_name,
                     'instrument_category' => 'ST Fragmentation',
                     'STM_Ref' => $stFragmentationRegistration->STM_Ref ?? null,
-                    'original_mother_app_id' => $motherApp->id
+                    'original_mother_app_id' => $motherApp->id,
+                    // Add captured date and reg date fields
+                    'captured_date' => $motherApp->created_at, // from mother_applications.created_at
+                    'reg_date' => $stFragmentationRegistration->instrumentDate ?? null // from registered_instruments.instrumentDate
                 ];
 
                 $allInstruments->push($stFragmentationRecord);

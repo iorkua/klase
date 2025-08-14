@@ -2,7 +2,7 @@
 @section('page-title')
     {{ __('Page Typing') }}
 @endsection
-
+ 
 @include('sectionaltitling.partials.assets.css')
 
 @section('content')
@@ -1026,7 +1026,8 @@
                                  data-page-index="{{ $pageData['page_index'] }}" 
                                  data-file-path="{{ $pageData['file_path'] }}"
                                  data-page-number="{{ $pageData['page_number'] }}"
-                                 data-scanning-id="{{ $pageData['scanning_id'] }}">
+                                 data-scanning-id="{{ $pageData['scanning_id'] }}"
+                                 data-saved="{{ $existingPageTyping ? '1' : '0' }}">
                                 
                                 <div class="form-group">
                                     <label class="form-label">
@@ -1296,6 +1297,24 @@
         const progressFill = document.getElementById('progress-fill');
         const progressText = document.getElementById('progress-text');
         const currentPageTitle = document.getElementById('current-page-title');
+        const saveBtn = document.getElementById('save-current-btn');
+        const savedPages = new Set();
+        classificationForms.forEach(form => {
+            if (form.dataset.saved === '1') {
+                savedPages.add(parseInt(form.dataset.pageIndex));
+            }
+        });
+        function updateSaveButtonState() {
+            if (!saveBtn) return;
+            if (savedPages.size >= totalPages) {
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<i data-lucide="check-circle" style="width: 1.25rem; height: 1.25rem;"></i> All Pages Saved';
+            } else {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i data-lucide="save" style="width: 1.25rem; height: 1.25rem;"></i> Save & Next Page';
+            }
+            lucide.createIcons();
+        }
         
         // Initialize page type change handlers
         initializePageTypeHandlers();
@@ -1304,6 +1323,7 @@
         if (totalPages > 0) {
             showPage(0);
             updateProgress();
+            updateSaveButtonState();
         }
         
         // Thumbnail clicks
@@ -1338,16 +1358,22 @@
         });
         
         // Batch save all pages
-        document.getElementById('batch-save-btn').addEventListener('click', function() {
-            batchSaveAllPages();
-        });
+        const batchBtn = document.getElementById('batch-save-btn');
+        if (batchBtn) {
+            batchBtn.addEventListener('click', function() {
+                batchSaveAllPages();
+            });
+        }
         
         // Finish classification
-        document.getElementById('finish-btn').addEventListener('click', function() {
-            if (saveCurrentPage()) {
-                finishClassification();
-            }
-        });
+        const finishBtn = document.getElementById('finish-btn');
+        if (finishBtn) {
+            finishBtn.addEventListener('click', function() {
+                if (saveCurrentPage()) {
+                    finishClassification();
+                }
+            });
+        }
         
         // Initialize page type change handlers
         function initializePageTypeHandlers() {
@@ -1570,6 +1596,9 @@
                 if (result.success) {
                     // Show success indicator
                     showNotification('Page saved successfully!', 'success');
+                    // Mark this page as saved and update UI
+                    savedPages.add(parseInt(pageIndex));
+                    updateSaveButtonState();
                 } else {
                     showNotification(result.message || 'Error saving page', 'error');
                 }

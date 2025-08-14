@@ -179,8 +179,12 @@
                   <span class="inline-block align-middle" id="sortIcon-11"></span>
                 </th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable(12)">
-                  REG DATE
+                  Captured Date
                   <span class="inline-block align-middle" id="sortIcon-12"></span>
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable(13)">
+                  REG DATE
+                  <span class="inline-block align-middle" id="sortIcon-13"></span>
                 </th>
                 <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Action
@@ -320,18 +324,29 @@
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $app->plotNumber ?? 'N/A' }}</td>
                 <!-- 11. Plot Size -->
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $app->size ?? 'N/A' }}</td>
-                <!-- 12. Date -->
+                <!-- 12. Captured Date -->
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                  @if($app->deeds_date)
+                  @if($app->captured_date ?? null)
                     <div class="flex items-center">
-                      <i class="fas fa-calendar-alt text-gray-400 mr-2"></i>
-                      {{ date('M d, Y', strtotime($app->deeds_date)) }}
+                      <i class="fas fa-calendar-plus text-blue-400 mr-2"></i>
+                      {{ date('M d, Y', strtotime($app->captured_date)) }}
                     </div>
                   @else
                     <span class="text-gray-400">N/A</span>
                   @endif
                 </td>
-                <!-- 13. Action -->
+                <!-- 13. Reg Date -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  @if($app->reg_date ?? null)
+                    <div class="flex items-center">
+                      <i class="fas fa-calendar-check text-green-400 mr-2"></i>
+                      {{ date('M d, Y', strtotime($app->reg_date)) }}
+                    </div>
+                  @else
+                    <span class="text-gray-400">N/A</span>
+                  @endif
+                </td>
+                <!-- 14. Action -->
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
                   <div class="dropdown-wrapper">
                     <button 
@@ -345,7 +360,7 @@
                 </tr>
                 @empty
                 <tr>
-                <td colspan="14" class="px-6 py-10 text-center text-gray-500">
+                <td colspan="15" class="px-6 py-10 text-center text-gray-500">
                   No instrument registrations available.
                 </td>
                 </tr>
@@ -361,7 +376,7 @@
               const tbody = table.tBodies[0];
               const rows = Array.from(tbody.querySelectorAll('tr')).filter(row => !row.querySelector('td[colspan]'));
               const isNumeric = [11].includes(colIndex); // Plot Size column (index 11) is numeric
-              const isDate = [12].includes(colIndex); // Date column (index 12) is date
+              const isDate = [12, 13].includes(colIndex); // Date columns (index 12 and 13) are dates
               sortDirections[colIndex] = !sortDirections[colIndex];
               rows.sort((a, b) => {
               let aText = a.children[colIndex]?.innerText.trim() || '';
@@ -370,17 +385,20 @@
                 aText = parseFloat(aText.replace(/[^0-9.]/g, '')) || 0;
                 bText = parseFloat(bText.replace(/[^0-9.]/g, '')) || 0;
               } else if (isDate) {
-                aText = new Date(aText);
-                bText = new Date(bText);
+                // Handle N/A values for dates
+                if (aText === 'N/A') aText = new Date(0);
+                else aText = new Date(aText);
+                if (bText === 'N/A') bText = new Date(0);
+                else bText = new Date(bText);
               }
-              if (aText < btml) return sortDirections[colIndex] ? -1 : 1;
+              if (aText < bText) return sortDirections[colIndex] ? -1 : 1;
               if (aText > bText) return sortDirections[colIndex] ? 1 : -1;
               return 0;
               });
               // Remove all rows and re-append sorted
               rows.forEach(row => tbody.appendChild(row));
               // Update sort icons
-              for (let i = 1; i <= 12; i++) {
+              for (let i = 1; i <= 13; i++) {
               const icon = document.getElementById('sortIcon-' + i);
               if (icon) icon.innerHTML = '';
               }

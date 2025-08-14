@@ -21,7 +21,7 @@
 
 <div x-data="{
     // Form fields
-    titleType: 'Customary',
+  
     fileNumber: '',
     houseNo: '',
     plotNo: '',
@@ -99,24 +99,34 @@
             console.log('Added house number:', this.houseNo.trim());
         }
         
-        // Get street name from component (check both regular and custom)
-        const streetNameElement = document.querySelector('[name=streetName]');
-        const streetNameValue = streetNameElement ? streetNameElement.value : '';
-        console.log('Street name element found:', !!streetNameElement, 'Value:', streetNameValue);
-        
-        if (streetNameValue && streetNameValue.trim() && streetNameValue !== 'other') {
-            parts.push(streetNameValue.trim());
-            console.log('Added street name:', streetNameValue.trim());
+        // Get street name from component (prefer select unless 'other', then use custom input)
+        const streetNameSelect = document.querySelector('#streetName');
+        const streetNameCustom = document.querySelector('#otherStreetName');
+        let streetNameValue = '';
+        if (streetNameSelect && streetNameSelect.value && streetNameSelect.value.trim() && streetNameSelect.value !== 'other') {
+            streetNameValue = streetNameSelect.value.trim();
+        } else if (streetNameCustom && streetNameCustom.value && streetNameCustom.value.trim()) {
+            streetNameValue = streetNameCustom.value.trim();
+        }
+        console.log('Resolved street name:', streetNameValue);
+        if (streetNameValue) {
+            parts.push(streetNameValue);
+            console.log('Added street name:', streetNameValue);
         }
         
-        // Get district from component (check both regular and custom)
-        const districtElement = document.querySelector('[name=district]');
-        const districtValue = districtElement ? districtElement.value : '';
-        console.log('District element found:', !!districtElement, 'Value:', districtValue);
-        
-        if (districtValue && districtValue.trim() && districtValue !== 'other') {
-            parts.push(districtValue.trim() );
-            console.log('Added district:', districtValue.trim());
+        // Get district from component (prefer select unless 'other', then use custom input)
+        const districtSelect = document.querySelector('#district');
+        const districtCustom = document.querySelector('#otherDistrict');
+        let districtValue = '';
+        if (districtSelect && districtSelect.value && districtSelect.value.trim() && districtSelect.value !== 'other') {
+            districtValue = districtSelect.value.trim();
+        } else if (districtCustom && districtCustom.value && districtCustom.value.trim()) {
+            districtValue = districtCustom.value.trim();
+        }
+        console.log('Resolved district:', districtValue);
+        if (districtValue) {
+            parts.push(districtValue);
+            console.log('Added district:', districtValue);
         }
         
         // Add LGA if available
@@ -125,8 +135,14 @@
             console.log( this.lga.trim());
         }
         
-        // Add state (default is Kano)
-        parts.push('Kano State');
+        // Add state (prefer field value, default is Kano State)
+        const stateElement = document.querySelector('#state');
+        const stateValue = stateElement ? stateElement.value : '';
+        if (stateValue && stateValue.trim()) {
+            parts.push(stateValue.trim());
+        } else {
+            parts.push('Kano State');
+        }
         
         // Update the property description
         this.propertyDescription = parts.length > 0 ? parts.join(', ') : '';
@@ -211,6 +227,16 @@
                 });
             }
             
+            // Monitor state input
+            const stateInput = document.querySelector('#state');
+            if (stateInput) {
+                console.log('Found state input');
+                stateInput.addEventListener('input', () => {
+                    console.log('State changed:', stateInput.value);
+                    setTimeout(() => this.updatePropertyDescription(), 50);
+                });
+            }
+
             // Set up MutationObserver to watch for dynamic elements
             const observer = new MutationObserver((mutations) => {
                 mutations.forEach((mutation) => {
@@ -302,13 +328,13 @@
             form.submit();
         }
     }
-}">
+}" x-init="init()">
     <form id="property-record-form" action="{{ route('property-records.store') }}" method="POST" @submit.prevent="submitForm">
         @csrf
         <input type="hidden" name="property_id" id="property_id" value="">
-        <input type="hidden" name="action" id="action" value="add">
+        <input type="hidden" name="form_action" id="form_action" value="add">
         
-        <div class="space-y-4 py-2 @if(!$is_ai) max-h-[75vh] overflow-y-auto pr-1 @endif">
+        <div class="space-y-4 py-2 flex-1 @if(!$is_ai) max-h-[75vh] overflow-y-auto pr-1 @endif">
             <!-- Top section with two columns -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Left column - Title Type Section -->
@@ -490,7 +516,7 @@
                         <div class="grid grid-cols-5 gap-2">
                             <div>
                                 <label for="serialNo" class="text-xs">Serial No.</label>
-                                <input id="serialNo" name="serialNo" x-model="serialNo" class="form-input text-xs py-1" placeholder="e.g. 1">
+                                <input id="serialNo" name="serialNo" x-model="serialNo" @input="pageNo = serialNo" class="form-input text-xs py-1" placeholder="e.g. 1">
                             </div>
                             <div>
                                 <label for="pageNo" class="text-xs text-gray-500">Page No. (Auto-filled)</label>
@@ -612,13 +638,16 @@
                           class="form-input text-sm bg-gray-50" 
                           readonly
                           placeholder="This field will be auto-populated based on property details above"></textarea>
-                <div class="text-xs text-gray-500 italic">This field is auto-populated based on property details (House No, Street Name, District, LGA, and State)</div>
+                <div class="text-xs text-gray-500 italic">This field auto-populates from House No, Street Name (or specified Other Street Name), District (or specified Other District Name), LGA, and State.</div>
             </div>
-        </div>
-        
-        <div class="flex justify-end space-x-3 pt-2 border-t mt-4">
+
+
+            <div class="flex justify-end space-x-3 pt-2 border-t mt-4 sticky bottom-0 bg-white z-10">
             <button id="property-submit-btn" type="submit" class="btn btn-primary">Submit</button>
         </div>
+        </div>
+        
+      
     </form>
 </div>
 

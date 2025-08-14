@@ -351,6 +351,7 @@ tailwind.config = {
                                             <p class="font-medium text-blue-900">Important Notes:</p>
                                             <ul class="list-disc list-inside text-sm text-blue-800 mt-2 space-y-1">
                                                 <li>Migrated records will automatically have status "RECERTIFIED"</li>
+                                                <li>..............</li>
                                                 <li>Recertification date will be set to the current date</li>
                                                 <li>Maximum file size: 10MB</li>
                                                 <li>Supported formats: CSV (.csv), Text (.txt)</li>

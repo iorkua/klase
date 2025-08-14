@@ -62,6 +62,116 @@
       z-index: 10;
     }
     
+    /* Frozen Columns Styles - First 6 columns (checkbox + 5 data columns) */
+    .enhanced-table th:nth-child(1),
+    .enhanced-table td:nth-child(1) {
+      position: sticky;
+      left: 0;
+      z-index: 15;
+      background: white;
+      border-right: 2px solid #e2e8f0;
+      min-width: 60px;
+      width: 60px;
+    }
+    
+    .enhanced-table th:nth-child(2),
+    .enhanced-table td:nth-child(2) {
+      position: sticky;
+      left: 60px; /* Width of checkbox column */
+      z-index: 14;
+      background: white;
+      border-right: 2px solid #e2e8f0;
+      min-width: 140px;
+      width: 140px;
+    }
+    
+    .enhanced-table th:nth-child(3),
+    .enhanced-table td:nth-child(3) {
+      position: sticky;
+      left: 200px; /* 60 + 140 */
+      z-index: 13;
+      background: white;
+      border-right: 2px solid #e2e8f0;
+      min-width: 120px;
+      width: 120px;
+    }
+    
+    .enhanced-table th:nth-child(4),
+    .enhanced-table td:nth-child(4) {
+      position: sticky;
+      left: 320px; /* 60 + 140 + 120 */
+      z-index: 12;
+      background: white;
+      border-right: 2px solid #e2e8f0;
+      min-width: 140px;
+      width: 140px;
+    }
+    
+    .enhanced-table th:nth-child(5),
+    .enhanced-table td:nth-child(5) {
+      position: sticky;
+      left: 460px; /* 60 + 140 + 120 + 140 */
+      z-index: 11;
+      background: white;
+      border-right: 2px solid #e2e8f0;
+      min-width: 100px;
+      width: 100px;
+    }
+    
+    .enhanced-table th:nth-child(6),
+    .enhanced-table td:nth-child(6) {
+      position: sticky;
+      left: 560px; /* 60 + 140 + 120 + 140 + 100 */
+      z-index: 10;
+      background: white;
+      border-right: 2px solid #e2e8f0;
+      min-width: 180px;
+      width: 180px;
+    }
+    
+    /* Header frozen columns need higher z-index */
+    .enhanced-table thead th:nth-child(1) { z-index: 25; }
+    .enhanced-table thead th:nth-child(2) { z-index: 24; }
+    .enhanced-table thead th:nth-child(3) { z-index: 23; }
+    .enhanced-table thead th:nth-child(4) { z-index: 22; }
+    .enhanced-table thead th:nth-child(5) { z-index: 21; }
+    .enhanced-table thead th:nth-child(6) { z-index: 20; }
+    
+    /* Hover effects for frozen columns */
+    .enhanced-table tbody tr:hover td:nth-child(1),
+    .enhanced-table tbody tr:hover td:nth-child(2),
+    .enhanced-table tbody tr:hover td:nth-child(3),
+    .enhanced-table tbody tr:hover td:nth-child(4),
+    .enhanced-table tbody tr:hover td:nth-child(5),
+    .enhanced-table tbody tr:hover td:nth-child(6) {
+      background-color: #f8fafc;
+    }
+    
+    /* Even row styling for frozen columns */
+    .enhanced-table tbody tr:nth-child(even) td:nth-child(1),
+    .enhanced-table tbody tr:nth-child(even) td:nth-child(2),
+    .enhanced-table tbody tr:nth-child(even) td:nth-child(3),
+    .enhanced-table tbody tr:nth-child(even) td:nth-child(4),
+    .enhanced-table tbody tr:nth-child(even) td:nth-child(5),
+    .enhanced-table tbody tr:nth-child(even) td:nth-child(6) {
+      background-color: #fafbfc;
+    }
+    
+    .enhanced-table tbody tr:nth-child(even):hover td:nth-child(1),
+    .enhanced-table tbody tr:nth-child(even):hover td:nth-child(2),
+    .enhanced-table tbody tr:nth-child(even):hover td:nth-child(3),
+    .enhanced-table tbody tr:nth-child(even):hover td:nth-child(4),
+    .enhanced-table tbody tr:nth-child(even):hover td:nth-child(5),
+    .enhanced-table tbody tr:nth-child(even):hover td:nth-child(6) {
+      background-color: #f1f5f9;
+    }
+    
+    /* Shadow effect for frozen columns */
+    .enhanced-table th:nth-child(6),
+    .enhanced-table td:nth-child(6) {
+      box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.1);
+    }
+    
     .enhanced-table tbody tr {
       transition: all 0.2s ease-in-out;
     }
@@ -147,6 +257,77 @@
       overflow: hidden;
       box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
       border: 1px solid #e5e7eb;
+      position: relative;
+    }
+    
+    /* Ensure horizontal scrolling works properly with frozen columns */
+    .table-container .overflow-x-auto {
+      overflow-x: auto;
+      overflow-y: visible;
+    }
+    
+    /* Add a subtle indicator for frozen columns */
+    .enhanced-table th:nth-child(6)::after,
+    .enhanced-table td:nth-child(6)::after {
+      content: '';
+      position: absolute;
+      right: -2px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to right, rgba(59, 130, 246, 0.3), transparent);
+      pointer-events: none;
+    }
+    
+    /* Ensure frozen columns stay on top during scroll */
+    .enhanced-table th:nth-child(-n+6),
+    .enhanced-table td:nth-child(-n+6) {
+      position: sticky;
+      background-color: white;
+    }
+    
+    /* Responsive adjustments for smaller screens */
+    @media (max-width: 1024px) {
+      .enhanced-table th:nth-child(1),
+      .enhanced-table td:nth-child(1) {
+        min-width: 50px;
+        width: 50px;
+      }
+      
+      .enhanced-table th:nth-child(2),
+      .enhanced-table td:nth-child(2) {
+        left: 50px;
+        min-width: 120px;
+        width: 120px;
+      }
+      
+      .enhanced-table th:nth-child(3),
+      .enhanced-table td:nth-child(3) {
+        left: 170px; /* 50 + 120 */
+        min-width: 100px;
+        width: 100px;
+      }
+      
+      .enhanced-table th:nth-child(4),
+      .enhanced-table td:nth-child(4) {
+        left: 270px; /* 50 + 120 + 100 */
+        min-width: 120px;
+        width: 120px;
+      }
+      
+      .enhanced-table th:nth-child(5),
+      .enhanced-table td:nth-child(5) {
+        left: 390px; /* 50 + 120 + 100 + 120 */
+        min-width: 80px;
+        width: 80px;
+      }
+      
+      .enhanced-table th:nth-child(6),
+      .enhanced-table td:nth-child(6) {
+        left: 470px; /* 50 + 120 + 100 + 120 + 80 */
+        min-width: 150px;
+        width: 150px;
+      }
     }
     
     /* Header Enhancement */
