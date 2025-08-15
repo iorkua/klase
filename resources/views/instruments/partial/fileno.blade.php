@@ -54,7 +54,27 @@
     
   
    <div id="mlsFNoTab" class="tabcontent active">
-    <p class="text-sm text-gray-600 mb-2">MLS File Number</p>
+    <p class="text-sm text-gray-600 mb-3">MLS File Number</p>
+    
+    <!-- Radio buttons for file type -->
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700 mb-2">File Type</label>
+      <div class="flex space-x-6">
+        <label class="flex items-center">
+          <input type="radio" name="mlsFileType" id="mlsRegular" value="regular" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300" checked>
+          <span class="ml-2 text-sm text-gray-700">Regular File</span>
+        </label>
+        <label class="flex items-center">
+          <input type="radio" name="mlsFileType" id="mlsTemporary" value="temporary" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
+          <span class="ml-2 text-sm text-gray-700">Temporary File</span>
+        </label>
+        <label class="flex items-center">
+          <input type="radio" name="mlsFileType" id="mlsExtension" value="extension" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
+          <span class="ml-2 text-sm text-gray-700">Extension</span>
+        </label>
+      </div>
+    </div>
+
     <div class="grid grid-cols-3 gap-4 mb-3">
       <div>
         <label class="block text-sm mb-1">File Prefix</label>
@@ -71,14 +91,19 @@
         </div>
       </div>
       <div>
-        <label class="block text-sm mb-1">Serial Number</label>
-        <input type="text" class="w-full p-2 border border-gray-300 rounded-md" id="mlsFileNumber" name="mlsFileNumber" placeholder="e.g. 2022-572" value="{{ isset($result) ? ($result->mlsFileNumber ?: '') : '' }}">
+        <label class="block text-sm mb-1">Year</label>
+        <input type="text" class="w-full p-2 border border-gray-300 rounded-md" id="mlsYear" name="mlsYear" placeholder="e.g. 2024" maxlength="4">
       </div>
-       <div>
-        <label class="block text-sm mb-1">Full FileNo</label>
-        <input type="text" class="w-full p-2 border border-gray-300 rounded-md"   id="mlsPreviewFileNumber" name="mlsPreviewFileNumber"
-        value="{{ isset($result) ? ($result->mlsFNo ?: '') : '' }}" readonly>
+      <div>
+        <label class="block text-sm mb-1">Serial No</label>
+        <input type="text" class="w-full p-2 border border-gray-300 rounded-md" id="mlsFileNumber" name="mlsFileNumber" placeholder="e.g. 572">
       </div>
+    </div>
+
+    <!-- Full FileNo - Displayed prominently below -->
+    <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+      <label class="block text-lg font-semibold text-gray-800 mb-2">Full File Number</label>
+      <div class="text-lg font-semibold text-blue-700 p-3 bg-white border-2 border-blue-300 rounded-md min-h-[50px] flex items-center" id="mlsPreviewFileNumber">Enter file details above</div>
     </div>
   </div>  
 
@@ -189,28 +214,50 @@
         }
     }
 
+    // Get selected MLS file type
+    function getMlsFileType() {
+        const radioButtons = document.querySelectorAll('input[name="mlsFileType"]');
+        for (const radioButton of radioButtons) {
+            if (radioButton.checked) {
+                return radioButton.value;
+            }
+        }
+        return 'regular';
+    }
+
     // Format MLS file number preview
     function updateMlsFileNumberPreview() {
         const prefixEl = document.getElementById('mlsFileNoPrefix');
+        const yearEl = document.getElementById('mlsYear');
         const numberEl = document.getElementById('mlsFileNumber');
         const previewEl = document.getElementById('mlsPreviewFileNumber');
         const dbFieldEl = document.getElementById('mlsFNo');
 
         const prefix = prefixEl.value;
-        let number = numberEl.value.trim();
+        const year = yearEl.value.trim();
+        const number = numberEl.value.trim();
+        const fileType = getMlsFileType();
 
-        if (prefix && number) {
-            const formatted = prefix + '-' + number;
-            previewEl.value = formatted;
-            dbFieldEl.value = formatted; // Set the database field
-        } else if (prefix) {
-            previewEl.value = prefix;
-            dbFieldEl.value = prefix;
-        } else if (number) {
-            previewEl.value = number;
-            dbFieldEl.value = number;
+        let baseFileNo = '';
+        const parts = [];
+        if (prefix) parts.push(prefix);
+        if (year) parts.push(year);
+        if (number) parts.push(number);
+        
+        baseFileNo = parts.join('-');
+
+        let finalFileNo = baseFileNo;
+        if (baseFileNo && fileType === 'temporary') {
+            finalFileNo = baseFileNo + ' (T)';
+        } else if (baseFileNo && fileType === 'extension') {
+            finalFileNo = baseFileNo + ' AND EXTENSION';
+        }
+
+        if (finalFileNo) {
+            previewEl.textContent = finalFileNo;
+            dbFieldEl.value = finalFileNo;
         } else {
-            previewEl.value = '';
+            previewEl.textContent = 'Enter file details above';
             dbFieldEl.value = '';
         }
     }
@@ -282,7 +329,7 @@
         
         // Set the active file number based on the active tab
         if (activeTab === "mlsFNo") {
-            document.getElementById('mlsFNo').value = document.getElementById('mlsPreviewFileNumber').value;
+            document.getElementById('mlsFNo').value = document.getElementById('mlsPreviewFileNumber').textContent;
         } else if (activeTab === "kangisFileNo") {
             document.getElementById('kangisFileNo').value = document.getElementById('kangisPreviewFileNumber').value;
         } else if (activeTab === "NewKANGISFileno") {
@@ -298,9 +345,15 @@
         updateKangisFileNumberPreview();
         updateNewKangisFileNumberPreview();
 
-        // Add event listeners for file number preview updates
+        // Add event listeners for MLS file number preview updates
         document.getElementById('mlsFileNoPrefix').addEventListener('change', updateMlsFileNumberPreview);
+        document.getElementById('mlsYear').addEventListener('input', updateMlsFileNumberPreview);
         document.getElementById('mlsFileNumber').addEventListener('input', updateMlsFileNumberPreview);
+        
+        // Add event listeners for radio buttons
+        document.getElementById('mlsRegular').addEventListener('change', updateMlsFileNumberPreview);
+        document.getElementById('mlsTemporary').addEventListener('change', updateMlsFileNumberPreview);
+        document.getElementById('mlsExtension').addEventListener('change', updateMlsFileNumberPreview);
 
         document.getElementById('kangisFileNoPrefix').addEventListener('change', updateKangisFileNumberPreview);
         document.getElementById('kangisFileNumber').addEventListener('input', updateKangisFileNumberPreview);

@@ -688,6 +688,8 @@ async function startAiPropertyProcessing() {
     return;
   }
   
+  console.log('Starting AI processing for file:', selectedFile.name);
+  
   currentAiStage = 'initializing';
   aiProgress = 5;
   
@@ -696,35 +698,43 @@ async function startAiPropertyProcessing() {
   
   await new Promise(res => setTimeout(res, 200));
   
-  aiProgress = 10;
+  aiProgress = 13;
   currentAiStage = 'ocr';
   updateAiProcessingUI();
   
   try {
+    console.log('Starting text extraction...');
     let text = '';
+    
     if (selectedFile.type === 'application/pdf') {
+      console.log('Processing PDF file...');
       text = await extractTextFromPropertyDocumentPDF(selectedFile);
     } else if (selectedFile.type.startsWith('image/')) {
+      console.log('Processing image file...');
       text = await extractTextFromPropertyDocumentImage(selectedFile);
     } else {
       throw new Error('Unsupported file type for AI processing.');
     }
     
+    console.log('Text extraction completed. Length:', text.length);
     rawExtractedText = text;
     keywordFindings = analyzeTextForKeywords(text);
     
+    aiProgress = 65;
     currentAiStage = 'layoutAnalysis';
-    aiProgress = Math.min(65, aiProgress + 10);
     updateAiProcessingUI();
     
-    await new Promise(res => setTimeout(res, 100));
+    await new Promise(res => setTimeout(res, 300));
     
+    aiProgress = 75;
     currentAiStage = 'dataExtraction';
     updateAiProcessingUI();
     
+    console.log('Starting data extraction...');
     const extractedDetails = extractPropertyInstrumentDetails(text, selectedFile.name);
+    console.log('Extracted details:', extractedDetails);
     
-    aiProgress = Math.min(85, aiProgress + 20);
+    aiProgress = 85;
     currentAiStage = 'dataAssembly';
     updateAiProcessingUI();
     
@@ -738,7 +748,7 @@ async function startAiPropertyProcessing() {
     extractedPropertyData = finalData;
     
     aiProgress = 95;
-    await new Promise(res => setTimeout(res, 100));
+    await new Promise(res => setTimeout(res, 200));
     
     currentAiStage = 'complete';
     aiProgress = 100;
@@ -764,6 +774,7 @@ async function startAiPropertyProcessing() {
       }];
     }
     
+    console.log('AI processing completed successfully');
     showExtractionResults();
     showToast('AI processing complete. Review extracted data.', 'success');
     
@@ -773,7 +784,7 @@ async function startAiPropertyProcessing() {
     currentAiStage = 'idle';
     aiProgress = 0;
     hideAiProcessing();
-    showToast('AI processing failed.', 'error');
+    showToast('AI processing failed: ' + err.message, 'error');
   }
 }
 
@@ -862,6 +873,13 @@ async function extractTextFromPropertyDocumentPDF(file) {
 
 async function extractTextFromPropertyDocumentImage(file) {
   try {
+    console.log('Starting OCR for image file:', file.name, 'Size:', file.size);
+    
+    // Check if Tesseract is available
+    if (!window.Tesseract) {
+      throw new Error('Tesseract.js library not loaded. Please check your internet connection.');
+    }
+    
     const imageUrl = URL.createObjectURL(file);
     const ocrStartProgress = aiProgress;
     const ocrTotalProportion = 40;
@@ -869,8 +887,10 @@ async function extractTextFromPropertyDocumentImage(file) {
     aiProgress = ocrStartProgress;
     updateAiProcessingUI();
     
-    const { data: { text } } = await window.Tesseract.recognize(imageUrl, 'eng', {
+    console.log('Starting Tesseract recognition...');
+    const result = await window.Tesseract.recognize(imageUrl, 'eng', {
       logger: (m) => {
+        console.log('Tesseract progress:', m);
         if (m.status === 'recognizing text') {
           aiProgress = ocrStartProgress + m.progress * ocrTotalProportion;
           updateAiProcessingUI();
@@ -878,9 +898,14 @@ async function extractTextFromPropertyDocumentImage(file) {
       }
     });
     
+    console.log('Tesseract recognition completed:', result);
+    const text = result.data.text;
+    
     URL.revokeObjectURL(imageUrl);
     aiProgress = Math.min(55, aiProgress + ocrTotalProportion);
     updateAiProcessingUI();
+    
+    console.log('OCR extracted text length:', text ? text.length : 0);
     return text || '';
     
   } catch (error) {
@@ -888,7 +913,7 @@ async function extractTextFromPropertyDocumentImage(file) {
     aiProgress = Math.min(55, aiProgress + 40);
     updateAiProcessingUI();
     showToast(`Error during OCR: ${error.message}`, 'error');
-    return '';
+    return `Error during OCR: ${error.message}`;
   }
 }
 

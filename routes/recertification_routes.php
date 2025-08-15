@@ -46,6 +46,7 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'recertification'], f
     Route::get('/certification-data', [CertificationController::class, 'getCertificationData'])->name('recertification.certification-data');
     Route::get('/{id}/cor', [CertificationController::class, 'viewCoR'])->name('recertification.cor');
     Route::post('/{id}/generate-cofo-front', [CertificationController::class, 'generateCofoFrontPage'])->name('recertification.generate-cofo-front');
+    Route::put('/{id}/certificate-details', [CertificationController::class, 'updateCertificateDetails'])->name('recertification.update-certificate-details');
     Route::get('/{id}/cofo-front-page', [CertificationController::class, 'viewCofoFrontPage'])->name('recertification.cofo-front-page');
     Route::get('/{id}/tdp', [CertificationController::class, 'viewTDP'])->name('recertification.tdp');
     Route::get('/{id}/cofo', [CertificationController::class, 'viewCofo'])->name('recertification.cofo');

@@ -1,368 +1,376 @@
 @extends('layouts.app')
 @section('page-title')
-    {{ __('Document Upload') }}
+    {{ __('File Upload - EDMS') }}
 @endsection
 @section('content')
     <!-- Main Content -->
     <div class="flex-1 overflow-auto">
         <!-- Header --> 
-        @include('admin.header')
+        @include('admin.header') 
         <!-- Dashboard Content -->
         <div class="p-6">
-            @include('scanning.assets.style')
-            <div class="container mx-auto py-6 space-y-6">
+            <script src="https://cdn.tailwindcss.com"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+            <script src="https://unpkg.com/tesseract.js@4/dist/tesseract.min.js"></script>
+            <style>
+                .lucide {
+                    width: 1em;
+                    height: 1em;
+                    display: inline-block;
+                    vertical-align: middle;
+                }
+                .document-preview {
+                    max-height: 400px;
+                    overflow-y: auto;
+                }
+                .pdf-page {
+                    margin-bottom: 10px;
+                    border: 1px solid #e5e7eb;
+                }
+            </style>
+            
+            <div class="container mx-auto py-6 space-y-6 px-4">
                 <!-- Page Header -->
-                <div class="flex flex-col space-y-2">
-                    <h1 class="text-2xl font-bold tracking-tight">Upload Indexed Scanned File</h1>
-                    <p class="text-muted-foreground">Upload scanned documents to their digital folders</p>
-                    
-                    @if($selectedFileIndexing)
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-                            <div class="flex items-center">
-                                <i data-lucide="folder-open" class="h-5 w-5 text-blue-600 mr-2"></i>
-                                <div>
-                                    <p class="font-medium text-blue-900">Selected File: {{ $selectedFileIndexing->file_number }}</p>
-                                    <p class="text-sm text-blue-700">{{ $selectedFileIndexing->file_title }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    @endif
+                <div class="mb-8">
+                    <h1 class="text-3xl font-bold text-gray-900">File Upload</h1>
+                    <p class="text-gray-600 mt-2">Upload digital files to the registry</p>
                 </div>
 
                 <!-- Stats Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                    <!-- Today's Uploads -->
-                    <div class="card">
+                    <div class="bg-white rounded-lg border shadow-sm">
                         <div class="p-4 pb-2">
-                            <h3 class="text-sm font-medium">Today's Uploads</h3>
+                            <h3 class="text-sm font-medium text-gray-600">Today's Uploads</h3>
                         </div>
                         <div class="p-4 pt-0">
-                            <div class="text-2xl font-bold" id="uploads-count">{{ $stats['uploads_today'] ?? 0 }}</div>
-                            <p class="text-xs text-muted-foreground mt-1">Batches uploaded today</p>
+                            <div class="text-2xl font-bold" id="todaysUploads">{{ $stats['uploads_today'] ?? 0 }}</div>
+                            <p class="text-xs text-gray-500 mt-1">Files uploaded today</p>
                         </div>
                     </div>
-
-                    <!-- Pending Page Typing -->
-                    <div class="card">
+                    <div class="bg-white rounded-lg border shadow-sm">
                         <div class="p-4 pb-2">
-                            <h3 class="text-sm font-medium">Pending Page Typing</h3>
+                            <h3 class="text-sm font-medium text-gray-600">Pending Indexing</h3>
                         </div>
                         <div class="p-4 pt-0">
-                            <div class="text-2xl font-bold" id="pending-count">{{ $stats['pending_page_typing'] ?? 0 }}</div>
-                            <p class="text-xs text-muted-foreground mt-1">Documents waiting for page typing</p>
+                            <div class="text-2xl font-bold" id="pendingIndexing">{{ $stats['pending_page_typing'] ?? 0 }}</div>
+                            <p class="text-xs text-gray-500 mt-1">Files waiting to be indexed</p>
                         </div>
                     </div>
-
-                    <!-- Total Scanned -->
-                    <div class="card">
+                    <div class="bg-white rounded-lg border shadow-sm">
                         <div class="p-4 pb-2">
-                            <h3 class="text-sm font-medium">Total Scanned</h3>
+                            <h3 class="text-sm font-medium text-gray-600">Upload Status</h3>
                         </div>
                         <div class="p-4 pt-0">
                             <div class="text-2xl font-bold flex items-center">
-                                {{ $stats['total_scanned'] ?? 0 }}
-                                <span class="badge ml-2 bg-blue-500 text-white">Total</span>
+                                <span id="uploadStatusText">Ready</span>
+                                <span class="ml-2 px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800" id="uploadStatusBadge">Ready</span>
                             </div>
-                            <p class="text-xs text-muted-foreground mt-1">All scanned documents in system</p>
+                            <p class="text-xs text-gray-500 mt-1">Current upload status</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Tabs -->
-                <div class="tabs">
-                    <div class="tabs-list grid w-full md:w-auto grid-cols-2">
-                        <button class="tab active" role="tab" aria-selected="true" data-tab="upload">Upload Indexed Scanned File</button>
-                        <button class="tab" role="tab" aria-selected="false" data-tab="scanned-files">Scanned Files</button>
+                <div class="w-full">
+                    <div class="border-b border-gray-200">
+                        <nav class="-mb-px flex space-x-8">
+                            <button class="tab-button active py-2 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600" data-tab="upload">
+                                Upload Files
+                            </button>
+                            <button class="tab-button py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="uploaded-files">
+                                Uploaded Files
+                            </button>
+                        </nav>
                     </div>
 
-                    <!-- Upload Tab -->
-                    <div class="tab-content mt-6 active" role="tabpanel" aria-hidden="false" data-tab-content="upload">
-                        <div class="card">
+                    <!-- Upload Tab Content -->
+                    <div id="upload-tab" class="tab-content mt-6">
+                        <div class="bg-white rounded-lg border shadow-sm">
                             <div class="p-6 border-b">
-                                <div class="flex flex-col md:flex-row md:items-center justify-between">
-                                    <div>
-                                        <h2 class="text-lg font-semibold">Upload Indexed Scanned File</h2>
-                                        <p class="text-sm text-muted-foreground">Upload scanned documents to their digital folders</p>
-                                    </div>
-                                    <div class="mt-2 md:mt-0 selected-file-badge {{ $selectedFileIndexing ? '' : 'hidden' }}">
-                                        <span class="badge bg-blue-500 text-white px-3 py-1 flex items-center">
-                                            <i data-lucide="folder-open" class="h-4 w-4 mr-2"></i>
-                                            <span id="selected-file-number">{{ $selectedFileIndexing->file_number ?? 'No file selected' }}</span>
-                                        </span>
-                                    </div>
-                                </div>
+                                <h3 class="text-lg font-semibold">Upload Files</h3>
+                                <p class="text-gray-600 text-sm mt-1">Upload digital files to the registry</p>
                             </div>
                             <div class="p-6">
                                 <div class="space-y-6">
-                                    <div class="flex justify-between items-center">
-                                        <label class="text-sm font-medium">Select Indexed File</label>
-                                        <button class="btn btn-outline btn-sm gap-1" id="select-file-btn">
-                                            <i data-lucide="folder" class="h-4 w-4"></i>
-                                            <span id="change-file-text">{{ $selectedFileIndexing ? 'Change File' : 'Select File' }}</span>
+                                    <!-- Upload Area -->
+                                    <div id="upload-area" class="rounded-md border-2 border-dashed border-gray-300 p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
+                                        <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
+                                            <svg class="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                            </svg>
+                                        </div>
+                                        <h3 class="mb-2 text-lg font-medium">Drag and drop files here</h3>
+                                        <p class="mb-4 text-sm text-gray-500">or click to browse files on your computer</p>
+                                        <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.tiff,.webp" class="hidden" id="file-upload">
+                                        <button class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors" onclick="document.getElementById('file-upload').click()">
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                            </svg>
+                                            Browse Files
                                         </button>
+                                        <p class="text-xs text-gray-500 mt-2">
+                                            Supported formats: PDF, JPG, PNG, GIF, BMP, TIFF, WebP (OCR enabled for scanned documents)
+                                        </p>
                                     </div>
 
-                                    <!-- Upload area -->
-                                    <div class="border rounded-md p-4">
-                                        <h3 class="text-sm font-medium mb-4">Upload Scanned Documents</h3>
-
-                                        <!-- Idle state -->
-                                        <div id="upload-idle" class="rounded-md border-2 border-dashed p-8 text-center">
-                                            <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                                                <i data-lucide="file-up" class="h-6 w-6"></i>
-                                            </div>
-                                            <h3 class="mb-2 text-lg font-medium">Drag and drop scanned documents here</h3>
-                                            <p class="mb-4 text-sm text-muted-foreground">or click to browse files on your computer</p>
-                                            <input type="file" multiple class="hidden" id="file-upload" accept=".pdf,.jpg,.jpeg,.png,.tiff">
-                                            <button class="btn btn-primary gap-2" id="browse-files-btn" {{ $selectedFileIndexing ? '' : 'disabled' }}>
-                                                <i data-lucide="upload" class="h-4 w-4"></i>
-                                                Browse Files
-                                            </button>
-                                            @if(!$selectedFileIndexing)
-                                                <p class="mt-2 text-sm text-red-500" id="select-file-warning">Please select an indexed file first</p>
-                                            @endif
+                                    <!-- Selected Files -->
+                                    <div id="selected-files" class="hidden rounded-md border divide-y">
+                                        <div class="p-3 bg-gray-50 flex justify-between items-center">
+                                            <span class="font-medium" id="selected-count">0 files selected</span>
+                                            <button class="text-sm text-gray-600 hover:text-gray-800" onclick="clearAllFiles()">Clear All</button>
                                         </div>
+                                        <div id="selected-files-list"></div>
+                                    </div>
 
-                                        <!-- Selected files list -->
-                                        <div id="selected-files-container" class="rounded-md border divide-y mt-4 hidden">
-                                            <div class="p-3 bg-muted/50 flex justify-between items-center">
-                                                <span class="font-medium"><span id="selected-files-count">0</span> files selected</span>
-                                                <button class="btn btn-ghost btn-sm" id="clear-all-btn">Clear All</button>
-                                            </div>
-                                            <div id="selected-files-list">
-                                                <!-- Files will be added here dynamically -->
-                                            </div>
+                                    <!-- Upload Progress -->
+                                    <div id="upload-progress" class="hidden space-y-2">
+                                        <div class="flex justify-between text-sm">
+                                            <span id="upload-progress-text">Uploading files...</span>
+                                            <span id="upload-progress-percent">0%</span>
                                         </div>
-
-                                        <!-- Uploading state -->
-                                        <div id="upload-progress" class="space-y-2 mt-4 hidden">
-                                            <div class="flex justify-between text-sm">
-                                                <span>Uploading <span id="uploading-count">0</span> files...</span>
-                                                <span id="upload-percentage">0%</span>
-                                            </div>
-                                            <div class="progress">
-                                                <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Complete state -->
-                                        <div id="upload-complete" class="mt-4 p-4 bg-green-50 border border-green-100 rounded-md hidden">
-                                            <div class="flex items-center gap-2 text-green-700">
-                                                <i data-lucide="check-circle" class="h-5 w-5"></i>
-                                                <span class="font-medium">Upload Complete!</span>
-                                            </div>
-                                            <p class="text-sm text-green-700 mt-1">
-                                                Files have been successfully uploaded and organized by paper size.
-                                            </p>
+                                        <div class="w-full bg-gray-200 rounded-full h-2">
+                                            <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" id="upload-progress-bar" style="width: 0%"></div>
                                         </div>
                                     </div>
 
-                                    <!-- Action buttons -->
+                                    <!-- Action Buttons -->
                                     <div class="flex flex-col md:flex-row gap-4 justify-center">
-                                        <!-- Start upload button (idle state) -->
-                                        <button class="btn btn-primary gap-2 hidden" id="start-upload-btn">
-                                            <i data-lucide="upload" class="h-4 w-4"></i>
-                                            Start Upload
+                                        <button id="start-upload-btn" class="hidden inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors" onclick="startUpload()">
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                            </svg>
+                                            Start Upload & Analysis
                                         </button>
-
-                                        <!-- Cancel button (uploading state) -->
-                                        <button class="btn btn-destructive gap-2 hidden" id="cancel-upload-btn">
-                                            <i data-lucide="alert-circle" class="h-4 w-4"></i>
+                                        <button id="cancel-upload-btn" class="hidden inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors" onclick="cancelUpload()">
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
                                             Cancel
                                         </button>
-
-                                        <!-- Complete state buttons -->
-                                        <button class="btn btn-outline gap-2 hidden" id="upload-more-btn">
-                                            <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                                        <button id="upload-more-btn" class="hidden inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors" onclick="resetUpload()">
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                            </svg>
                                             Upload More
                                         </button>
-                                        <button class="btn btn-primary gap-2 hidden" id="view-uploaded-btn">
-                                            <i data-lucide="check-circle" class="h-4 w-4"></i>
+                                        <button id="view-files-btn" class="hidden inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors" onclick="switchToUploadedFiles()">
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
                                             View Uploaded Files
                                         </button>
-                                        <a href="{{ route('pagetyping.index', ['file_indexing_id' => $selectedFileIndexing->id ?? '']) }}" 
-                                           class="btn btn-primary gap-2 hidden" id="proceed-page-typing-btn">
-                                            <i data-lucide="type" class="h-4 w-4"></i>
-                                            Proceed to Page Typing
-                                        </a>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Scanned Files Tab -->
-                    <div class="tab-content mt-6 hidden" role="tabpanel" aria-hidden="true" data-tab-content="scanned-files">
-                        <div class="card">
+                    <!-- Uploaded Files Tab Content -->
+                    <div id="uploaded-files-tab" class="tab-content mt-6 hidden">
+                        <div class="bg-white rounded-lg border shadow-sm">
                             <div class="p-6 border-b">
                                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                     <div>
-                                        <h2 class="text-lg font-semibold">Scanned Files</h2>
-                                        <p class="text-sm text-muted-foreground">View and manage uploaded documents</p>
+                                        <h3 class="text-lg font-semibold">Uploaded Files</h3>
+                                        <p class="text-gray-600 text-sm mt-1">Recently uploaded files ready for processing</p>
                                     </div>
                                     <div class="relative w-full md:w-64">
-                                        <i data-lucide="search" class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"></i>
-                                        <input type="search" placeholder="Search files..." class="input w-full pl-8" id="search-scanned-files">
+                                        <svg class="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                        </svg>
+                                        <input type="search" placeholder="Search files..." class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" id="file-search">
                                     </div>
                                 </div>
                             </div>
-                            <div class="p-6">
-                                @if($recentScans && $recentScans->count() > 0)
-                                    <div class="overflow-x-auto">
-                                        <table class="min-w-full divide-y divide-gray-200">
-                                            <thead class="bg-gray-50">
-                                                <tr>
-                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File No</th>
-                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scan Date</th>
-                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pages</th>
-                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scanned By</th>
-                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="scanned-files-list" class="bg-white divide-y divide-gray-200">
-                                                @foreach($recentScans as $scan)
-                                                    <tr class="hover:bg-gray-50">
-                                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                            {{ $scan->fileIndexing->file_number ?? 'Unknown' }}
-                                                        </td>
-                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                            {{ $scan->original_filename ?? 'Document' }}
-                                                        </td>
-                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            {{ $scan->created_at->format('M d, Y') }}
-                                                        </td>
-                                                        <td class="px-6 py-4 whitespace-nowrap">
-                                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                                                {{ $scan->status === 'typed' ? 'bg-green-100 text-green-800' : 
-                                                                   ($scan->status === 'scanned' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800') }}">
-                                                                {{ ucfirst($scan->status) }}
-                                                            </span>
-                                                        </td>
-                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            1 page
-                                                        </td>
-                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            {{ $scan->uploader->name ?? 'Unknown' }}
-                                                        </td>
-                                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                            <div class="flex items-center space-x-2">
-                                                                <button class="text-indigo-600 hover:text-indigo-900" onclick="viewDocument({{ $scan->id }})">
-                                                                    <i data-lucide="eye" class="h-4 w-4 mr-1"></i>
-                                                                    View
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                @else
-                                    <div class="text-center py-8">
-                                        <i data-lucide="inbox" class="h-12 w-12 mx-auto text-gray-300 mb-4"></i>
-                                        <p class="text-gray-500">No scanned files found</p>
-                                    </div>
-                                @endif
+                            <div class="overflow-x-auto">
+                                <div id="uploaded-files-list">
+                                    <!-- Content will be populated by JavaScript -->
+                                </div>
+                            </div>
+                            <div id="uploaded-files-footer" class="hidden border-t p-6 flex justify-between">
+                                <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors" onclick="switchToUpload()">Upload More</button>
+                                <button class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors" onclick="sendToIndexing()">Send All to Indexing</button>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- File Selector Dialog -->
-                <div id="file-selector-dialog" class="dialog-backdrop hidden" aria-hidden="true">
-                    <div class="dialog-content animate-fade-in">
-                        <div class="p-4 border-b">
-                            <h2 class="text-lg font-semibold">Select Indexed File for Document Upload</h2>
+                <!-- AI Processing Section -->
+                <div id="ai-processing" class="hidden mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="p-2 bg-blue-100 rounded-full">
+                            <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                            </svg>
                         </div>
-                        <div class="py-4 px-6">
-                            <div class="relative mb-4">
-                                <i data-lucide="search" class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"></i>
-                                <input type="search" placeholder="Search indexed files..." class="input w-full pl-8" id="search-indexed-files">
-                            </div>
-                            <div class="rounded-md border divide-y max-h-[400px] overflow-y-auto" id="indexed-files-list">
-                                <!-- Indexed files will be loaded here dynamically -->
-                            </div>
-                        </div>
-                        <div class="flex justify-end gap-2 p-4 border-t">
-                            <button class="btn btn-outline" id="cancel-file-select-btn">Cancel</button>
-                            <button class="btn btn-primary" id="confirm-file-select-btn" disabled>Select File</button>
+                        <div>
+                            <h3 class="font-semibold text-blue-900">AI Document Analysis</h3>
+                            <p class="text-sm text-blue-700">Extracting metadata for File Indexing Assistant</p>
                         </div>
                     </div>
-                </div>
-
-                <!-- Document Details Dialog -->
-                <div id="document-details-dialog" class="dialog-backdrop hidden" aria-hidden="true">
-                    <div class="dialog-content animate-fade-in">
-                        <div class="p-4 border-b">
-                            <h2 class="text-lg font-semibold">Document Details</h2>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium">Processing Progress</span>
+                            <span class="text-sm font-medium" id="ai-progress-percent">0%</span>
                         </div>
-                        <div class="py-4 px-6 space-y-4">
-                            <div>
-                                <label for="document-name" class="block mb-2 text-sm font-medium">File Name</label>
-                                <p class="text-sm font-medium" id="document-name"></p>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" id="ai-progress-bar" style="width: 0%"></div>
+                        </div>
+                        <div class="grid grid-cols-4 gap-2 mt-4" id="ai-stages">
+                            <div class="text-center p-2 rounded bg-gray-100 text-gray-500" data-stage="analyzing">
+                                <svg class="h-4 w-4 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                                <div class="text-xs font-medium">Analyzing</div>
                             </div>
-
-                            <div>
-                                <label for="paper-size" class="block mb-2 text-sm font-medium">Paper Size</label>
-                                <div class="radio-group">
-                                    <div class="radio-item">
-                                        <input type="radio" name="paper-size" id="A4" value="A4">
-                                        <label for="A4" class="text-sm">A4</label>
+                            <div class="text-center p-2 rounded bg-gray-100 text-gray-500" data-stage="extracting">
+                                <svg class="h-4 w-4 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                </svg>
+                                <div class="text-xs font-medium">Extracting</div>
+                            </div>
+                            <div class="text-center p-2 rounded bg-gray-100 text-gray-500" data-stage="creating">
+                                <svg class="h-4 w-4 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                                </svg>
+                                <div class="text-xs font-medium">Creating</div>
+                            </div>
+                            <div class="text-center p-2 rounded bg-gray-100 text-gray-500" data-stage="complete">
+                                <svg class="h-4 w-4 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <div class="text-xs font-medium">Complete</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Analysis Results -->
+                        <div id="analysis-results" class="hidden mt-4 p-4 bg-white rounded-lg border shadow-sm">
+                            <div class="flex justify-between items-center mb-4">
+                                <h4 class="text-lg font-semibold text-gray-900">Document Analysis Results</h4>
+                                <span class="px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800 border border-green-200" id="files-processed">0 files processed</span>
+                            </div>
+                            <div id="metadata-results" class="space-y-6"></div>
+                            
+                            <!-- Summary and Actions -->
+                            <div class="mt-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h5 class="font-semibold text-gray-900 mb-1">Analysis Complete</h5>
+                                        <p class="text-sm text-gray-600">
+                                            All documents have been processed and are ready to be added to the File Indexing Assistant.
+                                        </p>
                                     </div>
-                                    <div class="radio-item">
-                                        <input type="radio" name="paper-size" id="A5" value="A5">
-                                        <label for="A5" class="text-sm">A5</label>
-                                    </div>
-                                    <div class="radio-item">
-                                        <input type="radio" name="paper-size" id="A3" value="A3">
-                                        <label for="A3" class="text-sm">A3</label>
-                                    </div>
-                                    <div class="radio-item">
-                                        <input type="radio" name="paper-size" id="Letter" value="Letter">
-                                        <label for="Letter" class="text-sm">Letter</label>
-                                    </div>
-                                    <div class="radio-item">
-                                        <input type="radio" name="paper-size" id="Legal" value="Legal">
-                                        <label for="Legal" class="text-sm">Legal</label>
-                                    </div>
-                                    <div class="radio-item">
-                                        <input type="radio" name="paper-size" id="Custom" value="Custom">
-                                        <label for="Custom" class="text-sm">Custom</label>
+                                    <div class="flex gap-3">
+                                        <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors" onclick="resetUpload()">
+                                            Cancel
+                                        </button>
+                                        <button class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors" onclick="createIndexingEntries()">
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                                            </svg>
+                                            Create in File Indexing Assistant
+                                        </button>
                                     </div>
                                 </div>
                             </div>
-
-                            <div>
-                                <label for="document-type" class="block mb-2 text-sm font-medium">Document Type</label>
-                                <select id="document-type" class="input">
-                                    <option value="Certificate">Certificate</option>
-                                    <option value="Deed">Deed</option>
-                                    <option value="Letter">Letter</option>
-                                    <option value="Application Form">Application Form</option>
-                                    <option value="Map">Map</option>
-                                    <option value="Survey Plan">Survey Plan</option>
-                                    <option value="Receipt">Receipt</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label for="document-notes" class="block mb-2 text-sm font-medium">Notes (Optional)</label>
-                                <textarea id="document-notes" class="input" rows="3"></textarea>
-                            </div>
-                        </div>
-                        <div class="flex justify-end gap-2 p-4 border-t">
-                            <button class="btn btn-outline" id="cancel-details-btn">Cancel</button>
-                            <button class="btn btn-primary" id="save-details-btn">Save Details</button>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- OCR Processing Modal -->
+            <div id="ocr-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                    <h3 class="text-lg font-semibold mb-4">Document Text Extraction</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="p-2 bg-blue-100 rounded-full">
+                                <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="font-medium">Extracting Text from Documents</h4>
+                                <p class="text-sm text-gray-600" id="ocr-current-file">Processing documents...</p>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span>Extraction Progress</span>
+                                <span id="ocr-progress-percent">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" id="ocr-progress-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-gray-100 rounded text-sm">
+                            <p class="font-medium mb-1">Processing:</p>
+                            <ul class="space-y-1 text-gray-600">
+                                <li>• Reading PDF pages</li>
+                                <li>• Converting pages to images</li>
+                                <li>• Running OCR on each page</li>
+                                <li>• Analyzing document structure</li>
+                                <li>• Searching for metadata patterns</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Metadata Modal -->
+            <div id="metadata-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold" id="metadata-modal-title">Edit Document Metadata</h3>
+                        <button class="text-gray-400 hover:text-gray-600" onclick="closeMetadataModal()">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-medium mb-2">Metadata Fields</h4>
+                            <div id="metadata-form" class="space-y-4"></div>
+                        </div>
+                        <div>
+                            <h4 class="font-medium mb-2">Document Preview</h4>
+                            <div id="metadata-preview-content" class="document-preview border rounded-lg p-4 bg-gray-50">
+                                <div id="pdf-preview-wrapper" class="relative hidden">
+                                    <canvas id="pdf-preview-canvas" class="w-full h-auto border rounded-lg"></canvas>
+                                    <p id="pdf-loading-placeholder" class="text-gray-500 text-center py-8 hidden">Loading PDF preview...</p>
+                                    <div id="pdf-navigation-controls" class="flex justify-between items-center mt-4 hidden">
+                                        <button id="prev-page-btn" class="px-3 py-1 bg-gray-200 rounded text-gray-700 hover:bg-gray-300 disabled:opacity-50" onclick="goToPreviousPage()" disabled>Previous</button>
+                                        <span id="page-info" class="text-sm font-medium text-gray-700"></span>
+                                        <button id="next-page-btn" class="px-3 py-1 bg-gray-200 rounded text-gray-700 hover:bg-gray-300 disabled:opacity-50" onclick="goToNextPage()" disabled>Next</button>
+                                    </div>
+                                </div>
+                                <div id="image-preview-wrapper" class="hidden">
+                                    <img id="image-preview-img" src="/placeholder.svg" alt="Document preview" class="max-w-full h-auto border rounded">
+                                    <p id="image-loading-placeholder" class="text-gray-500 text-center py-8 hidden">Loading image preview...</p>
+                                </div>
+                                <p id="unsupported-preview-message" class="text-gray-500 hidden">Preview not available for this file type</p>
+                            </div>
+                            <h4 class="font-medium mb-2 mt-4">Extracted Text</h4>
+                            <div class="document-preview border rounded-lg p-4 bg-white">
+                                <pre id="metadata-extracted-text-preview" class="text-xs whitespace-pre-wrap text-gray-700"></pre>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors" onclick="closeMetadataModal()">
+                            Cancel
+                        </button>
+                        <button class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors" onclick="saveMetadata()">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            @include('scanning.assets.js_new')
         </div>
         <!-- Footer -->
         @include('admin.footer')
-        @include('scanning.assets.js_dynamic')
     </div>
 @endsection

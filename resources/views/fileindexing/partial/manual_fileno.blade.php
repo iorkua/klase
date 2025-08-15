@@ -1,8 +1,22 @@
 <div x-data="{ tab: 'mls',
-                      mlsPrefix: '', mlsNumber: '',
+                      mlsPrefix: '', 
+                      mlsYear: '', 
+                      mlsSerial: '',
+                      mlsFileType: 'regular',
                       kangisPrefix: '', kangisNumber: '',
                       newkangisPrefix: '', newkangisNumber: '',
-                      mlsPreview() { return this.mlsPrefix && this.mlsNumber ? `${this.mlsPrefix}-${this.mlsNumber}` : (this.mlsPrefix || this.mlsNumber); },
+                      mlsPreview() { 
+                        if (this.mlsPrefix && this.mlsYear && this.mlsSerial) {
+                          const baseNumber = `${this.mlsPrefix}-${this.mlsYear}-${this.mlsSerial}`;
+                          if (this.mlsFileType === 'temporary') {
+                            return `${baseNumber} (T)`;
+                          } else if (this.mlsFileType === 'extension') {
+                            return `${baseNumber} AND EXTENSION`;
+                          }
+                          return baseNumber;
+                        }
+                        return '';
+                      },
                       kangisPreview() {
                         if (this.kangisPrefix && this.kangisNumber) {
                           const n = this.kangisNumber.padStart(5, '0');
@@ -48,7 +62,28 @@
   <!-- MLS Tab Content -->
   <div x-show="tab === 'mls'" class="tab-content-panel">
     <p class="text-sm text-gray-600 mb-3">MLS File Number</p>
-    <div class="grid grid-cols-3 gap-4">
+    
+    <!-- Radio Buttons for File Type -->
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700 mb-2">File Type</label>
+      <div class="flex space-x-4">
+        <label class="flex items-center">
+          <input type="radio" x-model="mlsFileType" value="regular" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300">
+          <span class="ml-2 text-sm text-gray-700">Regular File</span>
+        </label>
+        <label class="flex items-center">
+          <input type="radio" x-model="mlsFileType" value="temporary" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300">
+          <span class="ml-2 text-sm text-gray-700">Temporary File</span>
+        </label>
+        <label class="flex items-center">
+          <input type="radio" x-model="mlsFileType" value="extension" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300">
+          <span class="ml-2 text-sm text-gray-700">Extension</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Input Grid -->
+    <div class="grid grid-cols-3 gap-4 mb-4">
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">File Prefix</label>
         <select x-model="mlsPrefix" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
@@ -62,13 +97,19 @@
         </select>
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Serial Number</label>
-        <input type="text" x-model="mlsNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. 2022-572">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Year</label>
+        <input type="text" x-model="mlsYear" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="2024">
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Full FileNo</label>
-        <input type="text" :value="mlsPreview()" readonly class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Serial No</label>
+        <input type="text" x-model="mlsSerial" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="572">
       </div>
+    </div>
+
+    <!-- Full File Number Display -->
+    <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
+      <label class="block text-sm font-medium text-gray-700 mb-1">Full File Number</label>
+      <div class="text-lg font-semibold text-blue-800" x-text="mlsPreview() || 'Enter file details above'"></div>
     </div>
   </div>
 
@@ -119,3 +160,12 @@
     </div>
   </div>
 </div>
+
+<!-- Add Alpine.js and Lucide for icons -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.3/cdn.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/umd/lucide.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    lucide.createIcons();
+  });
+</script>

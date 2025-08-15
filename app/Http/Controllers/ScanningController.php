@@ -76,7 +76,7 @@ class ScanningController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'file_indexing_id' => 'required|integer|exists:sqlsrv.file_indexings,id',
+                'file_indexing_id' => 'nullable|integer|exists:sqlsrv.file_indexings,id',
                 'documents' => 'required|array|min:1',
                 'documents.*' => 'required|file|mimes:pdf,jpg,jpeg,png,tiff|max:20480', // 20MB max
                 'custom_names' => 'nullable|array',
@@ -98,7 +98,24 @@ class ScanningController extends Controller
             }
 
             $fileIndexingId = $request->file_indexing_id;
-            $fileIndexing = FileIndexing::on('sqlsrv')->findOrFail($fileIndexingId);
+            
+            // If no file_indexing_id provided, create a temporary one for the new interface
+            if (!$fileIndexingId) {
+                // Create a temporary file indexing entry for the new interface
+                $fileIndexing = FileIndexing::on('sqlsrv')->create([
+                    'file_number' => 'TEMP-' . time(),
+                    'file_title' => 'Temporary Upload - ' . date('Y-m-d H:i:s'),
+                    'created_by' => Auth::id(),
+                ]);
+                $fileIndexingId = $fileIndexing->id;
+                
+                Log::info('Created temporary file indexing for new upload interface', [
+                    'file_indexing_id' => $fileIndexingId,
+                    'created_by' => Auth::id()
+                ]);
+            } else {
+                $fileIndexing = FileIndexing::on('sqlsrv')->findOrFail($fileIndexingId);
+            }
             $customNames = $request->input('custom_names', []);
             $paperSizes = $request->input('paper_sizes', []);
             $documentTypes = $request->input('document_types', []);
@@ -271,7 +288,7 @@ class ScanningController extends Controller
             $scanning = Scanning::on('sqlsrv')->findOrFail($id);
             
             // Check if document has page typings
-            if ($scanning->fileIndexing->pagetypings()->where('file_path', $scanning->document_path)->exists()) {
+            if ($scanning->fileIndexing && $scanning->fileIndexing->pagetypings()->where('file_path', $scanning->document_path)->exists()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Cannot delete document that has been page typed'
@@ -307,6 +324,14 @@ class ScanningController extends Controller
                 'message' => 'Error deleting document: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Delete a scanned document (alternative method for destroy route)
+     */
+    public function destroy($id)
+    {
+        return $this->delete($id);
     }
 
     /**

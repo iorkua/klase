@@ -121,6 +121,9 @@ function setupEventListeners() {
     // Multiple owners controls
     setupMultipleOwnersControls();
     
+    // Land use form type display
+    setupLandUseFormTypeDisplay();
+    
     // Add keyboard shortcuts
     document.addEventListener('keydown', handleKeyboardShortcuts);
     
@@ -1466,6 +1469,57 @@ function goToStep(stepNumber) {
         updateStepDisplay();
         showToast(`Navigated to Step ${stepNumber}`, 'info');
     }
+}
+
+// Function to setup land use form type display
+function setupLandUseFormTypeDisplay() {
+    console.log('Setting up land use form type display...');
+    
+    // Land use mapping to form types
+    const landUseFormTypes = {
+        'residential': 'RESIDENTIAL FORM',
+        'commercial': 'COMMERCIAL FORM',
+        'industrial': 'INDUSTRIAL FORM',
+        'agricultural': 'AGRICULTURAL FORM',
+        'educational': 'EDUCATIONAL FORM',
+        'religious': 'RELIGIOUS FORM',
+        'public': 'PUBLIC FORM',
+        'ngo': 'NGO FORM',
+        'social': 'SOCIAL FORM',
+        'petrol-station': 'PETROL STATION FORM',
+        'gkn': 'GKN FORM',
+        'mixed-use': 'MIXED USE FORM'
+    };
+    
+    // Get the form type display element
+    const formTypeDisplay = document.getElementById('form-type-display');
+    
+    // Function to update form type display
+    const updateFormTypeDisplay = (landUse) => {
+        if (formTypeDisplay) {
+            const formType = landUseFormTypes[landUse] || 'INDIVIDUAL FORM';
+            formTypeDisplay.textContent = formType;
+            console.log('Form type updated to:', formType);
+        }
+    };
+    
+    // Add event listeners to all land use radio buttons
+    document.querySelectorAll('input[name="currentLandUse"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.checked) {
+                updateFormTypeDisplay(this.value);
+                showToast(`Form type updated to ${landUseFormTypes[this.value] || 'INDIVIDUAL FORM'}`, 'info');
+            }
+        });
+    });
+    
+    // Check if there's already a selected land use and update display
+    const selectedLandUse = document.querySelector('input[name="currentLandUse"]:checked');
+    if (selectedLandUse) {
+        updateFormTypeDisplay(selectedLandUse.value);
+    }
+    
+    console.log('Land use form type display setup complete');
 }
 
 console.log('Standalone form wizard initialized with development features');

@@ -55,7 +55,27 @@
   
    <div id="mlsFNoTab" class="tabcontent active">
     <p class="text-sm text-gray-600 mb-2">MLS File Number</p>
-    <div class="grid grid-cols-3 gap-4 mb-3">
+    
+    <!-- Radio buttons for file type selection -->
+    <div class="mb-4">
+      <label class="block text-sm mb-2">File Type</label>
+      <div class="flex space-x-4">
+        <label class="flex items-center">
+          <input type="radio" name="mlsFileType" value="regular" id="mlsRegularFile" class="mr-2" checked>
+          <span class="text-sm">Regular File</span>
+        </label>
+        <label class="flex items-center">
+          <input type="radio" name="mlsFileType" value="temporary" id="mlsTemporaryFile" class="mr-2">
+          <span class="text-sm">Temporary File</span>
+        </label>
+        <label class="flex items-center">
+          <input type="radio" name="mlsFileType" value="extension" id="mlsExtensionFile" class="mr-2">
+          <span class="text-sm">Extension</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-3 gap-4 mb-4">
       <div>
         <label class="block text-sm mb-1">File Prefix</label>
         <div class="relative">
@@ -71,13 +91,22 @@
         </div>
       </div>
       <div>
-        <label class="block text-sm mb-1">Serial Number</label>
-        <input type="text" class="w-full p-2 border border-gray-300 rounded-md" id="mlsFileNumber" name="mlsFileNumber" placeholder="e.g. 2022-572" value="{{ isset($result) ? ($result->mlsFileNumber ?: '') : '' }}">
+        <label class="block text-sm mb-1">Year</label>
+        <input type="text" class="w-full p-2 border border-gray-300 rounded-md" id="mlsFileYear" name="mlsFileYear" placeholder="e.g. 2024" maxlength="4" value="{{ isset($result) ? (date('Y')) : date('Y') }}">
       </div>
-       <div>
-        <label class="block text-sm mb-1">Full FileNo</label>
-        <input type="text" class="w-full p-2 border border-gray-300 rounded-md"   id="mlsPreviewFileNumber" name="mlsPreviewFileNumber"
-        value="{{ isset($result) ? ($result->mlsFNo ?: '') : '' }}" readonly>
+      <div>
+        <label class="block text-sm mb-1">Serial No</label>
+        <input type="text" class="w-full p-2 border border-gray-300 rounded-md" id="mlsFileSerial" name="mlsFileSerial" placeholder="e.g. 572" value="{{ isset($result) ? ($result->mlsFileNumber ? explode('-', $result->mlsFileNumber)[1] ?? '' : '') : '' }}">
+      </div>
+    </div>
+
+    <!-- Enhanced Full File Number Display -->
+    <div class="mb-3">
+      <label class="block text-sm mb-1">Full File Number</label>
+      <div class="bg-blue-50 border-2 border-blue-200 rounded-md p-3">
+        <div id="mlsPreviewFileNumber" class="text-lg font-semibold text-blue-800">
+          {{ isset($result) && $result->mlsFNo ? $result->mlsFNo : 'Enter details above to see preview' }}
+        </div>
       </div>
     </div>
   </div>  
@@ -274,34 +303,73 @@
             validateSurveyForm();
         }
     }
-    // Format MLS file number preview
+    // Enhanced MLS file number preview with new format and file types
     function updateMlsFileNumberPreview() {
         const prefixEl = document.getElementById('mlsFileNoPrefix');
-        const numberEl = document.getElementById('mlsFileNumber');
+        const yearEl = document.getElementById('mlsFileYear');
+        const serialEl = document.getElementById('mlsFileSerial');
         const previewEl = document.getElementById('mlsPreviewFileNumber');
         const dbFieldEl = document.getElementById('mlsFNo');
+        
+        // Get file type from radio buttons
+        const fileTypeRadios = document.querySelectorAll('input[name="mlsFileType"]');
+        let fileType = 'regular';
+        for (const radio of fileTypeRadios) {
+            if (radio.checked) {
+                fileType = radio.value;
+                break;
+            }
+        }
 
         const prefix = prefixEl.value;
-        let number = numberEl.value.trim();
+        const year = yearEl.value.trim();
+        const serial = serialEl.value.trim();
 
-        if (prefix && number) {
-            const formatted = prefix + '-' + number;
-            previewEl.value = formatted;
-            dbFieldEl.value = formatted; // Set the database field directly
-            updateMainFilenoField(); // Update main fileno field
-        } else if (prefix) {
-            previewEl.value = prefix;
-            dbFieldEl.value = prefix;
-            updateMainFilenoField();
-        } else if (number) {
-            previewEl.value = number;
-            dbFieldEl.value = number;
-            updateMainFilenoField();
+        let formatted = '';
+        let displayText = '';
+
+        if (prefix && year && serial) {
+            // Base format: PREFIX-YEAR-SERIAL
+            formatted = `${prefix}-${year}-${serial}`;
+            
+            // Add suffix based on file type
+            if (fileType === 'temporary') {
+                formatted += ' (T)';
+            } else if (fileType === 'extension') {
+                formatted += ' AND EXTENSION';
+            }
+            
+            displayText = formatted;
+        } else if (prefix || year || serial) {
+            // Show partial preview
+            const parts = [];
+            if (prefix) parts.push(prefix);
+            if (year) parts.push(year);
+            if (serial) parts.push(serial);
+            
+            displayText = parts.join('-');
+            if (parts.length > 0) {
+                if (fileType === 'temporary') {
+                    displayText += ' (T)';
+                } else if (fileType === 'extension') {
+                    displayText += ' AND EXTENSION';
+                }
+            }
         } else {
-            previewEl.value = '';
-            dbFieldEl.value = '';
-            updateMainFilenoField();
+            displayText = 'Enter details above to see preview';
         }
+
+        // Update preview display
+        previewEl.textContent = displayText;
+        
+        // Update database field only with complete format
+        if (prefix && year && serial) {
+            dbFieldEl.value = formatted;
+        } else {
+            dbFieldEl.value = '';
+        }
+        
+        updateMainFilenoField(); // Update main fileno field
     }
 
     // Format KANGIS file number preview
@@ -373,9 +441,16 @@
         updateKangisFileNumberPreview();
         updateNewKangisFileNumberPreview();
 
-        // Add event listeners for file number preview updates
+        // Add event listeners for MLS file number preview updates
         document.getElementById('mlsFileNoPrefix').addEventListener('change', updateMlsFileNumberPreview);
-        document.getElementById('mlsFileNumber').addEventListener('input', updateMlsFileNumberPreview);
+        document.getElementById('mlsFileYear').addEventListener('input', updateMlsFileNumberPreview);
+        document.getElementById('mlsFileSerial').addEventListener('input', updateMlsFileNumberPreview);
+        
+        // Add event listeners for radio buttons
+        const mlsFileTypeRadios = document.querySelectorAll('input[name="mlsFileType"]');
+        mlsFileTypeRadios.forEach(radio => {
+            radio.addEventListener('change', updateMlsFileNumberPreview);
+        });
 
         document.getElementById('kangisFileNoPrefix').addEventListener('change', updateKangisFileNumberPreview);
         document.getElementById('kangisFileNumber').addEventListener('input', updateKangisFileNumberPreview);

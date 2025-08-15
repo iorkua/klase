@@ -1,6 +1,6 @@
 <div class="space-y-2" x-data="{ showOther: false, customDistrict: '' }">
-    <label for="district" class="text-xs text-gray-600">District Name</label>
-    <select id="district" x-model="district" class="form-input text-sm property-input" 
+     
+    <select id="district" x-model="district" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
             @change="showOther = district === 'other'; if(!showOther) customDistrict = ''"
             :name="showOther ? '' : 'district'">
         <option value="" selected>Select District Name</option>

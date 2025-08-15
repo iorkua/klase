@@ -6,103 +6,95 @@
 @section('content')
 
 @php
-    // Get the fileno parameter from the URL
-    $fileno = request()->get('fileno');
-    $stmRef = request()->get('STM_Ref');
+    // Get parameters from the URL
+    $certificate_generated_date = request()->get('certificate_generated_date'); 
+    $serial_no = request()->get('serial_no');
+    $reg_page = request()->get('reg_page');
+    $reg_volume = request()->get('reg_volume');
 
-    // If url param is present, try to extract STM_Ref from it if not already set
-    $urlParam = request()->get('url');
-    if (!$stmRef && $urlParam) {
-        // Try to extract STM_Ref from the url param
-        if (preg_match('/STM_Ref=([A-Za-z0-9\-]+)/', $urlParam, $matches)) {
-            $stmRef = $matches[1];
-        }
-    }
-
-    // Initialize data variable
-    $dbData = null;
-
-    if (!empty($fileno)) {
-        try {
-            // Query the database directly for fileno
-            $dbData = DB::connection('sqlsrv')->table('registered_instruments')
-                ->where('MLSFileNo', $fileno)
-                ->orWhere('KAGISFileNO', $fileno)
-                ->orWhere('NewKANGISFileNo', $fileno)
-                ->orWhere('StFileNo', $fileno)
-                ->first();
-            
-            // If no exact match, try LIKE search
-            if (!$dbData) {
-                $dbData = DB::connection('sqlsrv')->table('registered_instruments')
-                    ->where('MLSFileNo', 'LIKE', '%' . $fileno . '%')
-                    ->orWhere('KAGISFileNO', 'LIKE', '%' . $fileno . '%')
-                    ->orWhere('NewKANGISFileNo', 'LIKE', '%' . $fileno . '%')
-                    ->orWhere('StFileNo', 'LIKE', '%' . $fileno . '%')
-                    ->first();
-            }
-        } catch (\Exception $e) {
-            // Log error but continue
-            \Log::error('Direct DB query error: ' . $e->getMessage());
-        }
-    } elseif (!empty($stmRef)) {
-        try {
-            // Query by STM_Ref
-            $dbData = DB::connection('sqlsrv')->table('registered_instruments')
-                ->where('STM_Ref', $stmRef)
-                ->first();
-        } catch (\Exception $e) {
-            \Log::error('STM_Ref query error: ' . $e->getMessage());
-        }
-    }
+    // Process certificate_generated_date for time and date extraction
+    $formatted_date = '6TH AUGUST 2025'; // Default
+    $hour_part = '6';
+    $time_part = 'PM';
     
-    // Format the data if found
-    if ($dbData) {
-        // Format date
-        $formatted_date = $dbData->deeds_date ? date('jS F Y', strtotime($dbData->deeds_date)) : 
-                         ($dbData->instrumentDate ? date('jS F Y', strtotime($dbData->instrumentDate)) : date('jS F Y'));
+    // Use the application data passed from the controller
+    if (isset($application) && $application) {
+        // First, try to use the certificate_generated_date from the application if available
+        $dateToUse = $certificate_generated_date ?: $application->certificate_generated_date;
         
-        // Format time
-        $time_source = $dbData->deeds_time ?: ($dbData->instrumentDate ? date('H:i:s', strtotime($dbData->instrumentDate)) : '12:00:00');
-        $formatted_time = date('g:i A', strtotime($time_source));
-        $hour_part = date('g', strtotime($time_source));
-        $time_part = date('A', strtotime($time_source));
+        if ($dateToUse) {
+            try {
+                // Parse the certificate_generated_date (format: 2025-08-11 11:25:46.074)
+                $dateTime = new DateTime($dateToUse);
+                $formatted_date = strtoupper($dateTime->format('jS F Y'));
+                $hour_part = $dateTime->format('g');
+                $time_part = $dateTime->format('A');
+            } catch (Exception $e) {
+                // If parsing fails, use default values
+                \Log::error('Date parsing error: ' . $e->getMessage());
+            }
+        }
         
-        // Use database data
+        // Use application data with URL parameter overrides
         $displayData = (object)[
-            'Applicant_Name' => $dbData->Grantor ?: 'N/A',
-            'instrument_type' => $dbData->instrument_type ?: 'INSTRUMENT',
-            'volume_no' => $dbData->volume_no ?: '1',
-            'page_no' => $dbData->page_no ?: '1',
-            'serial_no' => $dbData->serial_no ?: '1',
+            'Applicant_Name' => 'KANO STATE GOVERNMENT', // Always KANO STATE GOVERNMENT for recertification
+            'instrument_type' => 'CERTIFICATE OF OCCUPANCY',
+            'volume_no' => $reg_volume ?: ($application->reg_volume ?? '1'),
+            'page_no' => $reg_page ?: ($application->reg_page ?? '1'),
+            'serial_no' => $serial_no ?: ($application->cofo_serial_no ?? $application->cofo_number ?? $application->serial_no ?? '1'),
             'formatted_date' => $formatted_date,
             'hour_part' => $hour_part,
             'time_part' => $time_part,
-            'STM_Ref' => $dbData->STM_Ref ?: 'STM-' . date('Y') . '-001',
-            'MLSFileNo' => $dbData->MLSFileNo,
-            'KAGISFileNO' => $dbData->KAGISFileNO,
-            'NewKANGISFileNo' => $dbData->NewKANGISFileNo,
-            'StFileNo' => $dbData->StFileNo,
-            'data_source' => 'database'
+            'STM_Ref' => 'STM-' . date('Y') . '-' . str_pad($application->id ?? 1, 3, '0', STR_PAD_LEFT),
+            'MLSFileNo' => $application->mlsfNo,
+            'KAGISFileNO' => $application->kangisFileNo,
+            'NewKANGISFileNo' => $application->NewKANGISFileno,
+            'StFileNo' => $application->file_number,
+            'data_source' => 'recertification_application',
+            // Additional fields from recertification_applications table
+            'application_reference' => $application->application_reference,
+            'cofo_number' => $application->cofo_number,
+            'reg_no' => $application->reg_no,
+            'plot_number' => $application->plot_number,
+            'layout_district' => $application->layout_district,
+            'lga_name' => $application->lga_name,
+            'applicant_full_name' => trim(($application->surname ?? '') . ' ' . ($application->first_name ?? '') . ' ' . ($application->middle_name ?? '')),
+            'organisation_name' => $application->organisation_name,
+            'applicant_type' => $application->applicant_type,
+            'certificate_generated_date_raw' => $dateToUse
         ];
     } else {
-        // Use mock data if no database record found
+        // Fallback data if no application is passed
+        if ($certificate_generated_date) {
+            try {
+                // Parse the certificate_generated_date (format: 2025-08-11 11:25:46.074)
+                $dateTime = new DateTime($certificate_generated_date);
+                $formatted_date = strtoupper($dateTime->format('jS F Y'));
+                $hour_part = $dateTime->format('g');
+                $time_part = $dateTime->format('A');
+            } catch (Exception $e) {
+                // If parsing fails, use default values
+                \Log::error('Date parsing error: ' . $e->getMessage());
+            }
+        }
+        
         $year = date('Y');
         $displayData = (object)[
-            'Applicant_Name' => 'DEFAULT APPLICANT',
-            'instrument_type' => 'DEFAULT INSTRUMENT',
-            'volume_no' => '1',
-            'page_no' => '1',
-            'serial_no' => '1',
-            'formatted_date' => date('jS F Y'),
-            'hour_part' => '12',
-            'time_part' => 'PM',
+            'Applicant_Name' => 'KANO STATE GOVERNMENT',
+            'instrument_type' => 'CERTIFICATE OF OCCUPANCY',
+            'volume_no' => $reg_volume ?: '1',
+            'page_no' => $reg_page ?: '1',
+            'serial_no' => $serial_no ?: '1',
+            'formatted_date' => $formatted_date,
+            'hour_part' => $hour_part,
+            'time_part' => $time_part,
             'STM_Ref' => "STM-{$year}-001",
-            'MLSFileNo' => $fileno ?: null,
+            'MLSFileNo' => null,
             'KAGISFileNO' => null,
             'NewKANGISFileNo' => null,
             'StFileNo' => null,
-            'data_source' => 'mock'
+            'data_source' => 'fallback',
+            'certificate_generated_date_raw' => $certificate_generated_date
         ];
     }
     
@@ -405,10 +397,10 @@
 
                             <!-- Red Box 1 -->
                             <div class="red-box-compact">
-                                <p>THIS {{ isset($data) && isset($data->instrument_type) ? strtoupper($data->instrument_type) : 'INSTRUMENT' }} WAS DELIVERED TO ME FOR REGISTRATION BY</p>
-                                <p class="font-bold">{{ isset($data) && isset($data->Applicant_Name) ? strtoupper($data->Applicant_Name) : 'APPLICANT NAME' }}</p>
-                                <p>AT {{ isset($data) && isset($data->hour_part) ? $data->hour_part : '12' }} O'CLOCK IN THE {{ isset($data) && isset($data->time_part) ? $data->time_part : 'AFTERNOON' }}</p>
-                                <p>ON THE {{ isset($data) && isset($data->formatted_date) ? strtoupper($data->formatted_date) : strtoupper(date('jS \of F Y')) }}</p>
+                                <p>THIS {{ isset($data) && isset($data->instrument_type) ? strtoupper($data->instrument_type) : 'CERTIFICATE OF OCCUPANCY' }} WAS DELIVERED TO ME FOR REGISTRATION BY</p>
+                                <p class="font-bold">{{ isset($data) && isset($data->Applicant_Name) ? strtoupper($data->Applicant_Name) : 'KANO STATE GOVERNMENT' }}</p>
+                                <p>AT {{ isset($data) && isset($data->hour_part) ? $data->hour_part : '6' }} O'CLOCK IN THE {{ isset($data) && isset($data->time_part) ? $data->time_part : 'PM' }}</p>
+                                <p>ON THE {{ isset($data) && isset($data->formatted_date) ? strtoupper($data->formatted_date) : '6TH AUGUST 2025' }}</p>
                                 
                                 @if(isset($data) && (isset($data->MLSFileNo) || isset($data->KAGISFileNO) || isset($data->NewKANGISFileNo) || isset($data->StFileNo)))
                                     <!-- <div class="mt-1" style="font-size: 7px;">

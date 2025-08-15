@@ -82,14 +82,20 @@ class FileIndexController extends Controller
     public function store(Request $request)
     {
         try {
+            // Handle bulk entries from scanning interface
+            if ($request->has('bulk_entries')) {
+                return $this->storeBulkEntries($request);
+            }
+
+            // Handle single entry creation
             $validator = Validator::make($request->all(), [
-                'file_number_type' => 'required|in:application,manual',
+                'file_number_type' => 'nullable|in:application,manual',
                 'main_application_id' => 'nullable|integer',
                 'subapplication_id' => 'nullable|integer',
                 'source_table' => 'nullable|in:mother,sub',
                 'file_number' => 'required|string|max:255',
                 'file_title' => 'required|string|max:255',
-                'land_use_type' => 'required|string|max:100',
+                'land_use_type' => 'nullable|string|max:100',
                 'plot_number' => 'nullable|string|max:100',
                 'district' => 'nullable|string|max:100',
                 'lga' => 'nullable|string|max:100',
@@ -98,6 +104,9 @@ class FileIndexController extends Controller
                 'has_transaction' => 'boolean',
                 'is_problematic' => 'boolean',
                 'is_co_owned_plot' => 'boolean',
+                'source' => 'nullable|string',
+                'scanning_id' => 'nullable|integer',
+                'extracted_metadata' => 'nullable|array',
             ]);
 
             if ($validator->fails()) {
@@ -111,7 +120,7 @@ class FileIndexController extends Controller
             $validated = $validator->validated();
 
             // Check if file indexing already exists for this application
-            if ($validated['file_number_type'] === 'application') {
+            if (isset($validated['file_number_type']) && $validated['file_number_type'] === 'application') {
                 $existingIndex = null;
                 
                 if ($validated['main_application_id']) {
@@ -139,7 +148,7 @@ class FileIndexController extends Controller
                 'subapplication_id' => $validated['subapplication_id'],
                 'file_number' => $validated['file_number'],
                 'file_title' => $validated['file_title'],
-                'land_use_type' => $validated['land_use_type'],
+                'land_use_type' => $validated['land_use_type'] ?? 'Residential',
                 'plot_number' => $validated['plot_number'],
                 'district' => $validated['district'],
                 'lga' => $validated['lga'],
@@ -156,13 +165,14 @@ class FileIndexController extends Controller
                 'file_indexing_id' => $fileIndexing->id,
                 'file_number' => $fileIndexing->file_number,
                 'file_title' => $fileIndexing->file_title,
-                'source_table' => $validated['source_table'] ?? 'manual',
+                'source' => $validated['source'] ?? 'manual',
                 'created_by' => Auth::id()
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'File indexing created successfully!',
+                'file_indexing_id' => $fileIndexing->id,
                 'redirect' => route('scanning.index', ['file_indexing_id' => $fileIndexing->id])
             ]);
 
@@ -175,6 +185,93 @@ class FileIndexController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error creating file indexing: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Store bulk file indexing entries from scanning interface
+     */
+    private function storeBulkEntries(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'bulk_entries' => 'required|array|min:1',
+                'bulk_entries.*.scanning_id' => 'required|integer',
+                'bulk_entries.*.file_number' => 'required|string|max:255',
+                'bulk_entries.*.file_title' => 'required|string|max:255',
+                'bulk_entries.*.plot_number' => 'nullable|string|max:100',
+                'bulk_entries.*.land_use_type' => 'nullable|string|max:100',
+                'bulk_entries.*.district' => 'nullable|string|max:100',
+                'bulk_entries.*.source' => 'nullable|string',
+                'bulk_entries.*.extracted_metadata' => 'nullable|array',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $entries = $request->input('bulk_entries');
+            $createdCount = 0;
+            $errors = [];
+
+            foreach ($entries as $entry) {
+                try {
+                    $fileIndexing = FileIndexing::on('sqlsrv')->create([
+                        'file_number' => $entry['file_number'],
+                        'file_title' => $entry['file_title'],
+                        'plot_number' => $entry['plot_number'] ?? null,
+                        'land_use_type' => $entry['land_use_type'] ?? 'Residential',
+                        'district' => $entry['district'] ?? null,
+                        'lga' => null,
+                        'has_cofo' => false,
+                        'is_merged' => false,
+                        'has_transaction' => false,
+                        'is_problematic' => false,
+                        'is_co_owned_plot' => false,
+                        'created_by' => Auth::id(),
+                        'updated_by' => Auth::id(),
+                    ]);
+
+                    $createdCount++;
+
+                    Log::info('Bulk file indexing created', [
+                        'file_indexing_id' => $fileIndexing->id,
+                        'file_number' => $fileIndexing->file_number,
+                        'scanning_id' => $entry['scanning_id'],
+                        'source' => $entry['source'] ?? 'bulk_scanning_upload',
+                        'created_by' => Auth::id()
+                    ]);
+
+                } catch (Exception $e) {
+                    $errors[] = "Error creating entry for {$entry['file_title']}: " . $e->getMessage();
+                    Log::error('Error creating bulk file indexing entry', [
+                        'entry' => $entry,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            return response()->json([
+                'success' => $createdCount > 0,
+                'message' => "Successfully created {$createdCount} file indexing entries!",
+                'created_count' => $createdCount,
+                'errors' => $errors
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error creating bulk file indexing entries', [
+                'error' => $e->getMessage(),
+                'request_data' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error creating bulk file indexing entries: ' . $e->getMessage()
             ], 500);
         }
     }

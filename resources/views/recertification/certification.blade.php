@@ -5,7 +5,7 @@
 
 @section('content')
 <script>
-// Tailwind config
+// Tailwind config 
 tailwind.config = { 
   theme: {
     extend: { 
@@ -744,7 +744,42 @@ function toggleActionMenu(menuId) {
 function viewCoR(id) {
     console.log('Viewing CoR for application:', id);
     closeActionMenus();
-    window.location.href = `/recertification/${id}/cor`;
+    
+    // Find the application data
+    const application = certificationData.find(app => app.id == id);
+    if (!application) {
+        showToast('Application data not found', 'error');
+        return;
+    }
+    
+    // Prepare parameters for CORI template
+    const params = new URLSearchParams();
+    
+    // Add certificate generated date (current timestamp if not available)
+    const certificateDate = application.certificate_generated_date || new Date().toISOString().slice(0, 19).replace('T', ' ') + '.000';
+    params.append('certificate_generated_date', certificateDate);
+    
+    // Add serial number, page, and volume - use cofo_serial_no for serial number
+    params.append('serial_no', application.serial_no | '1');
+    params.append('reg_page', application.reg_page || '1');
+    params.append('reg_volume', application.reg_volume || '1');
+    
+    // Add file numbers for reference
+    if (application.NewKANGISFileno) {
+        params.append('fileno', application.NewKANGISFileno);
+    } else if (application.kangisFileNo) {
+        params.append('fileno', application.kangisFileNo);
+    } else if (application.mlsfNo) {
+        params.append('fileno', application.mlsfNo);
+    }
+    
+    // Add STM reference if available
+    if (application.STM_Ref) {
+        params.append('STM_Ref', application.STM_Ref);
+    }
+    
+    // Navigate to CORI with parameters using the correct route format
+    window.open(`/recertification/${id}/cor?${params.toString()}`, '_blank');
 }
 
 function generateCofoFrontPage(id) {
@@ -762,21 +797,33 @@ function generateCofoFrontPage(id) {
         headers: {
             'X-Requested-With': 'XMLHttpRequest',
             'Accept': 'application/json',
+            'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             showToast('CofO Front Page generated successfully', 'success');
-            loadCertificationData(); // Reload data
+            // Update the certificate_generated_date in the application data
+            const application = certificationData.find(app => app.id == id);
+            if (application) {
+                application.certificate_generated = true;
+                application.certificate_generated_date = data.certificate_generated_date;
+            }
+            loadCertificationData(); // Reload data to reflect changes
         } else {
             showToast(data.message || 'Failed to generate CofO Front Page', 'error');
         }
     })
     .catch(error => {
         console.error('Error generating CofO Front Page:', error);
-        showToast('Failed to generate CofO Front Page', 'error');
+        showToast('Failed to generate CofO Front Page. Please try again.', 'error');
     });
 }
 

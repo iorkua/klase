@@ -78,12 +78,24 @@ tailwind.config = {
             <div class="bg-white rounded-lg shadow-xl border border-gray-200">
                 <!-- Header -->
                 <div class="p-6 border-b border-gray-200">
-                    <div class="text-center">
-                        <div class="space-y-1">
-                            <div class="font-bold text-lg">KANO STATE GEOGRAPHIC INFORMATION SYSTEMS (KANGIS)</div>
-                            <div class="text-sm text-gray-600">MINISTRY OF LAND AND PHYSICAL PLANNING KANO STATE</div>
-                            <div class="text-sm font-semibold">APPLICATION FOR RE-CERTIFICATION OR RE-ISSUANCE OF C-of-O</div>
-                            <div class="text-xs text-gray-500">INDIVIDUAL FORM AR01-01</div>
+                    <div class="flex items-start justify-between">
+                        <div class="text-center flex-1">
+                            <div class="space-y-1">
+                                <div class="font-bold text-lg">KANO STATE GEOGRAPHIC INFORMATION SYSTEMS (KANGIS)</div>
+                                <div class="text-sm text-gray-600">MINISTRY OF LAND AND PHYSICAL PLANNING KANO STATE</div>
+                                <div class="text-sm font-semibold">APPLICATION FOR RE-CERTIFICATION OR RE-ISSUANCE OF C-of-O</div>
+                                <div id="form-type-display" class="text-xs text-gray-500">INDIVIDUAL FORM</div>
+                            </div>
+                        </div>
+                        
+                        <!-- File Number Display - Top Right -->
+                        <div class="text-right">
+                            <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Application File Number</div>
+                            <div class="flex items-center gap-2 justify-end">
+                                <i data-lucide="file-text" class="h-4 w-4 text-blue-600"></i>
+                                <span id="file-number-display" class="text-sm font-bold text-blue-900 font-mono">Loading...</span>
+                            </div>
+                            <div class="text-xs text-gray-400 mt-1">Auto-generated</div>
                         </div>
                     </div>
                 </div>
@@ -107,18 +119,7 @@ tailwind.config = {
                     </div>
                 </div>
 
-                <!-- File Number Display -->
-<div class="flex justify-center p-6 pb-0">
-    <div class="bg-blue-50 border border-blue-200 rounded-sm px-4 py-3">
-        <div class="text-xs font-medium text-blue-600 uppercase tracking-wide mb-1">Application File Number</div>
-        <div class="flex items-center gap-2">
-            <i data-lucide="file-text" class="h-5 w-5 text-blue-600"></i>
-            <span id="file-number-display" class="text-lg font-bold text-blue-900 font-mono">Loading...</span>
-        </div>
-        <div class="text-xs text-blue-500 mt-1">Auto-generated</div>
-    </div>
-</div>
-           <div class="p-6">
+                <div class="p-6">
                     <form id="recertification-form" method="POST" action="{{ route('recertification.application.store') }}" enctype="multipart/form-data">
                         @csrf
                         

@@ -1,5 +1,5 @@
 <!-- Step 1: Applicant Personal Details -->
-<div id="step-content-1" class="step-content">
+<div id="step-content-1" class="step-content"> 
     <div class="bg-white border border-gray-200 rounded-lg">
         <div class="p-4 border-b border-gray-200">
             <h3 class="text-lg font-semibold flex items-center gap-2">
@@ -115,14 +115,7 @@
                                 <label for="occupation" class="block text-sm font-medium text-gray-700 mb-1">
                                     Occupation <span class="text-red-500">*</span>
                                 </label>
-                                <input
-                                    type="text"
-                                    id="occupation"
-                                    name="occupation"
-                                    required
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 uppercase"
-                                    placeholder="OCCUPATION"
-                                />
+                                @include('components.Occupation2')
                                 <div class="error-message">Occupation is required</div>
                             </div>
                         </div>

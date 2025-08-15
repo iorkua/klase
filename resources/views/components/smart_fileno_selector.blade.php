@@ -18,26 +18,58 @@
         <select id="fileno-select" class="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option value="">-- Select File Number --</option>
             @php
-                $ctApplications = DB::connection('sqlsrv')
-                    ->select("SELECT [fileno], [applicant_title], [first_name], [surname], [corporate_name], [rc_number], [multiple_owners_names] FROM [klas].[dbo].[mother_applications]");
+                try {
+                    $ctApplications = DB::connection('sqlsrv')
+                        ->select("SELECT [id], [kangisFileNo], [mlsFNo], [NewKANGISFileno], [FileName] FROM [klas].[dbo].[fileNumber] ORDER BY [id] DESC");
+                    
+                    // Debug: Log the count of applications found
+                    \Log::info('FileNumber query result count: ' . count($ctApplications));
+                    
+                } catch (\Exception $e) {
+                    \Log::error('FileNumber query error: ' . $e->getMessage());
+                    $ctApplications = [];
+                }
             @endphp
+            
+            <!-- Debug info (remove in production) -->
+            @if(config('app.debug'))
+                <!-- Found {{ count($ctApplications) }} file numbers -->
+            @endif
+            
             @foreach($ctApplications as $application)
-                <option value="{{ $application->fileno }}" 
-                        data-fileno="{{ $application->fileno }}"
-                        data-applicant-title="{{ $application->applicant_title ?? '' }}"
-                        data-first-name="{{ $application->first_name ?? '' }}"
-                        data-surname="{{ $application->surname ?? '' }}"
-                        data-corporate-name="{{ $application->corporate_name ?? '' }}"
-                        data-rc-number="{{ $application->rc_number ?? '' }}"
-                        data-multiple-owners="{{ $application->multiple_owners_names ?? '' }}">
-                    {{ $application->fileno }} - 
-                    @if($application->corporate_name)
-                        {{ $application->corporate_name }}
-                    @else
-                        {{ $application->applicant_title ?? '' }} {{ $application->first_name ?? '' }} {{ $application->surname ?? '' }}
-                    @endif
+                @php
+                    $displayText = '';
+                    $fileType = '';
+                    
+                    if (!empty($application->mlsFNo)) {
+                        $displayText = $application->mlsFNo;
+                        $fileType = 'MLS';
+                    } elseif (!empty($application->kangisFileNo)) {
+                        $displayText = $application->kangisFileNo;
+                        $fileType = 'KANGIS';
+                    } elseif (!empty($application->NewKANGISFileno)) {
+                        $displayText = $application->NewKANGISFileno;
+                        $fileType = 'NEW KANGIS';
+                    } else {
+                        // Fallback: show record ID if no file number is available
+                        $displayText = 'Record #' . $application->id;
+                        $fileType = 'RECORD';
+                    }
+                @endphp
+                
+                <option value="{{ $displayText }}" 
+                        data-fileno="{{ $displayText }}"
+                        data-file-type="{{ $fileType }}"
+                        data-application-id="{{ $application->application_id ?? '' }}"
+                        data-filename="{{ $application->FileName ?? '' }}"
+                        data-record-id="{{ $application->id }}">
+                    {{ $displayText }} ({{ $fileType }}){{ !empty($application->FileName) ? ' - ' . $application->FileName : '' }}
                 </option>
             @endforeach
+            
+            @if(count($ctApplications) == 0)
+                <option value="" disabled>No file numbers found in database</option>
+            @endif
         </select>
         <p class="text-xs text-gray-500 mt-1">Can't find your file number? <button type="button" class="text-blue-600 hover:underline" onclick="toggleFilenoMode()">Enter it manually</button></p>
         
@@ -426,7 +458,7 @@ function initializeSmartFilenoSelector() {
     function enableFileNumberInputs() {
         // Enable all file number related inputs
         const fileNumberInputs = [
-            'mlsFileNoPrefix', 'mlsFileNumber', 'mlsPreviewFileNumber',
+            'mlsFileNoPrefix', 'mlsFileYear', 'mlsFileSerial',
             'kangisFileNoPrefix', 'kangisFileNumber', 'kangisPreviewFileNumber',
             'newKangisFileNoPrefix', 'newKangisFileNumber', 'newKangisPreviewFileNumber'
         ];
@@ -437,6 +469,12 @@ function initializeSmartFilenoSelector() {
                 element.disabled = false;
             }
         });
+        
+        // Enable radio buttons for MLS file types
+        const mlsFileTypeRadios = document.querySelectorAll('input[name="mlsFileType"]');
+        mlsFileTypeRadios.forEach(radio => {
+            radio.disabled = false;
+        });
     }
     
     // Function to reset manual entry form
@@ -444,8 +482,8 @@ function initializeSmartFilenoSelector() {
         // Reset all file number inputs
         const resetFields = [
             'mlsFNo', 'kangisFileNo', 'NewKANGISFileno',
-            'mlsPreviewFileNumber', 'kangisPreviewFileNumber', 'newKangisPreviewFileNumber',
-            'mlsFileNumber', 'kangisFileNumber', 'newKangisFileNumber',
+            'kangisPreviewFileNumber', 'newKangisPreviewFileNumber',
+            'mlsFileYear', 'mlsFileSerial', 'kangisFileNumber', 'newKangisFileNumber',
             'mlsFileNoPrefix', 'kangisFileNoPrefix', 'newKangisFileNoPrefix'
         ];
         
@@ -453,6 +491,10 @@ function initializeSmartFilenoSelector() {
             const el = document.getElementById(id);
             if (el) el.value = '';
         });
+        
+        // Reset MLS file type radio buttons to default (regular)
+        const regularRadio = document.getElementById('mlsRegularFile');
+        if (regularRadio) regularRadio.checked = true;
         
         // Reset to first tab
         const activeTabEl = document.getElementById('activeFileTab');
