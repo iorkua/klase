@@ -1,7 +1,7 @@
 <script>
 // Application state
 let currentStep = 1;
-const totalSteps = 7;
+const totalSteps = 8;
 
 // Form data state
 let formData = {};
@@ -66,6 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         setCurrentDate();
         fetchNextFileNumber();
+        fetchNewKangisFileNumber();
         updateStepDisplay();
         setupDevelopmentControls();
         setupFileUploads();
@@ -842,6 +843,62 @@ async function fetchNextFileNumber() {
         }
         
         showToast('Using fallback file number: ' + fallbackNumber, 'warning');
+    }
+}
+
+// Fetch New KANGIS file number for the header display
+async function fetchNewKangisFileNumber() {
+    try {
+        const response = await fetch('/recertification/next-new-kangis-file-number', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+        
+        if (data.success && data.new_kangis_file_number) {
+            const newKangisFileNumber = data.new_kangis_file_number;
+            
+            // Update the display
+            const newKangisDisplay = document.getElementById('new-kangis-file-number-display');
+            const newKangisInput = document.getElementById('newKangisFileNo');
+            
+            if (newKangisDisplay) {
+                newKangisDisplay.textContent = newKangisFileNumber;
+            }
+            
+            if (newKangisInput) {
+                newKangisInput.value = newKangisFileNumber;
+                formData.newKangisFileNo = newKangisFileNumber;
+            }
+            
+            console.log('New KANGIS file number generated:', newKangisFileNumber);
+            showToast(`New KANGIS file number generated: ${newKangisFileNumber}`, 'success');
+        } else {
+            throw new Error('Failed to get New KANGIS file number from server');
+        }
+        
+    } catch (error) {
+        console.error('Error fetching New KANGIS file number:', error);
+        
+        // Set fallback number
+        const fallbackNumber = 'KN3001';
+        const newKangisDisplay = document.getElementById('new-kangis-file-number-display');
+        const newKangisInput = document.getElementById('newKangisFileNo');
+        
+        if (newKangisDisplay) {
+            newKangisDisplay.textContent = fallbackNumber;
+        }
+        
+        if (newKangisInput) {
+            newKangisInput.value = fallbackNumber;
+            formData.newKangisFileNo = fallbackNumber;
+        }
+        
+        showToast('Using fallback New KANGIS file number: ' + fallbackNumber, 'warning');
     }
 }
 

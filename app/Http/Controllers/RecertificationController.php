@@ -164,6 +164,7 @@ class RecertificationController extends Controller
                     'applicant_type' => $app->applicant_type ?? 'N/A',
                     'plot_details' => $plotDetails,
                     'lga_name' => $app->lga_name ?? 'N/A',
+                    'current_land_use' => $app->current_land_use ?? 'N/A',
                     'created_at' => $app->created_at ? date('d M Y', strtotime($app->created_at)) : 'N/A',
                     'cofo_number' => $app->cofo_number ?? 'N/A',
                     'acknowledgement' => $app->acknowledgement ?? null,
@@ -673,6 +674,7 @@ class RecertificationController extends Controller
                 // Step 5 - Plot Details
                 'plot_number' => $request->input('plotNumber'),
                 'file_number' => $request->input('fileNumber'),
+                'NewKANGISFileno' => $request->input('newKangisFileNo'),
                 'plot_size' => $request->input('plotSize'),
                 'layout_district' => $request->input('layoutDistrict'),
                 'lga_name' => $request->input('lga'),
@@ -791,6 +793,74 @@ class RecertificationController extends Controller
             return response()->json([
                 'success' => true,
                 'file_number' => 'KN3001'
+            ]);
+        }
+    }
+
+    /**
+     * Get the next New KANGIS file number for new applications
+     */
+    public function getNextNewKangisFileNumber()
+    {
+        try {
+            // Focus primarily on the recertification_applications table for NewKANGISFileno
+            // This ensures we maintain the KN3000+ sequence for recertification applications
+            $lastFromNewKangis = DB::connection('sqlsrv')
+                ->table('recertification_applications')
+                ->where('NewKANGISFileno', 'like', 'KN%')
+                ->orderBy('NewKANGISFileno', 'desc')
+                ->value('NewKANGISFileno');
+            
+            // Also check file_number field in recertification_applications as backup
+            $lastFromFileNumber = DB::connection('sqlsrv')
+                ->table('recertification_applications')
+                ->where('file_number', 'like', 'KN%')
+                ->orderBy('file_number', 'desc')
+                ->value('file_number');
+            
+            // Determine the next number based on recertification_applications table only
+            $highestNumber = 3000; // Default starting number for recertification
+            
+            // Check NewKANGISFileno field first (primary field for this purpose)
+            if ($lastFromNewKangis && preg_match('/^KN(\d{4})$/', $lastFromNewKangis, $matches)) {
+                $number = intval($matches[1]);
+                if ($number >= 3000) { // Only consider numbers in the 3000+ range for recertification
+                    $highestNumber = $number + 1;
+                }
+            }
+            
+            // If no NewKANGISFileno found, check file_number as backup
+            if ($highestNumber == 3000 && $lastFromFileNumber && preg_match('/^KN(\d{4})$/', $lastFromFileNumber, $matches)) {
+                $number = intval($matches[1]);
+                if ($number >= 3000) { // Only consider numbers in the 3000+ range for recertification
+                    $highestNumber = $number + 1;
+                }
+            }
+            
+            $nextNewKangisFileNumber = 'KN' . str_pad($highestNumber, 4, '0', STR_PAD_LEFT);
+            
+            // Log the generation for debugging
+            Log::info('New KANGIS file number generated', [
+                'last_from_new_kangis' => $lastFromNewKangis,
+                'last_from_file_number' => $lastFromFileNumber,
+                'highest_number' => $highestNumber,
+                'generated_number' => $nextNewKangisFileNumber
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'new_kangis_file_number' => $nextNewKangisFileNumber
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error getting next New KANGIS file number', [
+                'message' => $e->getMessage()
+            ]);
+            
+            // Return a safer default that avoids reusing KN3000 on failure
+            return response()->json([
+                'success' => true,
+                'new_kangis_file_number' => 'KN3001'
             ]);
         }
     }

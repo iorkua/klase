@@ -1,5 +1,5 @@
-<!-- Step 7: Application Summary -->
-<div id="step-content-7" class="step-content hidden">
+<!-- Step 8: Application Summary -->
+<div id="step-content-8" class="step-content hidden">
     <div class="bg-white border border-gray-200 rounded-lg">
         <div class="p-4 border-b border-gray-200">
             <h3 class="text-lg font-semibold flex items-center gap-2">

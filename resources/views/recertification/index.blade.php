@@ -318,6 +318,9 @@ input:checked + .toggle-slider:before {
                 <div class="truncate">Applicant Name</div>
               </th>
               <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <div class="truncate">Land Use</div>
+              </th>
+              <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div class="truncate">Plot Details</div>
               </th>
               <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

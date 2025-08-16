@@ -258,8 +258,7 @@ tailwind.config = {
                             </div>
                         </div>
 
-                        <!-- Applications Table -->
-                        <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                        <!-- Applications Table --<div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
                             <div class="overflow-x-auto">
                                 <table class="min-w-full divide-y divide-gray-200" id="migrate-applications-table">
                                     <thead class="bg-gray-50">
@@ -353,7 +352,7 @@ tailwind.config = {
                                             <p class="font-medium text-blue-900">Important Notes:</p>
                                             <ul class="list-disc list-inside text-sm text-blue-800 mt-2 space-y-1">
                                                 <li>Migrated records will automatically have status "RECERTIFIED"</li>
-                                                <li>Migrated records will automatically be batched between 1 & 10.</li>
+                                                <li  >Migrated records will automatically be batched between 1 & 10.</li>
                                                 <li>Recertification date will be set to the current date</li>
                                                 <li>Maximum file size: 10MB</li>
                                                 <li>Supported formats: CSV (.csv), Text (.txt)</li>
@@ -573,7 +572,7 @@ function loadApplicationsData() {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="11" class="text-center py-8">
+                <td colspan="7" class="text-center py-8">
                     <div class="loading-spinner mx-auto mb-2"></div>
                     <p class="text-gray-600">Loading applications...</p>
                 </td>
@@ -610,7 +609,7 @@ function loadApplicationsData() {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="11" class="text-center py-8">
+                    <td colspan="7" class="text-center py-8">
                         <i data-lucide="alert-circle" class="h-8 w-8 text-red-500 mx-auto mb-2"></i>
                         <p class="text-red-600">Failed to load applications</p>
                         <button onclick="loadApplicationsData()" class="mt-2 text-blue-600 hover:text-blue-800">
@@ -655,30 +654,6 @@ function getStatusClass(status) {
     }
 }
 
-// Land use badge rendering function
-function renderLandUseBadge(landUse) {
-    if (!landUse || landUse === 'N/A') {
-        return '<div class="text-sm text-gray-500">N/A</div>';
-    }
-    
-    // Define land use colors
-    const landUseColors = {
-        'Residential': 'bg-blue-100 text-blue-800',
-        'Commercial': 'bg-green-100 text-green-800',
-        'Industrial': 'bg-orange-100 text-orange-800',
-        'Agricultural': 'bg-yellow-100 text-yellow-800',
-        'Mixed Use': 'bg-purple-100 text-purple-800',
-        'Institutional': 'bg-indigo-100 text-indigo-800',
-        'Recreational': 'bg-pink-100 text-pink-800'
-    };
-    
-    const colorClass = landUseColors[landUse] || 'bg-gray-100 text-gray-800';
-    
-    return `<div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${colorClass}">
-        ${landUse}
-    </div>`;
-}
-
 function renderApplicationsTable(data) {
     const tableBody = document.getElementById('applications-table-body');
     const noResults = document.getElementById('applications-no-results');
@@ -700,10 +675,10 @@ function renderApplicationsTable(data) {
     const rows = data.map(app => {
         return `
             <tr class="border-b hover:bg-gray-50">
+               
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-900">${app.NewKANGISFileno || app.newkangisfileno || app.new_kangis_file_no || 'N/A'}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                </td<td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-900">${app.kangisFileNo || 'N/A'}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -1094,7 +1069,6 @@ function removeToast(toastId) {
 window.removeToast = removeToast;
 window.switchTab = switchTab;
 window.loadApplicationsData = loadApplicationsData;
-window.renderLandUseBadge = renderLandUseBadge;
 </script>
 
 @endsection

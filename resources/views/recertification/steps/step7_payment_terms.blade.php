@@ -1,15 +1,15 @@
-<!-- Step 6: Payment & Terms -->
-<div id="step-content-6" class="step-content hidden">
+<!-- Step 7: Payment & Terms -->
+<div id="step-content-7" class="step-content hidden">
     <div class="bg-white border border-gray-200 rounded-lg">
         <div class="p-4 border-b border-gray-200">
             <h3 class="text-lg font-semibold flex items-center gap-2">
                 <i data-lucide="credit-card" class="h-5 w-5"></i>
-                SECTION D: PAYMENT & TERMS
+                SECTION E: PAYMENT & TERMS
             </h3>
         </div>
         <div class="p-4 space-y-6">
             <div>
-                <h4 class="font-semibold mb-4">D1: APPLICATION TYPE</h4>
+                <h4 class="font-semibold mb-4">E1: APPLICATION TYPE</h4>
                 <div class="form-field">
                     <label class="block text-sm font-medium text-gray-700 mb-2">
                         Type of Application <span class="text-red-500">*</span>
@@ -81,7 +81,7 @@
             </div>
             
             <div>
-                <h4 class="font-semibold mb-4">D2: PAYMENT INFORMATION SECTION</h4>
+                <h4 class="font-semibold mb-4">E2: PAYMENT INFORMATION SECTION</h4>
                 <div class="grid grid-cols-3 gap-4">
                     <div class="form-field">
                         <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -157,7 +157,7 @@
             </div>
             
             <div class="border-t pt-4">
-                <h4 class="font-semibold mb-4">D3: SUPPORTING DOCUMENTS</h4>
+                <h4 class="font-semibold mb-4">E3: SUPPORTING DOCUMENTS</h4>
                 <div class="space-y-3">
                     <div class="form-field">
                         <label class="checkbox-item">
@@ -196,87 +196,6 @@
                             <input type="checkbox" name="documents[]" value="passport-photos" />
                             <div class="checkbox-box"></div>
                             <span class="text-sm">Recent Passport Photographs</span>
-                        </label>
-                    </div>
-                    
-                    <!-- New Document Upload Options -->
-                    <div class="form-field">
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="documents[]" value="right-of-occupancy" />
-                            <div class="checkbox-box"></div>
-                            <span class="text-sm">(a) Right of Occupancy</span>
-                        </label>
-                    </div>
-                    
-                    <div class="form-field">
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="documents[]" value="certificate-of-occupancy" />
-                            <div class="checkbox-box"></div>
-                            <span class="text-sm">(b) Certificate of Occupancy</span>
-                        </label>
-                    </div>
-                    
-                    <div class="form-field">
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="documents[]" value="deed-of-assignment" />
-                            <div class="checkbox-box"></div>
-                            <span class="text-sm">(c) Deed of Assignment</span>
-                        </label>
-                    </div>
-                    
-                    <div class="form-field">
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="documents[]" value="deed-of-sublease" />
-                            <div class="checkbox-box"></div>
-                            <span class="text-sm">(d) Deed of Sublease</span>
-                        </label>
-                    </div>
-                    
-                    <div class="form-field">
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="documents[]" value="deed-of-mortgage" />
-                            <div class="checkbox-box"></div>
-                            <span class="text-sm">(e) Deed of Mortgage</span>
-                        </label>
-                    </div>
-                    
-                    <div class="form-field">
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="documents[]" value="deed-of-gift" />
-                            <div class="checkbox-box"></div>
-                            <span class="text-sm">(f) Deed of Gift</span>
-                        </label>
-                    </div>
-                    
-                    <div class="form-field">
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="documents[]" value="power-of-attorney" />
-                            <div class="checkbox-box"></div>
-                            <span class="text-sm">(g) Power of Attorney</span>
-                        </label>
-                    </div>
-                    
-                    <div class="form-field">
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="documents[]" value="devolution-order" />
-                            <div class="checkbox-box"></div>
-                            <span class="text-sm">(h) Devolution Order</span>
-                        </label>
-                    </div>
-                    
-                    <div class="form-field">
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="documents[]" value="letter-of-administration" />
-                            <div class="checkbox-box"></div>
-                            <span class="text-sm">(i) Letter of Administration</span>
-                        </label>
-                    </div>
-                    
-                    <div class="form-field">
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="documents[]" value="others" />
-                            <div class="checkbox-box"></div>
-                            <span class="text-sm">(j) Others......</span>
                         </label>
                     </div>
                 </div>

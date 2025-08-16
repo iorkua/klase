@@ -54,7 +54,6 @@ class PropertyCardController extends Controller
                 6 => 'created_at', // DATE CAPTURED
                 7 => 'id' // Actions column
             ];
->
             
             // Build base query
             $query = DB::connection('sqlsrv')->table('property_records');
@@ -108,7 +107,6 @@ class PropertyCardController extends Controller
                     'instrument_type' => $record->instrument_type,
                     'transaction_date' => $record->transaction_date,
                     'created_at' => $record->created_at,
->
                 ];
             }
             

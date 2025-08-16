@@ -35,7 +35,7 @@ function loadApplicationsData() {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="8" class="text-center py-8">
+                <td colspan="12" class="text-center py-8">
                     <div class="loading-spinner mx-auto mb-2"></div>
                     <p class="text-gray-600">Loading applications...</p>
                 </td>
@@ -81,7 +81,7 @@ function loadApplicationsData() {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="text-center py-8">
+                    <td colspan="12" class="text-center py-8">
                         <i data-lucide="alert-circle" class="h-8 w-8 text-red-500 mx-auto mb-2"></i>
                         <p class="text-red-600">Failed to load applications</p>
                         <button onclick="loadApplicationsData()" class="mt-2 text-blue-600 hover:text-blue-800">
@@ -159,6 +159,9 @@ function renderApplicationsTable(data) {
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-medium text-gray-900">${app.applicant_name || 'N/A'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    ${renderLandUseBadge(app.current_land_use)}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-900">${app.plot_details || 'N/A'}</div>
@@ -823,6 +826,39 @@ function renderAcknowledgementBadge(status) {
         return '<span class="badge badge-success">Generated</span>';
     }
     return '<span class="badge badge-default">Pending</span>';
+}
+
+function renderLandUseBadge(landUse) {
+    if (!landUse || landUse === 'N/A') {
+        return '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">N/A</span>';
+    }
+    
+    // Capitalize first letter of each word
+    const capitalizedLandUse = landUse.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+    
+    // Determine badge color based on land use type
+    let badgeClass = '';
+    const lowerLandUse = landUse.toLowerCase();
+    
+    if (lowerLandUse.includes('residential')) {
+        badgeClass = 'bg-blue-100 text-blue-800';
+    } else if (lowerLandUse.includes('commercial')) {
+        badgeClass = 'bg-green-100 text-green-800';
+    } else if (lowerLandUse.includes('industrial')) {
+        badgeClass = 'bg-purple-100 text-purple-800';
+    } else if (lowerLandUse.includes('agricultural') || lowerLandUse.includes('farming')) {
+        badgeClass = 'bg-yellow-100 text-yellow-800';
+    } else if (lowerLandUse.includes('institutional') || lowerLandUse.includes('educational')) {
+        badgeClass = 'bg-indigo-100 text-indigo-800';
+    } else if (lowerLandUse.includes('recreational') || lowerLandUse.includes('park')) {
+        badgeClass = 'bg-emerald-100 text-emerald-800';
+    } else if (lowerLandUse.includes('mixed')) {
+        badgeClass = 'bg-orange-100 text-orange-800';
+    } else {
+        badgeClass = 'bg-gray-100 text-gray-800';
+    }
+    
+    return `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badgeClass}">${capitalizedLandUse}</span>`;
 }
 
 // Make functions available globally

@@ -53,8 +53,8 @@ tailwind.config = {
             <div class="bg-white rounded-lg shadow-xl border border-gray-200">
                 <!-- Header -->
                 <div class="p-6 border-b border-gray-200">
-                    <div class="flex items-start justify-center">
-                        <div class="text-center">
+                    <div class="flex items-start justify-between">
+                        <div class="text-center flex-1">
                             <div class="space-y-1">
                                 <div class="font-bold text-lg">KANO STATE GEOGRAPHIC INFORMATION SYSTEMS (KANGIS)</div>
                                 <div class="text-sm text-gray-600">MINISTRY OF LAND AND PHYSICAL PLANNING KANO STATE</div>
@@ -63,13 +63,14 @@ tailwind.config = {
                             </div>
                         </div>
                         
-                        <!-- File Number Display - Very close to header text -->
+                        <!-- File Numbers Display - Moved to the right -->
                         <div class="ml-8">
-                            <div class="bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
-                                <div class="text-xs font-medium text-blue-700 uppercase tracking-wide text-center mb-1">File Number</div>
+                            <!-- New KANGIS File Number (Auto-generated) -->
+                            <div class="bg-blue-50 px-4 py-3 rounded-lg border border-blue-200">
+                                <div class="text-sm font-medium text-blue-700 uppercase tracking-wide text-center mb-1">New KANGIS File No</div>
                                 <div class="flex items-center gap-2 justify-center">
-                                    <i data-lucide="file-text" class="h-4 w-4 text-blue-600"></i>
-                                    <span id="file-number-display" class="text-sm font-bold text-blue-900 font-mono">Loading...</span>
+                                    <i data-lucide="file-text" class="h-5 w-5 text-blue-600"></i>
+                                    <span id="new-kangis-file-number-display" class="text-lg font-bold text-blue-900 font-mono">Loading...</span>
                                 </div>
                                 <div class="text-xs text-blue-500 text-center mt-1">Auto-generated</div>
                             </div>
@@ -93,6 +94,8 @@ tailwind.config = {
                         <div id="step-6" class="step-circle inactive">6</div>
                         <div id="line-6" class="step-line inactive"></div>
                         <div id="step-7" class="step-circle inactive">7</div>
+                        <div id="line-7" class="step-line inactive"></div>
+                        <div id="step-8" class="step-circle inactive">8</div>
                     </div>
                 </div>
 
@@ -106,7 +109,8 @@ tailwind.config = {
                         @include('recertification.steps.step3_title_holder')
                         @include('recertification.steps.step4_mortgage_encumbrance')
                         @include('recertification.steps.step5_plot_details')
-                        @include('recertification.steps.step6_payment_terms')
+                        @include('recertification.steps.step6_document_uploads')
+                        @include('recertification.steps.step7_payment_terms')
                         @include('recertification.steps.step7_application_summary')
                         
                     </form>

@@ -242,7 +242,6 @@
                         } else if (row.mlsFNo) {
                             return row.mlsFNo;
                         } else if (row.NewKANGISFileno) {
->
                             return row.NewKANGISFileno;
                         } else {
                             return 'No File Number';

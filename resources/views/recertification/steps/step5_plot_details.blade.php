@@ -8,7 +8,7 @@
             </h3>
         </div>
         <div class="p-4 space-y-4">
-            <div class="grid grid-cols-3 gap-4">
+            <div class="grid grid-cols-4 gap-4">
                 <div class="form-field">
                     <label for="plotNumber" class="block text-sm font-medium text-gray-700 mb-1">
                         Plot Number or Piece of Land <span class="text-red-500">*</span>
@@ -24,7 +24,8 @@
                     <div class="error-message">Plot number is required</div>
                 </div>
                 
-                <div class="form-field">
+                <!-- Hidden File Number field -->
+                <div class="form-field hidden">
                     <label for="fileNumber" class="block text-sm font-medium text-gray-700 mb-1">
                         File Number <span class="text-red-500">*</span>
                     </label>
@@ -32,7 +33,6 @@
                         type="text"
                         id="fileNumber"
                         name="fileNumber"
-                        required
                         readonly
                         class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all bg-gray-100 text-gray-600 cursor-not-allowed uppercase"
                         placeholder="Generating..."
@@ -40,6 +40,40 @@
                     />
                     <div class="text-xs text-gray-500 mt-1">Auto-generated unique file number</div>
                     <div class="error-message">File number is required</div>
+                </div>
+                
+                <div class="form-field">
+                    <label for="mlsFileNo" class="block text-sm font-medium text-gray-700 mb-1">
+                        MLS File No       
+                    </label>
+                    <input
+                        type="text"
+                        id="mlsFileNo"
+                        name="mlsFileNo"
+                        required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 uppercase"
+                        placeholder="ENTER MLS FILE NUMBER"
+                        value=""
+                    />
+                    <div class="text-xs text-gray-500 mt-1">Enter existing MLS file number</div>
+                    <div class="error-message">MLS file number is required</div>
+                </div>
+                
+                <div class="form-field">
+                    <label for="kangisFileNo" class="block text-sm font-medium text-gray-700 mb-1">
+                        KANGIS File No  
+                    </label>
+                    <input
+                        type="text"
+                        id="kangisFileNo"
+                        name="kangisFileNo"
+                        required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 uppercase"
+                        placeholder="ENTER KANGIS FILE NUMBER"
+                        value=""
+                    />
+                    <div class="text-xs text-gray-500 mt-1">Enter existing KANGIS file number</div>
+                    <div class="error-message">KANGIS file number is required</div>
                 </div>
                  
                 <div class="form-field">
@@ -56,6 +90,28 @@
                     />
                     <div class="error-message">Plot size is required</div>
                 </div>
+            </div>
+            
+            <!-- New KANGIS File Number (Auto-generated) - Separate row -->
+            <div class="grid grid-cols-4 gap-4">
+                <div class="form-field">
+                    <label for="newKangisFileNo" class="block text-sm font-medium text-gray-700 mb-1">
+                        New KANGIS File No <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="newKangisFileNo"
+                        name="newKangisFileNo"
+                        required
+                        readonly
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all bg-blue-50 text-blue-900 cursor-not-allowed uppercase font-mono font-bold"
+                        placeholder="Generating..."
+                        value=""
+                    />
+                    <div class="text-xs text-blue-600 mt-1">Auto-generated new KANGIS file number</div>
+                    <div class="error-message">New KANGIS file number is required</div>
+                </div>
+                <div class="col-span-3"></div>
             </div>
             
             

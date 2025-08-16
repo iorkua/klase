@@ -28,6 +28,7 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'recertification'], f
     
     // Utility Routes
     Route::get('/next-file-number', [RecertificationController::class, 'getNextFileNumber'])->name('recertification.nextFileNumber');
+    Route::get('/next-new-kangis-file-number', [RecertificationController::class, 'getNextNewKangisFileNumber'])->name('recertification.nextNewKangisFileNumber');
     
     // Individual Record Routes
     Route::get('/{id}/view', [RecertificationController::class, 'view'])->name('recertification.view');
