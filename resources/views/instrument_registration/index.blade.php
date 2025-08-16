@@ -114,20 +114,34 @@
                     <h2 class="text-lg font-semibold text-gray-900">Instrument Registry</h2>
                     <div class="flex items-center gap-2 text-sm text-gray-600">
                         <i class="fas fa-database text-blue-500"></i>
-                        <span>{{ $totalCount ?? 0 }} Total Records</span>
+                        <span id="totalRecordsCount">{{ $totalCount ?? 0 }} Total Records</span>
                     </div>
                 </div>
                  
-                <!-- Search -->
-                <div class="relative">
-                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                    <input id="searchInput" type="search" placeholder="Search by File No..." 
-                           class="search-input pl-10 pr-4 py-2.5 text-sm w-80 rounded-lg">
+                <!-- Search and Pagination Controls -->
+                <div class="flex items-center gap-4">
+                    <!-- Records per page selector -->
+                    <div class="flex items-center gap-2">
+                        <label for="recordsPerPage" class="text-sm text-gray-600">Show:</label>
+                        <select id="recordsPerPage" class="border border-gray-300 rounded px-2 py-1 text-sm">
+                            <option value="10">10</option>
+                            <option value="25" selected>25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Search -->
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input id="searchInput" type="search" placeholder="Search by File No..." 
+                               class="search-input pl-10 pr-4 py-2.5 text-sm w-80 rounded-lg">
+                    </div>
                 </div>
             </div>
         
-            <!-- Table -->
-            <div class="overflow-x-auto">
+            <!-- Table with Fixed Header -->
+            <div class="table-wrapper" style="max-height: 600px; overflow-y: auto;">
               <table class="min-w-full enhanced-table" id="instrumentTable">
               <thead class="bg-gray-50">
                 <tr>
@@ -137,6 +151,14 @@
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable(1)">
                   Reg Particulars
                   <span class="inline-block align-middle" id="sortIcon-1">▲</span>
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable(12)">
+                  Captured Date
+                  <span class="inline-block align-middle" id="sortIcon-12"></span>
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable(13)">
+                  REG DATE
+                  <span class="inline-block align-middle" id="sortIcon-13"></span>
                 </th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable(2)">
                   FileNo
@@ -178,14 +200,7 @@
                   Plot Size
                   <span class="inline-block align-middle" id="sortIcon-11"></span>
                 </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable(12)">
-                  Captured Date
-                  <span class="inline-block align-middle" id="sortIcon-12"></span>
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable(13)">
-                  REG DATE
-                  <span class="inline-block align-middle" id="sortIcon-13"></span>
-                </th>
+               
                 <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Action
                 </th>
@@ -215,6 +230,29 @@
                     @endif
                   @else
                     <span class="text-gray-400 text-xs">N/A</span>
+                  @endif
+                </td>
+
+                    <!-- 12. Captured Date -->
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  @if($app->captured_date ?? null)
+                    <div class="flex items-center">
+                      <i class="fas fa-calendar-plus text-blue-400 mr-2"></i>
+                      {{ date('M d, Y', strtotime($app->captured_date)) }}
+                    </div>
+                  @else
+                    <span class="text-gray-400">N/A</span>
+                  @endif
+                </td>
+                <!-- 13. Reg Date -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  @if($app->reg_date ?? null)
+                    <div class="flex items-center">
+                      <i class="fas fa-calendar-check text-green-400 mr-2"></i>
+                      {{ date('M d, Y', strtotime($app->reg_date)) }}
+                    </div>
+                  @else
+                    <span class="text-gray-400">N/A</span>
                   @endif
                 </td>
                 <!-- 2. FileNo -->
@@ -324,28 +362,7 @@
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $app->plotNumber ?? 'N/A' }}</td>
                 <!-- 11. Plot Size -->
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $app->size ?? 'N/A' }}</td>
-                <!-- 12. Captured Date -->
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                  @if($app->captured_date ?? null)
-                    <div class="flex items-center">
-                      <i class="fas fa-calendar-plus text-blue-400 mr-2"></i>
-                      {{ date('M d, Y', strtotime($app->captured_date)) }}
-                    </div>
-                  @else
-                    <span class="text-gray-400">N/A</span>
-                  @endif
-                </td>
-                <!-- 13. Reg Date -->
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                  @if($app->reg_date ?? null)
-                    <div class="flex items-center">
-                      <i class="fas fa-calendar-check text-green-400 mr-2"></i>
-                      {{ date('M d, Y', strtotime($app->reg_date)) }}
-                    </div>
-                  @else
-                    <span class="text-gray-400">N/A</span>
-                  @endif
-                </td>
+            
                 <!-- 14. Action -->
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
                   <div class="dropdown-wrapper">
@@ -367,6 +384,35 @@
                 @endforelse
               </tbody>
               </table>
+            </div>
+
+            <!-- Pagination Controls -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                <div class="flex items-center text-sm text-gray-700">
+                    <span>Showing</span>
+                    <span class="font-medium mx-1" id="showingStart">1</span>
+                    <span>to</span>
+                    <span class="font-medium mx-1" id="showingEnd">25</span>
+                    <span>of</span>
+                    <span class="font-medium mx-1" id="showingTotal">{{ $totalCount ?? 0 }}</span>
+                    <span>results</span>
+                </div>
+                
+                <div class="flex items-center space-x-2">
+                    <button id="prevPage" class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fas fa-chevron-left mr-1"></i>
+                        Previous
+                    </button>
+                    
+                    <div id="pageNumbers" class="flex items-center space-x-1">
+                        <!-- Page numbers will be dynamically generated -->
+                    </div>
+                    
+                    <button id="nextPage" class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Next
+                        <i class="fas fa-chevron-right ml-1"></i>
+                    </button>
+                </div>
             </div>
 
             <script>
@@ -847,93 +893,261 @@ function toggleSelectAll(checkbox) {
 }
 </script>
 
-@endsection
-<!-- Enhanced Scrollbar Functionality -->
+<!-- Pagination and Search Functionality -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const tableContainer = document.getElementById('tableContainer');
-    const tableWrapper = document.getElementById('tableWrapper');
-    const scrollProgress = document.getElementById('scrollProgress');
-    const scrollHint = document.getElementById('scrollHint');
+    // Pagination variables
+    let currentPage = 1;
+    let recordsPerPage = 25;
+    let filteredData = [...serverCofoData];
+    let totalRecords = filteredData.length;
     
-    if (!tableContainer || !tableWrapper || !scrollProgress || !scrollHint) {
-        console.warn('Scrollbar elements not found');
-        return;
+    // Get DOM elements
+    const recordsPerPageSelect = document.getElementById('recordsPerPage');
+    const searchInput = document.getElementById('searchInput');
+    const prevPageBtn = document.getElementById('prevPage');
+    const nextPageBtn = document.getElementById('nextPage');
+    const pageNumbers = document.getElementById('pageNumbers');
+    const showingStart = document.getElementById('showingStart');
+    const showingEnd = document.getElementById('showingEnd');
+    const showingTotal = document.getElementById('showingTotal');
+    const tableBody = document.getElementById('cofoTableBody');
+    
+    // Initialize pagination
+    function initializePagination() {
+        recordsPerPage = parseInt(recordsPerPageSelect.value);
+        updateTable();
+        updatePaginationControls();
     }
     
-    // Function to update scroll progress
-    function updateScrollProgress() {
-        const scrollLeft = tableContainer.scrollLeft;
-        const scrollWidth = tableContainer.scrollWidth;
-        const clientWidth = tableContainer.clientWidth;
-        const maxScroll = scrollWidth - clientWidth;
+    // Filter data based on search
+    function filterData() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
         
-        if (maxScroll > 0) {
-            const progress = (scrollLeft / maxScroll) * 100;
-            scrollProgress.style.width = progress + '%';
+        if (searchTerm === '') {
+            filteredData = [...serverCofoData];
+        } else {
+            filteredData = serverCofoData.filter(item => {
+                return (item.fileno && item.fileno.toLowerCase().includes(searchTerm)) ||
+                       (item.Grantor && item.Grantor.toLowerCase().includes(searchTerm)) ||
+                       (item.Grantee && item.Grantee.toLowerCase().includes(searchTerm)) ||
+                       (item.lga && item.lga.toLowerCase().includes(searchTerm)) ||
+                       (item.district && item.district.toLowerCase().includes(searchTerm)) ||
+                       (item.plotNumber && item.plotNumber.toLowerCase().includes(searchTerm)) ||
+                       (item.instrument_type && item.instrument_type.toLowerCase().includes(searchTerm));
+            });
+        }
+        
+        totalRecords = filteredData.length;
+        currentPage = 1; // Reset to first page when filtering
+        updateTable();
+        updatePaginationControls();
+    }
+    
+    // Update table with current page data
+    function updateTable() {
+        const startIndex = (currentPage - 1) * recordsPerPage;
+        const endIndex = startIndex + recordsPerPage;
+        const pageData = filteredData.slice(startIndex, endIndex);
+        
+        // Clear existing table body
+        tableBody.innerHTML = '';
+        
+        if (pageData.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="15" class="px-6 py-10 text-center text-gray-500">
+                        No instrument registrations found.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        // Populate table with page data
+        pageData.forEach(app => {
+            const isDisabled = app.status === 'registered' || app.instrument_type === 'Sectional Titling CofO';
             
-            // Show/hide scroll hint based on scroll position
-            if (scrollLeft === 0 && maxScroll > 50) {
-                scrollHint.style.opacity = '0.7';
-            } else {
-                scrollHint.style.opacity = '0';
+            // Format dates
+            const capturedDate = app.captured_date ? 
+                `<div class="flex items-center">
+                    <i class="fas fa-calendar-plus text-blue-400 mr-2"></i>
+                    ${new Date(app.captured_date).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
+                </div>` : 
+                '<span class="text-gray-400">N/A</span>';
+                
+            const regDate = app.reg_date ? 
+                `<div class="flex items-center">
+                    <i class="fas fa-calendar-check text-green-400 mr-2"></i>
+                    ${new Date(app.reg_date).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
+                </div>` : 
+                '<span class="text-gray-400">N/A</span>';
+            
+            // Format reg particulars
+            let regParticulars = '<span class="text-gray-400 text-xs">N/A</span>';
+            if (app.status === 'registered') {
+                if (app.instrument_type === 'ST Fragmentation') {
+                    regParticulars = '<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded-md font-mono text-xs">0/0/0</span>';
+                } else {
+                    regParticulars = `<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-md font-mono text-xs">${app.Deeds_Serial_No || 'N/A'}</span>`;
+                }
             }
-        } else {
-            scrollProgress.style.width = '100%';
-            scrollHint.style.opacity = '0';
-        }
-    }
-    
-    // Function to check if table is scrollable
-    function checkScrollable() {
-        const isScrollable = tableContainer.scrollWidth > tableContainer.clientWidth;
+            
+            // Format parent file number
+            let parentFileNo = '<span class="text-gray-400">N/A</span>';
+            if (app.instrument_type === 'ST Fragmentation') {
+                parentFileNo = `<span class="file-number">${app.parent_fileNo || 'N/A'}</span>`;
+            } else if (['ST Assignment (Transfer of Title)', 'Sectional Titling CofO'].includes(app.instrument_type)) {
+                parentFileNo = `<span class="file-number">${app.parent_fileNo || app.fileno || 'N/A'}</span>`;
+            }
+            
+            // Format instrument type badge
+            let instrumentTypeBadge = '';
+            if (app.instrument_type === 'ST Fragmentation') {
+                instrumentTypeBadge = '<span class="badge badge-st-fragmentation"><i class="fas fa-puzzle-piece mr-1"></i>ST Fragmentation</span>';
+            } else if (app.instrument_type === 'ST Assignment (Transfer of Title)') {
+                instrumentTypeBadge = '<span class="badge badge-st-assignment"><i class="fas fa-exchange-alt mr-1"></i>ST Assignment (Transfer of Title)</span>';
+            } else if (app.instrument_type === 'Sectional Titling CofO') {
+                instrumentTypeBadge = '<span class="badge badge-sectional-titling"><i class="fas fa-building mr-1"></i>ST CofO</span>';
+            } else {
+                instrumentTypeBadge = `<span class="badge badge-other-instrument"><i class="fas fa-file-alt mr-1"></i>${app.instrument_type || 'Other'}</span>`;
+            }
+            
+            const row = `
+                <tr class="cofo-row" data-status="${app.status}" data-id="${app.id}">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <input type="checkbox" class="rounded main-table-checkbox" 
+                               data-id="${app.id}" 
+                               data-status="${app.status}"
+                               data-instrument-type="${app.instrument_type}"
+                               ${isDisabled ? 'disabled' : ''}
+                               onchange="handleMainTableCheckboxChange()">
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">${regParticulars}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${capturedDate}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${regDate}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <span class="file-number">${app.fileno || 'N/A'}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${parentFileNo}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <span class="status-badge badge-${app.status}">${app.status.charAt(0).toUpperCase() + app.status.slice(1)}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">${instrumentTypeBadge}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">${app.Grantor || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">${app.Grantee || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${app.lga || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${app.district || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${app.plotNumber || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${app.size || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                        <div class="dropdown-wrapper">
+                            <button class="action-button text-gray-500 hover:text-gray-700 p-2 rounded-md transition-colors duration-200"
+                                    onclick="toggleDropdown(this, '${app.id}')" type="button">
+                                <i data-lucide="more-vertical" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            
+            tableBody.insertAdjacentHTML('beforeend', row);
+        });
         
-        if (isScrollable) {
-            tableWrapper.classList.add('table-scrollable', 'has-overflow');
-            tableWrapper.classList.remove('table-not-scrollable');
-        } else {
-            tableWrapper.classList.add('table-not-scrollable');
-            tableWrapper.classList.remove('table-scrollable', 'has-overflow');
-            scrollProgress.style.width = '100%';
+        // Re-initialize Lucide icons for new content
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
         }
         
-        updateScrollProgress();
+        // Update showing information
+        const start = totalRecords === 0 ? 0 : startIndex + 1;
+        const end = Math.min(endIndex, totalRecords);
+        
+        showingStart.textContent = start;
+        showingEnd.textContent = end;
+        showingTotal.textContent = totalRecords;
+        
+        // Update total records count in header
+        document.getElementById('totalRecordsCount').textContent = `${totalRecords} Total Records`;
     }
     
-    // Add scroll event listener
-    tableContainer.addEventListener('scroll', updateScrollProgress);
-    
-    // Add resize observer to check scrollability when window resizes
-    if (window.ResizeObserver) {
-        const resizeObserver = new ResizeObserver(checkScrollable);
-        resizeObserver.observe(tableContainer);
+    // Update pagination controls
+    function updatePaginationControls() {
+        const totalPages = Math.ceil(totalRecords / recordsPerPage);
+        
+        // Update previous/next buttons
+        prevPageBtn.disabled = currentPage === 1;
+        nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
+        
+        // Generate page numbers
+        pageNumbers.innerHTML = '';
+        
+        if (totalPages <= 1) return;
+        
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+        
+        // Adjust start page if we're near the end
+        if (endPage - startPage < maxVisiblePages - 1) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+        
+        // Add first page and ellipsis if needed
+        if (startPage > 1) {
+            addPageButton(1);
+            if (startPage > 2) {
+                pageNumbers.insertAdjacentHTML('beforeend', '<span class="px-2 py-1 text-gray-500">...</span>');
+            }
+        }
+        
+        // Add visible page numbers
+        for (let i = startPage; i <= endPage; i++) {
+            addPageButton(i);
+        }
+        
+        // Add ellipsis and last page if needed
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                pageNumbers.insertAdjacentHTML('beforeend', '<span class="px-2 py-1 text-gray-500">...</span>');
+            }
+            addPageButton(totalPages);
+        }
     }
     
-    // Initial check
-    setTimeout(checkScrollable, 100);
+    // Add page button
+    function addPageButton(pageNum) {
+        const isActive = pageNum === currentPage;
+        const button = document.createElement('button');
+        button.className = `px-3 py-2 text-sm font-medium rounded-md ${
+            isActive 
+                ? 'bg-blue-600 text-white' 
+                : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+        }`;
+        button.textContent = pageNum;
+        button.onclick = () => goToPage(pageNum);
+        pageNumbers.appendChild(button);
+    }
     
-    // Smooth scrolling with arrow keys when table is focused
-    tableContainer.addEventListener('keydown', function(e) {
-        if (e.key === 'ArrowLeft') {
-            e.preventDefault();
-            tableContainer.scrollBy({ left: -100, behavior: 'smooth' });
-        } else if (e.key === 'ArrowRight') {
-            e.preventDefault();
-            tableContainer.scrollBy({ left: 100, behavior: 'smooth' });
+    // Go to specific page
+    function goToPage(page) {
+        const totalPages = Math.ceil(totalRecords / recordsPerPage);
+        if (page >= 1 && page <= totalPages) {
+            currentPage = page;
+            updateTable();
+            updatePaginationControls();
         }
-    });
+    }
     
-    // Add mouse wheel horizontal scrolling (Shift + scroll)
-    tableContainer.addEventListener('wheel', function(e) {
-        if (e.shiftKey) {
-            e.preventDefault();
-            tableContainer.scrollBy({ left: e.deltaY, behavior: 'smooth' });
-        }
-    });
+    // Event listeners
+    recordsPerPageSelect.addEventListener('change', initializePagination);
+    searchInput.addEventListener('input', filterData);
+    prevPageBtn.addEventListener('click', () => goToPage(currentPage - 1));
+    nextPageBtn.addEventListener('click', () => goToPage(currentPage + 1));
     
-    // Make table container focusable for keyboard navigation
-    tableContainer.setAttribute('tabindex', '0');
-    
-    console.log('Enhanced scrollbar functionality initialized');
+    // Initialize
+    initializePagination();
 });
 </script>
+
+@endsection

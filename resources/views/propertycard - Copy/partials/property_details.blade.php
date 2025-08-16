@@ -188,7 +188,6 @@
                        
                             <th>Instrument Type</th>
                             <th>Transaction Date</th>
-                            <th>DATE CAPTURED</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -221,16 +220,7 @@
             serverSide: true,
             ajax: {
                 url: '{{ route("propertycard.getData") }}',
-                type: 'GET',
-                error: function(xhr, error, thrown) {
-                    console.error('DataTables Ajax error:', error, thrown, xhr && xhr.responseText);
-                    try {
-                        var table = $('#property-records-table').DataTable();
-                        table.ajax.url('{{ route("propertycard.data.fallback") }}').load();
-                    } catch (e) {
-                        console.error('Failed to switch to fallback data source:', e);
-                    }
-                }
+                type: 'GET'
             },
             columns: [
                 {
@@ -242,7 +232,6 @@
                         } else if (row.mlsFNo) {
                             return row.mlsFNo;
                         } else if (row.NewKANGISFileno) {
->
                             return row.NewKANGISFileno;
                         } else {
                             return 'No File Number';
@@ -285,35 +274,6 @@
                     data: 'transaction_date',
                     name: 'transaction_date',
                     render: function(data, type, row) {
-                        if (type === 'sort' || type === 'type') {
-                            return data ? new Date(data).getTime() : 0;
-                        }
-                        if (data) {
-                            const date = new Date(data);
-                            const formattedDate = date.toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric'
-                            });
-                            const formattedTime = date.toLocaleTimeString('en-US', {
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            });
-                            return `<div class="flex flex-col text-sm">
-                                        <span class="font-medium">${formattedDate}</span>
-                                        <span class="text-xs text-gray-500">${formattedTime}</span>
-                                    </div>`;
-                        }
-                        return '<span class="text-gray-400">N/A</span>';
-                    }
-                },
-                {
-                    data: 'created_at',
-                    name: 'created_at',
-                    render: function(data, type, row) {
-                        if (type === 'sort' || type === 'type') {
-                            return data ? new Date(data).getTime() : 0;
-                        }
                         if (data) {
                             const date = new Date(data);
                             const formattedDate = date.toLocaleDateString('en-US', {
@@ -355,7 +315,7 @@
                     }
                 }
             ],
-            order: [[5, 'desc']], // Order by Transaction Date column (index 5) in descending order
+            order: [[6, 'desc']], // Order by Transaction Date column (index 6) in descending order
             pageLength: 25,
             responsive: true,
             language: {
@@ -371,24 +331,6 @@
                 
                 // Re-attach event listeners to action buttons
                 setupPropertyActions();
-            }
-        });
-
-        // Delegate row click to load selected property details card
-        $('#property-records-table tbody').on('click', 'tr', function(e) {
-            // Ignore clicks on action buttons
- 
-            if ($(e.target).closest('.view-property, .edit-property, .delete-property').length) {
-                return;
-            }
-            const $btn = $(this).find('.view-property');
-            const propertyId = $btn.data('id');
-            if (propertyId && typeof window.loadPropertyDetailsInCards === 'function') {
-                // Highlight selection
-                $('#property-records-table tbody tr').removeClass('selected-row');
-                $(this).addClass('selected-row');
-                // Load details into the selected-property-detail-card
-                window.loadPropertyDetailsInCards(propertyId);
             }
         });
 
@@ -424,6 +366,20 @@
             });
         }
 
-        // Functions are defined in the shared JS include; no placeholders here to avoid conflicts.
+        // Placeholder functions for property actions (these should be defined in your main JS file)
+        function viewPropertyDetails(propertyId) {
+            console.log('View property:', propertyId);
+            // Add your view logic here
+        }
+
+        function editProperty(propertyId) {
+            console.log('Edit property:', propertyId);
+            // Add your edit logic here
+        }
+
+        function deleteProperty(propertyId) {
+            console.log('Delete property:', propertyId);
+            // Add your delete logic here
+        }
     });
 </script>

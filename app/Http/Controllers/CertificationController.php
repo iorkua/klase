@@ -613,12 +613,12 @@ class CertificationController extends Controller
                     $plotDetails = 'N/A';
                 }
 
-                // Check prerequisites
-                $acknowledgementGenerated = !empty($app->acknowledgement) && $app->acknowledgement === 'generated';
-                $verificationGenerated = $app->verification_generated ?? false;
-                $gisCaptured = $app->gis_captured ?? false;
-                $vettingGenerated = $app->vetting_generated ?? false;
-                $edmsCaptured = $app->edms_captured ?? false;
+                // Check prerequisites based on available fields
+                $acknowledgementGenerated = !empty($app->acknowledgement) && $app->acknowledgement === 'Generated';
+                $verificationGenerated = $app->verification === 'Verified';
+                $gisCaptured = false; // GIS capture status not tracked in current schema
+                $vettingGenerated = $app->verification === 'Verified'; // Use verification as proxy for vetting
+                $edmsCaptured = false; // EDMS capture status not tracked in current schema
                 $cofoFrontGenerated = $app->certificate_generated ?? false;
 
                 return [
@@ -778,12 +778,12 @@ class CertificationController extends Controller
                     }
                 }
 
-                // Check prerequisites (including DG approval)
-                $acknowledgementGenerated = !empty($app->acknowledgement) && $app->acknowledgement === 'generated';
-                $verificationGenerated = $app->verification_generated ?? false;
-                $gisCaptured = $app->gis_captured ?? false;
-                $vettingGenerated = $app->vetting_generated ?? false;
-                $edmsCaptured = $app->edms_captured ?? false;
+                // Check prerequisites (including DG approval) based on available fields
+                $acknowledgementGenerated = !empty($app->acknowledgement) && $app->acknowledgement === 'Generated';
+                $verificationGenerated = $app->verification === 'Verified';
+                $gisCaptured = false; // GIS capture status not tracked in current schema
+                $vettingGenerated = $app->verification === 'Verified'; // Use verification as proxy for vetting
+                $edmsCaptured = false; // EDMS capture status not tracked in current schema
                 $cofoFrontGenerated = $app->certificate_generated ?? false;
                 $dgApproval = $app->dg_approval ?? false;
 
@@ -954,13 +954,13 @@ class CertificationController extends Controller
                     $plotDetails = 'N/A';
                 }
 
-                // Check vetting status
+                // Check vetting status based on available fields
                 $vettingStatus = 'pending';
-                if ($app->vetting_generated) {
-                    $vettingStatus = 'generated';
-                } elseif ($app->verification_generated) {
-                    $vettingStatus = 'ready';
+                if ($app->verification === 'Verified') {
+                $vettingStatus = 'ready';
                 }
+                // Note: vetting_generated field doesn't exist in the database schema
+                // We'll use verification status as the basis for vetting status
 
                 return [
                     'id' => $app->id,
@@ -976,8 +976,8 @@ class CertificationController extends Controller
                     'lga_name' => $app->lga_name ?? 'N/A',
                     'created_at' => $app->created_at ? date('d M Y', strtotime($app->created_at)) : 'N/A',
                     'vetting_status' => $vettingStatus,
-                    'vetting_generated' => $app->vetting_generated ?? false,
-                    'verification_generated' => $app->verification_generated ?? false,
+                    'verification' => $app->verification ?? 'N/A',
+                    'verification_date' => $app->verification_date ? date('d M Y', strtotime($app->verification_date)) : 'N/A',
                 ];
             });
 

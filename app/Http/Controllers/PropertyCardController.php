@@ -40,20 +40,21 @@ class PropertyCardController extends Controller
             $searchValue = $request->input('search.value', '');
             
             // Get ordering parameters
-            $orderColumn = $request->input('order.0.column', 6); // Default to transaction_date column
+            $orderColumn = $request->input('order.0.column', 5); // Default to transaction_date column (index 5)
             $orderDir = $request->input('order.0.dir', 'desc');
             
             // Define column mapping for ordering
             $columns = [
-                0 => 'kangisFileNo', // File Number
+                0 => 'kangisFileNo', // File Number (composite in UI; using kangisFileNo for ordering)
                 1 => 'property_description',
                 2 => 'location',
                 3 => 'regNo',
-                4 => 'transaction_type',
-                5 => 'instrument_type',
-                6 => 'transaction_date',
+                4 => 'instrument_type',
+                5 => 'transaction_date',
+                6 => 'created_at', // DATE CAPTURED
                 7 => 'id' // Actions column
             ];
+>
             
             // Build base query
             $query = DB::connection('sqlsrv')->table('property_records');
@@ -106,6 +107,8 @@ class PropertyCardController extends Controller
                     'transaction_type' => $record->transaction_type,
                     'instrument_type' => $record->instrument_type,
                     'transaction_date' => $record->transaction_date,
+                    'created_at' => $record->created_at,
+>
                 ];
             }
             

@@ -1,6 +1,6 @@
 <div class="space-y-2">
-    <label for="Occupation" class="block text-sm font-medium text-gray-700">Occupation</label>
-    <select id="occupation" name="occupation" class="w-full p-2 border border-gray-300 rounded-md text-sm" onchange="toggleOtherOccupation()">
+    <label for="Occupation" class="block text-sm font-medium text-gray-700">Occupation <span class="text-red-500">*</span></label>
+    <select id="occupation" name="occupation" class="w-full p-2 border border-gray-300 rounded-md text-sm" onchange="toggleOtherOccupation()" required>
            <option value="">Select Occupation</option>
         <option value="Civil Servant">Civil Servant</option>
         <option value="Trader">Trader</option>
@@ -43,7 +43,6 @@
     
     <input type="text" 
            id="otherOccupation" 
-           name="occupation" 
            class="w-full p-2 border border-gray-300 rounded-md text-sm mt-2 hidden" 
            placeholder="Please specify your occupation"
     >
@@ -57,10 +56,17 @@ function toggleOtherOccupation() {
     if (select.value === 'other') {
         otherInput.classList.remove('hidden');
         select.removeAttribute('name');
+        select.removeAttribute('required');
+        otherInput.setAttribute('name', 'occupation');
+        otherInput.setAttribute('required', 'required');
+        otherInput.focus();
     } else {
         otherInput.classList.add('hidden');
-        select.setAttribute('name', 'occupation');
+        otherInput.removeAttribute('name');
+        otherInput.removeAttribute('required');
         otherInput.value = '';
+        select.setAttribute('name', 'occupation');
+        select.setAttribute('required', 'required');
     }
 }
 </script>

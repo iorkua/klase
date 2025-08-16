@@ -541,7 +541,7 @@ class RecertificationController extends Controller
             } elseif ($type === 'Multiple Owners') {
                 $rules = array_merge($rules, [
                     'owners' => 'required|array|min:1',
-                    'owners.*.surname' => 'required|string|max:255',
+                    'owners.*.surname' => 'required|string|max:255', 
                     'owners.*.firstName' => 'required|string|max:255',
                     'owners.*.occupation' => 'required|string|max:255',
                     'owners.*.dateOfBirth' => 'required|date',

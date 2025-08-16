@@ -61,7 +61,7 @@
             
             <div class="form-field">
                 <label for="cofoNumber" class="block text-sm font-medium text-gray-700 mb-1">
-                    CofO No or RofO No <span class="text-red-500">*</span>
+                    CofO No or RofO No
                 </label>
                 <input
                     type="text"
@@ -79,7 +79,7 @@
                 <div class="grid grid-cols-4 gap-4 mb-4">
                    
                 <div class="form-field">
-    <label for="serial_no" class="block text-sm font-medium text-gray-700 mb-1">Serial No.</label>
+    <label for="serial_no" class="block text-sm font-medium text-gray-700 mb-1">Serial No.  <span class="text-red-500">*</span></label>
     <input
         type="text"
         id="serial_no"
@@ -90,7 +90,7 @@
 </div>
 
 <div class="form-field">
-    <label for="registrationPage" class="block text-sm font-medium text-gray-700 mb-1">Page No</label>
+    <label for="registrationPage" class="block text-sm font-medium text-gray-700 mb-1">Page No </label>
     <input
         type="text"
         id="registrationPage"

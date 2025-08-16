@@ -1370,6 +1370,7 @@
             
             // Property description fields
             const requiredPropertyFields = [
+                'plotNo', 
                 'lgsaOrCity'
             ];
             
@@ -1620,12 +1621,6 @@
                 }
             });
         }
-
-        // Expose key functions globally so other scripts (e.g., DataTables) can call them
-        window.viewPropertyDetails = viewPropertyDetails;
-        window.editProperty = editProperty;
-        window.deleteProperty = deleteProperty;
-        window.showPropertyOptions = showPropertyOptions;
     });
 
 </script>

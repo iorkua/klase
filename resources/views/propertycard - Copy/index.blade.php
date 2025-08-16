@@ -20,12 +20,12 @@
         
                 <div class="flex items-center justify-end mb-4">
                     <label for="assistant-toggle" class="flex items-center cursor-pointer">
-                        <a href="{{ route('propertycard.index') }}" class="mr-3 text-gray-600">Manual Assistant</a>
+                        <span class="mr-3 text-gray-600">Manual Assistant</span>
                         <div class="assistant-toggle">
                             <input type="checkbox" id="assistant-toggle">
                             <span class="slider round"></span>
                         </div>
-                        <a href="{{ route('propertycard.ai') }}" class="ml-3 text-gray-600">AI Assistant</a>
+                        <span class="ml-3 text-gray-600">AI Assistant</span>
                     </label>
                 </div>
 
@@ -34,8 +34,10 @@
                     @include('propertycard.partials.property_details')
                 </div>
 
-                <!-- AI Property Details Content (placeholder kept for future use) -->
-                <div id="ai-assistant" style="display: none;"></div>
+                <!-- AI Property Details Content -->
+                <div id="ai-assistant" style="display: none;">
+                    @include('propertycard.partials.ai.ai_property_record_assistant')
+                </div>
            
             </div>
         
@@ -50,6 +52,5 @@
     
     <!-- Include JavaScript after all DOM elements -->
     @include('propertycard.js.javascript')
-    @include('propertycard.partials.property_form_sweetalert')
 @endsection
-
+@include('propertycard.partials.property_form_sweetalert')

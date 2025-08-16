@@ -767,6 +767,9 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'propertycard'], func
     Route::post('/navigate', [App\Http\Controllers\PropertyCardController::class, 'navigateRecord'])->name('propertycard.navigate');
     Route::get('/record-details', [App\Http\Controllers\PropertyCardController::class, 'getRecordDetails'])->name('propertycard.getRecordDetails');
     Route::get('/capture', [App\Http\Controllers\PropertyCardController::class, 'capture'])->name('propertycard.capture');
+
+    // AI Assistant routes
+    Route::get('/ai', [App\Http\Controllers\PropertyCardAiController::class, 'index'])->name('propertycard.ai');
 });
 
 

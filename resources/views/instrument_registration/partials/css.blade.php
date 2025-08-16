@@ -54,12 +54,22 @@
       border-spacing: 0;
     }
     
+    /* Fixed Header Styles */
+    .table-wrapper {
+      position: relative;
+      overflow-y: auto;
+      max-height: 600px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+    }
+    
     .enhanced-table thead th {
       background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
       border-bottom: 2px solid #e2e8f0;
       position: sticky;
       top: 0;
-      z-index: 10;
+      z-index: 20;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
     /* Frozen Columns Styles - First 6 columns (checkbox + 5 data columns) */

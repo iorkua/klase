@@ -284,7 +284,7 @@ input:checked + .toggle-slider:before {
       <div class="flex items-center justify-between">
         <h3 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
           <i data-lucide="check-circle" class="h-5 w-5 text-green-600"></i>
-          Approved Recertification Applications (<span id="applications-count">8</span>)
+           Recertification Applications (<span id="applications-count">8</span>)
         </h3>
         <span class="badge badge-success">
           All applications have been successfully processed
@@ -298,9 +298,7 @@ input:checked + .toggle-slider:before {
         <table class="w-full divide-y divide-gray-200" id="recertification-table">
           <thead class="bg-gray-50">
             <tr>
-              <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                <div class="truncate">CofO Serial No</div>
-              </th>
+               
               <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div class="truncate">New KANGIS FileNo</div>
               </th>

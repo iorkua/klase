@@ -105,9 +105,14 @@
     <!-- Instrument Registration Form Dialog -->
     <div id="registration-dialog" class="dialog-backdrop hidden">
         <div class="dialog-content animate-fade-in">
-            <div class="p-6 border-b">
-                <h2 id="dialog-title" class="text-lg font-semibold">Register Instrument</h2>
-                <p class="text-sm text-gray-600">Enter the details for the new instrument</p>
+            <div class="p-6 border-b flex items-center justify-between">
+                <div>
+                    <h2 id="dialog-title" class="text-lg font-semibold">Register Instrument</h2>
+                    <p class="text-sm text-gray-600">Enter the details for the new instrument</p>
+                </div>
+                <button type="button" class="btn btn-ghost btn-sm" onclick="closeRegistrationDialog()" aria-label="Close">
+                    <i data-lucide="x" class="h-5 w-5"></i>
+                </button>
             </div>
             
             <form id="registration-form" class="p-6 space-y-6">

@@ -422,7 +422,7 @@ tailwind.config = {
             <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
           </template>
           <template x-if="!loading">
-            <i data-lucide="check" class="h-4 w-4"></i>
+           
           </template>
           <span x-text="loading ? 'Updating...' : 'Assign Serial Number'"></span>
         </button>

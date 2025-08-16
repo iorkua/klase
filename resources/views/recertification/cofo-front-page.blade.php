@@ -220,11 +220,16 @@
   </head>
   <body>
     <!-- Print button (hidden when printing) -->
-    <div class="controls">
-      <button class="print-btn" onclick="window.print()">
-        Print Certificate
-      </button>
-    </div>
+    <div class="controls flex gap-2">
+  <button class="print-btn" onclick="window.print()">
+    Print Certificate
+  </button>
+
+  <button class="back-btn" onclick="window.history.back()">
+    Back
+  </button>
+</div>
+
 
 
    

@@ -95,7 +95,7 @@ tailwind.config = {
             </div>
 
             <!-- Statistics -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6  hidden" >
                 <div class="bg-white rounded-lg shadow border border-gray-200 p-6">
                     <div class="flex items-center">
                         <div class="p-2 bg-blue-100 rounded-lg">
@@ -108,38 +108,38 @@ tailwind.config = {
                     </div>
                 </div>
                 
-                <div class="bg-white rounded-lg shadow border border-gray-200 p-6">
+                <div class="bg-white rounded-lg shadow border border-gray-200 p-6  hidden">
                     <div class="flex items-center">
                         <div class="p-2 bg-green-100 rounded-lg">
                             <i data-lucide="check-circle" class="h-6 w-6 text-green-600"></i>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">Vetted</p>
-                            <p class="text-2xl font-bold text-gray-900" id="vetted-count">0</p>
+                            <p class="text-sm font-medium text-gray-600">Generated</p>
+                            <p class="text-2xl font-bold text-gray-900" id="generated-count">0</p>
                         </div>
                     </div>
                 </div>
                 
-                <div class="bg-white rounded-lg shadow border border-gray-200 p-6">
+                <div class="bg-white rounded-lg shadow border border-gray-200 p-6  hidden">
                     <div class="flex items-center">
                         <div class="p-2 bg-yellow-100 rounded-lg">
                             <i data-lucide="clock" class="h-6 w-6 text-yellow-600"></i>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">Pending Vetting</p>
+                            <p class="text-sm font-medium text-gray-600">Pending</p>
                             <p class="text-2xl font-bold text-gray-900" id="pending-count">0</p>
                         </div>
                     </div>
                 </div>
                 
-                <div class="bg-white rounded-lg shadow border border-gray-200 p-6">
+                <div class="bg-white rounded-lg shadow border border-gray-200 p-6 hidden">
                     <div class="flex items-center">
                         <div class="p-2 bg-purple-100 rounded-lg">
                             <i data-lucide="calendar" class="h-6 w-6 text-purple-600"></i>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">This Month</p>
-                            <p class="text-2xl font-bold text-gray-900" id="month-count">0</p>
+                            <p class="text-sm font-medium text-gray-600">Ready</p>
+                            <p class="text-2xl font-bold text-gray-900" id="ready-count">0</p>
                         </div>
                     </div>
                 </div>
@@ -165,6 +165,7 @@ tailwind.config = {
                 </div>
             </div>
 
+          
             <!-- Vetting Sheet Table -->
             <div class="bg-white rounded-lg shadow border border-gray-200">
                 <div class="p-6 border-b border-gray-200">
@@ -186,7 +187,6 @@ tailwind.config = {
                             <table class="min-w-full divide-y divide-gray-200" id="vetting-sheet-table">
                                 <thead class="bg-gray-50">
                                     <tr>
-                                         
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                                             New KANGIS FileNo
                                         </th>
@@ -270,8 +270,18 @@ document.addEventListener('DOMContentLoaded', function() {
     setupModalHandlers();
 });
 
+function showDebugInfo(message) {
+    const debugInfo = document.getElementById('debug-info');
+    const debugContent = document.getElementById('debug-content');
+    if (debugInfo && debugContent) {
+        debugContent.innerHTML += '<div>' + message + '</div>';
+        debugInfo.classList.remove('hidden');
+    }
+}
+
 function loadVettingData() {
     console.log('Loading vetting data...');
+    showDebugInfo('Starting to load vetting data...');
     
     // Show loading state
     showLoadingState('vetting-table-body');
@@ -281,18 +291,37 @@ function loadVettingData() {
         method: 'GET',
         headers: {
             'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
         }
     })
     .then(response => {
+        console.log('Response status:', response.status);
+        showDebugInfo('Response status: ' + response.status);
+        
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            return response.text().then(text => {
+                console.error('Error response body:', text);
+                showDebugInfo('Error response: ' + text);
+                throw new Error(`HTTP error! status: ${response.status}, body: ${text}`);
+            });
         }
         return response.json();
     })
     .then(data => {
         console.log('Vetting data received:', data);
+        showDebugInfo('Data received: ' + JSON.stringify(data, null, 2));
+        
+        if (data.success === false) {
+            console.error('API returned error:', data.error);
+            showDebugInfo('API error: ' + (data.error || 'Unknown error'));
+            showErrorState('vetting-table-body', data.error || 'Unknown error');
+            return;
+        }
+        
         vettingData = data.data || [];
+        console.log('Processed vetting data:', vettingData.length, 'records');
+        showDebugInfo('Processed ' + vettingData.length + ' records');
         
         // Update statistics
         updateStatistics(data.statistics || {});
@@ -302,7 +331,8 @@ function loadVettingData() {
     })
     .catch(error => {
         console.error('Error loading vetting data:', error);
-        showErrorState('vetting-table-body');
+        showDebugInfo('Fetch error: ' + error.message);
+        showErrorState('vetting-table-body', error.message);
     });
 }
 
@@ -311,7 +341,7 @@ function showLoadingState(tableBodyId) {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="8" class="text-center py-8">
+                <td colspan="10" class="text-center py-8">
                     <div class="loading-spinner mx-auto mb-2"></div>
                     <p class="text-gray-600">Loading vetting data...</p>
                 </td>
@@ -320,15 +350,15 @@ function showLoadingState(tableBodyId) {
     }
 }
 
-function showErrorState(tableBodyId) {
+function showErrorState(tableBodyId, errorMessage = 'Failed to load vetting data') {
     const tableBody = document.getElementById(tableBodyId);
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="8" class="text-center py-8">
+                <td colspan="10" class="text-center py-8">
                     <i data-lucide="alert-circle" class="h-8 w-8 text-red-500 mx-auto mb-2"></i>
-                    <p class="text-red-600">Failed to load vetting data</p>
-                    <button onclick="loadVettingData()" class="mt-2 text-blue-600 hover:text-blue-800">
+                    <p class="text-red-600 mb-2">${errorMessage}</p>
+                    <button onclick="loadVettingData()" class="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
                         Try Again
                     </button>
                 </td>
@@ -344,9 +374,9 @@ function showErrorState(tableBodyId) {
 
 function updateStatistics(stats) {
     document.getElementById('total-count').textContent = stats.total || 0;
-    document.getElementById('vetted-count').textContent = stats.vetted || 0;
+    document.getElementById('generated-count').textContent = stats.generated || 0;
     document.getElementById('pending-count').textContent = stats.pending || 0;
-    document.getElementById('month-count').textContent = stats.thisMonth || 0;
+    document.getElementById('ready-count').textContent = stats.ready || 0;
     document.getElementById('applications-count').textContent = stats.total || 0;
 }
 
@@ -367,10 +397,12 @@ function getApplicationTypeClass(type) {
 
 function getStatusBadge(status) {
     switch(status) {
-        case 'vetted':
-            return '<span class="badge badge-success">Vetted</span>';
+        case 'generated':
+            return '<span class="badge badge-success">Generated</span>';
+        case 'ready':
+            return '<span class="badge badge-warning">Ready</span>';
         case 'pending':
-            return '<span class="badge badge-warning">Pending Vetting</span>';
+            return '<span class="badge badge-default">Pending</span>';
         default:
             return '<span class="badge badge-default">Unknown</span>';
     }
@@ -401,7 +433,6 @@ function renderVettingTable() {
         
         return `
             <tr class="table-row border-b hover:bg-gray-50">
-              
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-900">${app.NewKANGISFileno || 'N/A'}</div>
                 </td>

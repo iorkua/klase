@@ -94,27 +94,32 @@
     
     // Method to update property description
     updatePropertyDescription() {
+        console.log('Updating property description...');
         const parts = [];
         
         // Add house number if available
         if (this.houseNo && this.houseNo.trim()) {
             parts.push(this.houseNo.trim());
-                    }
+            console.log('Added house number:', this.houseNo.trim());
+        }
         
         // Add street name if available
         if (this.currentStreetName && this.currentStreetName.trim()) {
             parts.push(this.currentStreetName.trim());
-                    }
+            console.log('Added street name:', this.currentStreetName.trim());
+        }
         
         // Add district if available
         if (this.currentDistrict && this.currentDistrict.trim()) {
             parts.push(this.currentDistrict.trim());
-                    }
+            console.log('Added district:', this.currentDistrict.trim());
+        }
         
         // Add LGA if available
         if (this.lga && this.lga.trim()) {
             parts.push(this.lga.trim());
-                    }
+            console.log('Added LGA:', this.lga.trim());
+        }
         
         // Add state (prefer field value, default is Kano State)
         const stateElement = document.querySelector('#state');
@@ -127,21 +132,27 @@
         
         // Update the property description
         this.propertyDescription = parts.length > 0 ? parts.join(', ') : '';
-            },
+        console.log('Final property description:', this.propertyDescription);
+        console.log('Parts array:', parts);
+    },
     
     // Initialize
     init() {
-                
+        console.log('Alpine.js Property Record Form initialized');
+        
         // Watch for transaction type changes
         this.$watch('transactionType', (value, oldValue) => {
-                        
+            console.log('Transaction type changed from:', oldValue, 'to:', value);
+            
             // Auto-fill for government transactions
             const govTypes = ['Certificate of Occupancy', 'ST Certificate of Occupancy', 'SLTR Certificate of Occupancy', 'Customary Right of Occupancy'];
             if (govTypes.includes(value)) {
                 this.firstParty = 'KANO STATE GOVERNMENT';
-                            } else {
+                console.log('Set firstParty to: KANO STATE GOVERNMENT');
+            } else {
                 this.firstParty = '';
-                            }
+                console.log('Cleared firstParty');
+            }
         });
         
         // Auto-sync page number with serial number
@@ -160,49 +171,79 @@
         
         // Set up comprehensive monitoring for component fields
         const setupFieldMonitoring = () => {
-                        
+            console.log('Setting up field monitoring...');
+            
             // Monitor street name dropdown
             const streetNameSelect = document.querySelector('#streetName');
             if (streetNameSelect) {
-                                streetNameSelect.addEventListener('change', () => {
-                                        setTimeout(() => this.updatePropertyDescription(), 50);
+                console.log('Found street name select element');
+                streetNameSelect.addEventListener('change', () => {
+                    console.log('Street name changed:', streetNameSelect.value);
+                    setTimeout(() => this.updatePropertyDescription(), 50);
                 });
             }
             
             // Monitor custom street name input
             const streetNameCustom = document.querySelector('#otherStreetName');
             if (streetNameCustom) {
-                                streetNameCustom.addEventListener('input', () => {
-                                        setTimeout(() => this.updatePropertyDescription(), 50);
+                console.log('Found custom street name input');
+                streetNameCustom.addEventListener('input', () => {
+                    console.log('Custom street name changed:', streetNameCustom.value);
+                    setTimeout(() => this.updatePropertyDescription(), 50);
                 });
             }
             
             // Monitor district dropdown
             const districtSelect = document.querySelector('#district');
             if (districtSelect) {
-                                districtSelect.addEventListener('change', () => {
-                                        setTimeout(() => this.updatePropertyDescription(), 50);
+                console.log('Found district select element');
+                districtSelect.addEventListener('change', () => {
+                    console.log('District changed:', districtSelect.value);
+                    setTimeout(() => this.updatePropertyDescription(), 50);
                 });
             }
             
             // Monitor custom district input
             const districtCustom = document.querySelector('#otherDistrict');
             if (districtCustom) {
-                                districtCustom.addEventListener('input', () => {
-                                        setTimeout(() => this.updatePropertyDescription(), 50);
+                console.log('Found custom district input');
+                districtCustom.addEventListener('input', () => {
+                    console.log('Custom district changed:', districtCustom.value);
+                    setTimeout(() => this.updatePropertyDescription(), 50);
                 });
             }
             
             // Monitor state input
             const stateInput = document.querySelector('#state');
             if (stateInput) {
-                                stateInput.addEventListener('input', () => {
-                                        setTimeout(() => this.updatePropertyDescription(), 50);
+                console.log('Found state input');
+                stateInput.addEventListener('input', () => {
+                    console.log('State changed:', stateInput.value);
+                    setTimeout(() => this.updatePropertyDescription(), 50);
                 });
             }
 
             // Set up MutationObserver to watch for dynamic elements
-            // Minimal listeners only
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'childList') {
+                        // Re-setup monitoring when new elements are added
+                        setTimeout(() => {
+                            setupFieldMonitoring();
+                            this.updatePropertyDescription();
+                        }, 100);
+                    }
+                });
+            });
+            
+            // Observe the form for changes
+            const form = document.querySelector('#property-record-form');
+            if (form) {
+                observer.observe(form, {
+                    childList: true,
+                    subtree: true
+                });
+            }
         };
         
         // Initial setup and periodic re-setup
@@ -210,6 +251,11 @@
             setupFieldMonitoring();
             this.updatePropertyDescription();
         }, 200);
+        
+        // Backup: Set up periodic updates
+        setInterval(() => {
+            this.updatePropertyDescription();
+        }, 2000);
     },
     
     // Methods
@@ -260,7 +306,8 @@
     },
     
     submitForm() {
-                
+        console.log('Form submitted with Alpine.js');
+        
         // Call the SweetAlert submission handler directly
         if (typeof submitPropertyForm === 'function') {
             submitPropertyForm();
@@ -285,7 +332,7 @@
                 <div class="form-section">
                   
                   <!-- File Number -->
-                  <div class="space-y-1" x-data="{ showManualEntry: false }" x-effect="(() => { const manual=$el.querySelector('#manual-fileno-container'); const smart=$el.querySelector('#smart-fileno-container'); if(manual){ manual.querySelectorAll('input, select, textarea').forEach(el=> el.disabled = !showManualEntry); } if(smart){ smart.querySelectorAll('input, select, textarea').forEach(el=> el.disabled = showManualEntry); } })()">
+                  <div class="space-y-1" x-data="{ showManualEntry: false }">
                     <div class="flex items-center justify-between mb-3">
                         <label for="fileno-select" class="block text-sm font-medium text-gray-700">Select File Number</label>
                         <button type="button" @click="showManualEntry = !showManualEntry" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200">
@@ -297,12 +344,12 @@
                     </div>
                     
                     <!-- Smart File Number Selector (Default) -->
-                    <div x-show="!showManualEntry" x-transition id="smart-fileno-container">
+                    <div x-show="!showManualEntry" x-transition>
                         @include('propertycard.partials.smart_fileno_selector')
                     </div>
                     
                     <!-- Manual File Number Entry -->
-                    <div x-show="showManualEntry" x-transition id="manual-fileno-container">
+                    <div x-show="showManualEntry" x-transition>
                         @include('propertycard.partials.manual_fileno')
                     </div>
                     </div>
@@ -600,14 +647,4 @@
 @if(!$is_ai)
     </div>
 </div>
-@else
-<script>
-// In AI inline mode, ensure the container is visible and not modal
-document.addEventListener('DOMContentLoaded', function() {
-  const aiRoot = document.getElementById('ai-add-form-root');
-  if (aiRoot) {
-    aiRoot.style.display = 'block';
-  }
-});
-</script>
 @endif

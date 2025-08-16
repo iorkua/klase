@@ -19,298 +19,40 @@
         </div>
 @endif
 
-<div x-data="{
-    // Form fields
-  
-    fileNumber: '',
-    houseNo: '',
-    plotNo: '',
-    streetName: '',
-    district: '',
-    lga: '',
-    transactionType: '',
-    transactionDate: '',
-    serialNo: '',
-    pageNo: '',
-    volumeNo: '',
-    regDate: new Date().toISOString().split('T')[0],
-    regTime: '09:00',
-    landUse: '',
-    period: '',
-    periodUnit: 'Years',
-    firstParty: '',
-    secondParty: '',
-    propertyDescription: '',
-    
-    // Track current values from components
-    currentStreetName: '',
-    currentDistrict: '',
-    
-    // Party labels for different transaction types
-    partyLabels: {
-        'Power of Attorney': { first: 'Grantor', second: 'Grantee' },
-        'Deed of Assignment': { first: 'Assignor', second: 'Assignee' },
-        'ST Assignment': { first: 'Assignor', second: 'Assignee' },
-        'Deed of Mortgage': { first: 'Mortgagor', second: 'Mortgagee' },
-        'Tripartite Mortgage': { first: 'Mortgagor', second: 'Mortgagee' },
-        'Certificate of Occupancy': { first: 'Grantor', second: 'Grantee' },
-        'ST Certificate of Occupancy': { first: 'Grantor', second: 'Grantee' },
-        'SLTR Certificate of Occupancy': { first: 'Grantor', second: 'Grantee' },
-        'Customary Right of Occupancy': { first: 'Grantor', second: 'Grantee' },
-        'Deed of Transfer': { first: 'Transferor', second: 'Transferee' },
-        'Deed of Gift': { first: 'Donor', second: 'Donee' },
-        'Deed of Lease': { first: 'Lessor', second: 'Lessee' },
-        'Deed of Sub Lease': { first: 'Lessor', second: 'Lessee' },
-        'Deed of Sub Under Lease': { first: 'Lessor', second: 'Lessee' },
-        'Indenture of Lease': { first: 'Lessor', second: 'Lessee' },
-        'Quarry Lease': { first: 'Lessor', second: 'Lessee' },
-        'Private Lease': { first: 'Lessor', second: 'Lessee' },
-        'Building Lease': { first: 'Lessor', second: 'Lessee' },
-        'Tenancy Agreement': { first: 'Landlord', second: 'Tenant' },
-        'Deed of Release': { first: 'Releasor', second: 'Releasee' },
-        'Deed of Surrender': { first: 'Surrenderor', second: 'Surrenderee' },
-        'Letter of Administration': { first: 'Administrator', second: 'Beneficiary' },
-        'Certificate of Purchase': { first: 'Vendor', second: 'Purchaser' }
-    },
-    
-    // Computed properties
-    get showTransactionDetails() {
-        return this.transactionType !== '';
-    },
-    
-    get currentPartyLabels() {
-        return this.partyLabels[this.transactionType] || { first: 'Grantor', second: 'Grantee' };
-    },
-    
-    get isGovernmentTransaction() {
-        const govTypes = ['Certificate of Occupancy', 'ST Certificate of Occupancy', 'SLTR Certificate of Occupancy', 'Customary Right of Occupancy'];
-        return govTypes.includes(this.transactionType);
-    },
-    
-    get regNumberPreview() {
-        const parts = [this.serialNo, this.pageNo, this.volumeNo].filter(Boolean);
-        return parts.length > 0 ? parts.join('/') : '';
-    },
-    
-    // Method to update property description
-    updatePropertyDescription() {
-        const parts = [];
-        
-        // Add house number if available
-        if (this.houseNo && this.houseNo.trim()) {
-            parts.push(this.houseNo.trim());
-                    }
-        
-        // Add street name if available
-        if (this.currentStreetName && this.currentStreetName.trim()) {
-            parts.push(this.currentStreetName.trim());
-                    }
-        
-        // Add district if available
-        if (this.currentDistrict && this.currentDistrict.trim()) {
-            parts.push(this.currentDistrict.trim());
-                    }
-        
-        // Add LGA if available
-        if (this.lga && this.lga.trim()) {
-            parts.push(this.lga.trim());
-                    }
-        
-        // Add state (prefer field value, default is Kano State)
-        const stateElement = document.querySelector('#state');
-        const stateValue = stateElement ? stateElement.value : '';
-        if (stateValue && stateValue.trim()) {
-            parts.push(stateValue.trim());
-        } else {
-            parts.push('Kano State');
-        }
-        
-        // Update the property description
-        this.propertyDescription = parts.length > 0 ? parts.join(', ') : '';
-            },
-    
-    // Initialize
-    init() {
-                
-        // Watch for transaction type changes
-        this.$watch('transactionType', (value, oldValue) => {
-                        
-            // Auto-fill for government transactions
-            const govTypes = ['Certificate of Occupancy', 'ST Certificate of Occupancy', 'SLTR Certificate of Occupancy', 'Customary Right of Occupancy'];
-            if (govTypes.includes(value)) {
-                this.firstParty = 'KANO STATE GOVERNMENT';
-                            } else {
-                this.firstParty = '';
-                            }
-        });
-        
-        // Auto-sync page number with serial number
-        this.$watch('serialNo', (value) => {
-            this.pageNo = value;
-        });
-        
-        // Watch for property details changes and update description
-        this.$watch('houseNo', () => {
-            this.updatePropertyDescription();
-        });
-        
-        this.$watch('lga', () => {
-            this.updatePropertyDescription();
-        });
-        
-        // Set up comprehensive monitoring for component fields
-        const setupFieldMonitoring = () => {
-                        
-            // Monitor street name dropdown
-            const streetNameSelect = document.querySelector('#streetName');
-            if (streetNameSelect) {
-                                streetNameSelect.addEventListener('change', () => {
-                                        setTimeout(() => this.updatePropertyDescription(), 50);
-                });
-            }
-            
-            // Monitor custom street name input
-            const streetNameCustom = document.querySelector('#otherStreetName');
-            if (streetNameCustom) {
-                                streetNameCustom.addEventListener('input', () => {
-                                        setTimeout(() => this.updatePropertyDescription(), 50);
-                });
-            }
-            
-            // Monitor district dropdown
-            const districtSelect = document.querySelector('#district');
-            if (districtSelect) {
-                                districtSelect.addEventListener('change', () => {
-                                        setTimeout(() => this.updatePropertyDescription(), 50);
-                });
-            }
-            
-            // Monitor custom district input
-            const districtCustom = document.querySelector('#otherDistrict');
-            if (districtCustom) {
-                                districtCustom.addEventListener('input', () => {
-                                        setTimeout(() => this.updatePropertyDescription(), 50);
-                });
-            }
-            
-            // Monitor state input
-            const stateInput = document.querySelector('#state');
-            if (stateInput) {
-                                stateInput.addEventListener('input', () => {
-                                        setTimeout(() => this.updatePropertyDescription(), 50);
-                });
-            }
-
-            // Set up MutationObserver to watch for dynamic elements
-            // Minimal listeners only
-        };
-        
-        // Initial setup and periodic re-setup
-        setTimeout(() => {
-            setupFieldMonitoring();
-            this.updatePropertyDescription();
-        }, 200);
-    },
-    
-    // Methods
-    getFirstPartyFieldName() {
-        const typeMap = {
-            'Deed of Assignment': 'Assignor',
-            'ST Assignment': 'Assignor',
-            'Deed of Mortgage': 'Mortgagor',
-            'Tripartite Mortgage': 'Mortgagor',
-            'Deed of Surrender': 'Surrenderor',
-            'Deed of Sub Lease': 'Lessor',
-            'Deed of Sub Under Lease': 'Lessor',
-            'Indenture of Lease': 'Lessor',
-            'Quarry Lease': 'Lessor',
-            'Private Lease': 'Lessor',
-            'Building Lease': 'Lessor',
-            'Tenancy Agreement': 'Landlord',
-            'Deed of Release': 'Releasor',
-            'Deed of Transfer': 'Transferor',
-            'Deed of Gift': 'Donor',
-            'Letter of Administration': 'Administrator',
-            'Certificate of Purchase': 'Vendor'
-        };
-        return typeMap[this.transactionType] || 'Grantor';
-    },
-    
-    getSecondPartyFieldName() {
-        const typeMap = {
-            'Deed of Assignment': 'Assignee',
-            'ST Assignment': 'Assignee',
-            'Deed of Mortgage': 'Mortgagee',
-            'Tripartite Mortgage': 'Mortgagee',
-            'Deed of Surrender': 'Surrenderee',
-            'Deed of Sub Lease': 'Lessee',
-            'Deed of Sub Under Lease': 'Lessee',
-            'Indenture of Lease': 'Lessee',
-            'Quarry Lease': 'Lessee',
-            'Private Lease': 'Lessee',
-            'Building Lease': 'Lessee',
-            'Tenancy Agreement': 'Tenant',
-            'Deed of Release': 'Releasee',
-            'Deed of Transfer': 'Transferee',
-            'Deed of Gift': 'Donee',
-            'Letter of Administration': 'Beneficiary',
-            'Certificate of Purchase': 'Purchaser'
-        };
-        return typeMap[this.transactionType] || 'Grantee';
-    },
-    
-    submitForm() {
-                
-        // Call the SweetAlert submission handler directly
-        if (typeof submitPropertyForm === 'function') {
-            submitPropertyForm();
-        } else {
-            // Fallback to normal form submission
-            const form = document.getElementById('property-record-form');
-            if (form) {
-                form.submit();
-            }
-        }
-    }
-}" x-init="init()">
+<div x-data="propertyRecordForm()">
     <form id="property-record-form" action="{{ route('property-records.store') }}" method="POST" @submit.prevent="submitForm">
         @csrf
         <input type="hidden" name="property_id" id="property_id" value="">
-        <input type="hidden" name="form_action" id="form_action" value="add">
+        <input type="hidden" name="action" id="action" value="add">
         
-        <div class="space-y-4 py-2 flex-1 @if(!$is_ai) max-h-[75vh] overflow-y-auto pr-1 @endif">
+        <div class="space-y-4 py-2 @if(!$is_ai) max-h-[75vh] overflow-y-auto pr-1 @endif">
             <!-- Top section with two columns -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Left column - Title Type Section -->
                 <div class="form-section">
-                  
-                  <!-- File Number -->
-                  <div class="space-y-1" x-data="{ showManualEntry: false }" x-effect="(() => { const manual=$el.querySelector('#manual-fileno-container'); const smart=$el.querySelector('#smart-fileno-container'); if(manual){ manual.querySelectorAll('input, select, textarea').forEach(el=> el.disabled = !showManualEntry); } if(smart){ smart.querySelectorAll('input, select, textarea').forEach(el=> el.disabled = showManualEntry); } })()">
-                    <div class="flex items-center justify-between mb-3">
-                        <label for="fileno-select" class="block text-sm font-medium text-gray-700">Select File Number</label>
-                        <button type="button" @click="showManualEntry = !showManualEntry" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200">
-                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                            <span x-text="showManualEntry ? 'Use Smart Selector' : 'Enter Fileno manually'"></span>
-                        </button>
-                    </div>
-                    
-                    <!-- Smart File Number Selector (Default) -->
-                    <div x-show="!showManualEntry" x-transition id="smart-fileno-container">
-                        @include('propertycard.partials.smart_fileno_selector')
-                    </div>
-                    
-                    <!-- Manual File Number Entry -->
-                    <div x-show="showManualEntry" x-transition id="manual-fileno-container">
-                        @include('propertycard.partials.manual_fileno')
-                    </div>
+                    <h4 class="form-section-title">Property Type Information</h4>
+                    <div class="space-y-3">
+                        <div class="space-y-1">
+                            <label class="text-sm">Title Type</label>
+                            <div class="flex space-x-4">
+                                <div class="flex items-center space-x-1">
+                                    <input type="radio" id="customary" name="titleType" value="Customary" x-model="titleType">
+                                    <label for="customary" class="text-sm">Customary</label>
+                                </div>
+                                <div class="flex items-center space-x-1">
+                                    <input type="radio" id="statutory" name="titleType" value="Statutory" x-model="titleType">
+                                    <label for="statutory" class="text-sm">Statutory</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- File Number -->
+                        <div class="space-y-1">
+                            <label for="fileNumber" class="text-sm">File Number</label>
+                            <input type="text" id="fileNumber" name="fileNumber" x-model="fileNumber" class="form-input text-sm" placeholder="Enter file number">
+                        </div>
                     </div>
                 </div>
-
-                      
-                
-                
                 
                 <!-- Right column - Property Description -->
                 <div class="form-section">
@@ -329,11 +71,15 @@
                         </div>
                         
                         <!-- Street Name and District -->
-                        <div class="grid grid-cols-2 gap-3" 
-                             @street-changed="currentStreetName = $event.detail.isOther ? $event.detail.value : ($event.detail.value !== 'other' ? $event.detail.value : ''); updatePropertyDescription();"
-                             @district-changed="currentDistrict = $event.detail.isOther ? $event.detail.value : ($event.detail.value !== 'other' ? $event.detail.value : ''); updatePropertyDescription();">
-                            @include('components.StreetName2')
-                            @include('components.District')
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label for="streetName" class="text-xs text-gray-600">Street Name</label>
+                                <input id="streetName" name="street_name" x-model="streetName" type="text" class="form-input text-sm property-input" placeholder="Enter street name">
+                            </div>
+                            <div>
+                                <label for="district" class="text-xs text-gray-600">District</label>
+                                <input id="district" name="district" x-model="district" type="text" class="form-input text-sm property-input" placeholder="Enter district">
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-3">
@@ -462,7 +208,7 @@
                         <div class="grid grid-cols-5 gap-2">
                             <div>
                                 <label for="serialNo" class="text-xs">Serial No.</label>
-                                <input id="serialNo" name="serialNo" x-model="serialNo" @input="pageNo = serialNo" class="form-input text-xs py-1" placeholder="e.g. 1">
+                                <input id="serialNo" name="serialNo" x-model="serialNo" class="form-input text-xs py-1" placeholder="e.g. 1">
                             </div>
                             <div>
                                 <label for="pageNo" class="text-xs text-gray-500">Page No. (Auto-filled)</label>
@@ -539,11 +285,18 @@
                 </div>
             </div>
 
+            <!-- Debug info -->
+            <div x-show="transactionType" class="bg-yellow-100 p-2 text-xs mb-4">
+                <strong>Debug:</strong> Selected Transaction Type: <span x-text="transactionType"></span><br>
+                <strong>Party Labels:</strong> <span x-text="JSON.stringify(currentPartyLabels)"></span><br>
+                <strong>Show Transaction Details:</strong> <span x-text="showTransactionDetails"></span>
+            </div>
+
             <!-- Transaction Details Section -->
             <div x-show="showTransactionDetails" 
                  x-transition
                  class="form-section" 
-                 >
+                 style="border: 2px solid limegreen;">
                 <h4 class="form-section-title">Transaction Details</h4>
                 
                 <!-- Party Fields -->
@@ -552,11 +305,11 @@
                         <label class="text-sm font-medium" x-text="currentPartyLabels.first"></label>
                         <input type="text" 
                                :name="getFirstPartyFieldName()" 
-                               x-model="firstParty"
+                               x-model="firstParty" 
                                class="form-input text-sm"
-                               :class="isGovernmentTransaction ? 'bg-gray-100 text-gray-800' : ''"
+                               :class="isGovernmentTransaction ? 'bg-gray-100' : ''"
                                :readonly="isGovernmentTransaction"
-                               :placeholder="isGovernmentTransaction ? 'KANO STATE GOVERNMENT' : 'Enter ' + currentPartyLabels.first.toLowerCase() + ' name'">
+                               :placeholder="`Enter ${currentPartyLabels.first.toLowerCase()} name`">
                     </div>
                     <div class="space-y-1">
                         <label class="text-sm font-medium" x-text="currentPartyLabels.second"></label>
@@ -564,50 +317,178 @@
                                :name="getSecondPartyFieldName()" 
                                x-model="secondParty" 
                                class="form-input text-sm"
-                               :placeholder="'Enter ' + currentPartyLabels.second.toLowerCase() + ' name'">
+                               :placeholder="`Enter ${currentPartyLabels.second.toLowerCase()} name`">
                     </div>
                 </div>
             </div>
 
             <!-- Property Description -->
             <div class="space-y-1">
-                <div class="flex justify-between items-center">
-                    <label class="text-sm">Property Description</label>
-                    <button type="button" @click="updatePropertyDescription()" class="text-xs text-blue-600 hover:text-blue-800">
-                        🔄 Refresh Description
-                    </button>
-                </div>
-                <textarea id="property-description" 
-                          name="property_description" 
-                          rows="4" 
-                          x-model="propertyDescription"
-                          class="form-input text-sm bg-gray-50" 
-                          readonly
-                          placeholder="This field will be auto-populated based on property details above"></textarea>
-                <div class="text-xs text-gray-500 italic">This field auto-populates from House No, Street Name (or specified Other Street Name), District (or specified Other District Name), LGA, and State.</div>
+                <label class="text-sm">Property Description</label>
+                <textarea id="property-description" name="property_description" rows="4" x-model="propertyDescription" class="form-input text-sm"></textarea>
             </div>
-
-
-            <div class="flex justify-end space-x-3 pt-2 border-t mt-4 sticky bottom-0 bg-white z-10">
-            <button id="property-submit-btn" type="submit" class="btn btn-primary">Submit</button>
-        </div>
         </div>
         
-      
+        <div class="flex justify-end space-x-3 pt-2 border-t mt-4">
+            <button id="property-submit-btn" type="submit" class="btn btn-primary">Submit</button>
+        </div>
     </form>
 </div>
 
 @if(!$is_ai)
     </div>
 </div>
-@else
-<script>
-// In AI inline mode, ensure the container is visible and not modal
-document.addEventListener('DOMContentLoaded', function() {
-  const aiRoot = document.getElementById('ai-add-form-root');
-  if (aiRoot) {
-    aiRoot.style.display = 'block';
-  }
-});
-</script>
 @endif
+
+<script>
+function propertyRecordForm() {
+    return {
+        // Form fields
+        titleType: 'Customary',
+        fileNumber: '',
+        houseNo: '',
+        plotNo: '',
+        streetName: '',
+        district: '',
+        lga: '',
+        transactionType: '',
+        transactionDate: '',
+        serialNo: '',
+        pageNo: '',
+        volumeNo: '',
+        regDate: new Date().toISOString().split('T')[0],
+        regTime: '09:00',
+        landUse: '',
+        period: '',
+        periodUnit: 'Years',
+        firstParty: '',
+        secondParty: '',
+        propertyDescription: '',
+        
+        // Party labels for different transaction types
+        partyLabels: {
+            'Power of Attorney': { first: 'Grantor', second: 'Grantee' },
+            'Deed of Assignment': { first: 'Assignor', second: 'Assignee' },
+            'ST Assignment': { first: 'Assignor', second: 'Assignee' },
+            'Deed of Mortgage': { first: 'Mortgagor', second: 'Mortgagee' },
+            'Tripartite Mortgage': { first: 'Mortgagor', second: 'Mortgagee' },
+            'Certificate of Occupancy': { first: 'Grantor', second: 'Grantee' },
+            'ST Certificate of Occupancy': { first: 'Grantor', second: 'Grantee' },
+            'SLTR Certificate of Occupancy': { first: 'Grantor', second: 'Grantee' },
+            'Customary Right of Occupancy': { first: 'Grantor', second: 'Grantee' },
+            'Deed of Transfer': { first: 'Transferor', second: 'Transferee' },
+            'Deed of Gift': { first: 'Donor', second: 'Donee' },
+            'Deed of Lease': { first: 'Lessor', second: 'Lessee' },
+            'Deed of Sub Lease': { first: 'Lessor', second: 'Lessee' },
+            'Deed of Sub Under Lease': { first: 'Lessor', second: 'Lessee' },
+            'Indenture of Lease': { first: 'Lessor', second: 'Lessee' },
+            'Quarry Lease': { first: 'Lessor', second: 'Lessee' },
+            'Private Lease': { first: 'Lessor', second: 'Lessee' },
+            'Building Lease': { first: 'Lessor', second: 'Lessee' },
+            'Tenancy Agreement': { first: 'Landlord', second: 'Tenant' },
+            'Deed of Release': { first: 'Releasor', second: 'Releasee' },
+            'Deed of Surrender': { first: 'Surrenderor', second: 'Surrenderee' },
+            'Letter of Administration': { first: 'Administrator', second: 'Beneficiary' },
+            'Certificate of Purchase': { first: 'Vendor', second: 'Purchaser' }
+        },
+        
+        // Computed properties
+        get showTransactionDetails() {
+            return this.transactionType !== '';
+        },
+        
+        get currentPartyLabels() {
+            return this.partyLabels[this.transactionType] || { first: 'Grantor', second: 'Grantee' };
+        },
+        
+        get isGovernmentTransaction() {
+            const govTypes = ['Certificate of Occupancy', 'ST Certificate of Occupancy', 'SLTR Certificate of Occupancy', 'Customary Right of Occupancy'];
+            return govTypes.includes(this.transactionType);
+        },
+        
+        get regNumberPreview() {
+            const parts = [this.serialNo, this.pageNo, this.volumeNo].filter(Boolean);
+            return parts.length > 0 ? parts.join('/') : '';
+        },
+        
+        // Initialize
+        init() {
+            console.log('Alpine.js Property Record Form initialized');
+            
+            // Watch for transaction type changes
+            this.$watch('transactionType', (value) => {
+                console.log('Transaction type changed to:', value);
+                
+                // Auto-fill for government transactions
+                if (this.isGovernmentTransaction) {
+                    this.firstParty = 'KANO STATE GOVERNMENT';
+                } else {
+                    this.firstParty = '';
+                }
+            });
+            
+            // Auto-sync page number with serial number
+            this.$watch('serialNo', (value) => {
+                this.pageNo = value;
+            });
+        },
+        
+        // Methods
+        getFirstPartyFieldName() {
+            const typeMap = {
+                'Deed of Assignment': 'Assignor',
+                'ST Assignment': 'Assignor',
+                'Deed of Mortgage': 'Mortgagor',
+                'Tripartite Mortgage': 'Mortgagor',
+                'Deed of Surrender': 'Surrenderor',
+                'Deed of Sub Lease': 'Lessor',
+                'Deed of Sub Under Lease': 'Lessor',
+                'Indenture of Lease': 'Lessor',
+                'Quarry Lease': 'Lessor',
+                'Private Lease': 'Lessor',
+                'Building Lease': 'Lessor',
+                'Tenancy Agreement': 'Landlord',
+                'Deed of Release': 'Releasor',
+                'Deed of Transfer': 'Transferor',
+                'Deed of Gift': 'Donor',
+                'Letter of Administration': 'Administrator',
+                'Certificate of Purchase': 'Vendor'
+            };
+            return typeMap[this.transactionType] || 'Grantor';
+        },
+        
+        getSecondPartyFieldName() {
+            const typeMap = {
+                'Deed of Assignment': 'Assignee',
+                'ST Assignment': 'Assignee',
+                'Deed of Mortgage': 'Mortgagee',
+                'Tripartite Mortgage': 'Mortgagee',
+                'Deed of Surrender': 'Surrenderee',
+                'Deed of Sub Lease': 'Lessee',
+                'Deed of Sub Under Lease': 'Lessee',
+                'Indenture of Lease': 'Lessee',
+                'Quarry Lease': 'Lessee',
+                'Private Lease': 'Lessee',
+                'Building Lease': 'Lessee',
+                'Tenancy Agreement': 'Tenant',
+                'Deed of Release': 'Releasee',
+                'Deed of Transfer': 'Transferee',
+                'Deed of Gift': 'Donee',
+                'Letter of Administration': 'Beneficiary',
+                'Certificate of Purchase': 'Purchaser'
+            };
+            return typeMap[this.transactionType] || 'Grantee';
+        },
+        
+        submitForm() {
+            console.log('Form submitted with Alpine.js');
+            
+            // Get the form element and submit it normally
+            const form = document.getElementById('property-record-form');
+            if (form) {
+                form.submit();
+            }
+        }
+    }
+}
+</script>

@@ -5,11 +5,6 @@
 <div class="smart-fileno-selector" x-data="smartFilenoSelector()">
     <!-- Hidden input for the main fileno field that gets submitted -->
     <input type="hidden" id="fileno" name="fileno" value="">
-    <!-- Hidden inputs to mirror manual entry names so both modes are identical -->
-    <input type="hidden" id="mlsFNo" name="mlsFNo" value="">
-    <input type="hidden" id="kangisFileNo" name="kangisFileNo" value="">
-    <input type="hidden" id="NewKANGISFileno" name="NewKANGISFileno" value="">
-    <input type="hidden" id="activeFileTab" name="activeFileTab" value="">
     
     <!-- Dropdown Selection Mode -->
     <div id="dropdown-mode" class="fileno-mode">
@@ -17,7 +12,7 @@
             <option value="">Select File Number</option>
             @php
                 $fileNumbers = DB::connection('sqlsrv')
-                    ->select("SELECT TOP (500)
+                    ->select("SELECT 
                                 [id],
                                 [kangisFileNo],
                                 [mlsfNo], 
@@ -123,8 +118,6 @@ function smartFilenoSelector() {
                 placeholder: 'Search and select file number...',
                 allowClear: true,
                 width: '100%',
-                minimumInputLength: 1,
-                dropdownParent: $('#property-form-dialog'),
                 templateResult: function(option) {
                     if (!option.id) {
                         return option.text;
@@ -178,21 +171,6 @@ function smartFilenoSelector() {
             const filenoInput = document.getElementById('fileno');
             if (filenoInput) {
                 filenoInput.value = this.selectedFileno;
-            }
-
-            // Mirror fields used by manual entry so backend receives identical names
-            const mlsHidden = document.getElementById('mlsFNo');
-            const kangisHidden = document.getElementById('kangisFileNo');
-            const newKangisHidden = document.getElementById('NewKANGISFileno');
-            const activeTabHidden = document.getElementById('activeFileTab');
-            if (mlsHidden) mlsHidden.value = this.selectedApplication?.mlsfNo || '';
-            if (kangisHidden) kangisHidden.value = this.selectedApplication?.kangisFileNo || '';
-            if (newKangisHidden) newKangisHidden.value = this.selectedApplication?.NewKANGISFileNo || '';
-            if (activeTabHidden) {
-                if (this.selectedApplication?.mlsfNo) activeTabHidden.value = 'mlsFNo';
-                else if (this.selectedApplication?.kangisFileNo) activeTabHidden.value = 'kangisFileNo';
-                else if (this.selectedApplication?.NewKANGISFileNo) activeTabHidden.value = 'NewKANGISFileno';
-                else activeTabHidden.value = '';
             }
             
             // Show selected display
@@ -259,14 +237,6 @@ function smartFilenoSelector() {
             if (filenoInput) {
                 filenoInput.value = '';
             }
-            const mlsHidden = document.getElementById('mlsFNo');
-            const kangisHidden = document.getElementById('kangisFileNo');
-            const newKangisHidden = document.getElementById('NewKANGISFileno');
-            const activeTabHidden = document.getElementById('activeFileTab');
-            if (mlsHidden) mlsHidden.value = '';
-            if (kangisHidden) kangisHidden.value = '';
-            if (newKangisHidden) newKangisHidden.value = '';
-            if (activeTabHidden) activeTabHidden.value = '';
             
             // Hide selected display
             const selectedDisplay = document.getElementById('selected-fileno-display');

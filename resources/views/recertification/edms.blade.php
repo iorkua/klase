@@ -466,7 +466,7 @@ function renderEDMSTable() {
                                 </button>
                                 <button onclick="createEDMSRecord(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 gap-2">
                                     <i data-lucide="plus-circle" class="h-4 w-4"></i>
-                                    Create EDMS Record
+                                    Create DMS Record
                                 </button>
                             </div>
                         </div>
