@@ -71,14 +71,14 @@
             <a href="{{ route('coroi.index') }}?url=registered_instruments&fileno={{ $app->fileno }}" 
                class="flex px-4 py-2 text-sm   hover:bg-gray-100 items-center">
                  <i class="fas fa-eye mr-2 text-blue-400"></i>
-                  <span class="whitespace-nowrap text-sm" style="font-size: 75%">View CoR for Assignment Transfer</span>
+                  <span class="whitespace-nowrap text-sm" style="font-size: 75%">View Pagination Details</span>
             </a> 
          @else
             <button type="button" 
                class="flex px-4 py-2 text-sm text-gray-400 hover:bg-gray-100 items-center cursor-not-allowed opacity-50" 
                disabled>
                   <i class="fas fa-eye mr-2 text-gray-400"></i>
-                     <span class="whitespace-nowrap text-sm" style="font-size: 75%">View CoR for Assignment Transfer</span>
+                     <span class="whitespace-nowrap text-sm" style="font-size: 75%">View Pagination Details</span>
             </button>
          @endif
       </li>

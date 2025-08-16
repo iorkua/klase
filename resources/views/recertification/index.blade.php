@@ -232,15 +232,15 @@ input:checked + .toggle-slider:before {
   </div>
 
   <!-- Statistics -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
     <div class="bg-white rounded-lg shadow border border-gray-200 p-6">
       <div class="flex items-center">
         <div class="p-2 bg-green-100 rounded-lg">
           <i data-lucide="check-circle" class="h-6 w-6 text-green-600"></i>
         </div>
         <div class="ml-4">
-          <p class="text-sm font-medium text-gray-600">Total Approved</p>
-          <p class="text-2xl font-bold text-gray-900">8</p>
+          <p class="text-sm font-medium text-gray-600">Total Applications</p>
+          <p class="text-2xl font-bold text-gray-900" id="total-applications">0</p>
         </div>
       </div>
     </div>
@@ -252,31 +252,7 @@ input:checked + .toggle-slider:before {
         </div>
         <div class="ml-4">
           <p class="text-sm font-medium text-gray-600">This Month</p>
-          <p class="text-2xl font-bold text-gray-900">8</p>
-        </div>
-      </div>
-    </div>
-    
-    <div class="bg-white rounded-lg shadow border border-gray-200 p-6">
-      <div class="flex items-center">
-        <div class="p-2 bg-purple-100 rounded-lg">
-          <i data-lucide="users" class="h-6 w-6 text-purple-600"></i>
-        </div>
-        <div class="ml-4">
-          <p class="text-sm font-medium text-gray-600">Active Officers</p>
-          <p class="text-2xl font-bold text-gray-900">4</p>
-        </div>
-      </div>
-    </div>
-    
-    <div class="bg-white rounded-lg shadow border border-gray-200 p-6">
-      <div class="flex items-center">
-        <div class="p-2 bg-orange-100 rounded-lg">
-          <i data-lucide="clock" class="h-6 w-6 text-orange-600"></i>
-        </div>
-        <div class="ml-4">
-          <p class="text-sm font-medium text-gray-600">Avg. Processing</p>
-          <p class="text-2xl font-bold text-gray-900">12 days</p>
+          <p class="text-2xl font-bold text-gray-900" id="this-month-applications">0</p>
         </div>
       </div>
     </div>
@@ -322,37 +298,40 @@ input:checked + .toggle-slider:before {
         <table class="w-full divide-y divide-gray-200" id="recertification-table">
           <thead class="bg-gray-50">
             <tr>
-              <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+              <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <div class="truncate">CofO Serial No</div>
+              </th>
+              <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div class="truncate">New KANGIS FileNo</div>
               </th>
-              <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+              <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div class="truncate">KANGIS FileNo</div>
               </th>
-              <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
+              <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div class="truncate">MLS FileNo</div>
               </th>
-              <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px]">
+              <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div class="truncate">RegNo</div>
               </th>
-              <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+              <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div class="truncate">Application Type</div>
               </th>
-              <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
+              <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div class="truncate">Applicant Name</div>
               </th>
-              <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+              <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div class="truncate">Plot Details</div>
               </th>
-              <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px]">
+              <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div class="truncate">LGA</div>
               </th>
-              <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
+              <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div class="truncate">Application Date</div>
               </th>
-              <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+              <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div class="truncate">Acknowledgement</div>
               </th>
-              <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
+              <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div class="truncate">Actions</div>
               </th>
             </tr>
@@ -656,6 +635,44 @@ window.openCofoSerialModal = function(applicationId) {
 
 @include('recertification.ack_modal')
 @include('recertification.js.js')
+
+<script>
+// Load statistics when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadStatistics();
+});
+
+function loadStatistics() {
+    fetch('/recertification/statistics', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.statistics) {
+            // Update statistics display
+            document.getElementById('total-applications').textContent = data.statistics.total_applications || 0;
+            document.getElementById('this-month-applications').textContent = data.statistics.this_month_applications || 0;
+            
+            // Update applications count in table header
+            document.getElementById('applications-count').textContent = data.statistics.total_applications || 0;
+        } else {
+            console.error('Failed to load statistics:', data.error || 'Unknown error');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading statistics:', error);
+    });
+}
+
+// Refresh statistics when table is reloaded
+function refreshStatistics() {
+    loadStatistics();
+}
+</script>
 
 @endsection
 

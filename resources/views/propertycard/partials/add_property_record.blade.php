@@ -42,6 +42,10 @@
     secondParty: '',
     propertyDescription: '',
     
+    // Track current values from components
+    currentStreetName: '',
+    currentDistrict: '',
+    
     // Party labels for different transaction types
     partyLabels: {
         'Power of Attorney': { first: 'Grantor', second: 'Grantee' },
@@ -95,44 +99,26 @@
         
         // Add house number if available
         if (this.houseNo && this.houseNo.trim()) {
-            parts.push( this.houseNo.trim());
+            parts.push(this.houseNo.trim());
             console.log('Added house number:', this.houseNo.trim());
         }
         
-        // Get street name from component (prefer select unless 'other', then use custom input)
-        const streetNameSelect = document.querySelector('#streetName');
-        const streetNameCustom = document.querySelector('#otherStreetName');
-        let streetNameValue = '';
-        if (streetNameSelect && streetNameSelect.value && streetNameSelect.value.trim() && streetNameSelect.value !== 'other') {
-            streetNameValue = streetNameSelect.value.trim();
-        } else if (streetNameCustom && streetNameCustom.value && streetNameCustom.value.trim()) {
-            streetNameValue = streetNameCustom.value.trim();
-        }
-        console.log('Resolved street name:', streetNameValue);
-        if (streetNameValue) {
-            parts.push(streetNameValue);
-            console.log('Added street name:', streetNameValue);
+        // Add street name if available
+        if (this.currentStreetName && this.currentStreetName.trim()) {
+            parts.push(this.currentStreetName.trim());
+            console.log('Added street name:', this.currentStreetName.trim());
         }
         
-        // Get district from component (prefer select unless 'other', then use custom input)
-        const districtSelect = document.querySelector('#district');
-        const districtCustom = document.querySelector('#otherDistrict');
-        let districtValue = '';
-        if (districtSelect && districtSelect.value && districtSelect.value.trim() && districtSelect.value !== 'other') {
-            districtValue = districtSelect.value.trim();
-        } else if (districtCustom && districtCustom.value && districtCustom.value.trim()) {
-            districtValue = districtCustom.value.trim();
-        }
-        console.log('Resolved district:', districtValue);
-        if (districtValue) {
-            parts.push(districtValue);
-            console.log('Added district:', districtValue);
+        // Add district if available
+        if (this.currentDistrict && this.currentDistrict.trim()) {
+            parts.push(this.currentDistrict.trim());
+            console.log('Added district:', this.currentDistrict.trim());
         }
         
         // Add LGA if available
         if (this.lga && this.lga.trim()) {
-            parts.push(this.lga.trim() );
-            console.log( this.lga.trim());
+            parts.push(this.lga.trim());
+            console.log('Added LGA:', this.lga.trim());
         }
         
         // Add state (prefer field value, default is Kano State)
@@ -322,10 +308,15 @@
     submitForm() {
         console.log('Form submitted with Alpine.js');
         
-        // Get the form element and submit it normally
-        const form = document.getElementById('property-record-form');
-        if (form) {
-            form.submit();
+        // Call the SweetAlert submission handler directly
+        if (typeof submitPropertyForm === 'function') {
+            submitPropertyForm();
+        } else {
+            // Fallback to normal form submission
+            const form = document.getElementById('property-record-form');
+            if (form) {
+                form.submit();
+            }
         }
     }
 }" x-init="init()">
@@ -385,7 +376,9 @@
                         </div>
                         
                         <!-- Street Name and District -->
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-2 gap-3" 
+                             @street-changed="currentStreetName = $event.detail.isOther ? $event.detail.value : ($event.detail.value !== 'other' ? $event.detail.value : ''); updatePropertyDescription();"
+                             @district-changed="currentDistrict = $event.detail.isOther ? $event.detail.value : ($event.detail.value !== 'other' ? $event.detail.value : ''); updatePropertyDescription();">
                             @include('components.StreetName2')
                             @include('components.District')
                         </div>

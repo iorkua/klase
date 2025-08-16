@@ -129,7 +129,10 @@ function renderApplicationsTable(data) {
     if (noResults) {
         noResults.classList.add('hidden');
     }
-    
+    // <button onclick="captureExtantCofo(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2">
+    //                                 <i data-lucide="camera" class="h-4 w-4"></i>
+    //                                 Capture Extant CofO Details
+    //  </button>
     // Generate table rows with correct column alignment
     const rows = data.map(app => {
         const actionMenuId = `action-menu-${app.id}`;
@@ -183,10 +186,7 @@ function renderApplicationsTable(data) {
                                     Delete Application
                                 </button>
                                 <hr class="my-1">
-                                <button onclick="captureExtantCofo(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2">
-                                    <i data-lucide="camera" class="h-4 w-4"></i>
-                                    Capture Extant CofO Details
-                                </button>
+                              
                                 <button data-action="generate-ack" data-app-id="${app.id}" onclick="generateAcknowledgement(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2 ${ (app.acknowledgement && app.acknowledgement.toLowerCase()==='generated') ? 'opacity-50 cursor-not-allowed' : '' }" ${ (app.acknowledgement && app.acknowledgement.toLowerCase()==='generated') ? 'disabled' : ''}>
                                     <i data-lucide="file-plus" class="h-4 w-4"></i>
                                     Generate Acknowledgement

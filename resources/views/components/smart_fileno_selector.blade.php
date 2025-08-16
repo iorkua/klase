@@ -16,60 +16,43 @@
     <!-- Dropdown Selection Mode -->
     <div id="dropdown-mode" class="fileno-mode">
         <select id="fileno-select" class="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            <option value="">-- Select File Number --</option>
+            <option value="">Select File Number</option>
             @php
-                try {
-                    $ctApplications = DB::connection('sqlsrv')
-                        ->select("SELECT [id], [kangisFileNo], [mlsFNo], [NewKANGISFileno], [FileName] FROM [klas].[dbo].[fileNumber] ORDER BY [id] DESC");
-                    
-                    // Debug: Log the count of applications found
-                    \Log::info('FileNumber query result count: ' . count($ctApplications));
-                    
-                } catch (\Exception $e) {
-                    \Log::error('FileNumber query error: ' . $e->getMessage());
-                    $ctApplications = [];
-                }
+                $fileNumbers = DB::connection('sqlsrv')
+                    ->select("SELECT 
+                                [id],
+                                [kangisFileNo],
+                                [mlsfNo], 
+                                [NewKANGISFileNo]
+                              FROM [klas].[dbo].[fileNumber]
+                              ORDER BY [id] DESC");
             @endphp
-            
-            <!-- Debug info (remove in production) -->
-            @if(config('app.debug'))
-                <!-- Found {{ count($ctApplications) }} file numbers -->
-            @endif
-            
-            @foreach($ctApplications as $application)
+            @foreach($fileNumbers as $fileRecord)
                 @php
-                    $displayText = '';
-                    $fileType = '';
+                    // Determine which file number to display (priority: MLS -> KANGIS -> New KANGIS)
+                    $displayFileNo = '';
                     
-                    if (!empty($application->mlsFNo)) {
-                        $displayText = $application->mlsFNo;
-                        $fileType = 'MLS';
-                    } elseif (!empty($application->kangisFileNo)) {
-                        $displayText = $application->kangisFileNo;
-                        $fileType = 'KANGIS';
-                    } elseif (!empty($application->NewKANGISFileno)) {
-                        $displayText = $application->NewKANGISFileno;
-                        $fileType = 'NEW KANGIS';
-                    } else {
-                        // Fallback: show record ID if no file number is available
-                        $displayText = 'Record #' . $application->id;
-                        $fileType = 'RECORD';
+                    if (!empty($fileRecord->mlsfNo)) {
+                        $displayFileNo = $fileRecord->mlsfNo;
+                    } elseif (!empty($fileRecord->kangisFileNo)) {
+                        $displayFileNo = $fileRecord->kangisFileNo;
+                    } elseif (!empty($fileRecord->NewKANGISFileNo)) {
+                        $displayFileNo = $fileRecord->NewKANGISFileNo;
                     }
+                    
+                    // Only show records that have at least one file number
+                    if (empty($displayFileNo)) continue;
                 @endphp
                 
-                <option value="{{ $displayText }}" 
-                        data-fileno="{{ $displayText }}"
-                        data-file-type="{{ $fileType }}"
-                        data-application-id="{{ $application->application_id ?? '' }}"
-                        data-filename="{{ $application->FileName ?? '' }}"
-                        data-record-id="{{ $application->id }}">
-                    {{ $displayText }} ({{ $fileType }}){{ !empty($application->FileName) ? ' - ' . $application->FileName : '' }}
+                <option value="{{ $fileRecord->id }}" 
+                        data-id="{{ $fileRecord->id }}"
+                        data-fileno="{{ $displayFileNo }}"
+                        data-kangis-fileno="{{ $fileRecord->kangisFileNo ?? '' }}"
+                        data-mls-fileno="{{ $fileRecord->mlsfNo ?? '' }}"
+                        data-newkangis-fileno="{{ $fileRecord->NewKANGISFileNo ?? '' }}">
+                    {{ $displayFileNo }}
                 </option>
             @endforeach
-            
-            @if(count($ctApplications) == 0)
-                <option value="" disabled>No file numbers found in database</option>
-            @endif
         </select>
         <p class="text-xs text-gray-500 mt-1">Can't find your file number? <button type="button" class="text-blue-600 hover:underline" onclick="toggleFilenoMode()">Enter it manually</button></p>
         
@@ -508,10 +491,53 @@ function initializeSmartFilenoSelector() {
         }
     }
     
+    // Add event listener for dropdown selection
+    if (filenoSelect) {
+        // Debug: Log initial dropdown options
+        console.log('FileNumber Dropdown Debug - Initial options count:', filenoSelect.options.length);
+        for (let i = 0; i < Math.min(5, filenoSelect.options.length); i++) {
+            console.log('Option', i, ':', filenoSelect.options[i].value, filenoSelect.options[i].text);
+        }
+        
+        filenoSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption && selectedOption.value) {
+                const application = {
+                    id: selectedOption.getAttribute('data-id'),
+                    fileno: selectedOption.getAttribute('data-fileno'),
+                    kangisFileNo: selectedOption.getAttribute('data-kangis-fileno'),
+                    mlsfNo: selectedOption.getAttribute('data-mls-fileno'),
+                    NewKANGISFileNo: selectedOption.getAttribute('data-newkangis-fileno')
+                };
+                
+                // Show selected file number
+                if (selectedText) selectedText.textContent = application.fileno;
+                if (selectedDisplay) selectedDisplay.classList.remove('hidden');
+                
+                // Handle the selection
+                handleFilenoSelection(application);
+            } else {
+                // Clear selection if empty option is selected
+                if (selectedDisplay) selectedDisplay.classList.add('hidden');
+                if (selectedText) selectedText.textContent = '';
+                if (filenoInput) filenoInput.value = '';
+                clearFormAndDisableInputs();
+            }
+        });
+        
+        // Debug: Check if options change after a delay (in case they're being replaced by JS)
+        setTimeout(function() {
+            console.log('FileNumber Dropdown Debug - Options after 2 seconds:', filenoSelect.options.length);
+            for (let i = 0; i < Math.min(5, filenoSelect.options.length); i++) {
+                console.log('Option', i, ':', filenoSelect.options[i].value, filenoSelect.options[i].text);
+            }
+        }, 2000);
+    }
+    
     // Make toggleFilenoMode globally accessible
     window.toggleFilenoMode = toggleFilenoMode;
     
-    // Handle dropdown selection from Select2
+    // Handle dropdown selection from Select2 (if used)
     window.handleDropdownSelection = function(application) {
         // Set the main fileno field
         if (filenoInput) filenoInput.value = application.fileno;

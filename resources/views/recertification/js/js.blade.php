@@ -198,10 +198,7 @@ function renderApplicationsTable(data) {
                                     Delete Application
                                 </button>
                                 <hr class="my-1">
-                                <button onclick="captureExtantCofo(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2 ${ app.cofo_exists ? 'opacity-50 cursor-not-allowed' : '' }" ${ app.cofo_exists ? 'disabled' : '' }>
-                                    <i data-lucide="camera" class="h-4 w-4"></i>
-                                    Capture Extant CofO Details
-                                </button>
+                               
                                 <button data-action="generate-ack" data-app-id="${app.id}" onclick="generateAcknowledgement(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2 ${ (app.acknowledgement && app.acknowledgement.toLowerCase()==='generated') ? 'opacity-50 cursor-not-allowed' : '' }" ${ (app.acknowledgement && app.acknowledgement.toLowerCase()==='generated') ? 'disabled' : ''}>
                                     <i data-lucide="file-plus" class="h-4 w-4"></i>
                                     Generate Acknowledgement
@@ -210,11 +207,7 @@ function renderApplicationsTable(data) {
                                     <i data-lucide="file-text" class="h-4 w-4"></i>
                                     View Acknowledgement
                                 </button>
-                                <button onclick="enterCofoSerialNumber(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2 ${ (app.cofo_number && app.cofo_number !== 'N/A') ? 'opacity-50 cursor-not-allowed' : '' }" ${ (app.cofo_number && app.cofo_number !== 'N/A') ? 'disabled' : ''}>
-                                    <i data-lucide="hash" class="h-4 w-4"></i>
-                                    Enter Cofo Serial Number
-                                </button>
-                            </div>
+                                                            </div>
                         </div>
                     </div>
                 </td>

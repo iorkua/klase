@@ -521,7 +521,7 @@
     <div class="py-1 px-3 mb-0.5 border-t border-slate-100">
       <div class="sidebar-module-header flex items-center justify-between py-2 px-3 mb-0.5 cursor-pointer hover:bg-slate-50 rounded-md" data-module="lands">
       <div class="flex items-center gap-2">
-        <i data-lucide="landmark" class="h-5 w-5 text-black"></i>
+        <i data-lucide="landmark" class="h-5 w-5 text-blue-400"></i>
         <span class="text-sm font-bold uppercase tracking-wider">Lands</span>
       </div>
       <i data-lucide="chevron-right" class="h-4 w-4 text-black transition-transform duration-200" data-chevron="lands"></i>
@@ -1323,7 +1323,7 @@
     <div class="py-1 px-3 mb-0.5 border-t border-slate-100">
       <div class="sidebar-module-header flex items-center justify-between py-2 px-3 mb-0.5 cursor-pointer hover:bg-slate-50 rounded-md" data-module="systems">
       <div class="flex items-center gap-2"> 
-        <i data-lucide="shield" class="h-5 w-5 module-icon-systems"></i>
+        <i data-lucide="shield" class="h-5 w-5 text-black"></i>
         <span class="text-sm font-bold uppercase tracking-wider">Systems</span>
       </div>
       <i data-lucide="chevron-right" class="h-4 w-4 transition-transform duration-200" data-chevron="systems"></i>

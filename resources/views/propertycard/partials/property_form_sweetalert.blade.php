@@ -14,18 +14,50 @@ function submitPropertyForm() {
         }
     });
 
-    // Submit form via fetch
+    // Submit form via fetch (robust handling with CSRF, timeout, redirects, and non-JSON)
+    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || form.querySelector('input[name="_token"]')?.value || '';
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
     fetch(form.action, {
         method: 'POST',
         body: formData,
         headers: {
             'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': token
+        },
+        signal: controller.signal
+    })
+    .then(async (response) => {
+        clearTimeout(timeoutId);
+        if (response.redirected) {
+            Swal.close();
+            window.location.href = response.url;
+            return null;
+        }
+        const contentType = response.headers.get('Content-Type') || '';
+        if (!response.ok) {
+            if (contentType.includes('application/json')) {
+                const errData = await response.json().catch(() => ({}));
+                const messages = errData.errors ? Object.values(errData.errors).flat() : [errData.message || 'Request failed'];
+                throw new Error(messages.join('\n'));
+            } else {
+                const text = await response.text().catch(() => '');
+                throw new Error(text || ('HTTP ' + response.status));
+            }
+        }
+        if (contentType.includes('application/json')) {
+            return response.json();
+        } else {
+            // Non-JSON success, reload to reflect changes
+            Swal.close();
+            window.location.reload();
+            return null;
         }
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
+    .then((data) => {
+        if (!data) return;
+        if (data.status === 'success' || data.success === true) {
             Swal.fire({
                 icon: 'success',
                 title: 'Success!',
@@ -34,13 +66,10 @@ function submitPropertyForm() {
             }).then(() => {
                 // Reset form and close dialog
                 form.reset();
-                
-                // Close dialog if it exists
                 const dialog = document.getElementById('property-form-dialog');
                 if (dialog) {
                     dialog.classList.add('hidden');
                 }
-                
                 // Reload page to show new record
                 window.location.reload();
             });
@@ -51,7 +80,6 @@ function submitPropertyForm() {
                 const errorList = Object.values(data.errors).flat();
                 errorMessage = errorList.join('\n');
             }
-            
             Swal.fire({
                 icon: 'error',
                 title: 'Validation Error',
@@ -60,12 +88,13 @@ function submitPropertyForm() {
             });
         }
     })
-    .catch(error => {
+    .catch((error) => {
+        clearTimeout(timeoutId);
         console.error('Error:', error);
         Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: 'An unexpected error occurred. Please try again.',
+            text: error.message || 'An unexpected error occurred. Please try again.',
             confirmButtonText: 'OK'
         });
     });

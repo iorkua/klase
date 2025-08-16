@@ -10,6 +10,7 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'recertification'], f
     // Main Index and Application Routes
     Route::get('/', [RecertificationController::class, 'index'])->name('recertification.index');
     Route::get('/data', [RecertificationController::class, 'getApplicationsData'])->name('recertification.data');
+    Route::get('/statistics', [RecertificationController::class, 'getStatistics'])->name('recertification.statistics');
     Route::get('/application', function() {
         return view('recertification.application_standalone_clean');
     })->name('recertification.application');

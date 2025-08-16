@@ -48,38 +48,13 @@ tailwind.config = {
            
             </div>
 
-            <!-- Development Controls -->
-            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                <div class="flex items-center gap-2 mb-2">
-                    <i data-lucide="settings" class="h-5 w-5 text-yellow-600"></i>
-                    <h3 class="font-semibold text-yellow-800">Development Controls</h3>
-                </div>
-                <div class="flex gap-4 items-center">
-                    <label class="flex items-center gap-2">
-                        <input type="checkbox" id="dev-skip-validation" class="rounded" checked>
-                        <span class="text-sm text-yellow-700">Skip Validation</span>
-                    </label>
-                    <label class="flex items-center gap-2">
-                        <input type="checkbox" id="dev-auto-fill" class="rounded">
-                        <span class="text-sm text-yellow-700">Auto-fill Sample Data</span>
-                    </label>
-                    <button id="dev-debug-btn" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-yellow-600 text-white hover:bg-yellow-700 gap-1">
-                        <i data-lucide="bug" class="h-3 w-3"></i>
-                        Debug
-                    </button>
-                    <button id="dev-reset-btn" class="inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-red-600 text-white hover:bg-red-700 gap-1">
-                        <i data-lucide="refresh-cw" class="h-3 w-3"></i>
-                        Reset
-                    </button>
-                </div>
-            </div>
-
+            
             <!-- Application Form -->
             <div class="bg-white rounded-lg shadow-xl border border-gray-200">
                 <!-- Header -->
                 <div class="p-6 border-b border-gray-200">
-                    <div class="flex items-start justify-between">
-                        <div class="text-center flex-1">
+                    <div class="flex items-start justify-center">
+                        <div class="text-center">
                             <div class="space-y-1">
                                 <div class="font-bold text-lg">KANO STATE GEOGRAPHIC INFORMATION SYSTEMS (KANGIS)</div>
                                 <div class="text-sm text-gray-600">MINISTRY OF LAND AND PHYSICAL PLANNING KANO STATE</div>
@@ -88,14 +63,16 @@ tailwind.config = {
                             </div>
                         </div>
                         
-                        <!-- File Number Display - Top Right -->
-                        <div class="text-right">
-                            <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Application File Number</div>
-                            <div class="flex items-center gap-2 justify-end">
-                                <i data-lucide="file-text" class="h-4 w-4 text-blue-600"></i>
-                                <span id="file-number-display" class="text-sm font-bold text-blue-900 font-mono">Loading...</span>
+                        <!-- File Number Display - Very close to header text -->
+                        <div class="ml-8">
+                            <div class="bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
+                                <div class="text-xs font-medium text-blue-700 uppercase tracking-wide text-center mb-1">File Number</div>
+                                <div class="flex items-center gap-2 justify-center">
+                                    <i data-lucide="file-text" class="h-4 w-4 text-blue-600"></i>
+                                    <span id="file-number-display" class="text-sm font-bold text-blue-900 font-mono">Loading...</span>
+                                </div>
+                                <div class="text-xs text-blue-500 text-center mt-1">Auto-generated</div>
                             </div>
-                            <div class="text-xs text-gray-400 mt-1">Auto-generated</div>
                         </div>
                     </div>
                 </div>

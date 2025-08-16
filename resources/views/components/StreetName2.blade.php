@@ -1,7 +1,8 @@
- <div class="space-y-2" x-data="{ streetName: '', showOther: false, customStreet: '' }">
+ <div class="space-y-2" x-data="{ streetName: '', showOther: false, customStreet: '' }" 
+      x-init="$watch('streetName', () => { $dispatch('street-changed', { value: streetName, isOther: showOther }); }); $watch('customStreet', () => { $dispatch('street-changed', { value: customStreet, isOther: showOther }); })">
     <label for="streetName" class="text-xs text-gray-600">Street Name</label>
     <select id="streetName" x-model="streetName" class="form-input text-sm property-input" 
-            @change="showOther = streetName === 'other'; if(!showOther) customStreet = ''"
+            @change="showOther = streetName === 'other'; if(!showOther) customStreet = ''; $dispatch('street-changed', { value: streetName, isOther: showOther });"
             :name="showOther ? '' : 'streetName'">
         <option value="" selected>Select Street Name</option>
        

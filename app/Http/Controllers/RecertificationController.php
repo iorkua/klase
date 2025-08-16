@@ -19,6 +19,47 @@ class RecertificationController extends Controller
     }
 
     /**
+     * Get statistics data for the dashboard
+     */
+    public function getStatistics()
+    {
+        try {
+            $query = DB::connection('sqlsrv')->table('recertification_applications');
+            
+            // Get total applications
+            $totalApplications = $query->count();
+            
+            // Get applications created this month
+            $thisMonthApplications = $query->whereMonth('created_at', now()->month)
+                                          ->whereYear('created_at', now()->year)
+                                          ->count();
+            
+            return response()->json([
+                'success' => true,
+                'statistics' => [
+                    'total_applications' => $totalApplications,
+                    'this_month_applications' => $thisMonthApplications
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error fetching statistics', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'statistics' => [
+                    'total_applications' => 0,
+                    'this_month_applications' => 0
+                ],
+                'error' => 'Failed to fetch statistics'
+            ]);
+        }
+    }
+
+    /**
      * Get applications data for DataTables
      */
     public function getApplicationsData(Request $request)

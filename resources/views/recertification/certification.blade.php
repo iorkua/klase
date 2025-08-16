@@ -339,6 +339,98 @@ tailwind.config = {
     @include('admin.footer')
 </div>
 
+<!-- Alpine.js Modal for Cofo Serial Number -->
+<div 
+  x-data="cofoSerialModal()" 
+  x-show="isOpen"
+  x-cloak
+  @keydown.escape.window="closeModal()"
+  class="fixed inset-0 z-[1001] bg-black bg-opacity-50 flex items-center justify-center"
+  style="display: none;"
+>
+  <div 
+    class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4"
+    @click.stop
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-300"
+    x-transition:enter-start="opacity-0 transform scale-95"
+    x-transition:enter-end="opacity-100 transform scale-100"
+    x-transition:leave="transition ease-in duration-200"
+    x-transition:leave-start="opacity-100 transform scale-100"
+    x-transition:leave-end="opacity-0 transform scale-95"
+  >
+    <div class="p-6 border-b border-gray-200">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <i data-lucide="hash" class="h-5 w-5 text-blue-600"></i>
+          Enter Cofo Serial Number
+        </h3>
+        <button @click="closeModal()" class="text-gray-400 hover:text-gray-600">
+          <i data-lucide="x" class="h-5 w-5"></i>
+        </button>
+      </div>
+    </div>
+    
+    <form @submit.prevent="submitSerial()">
+      <div class="p-6">
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Select Available Serial Number
+          </label>
+          <select 
+            x-model="selectedSerial"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
+            required
+          >
+            <option value="">Select a serial number...</option>
+            <template x-for="serial in serialNumbers" :key="serial">
+              <option :value="serial" x-text="serial"></option>
+            </template>
+            <option x-show="serialNumbers.length === 0" value="" disabled>No available serial numbers</option>
+          </select>
+          <p class="text-xs text-gray-500 mt-1">
+            Only unused serial numbers are shown to prevent duplicates
+          </p>
+        </div>
+        
+        <div class="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
+          <div class="flex items-start gap-2">
+            <i data-lucide="info" class="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0"></i>
+            <div class="text-sm text-blue-800">
+              <p class="font-medium">Serial Number Format</p>
+              <p>Serial numbers are in the format: 000001, 000002, 000003, etc.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+        <button 
+          type="button" 
+          @click="closeModal()"
+          class="inline-flex items-center justify-center rounded-md font-medium text-sm px-4 py-2 transition-all cursor-pointer bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50"
+        >
+          Cancel
+        </button>
+        <button 
+          type="submit"
+          :disabled="loading || !selectedSerial"
+          class="inline-flex items-center justify-center rounded-md font-medium text-sm px-4 py-2 transition-all cursor-pointer border-0 bg-blue-600 text-white hover:bg-blue-700 gap-2"
+          :class="{ 'opacity-50 cursor-not-allowed': loading || !selectedSerial }"
+        >
+          <template x-if="loading">
+            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+          </template>
+          <template x-if="!loading">
+            <i data-lucide="check" class="h-4 w-4"></i>
+          </template>
+          <span x-text="loading ? 'Updating...' : 'Assign Serial Number'"></span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Toast Notifications -->
 <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2">
     <!-- Toast messages will be inserted here -->
@@ -579,11 +671,11 @@ function generateActionMenuItems(app, isGenerated) {
     let menuItems = '';
     
     if (isGenerated) {
-        // Actions for generated certificates - include View CoR
+        // Actions for generated certificates - include View CoR (View Pagination Details)
         menuItems = `
             <button onclick="viewCoR(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2">
                 <i data-lucide="eye" class="h-4 w-4"></i>
-                View CoR
+                View Pagination Details
             </button>
             <button onclick="viewCofoFrontPage(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2">
                 <i data-lucide="file-text" class="h-4 w-4"></i>
@@ -597,10 +689,16 @@ function generateActionMenuItems(app, isGenerated) {
                 <i data-lucide="file-check" class="h-4 w-4"></i>
                 View CofO
             </button>
+                <button onclick="enterCofoSerialNumber(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2 ${ (app.cofo_number && app.cofo_number !== 'N/A') ? 'opacity-50 cursor-not-allowed' : '' }" ${ (app.cofo_number && app.cofo_number !== 'N/A') ? 'disabled' : ''}>
+                <i data-lucide="hash" class="h-4 w-4"></i>
+                Enter Cofo Serial Number
+            </button>
         `;
     } else {
-        // Actions for not generated certificates - only Generate CofO (Front Page), no View CoR
+        // Actions for not generated certificates - include Enter Cofo Serial Number and Generate CofO (Front Page)
         menuItems = `
+        
+            <hr class="my-1">
             <button onclick="generateCofoFrontPage(${app.id})" class="flex items-center w-full px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 gap-2">
                 <i data-lucide="file-plus" class="h-4 w-4"></i>
                 Generate CofO (Front Page)
@@ -845,6 +943,49 @@ function viewCofo(id) {
     window.location.href = `/recertification/${id}/cofo`;
 }
 
+function enterCofoSerialNumber(id) {
+    console.log('Enter Cofo Serial Number for application:', id);
+    closeActionMenus();
+    
+    // Check if cofo_number already exists (and is not 'N/A')
+    const app = certificationData.find(a => a.id == id);
+    console.log('Found application:', app);
+    
+    if (app && app.cofo_number && app.cofo_number !== 'N/A') {
+        console.log('Application already has serial number:', app.cofo_number);
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'info',
+                title: 'Serial Number Already Assigned',
+                text: `This application already has Cofo Serial Number: ${app.cofo_number}`
+            });
+        } else {
+            alert(`This application already has Cofo Serial Number: ${app.cofo_number}`);
+        }
+        return;
+    }
+
+    console.log('Opening Cofo Serial Modal for application ID:', id);
+    // Open the modal
+    openCofoSerialModal(id);
+}
+
+function openCofoSerialModal(applicationId) {
+    console.log('openCofoSerialModal called with ID:', applicationId);
+    
+    // Find the Alpine component and call openModal
+    const modalElement = document.querySelector('[x-data*="cofoSerialModal"]');
+    console.log('Alpine modal element found:', modalElement);
+    
+    if (modalElement && modalElement._x_dataStack) {
+        console.log('Calling Alpine openModal method');
+        modalElement._x_dataStack[0].openModal(applicationId);
+    } else {
+        console.error('Alpine modal component not found or not initialized');
+        alert('Modal not available. Please refresh the page and try again.');
+    }
+}
+
 function closeActionMenus() {
     document.querySelectorAll('[id^="action-menu-"]').forEach(menu => {
         menu.classList.add('hidden');
@@ -921,6 +1062,143 @@ window.removeToast = removeToast;
 window.loadCertificationData = loadCertificationData;
 
 console.log('Certification table script initialized');
+</script>
+
+<script>
+function cofoSerialModal() {
+  return {
+    isOpen: false,
+    applicationId: null,
+    serialNumbers: [],
+    selectedSerial: '',
+    loading: false,
+    
+    openModal(appId) {
+      console.log('Alpine modal opening for app ID:', appId);
+      this.applicationId = appId;
+      this.selectedSerial = '';
+      this.isOpen = true;
+      this.loadSerialNumbers();
+      document.body.style.overflow = 'hidden';
+      
+      // Reinitialize Lucide icons after modal opens
+      this.$nextTick(() => {
+        if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+        }
+      });
+    },
+    
+    closeModal() {
+      this.isOpen = false;
+      this.applicationId = null;
+      this.selectedSerial = '';
+      this.serialNumbers = [];
+      document.body.style.overflow = 'auto';
+    },
+    
+    loadSerialNumbers() {
+      fetch('/recertification/available-serial-numbers', {
+        method: 'GET',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success && data.serialNumbers) {
+          this.serialNumbers = data.serialNumbers;
+        } else {
+          this.serialNumbers = [];
+        }
+      })
+      .catch(error => {
+        console.error('Error loading serial numbers:', error);
+        this.serialNumbers = [];
+      });
+    },
+    
+    submitSerial() {
+      if (!this.selectedSerial) {
+        alert('Please select a serial number');
+        return;
+      }
+      
+      this.loading = true;
+      
+      const formData = new FormData();
+      formData.append('application_id', this.applicationId);
+      formData.append('serial_number', this.selectedSerial);
+      
+      fetch('/recertification/assign-serial-number', {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        },
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          if (typeof Swal !== 'undefined') {
+            Swal.fire({
+              title: 'Success!',
+              text: 'Serial number assigned successfully!',
+              icon: 'success',
+              confirmButtonText: 'OK'
+            }).then(() => {
+              this.closeModal();
+              window.location.reload();
+            });
+          } else {
+            alert('Serial number assigned successfully!');
+            this.closeModal();
+            window.location.reload();
+          }
+        } else {
+          if (typeof Swal !== 'undefined') {
+            Swal.fire({
+              title: 'Error!',
+              text: data.message || 'Failed to assign serial number',
+              icon: 'error',
+              confirmButtonText: 'OK'
+            });
+          } else {
+            alert(data.message || 'Failed to assign serial number');
+          }
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            title: 'Error!',
+            text: 'Failed to assign serial number',
+            icon: 'error',
+            confirmButtonText: 'OK'
+          });
+        } else {
+          alert('Failed to assign serial number');
+        }
+      })
+      .finally(() => {
+        this.loading = false;
+      });
+    }
+  }
+}
+
+// Global function to open modal from table
+window.openCofoSerialModal = function(applicationId) {
+  // Find the Alpine component and call openModal
+  const modalElement = document.querySelector('[x-data*="cofoSerialModal"]');
+  if (modalElement && modalElement._x_dataStack) {
+    modalElement._x_dataStack[0].openModal(applicationId);
+  }
+};
 </script>
 
 @endsection

@@ -98,23 +98,42 @@
                                     name="title"
                                     class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
                                 >
-                                    <option value="">Select Title</option>
-                                    <option value="MR">MR</option>
-                                    <option value="MRS">MRS</option>
-                                    <option value="MISS">MISS</option>
-                                    <option value="DR">DR</option>
-                                    <option value="PROF">PROF</option>
-                                    <option value="ENG">ENG</option>
-                                    <option value="ARC">ARC</option>
-                                    <option value="ALHAJI">ALHAJI</option>
-                                    <option value="HAJIYA">HAJIYA</option>
+                                   
+      
+    <option value="" disabled selected>Select title</option>
+    <option value="Mr.">Mr.</option>
+    <option value="Mrs.">Mrs.</option>
+    <option value="Chief">Chief</option>
+    <option value="Master">Master</option>
+    <option value="Capt">Capt</option>
+    <option value="Coln">Coln</option>
+    <option value="Pastor">Pastor</option>
+    <option value="King">King</option>
+    <option value="Prof">Prof</option>
+    <option value="Dr.">Dr.</option>
+    <option value="Alhaji">Alhaji</option>
+    <option value="Alhaja">Alhaja</option>
+    <option value="High Chief">High Chief</option>
+    <option value="Lady">Lady</option>
+    <option value="Bishop">Bishop</option>
+    <option value="Senator">Senator</option>
+    <option value="Messr">Messr</option>
+    <option value="Honorable">Honorable</option>
+    <option value="Miss">Miss</option>
+    <option value="Rev.">Rev.</option>
+    <option value="Barr.">Barr.</option>
+    <option value="Arc.">Arc.</option>
+    <option value="Sister">Sister</option>
+    <option value="Other">Other</option>
+</select>
+
                                 </select>
                             </div>
                             
                             <div class="form-field">
-                                <label for="occupation" class="block text-sm font-medium text-gray-700 mb-1">
+                                <!-- <label for="occupation" class="block text-sm font-medium text-gray-700 mb-1">
                                     Occupation <span class="text-red-500">*</span>
-                                </label>
+                                </label> -->
                                 @include('components.Occupation2')
                                 <div class="error-message">Occupation is required</div>
                             </div>
@@ -151,31 +170,32 @@
                             </div>
                             
                             <div class="form-field">
-                                <label for="stateOfOrigin" class="block text-sm font-medium text-gray-700 mb-1">
+                                <label for="state" class="block text-sm font-medium text-gray-700 mb-1">
                                     State of Origin <span class="text-red-500">*</span>
                                 </label>
-                                <input
-                                    type="text"
-                                    id="stateOfOrigin"
+                                <select
+                                    id="state"
                                     name="stateOfOrigin"
                                     required
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 uppercase"
-                                    placeholder="STATE OF ORIGIN"
-                                />
+                                    onchange="selectLGA(this)"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
+                                >
+                                    <option>Select State <span class="text-red-500">*</span></option>
+                                </select>
                                 <div class="error-message">State of origin is required</div>
                             </div>
                         </div>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="form-field">
-                                <label for="lgaOfOrigin" class="block text-sm font-medium text-gray-700 mb-1">LGA of Origin</label>
-                                <input
-                                    type="text"
-                                    id="lgaOfOrigin"
+                                <label for="lga" class="block text-sm font-medium text-gray-700 mb-1">LGA of Origin</label>
+                                <select
+                                    id="lga"
                                     name="lgaOfOrigin"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 uppercase"
-                                    placeholder="LGA OF ORIGIN"
-                                />
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
+                                >
+                                    <option>Select LGA</option>
+                                </select>
                             </div>
                             
                             <div class="form-field">
@@ -457,5 +477,41 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         console.error('Applicant type select not found!');
     }
+
+    // Fetch all States
+    fetch('https://nga-states-lga.onrender.com/fetch')
+    .then((res) => res.json())
+    .then((data) => {
+        var x = document.getElementById("state");
+        for (let index = 0; index < Object.keys(data).length; index++) {
+            var option = document.createElement("option");
+            option.text = data[index];
+            option.value = data[index];
+            x.add(option);
+        }
+    });
 });
+
+// Fetch Local Governments based on selected state
+function selectLGA(target) {
+    var state = target.value;
+    fetch('https://nga-states-lga.onrender.com/?state='+state)
+    .then((res) => res.json())
+    .then((data) => {
+        var x = document.getElementById("lga");
+        var select = document.getElementById("lga");
+        var length = select.options.length;
+        
+        for (i = length-1; i >= 0; i--) {
+            select.options[i] = null;
+        }
+        
+        for (let index = 0; index < Object.keys(data).length; index++) {
+            var option = document.createElement("option");
+            option.text = data[index];
+            option.value = data[index];
+            x.add(option);
+        }
+    });
+}
 </script>

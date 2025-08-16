@@ -1,7 +1,8 @@
-<div class="space-y-2" x-data="{ showOther: false, customDistrict: '' }">
+<div class="space-y-2" x-data="{ district: '', showOther: false, customDistrict: '' }" 
+     x-init="$watch('district', () => { $dispatch('district-changed', { value: district, isOther: showOther }); }); $watch('customDistrict', () => { $dispatch('district-changed', { value: customDistrict, isOther: showOther }); })">
     <label for="district" class="text-xs text-gray-600">District Name</label>
     <select id="district" x-model="district" class="form-input text-sm property-input" 
-            @change="showOther = district === 'other'; if(!showOther) customDistrict = ''"
+            @change="showOther = district === 'other'; if(!showOther) customDistrict = ''; $dispatch('district-changed', { value: district, isOther: showOther });"
             :name="showOther ? '' : 'district'">
         <option value="" selected>Select District Name</option>
         <option value="DALA">DALA</option>
