@@ -206,6 +206,9 @@ tailwind.config = {
                                             Applicant Name
                                         </th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                            Land Use
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                                             Plot Details
                                         </th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
@@ -341,7 +344,7 @@ function showLoadingState(tableBodyId) {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="10" class="text-center py-8">
+                <td colspan="11" class="text-center py-8">
                     <div class="loading-spinner mx-auto mb-2"></div>
                     <p class="text-gray-600">Loading vetting data...</p>
                 </td>
@@ -355,7 +358,7 @@ function showErrorState(tableBodyId, errorMessage = 'Failed to load vetting data
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="10" class="text-center py-8">
+                <td colspan="11" class="text-center py-8">
                     <i data-lucide="alert-circle" class="h-8 w-8 text-red-500 mx-auto mb-2"></i>
                     <p class="text-red-600 mb-2">${errorMessage}</p>
                     <button onclick="loadVettingData()" class="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
@@ -452,6 +455,11 @@ function renderVettingTable() {
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-medium text-gray-900">${app.applicant_name || 'N/A'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                        ${app.land_use && app.land_use !== 'N/A' ? app.land_use.charAt(0).toUpperCase() + app.land_use.slice(1).toLowerCase() : 'N/A'}
+                    </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-900">${app.plot_details || 'N/A'}</div>

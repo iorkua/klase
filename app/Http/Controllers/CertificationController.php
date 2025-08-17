@@ -68,6 +68,7 @@ class CertificationController extends Controller
                     'applicant_name' => $applicantName,
                     'applicant_type' => $app->applicant_type ?? 'N/A',
                     'plot_details' => $plotDetails,
+                    'land_use' => $app->current_land_use ?? $app->land_use ?? 'N/A',
                     'lga_name' => $app->lga_name ?? 'N/A',
                     'created_at' => $app->created_at ? date('d M Y', strtotime($app->created_at)) : 'N/A',
                     'certificate_generated' => $certificateGenerated,
@@ -372,6 +373,8 @@ class CertificationController extends Controller
                     'applicant_name' => $applicantName,
                     'applicant_type' => $app->applicant_type ?? 'N/A',
                     'plot_details' => $plotDetails,
+                    'current_land_use' => $app->current_land_use ?? $app->land_use ?? 'N/A',
+                    'land_use' => $app->current_land_use ?? $app->land_use ?? 'N/A',
                     'lga_name' => $app->lga_name ?? 'N/A',
                     'created_at' => $app->created_at ? date('d M Y', strtotime($app->created_at)) : 'N/A',
                     'cofo_number' => $app->cofo_number ?? 'N/A',
@@ -973,6 +976,8 @@ class CertificationController extends Controller
                     'applicant_name' => $applicantName,
                     'applicant_type' => $app->applicant_type ?? 'N/A',
                     'plot_details' => $plotDetails,
+                    'land_use' => $app->current_land_use ?? $app->land_use ?? 'N/A',
+                    'current_land_use' => $app->current_land_use ?? 'N/A',
                     'lga_name' => $app->lga_name ?? 'N/A',
                     'created_at' => $app->created_at ? date('d M Y', strtotime($app->created_at)) : 'N/A',
                     'vetting_status' => $vettingStatus,
@@ -1086,8 +1091,8 @@ class CertificationController extends Controller
                     $plotDetails = 'N/A';
                 }
 
-                // Check GIS status
-                $gisStatus = $app->gis_captured ? 'captured' : 'pending';
+                // Check GIS status - since gis_captured column doesn't exist, default to pending
+                $gisStatus = 'pending';
 
                 return [
                     'id' => $app->id,
@@ -1099,11 +1104,13 @@ class CertificationController extends Controller
                     'file_number' => $app->file_number ?? 'N/A',
                     'applicant_name' => $applicantName,
                     'applicant_type' => $app->applicant_type ?? 'N/A',
+                    'current_land_use' => $app->current_land_use ?? 'N/A',
                     'plot_details' => $plotDetails,
                     'lga_name' => $app->lga_name ?? 'N/A',
                     'created_at' => $app->created_at ? date('d M Y', strtotime($app->created_at)) : 'N/A',
+                    'application_date' => $app->created_at ? date('d M Y', strtotime($app->created_at)) : 'N/A',
                     'gis_status' => $gisStatus,
-                    'gis_captured' => $app->gis_captured ?? false,
+                    'gis_captured' => false,
                 ];
             });
 

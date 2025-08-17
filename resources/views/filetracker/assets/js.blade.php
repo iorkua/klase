@@ -1,5 +1,15 @@
 <script>
   $(document).ready(function() {
+    // API Base URL
+    const API_BASE = '/api';
+    
+    // Current page and filters
+    let currentPage = 1;
+    let currentFilters = {};
+    
+    // Try to load data from API, but keep original UI functionality
+    tryLoadApiData();
+    
     // Toggle RFID mode
     $('#rfid-mode').change(function() {
       if ($(this).is(':checked')) {
@@ -42,7 +52,7 @@
       $('#rfid-modal').addClass('hidden');
     });
     
-    // Tab functionality
+    // Tab functionality (original)
     $('.tab-button').click(function() {
       const tabId = $(this).data('tab');
       
@@ -60,18 +70,23 @@
     });
     
     // File view functionality (clicking on file rows or view buttons)
-    $('.file-row, .file-view-btn').click(function() {
-      // Get the file ID from the row
-      const fileId = $(this).closest('tr').find('td:first').text();
-      const fileNumber = $(this).closest('tr').find('td:nth-child(2) span').text();
-      const status = $(this).closest('tr').data('status');
+    $('.file-row, .file-view-btn').click(function(e) {
+      e.preventDefault();
+      
+      // Get the tracking ID from the row
+      const trackingId = $(this).closest('tr').data('tracking-id') || $(this).data('tracking-id');
+      
+      if (!trackingId) {
+        console.error('No tracking ID found');
+        return;
+      }
       
       // Highlight the selected row
       $('.file-row').removeClass('bg-gray-50');
       $(this).closest('tr').addClass('bg-gray-50');
       
-      // Update file details sidebar (this is a simplified simulation)
-      updateFileDetails(fileId, fileNumber, status);
+      // Load file details from API
+      loadFileDetails(trackingId);
     });
 
     // View buttons from RFID modal
@@ -153,101 +168,7 @@
       }
     }
     
-    // Print tracking sheet
-    // $('.print-tracking-btn').click(function() {
-    //   // Create a print window with file details
-    //   const fileId = $('.file-details h2 + p').text();
-    //   const fileNumber = $('.file-details .text-xs.font-medium:contains("RES")').text();
-      
-    //   const printWindow = window.open('', '_blank');
-    //   printWindow.document.write(`
-    //     <html>
-    //       <head>
-    //         <title>File Tracking Sheet - ${fileId}</title>
-    //         <style>
-    //           body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
-    //           h1 { font-size: 18px; margin-bottom: 10px; }
-    //           .header { display: flex; justify-content: space-between; border-bottom: 2px solid #333; padding-bottom: 10px; }
-    //           .details { margin: 20px 0; }
-    //           .info-row { display: flex; margin-bottom: 5px; }
-    //           .info-label { width: 150px; color: #666; }
-    //           .info-value { font-weight: bold; }
-    //           .qr-img { border: 1px solid #ddd; padding: 10px; text-align: center; }
-    //           table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-    //           th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-    //           th { background-color: #f2f2f2; }
-    //         </style>
-    //       </head>
-    //       <body>
-    //         <div class="header">
-    //           <h1>File Tracking Sheet</h1>
-    //           <div>ID: ${fileId}</div>
-    //         </div>
-    //         <div class="details">
-    //           <div class="info-row">
-    //             <div class="info-label">File Number:</div>
-    //             <div class="info-value">${fileNumber}</div>
-    //           </div>
-    //           <div class="info-row">
-    //             <div class="info-label">Current Location:</div>
-    //             <div class="info-value">Customer Care Unit</div>
-    //           </div>
-    //           <div class="info-row">
-    //             <div class="info-label">Current Handler:</div>
-    //             <div class="info-value">Aisha Mohammed</div>
-    //           </div>
-    //           <div class="info-row">
-    //             <div class="info-label">RFID Tag:</div>
-    //             <div class="info-value">RFID-00125478</div>
-    //           </div>
-    //         </div>
-    //         <table>
-    //           <tr>
-    //             <th>Date</th>
-    //             <th>Location</th>
-    //             <th>Handler</th>
-    //             <th>Comment</th>
-    //             <th>Signature</th>
-    //           </tr>
-    //           <tr>
-    //             <td>2023-06-15</td>
-    //             <td>Reception</td>
-    //             <td>Fatima Usman</td>
-    //             <td>File received and registered</td>
-    //             <td></td>
-    //           </tr>
-    //           <tr>
-    //             <td>2023-06-15</td>
-    //             <td>Customer Care Unit</td>
-    //             <td>Aisha Mohammed</td>
-    //             <td>File assigned for processing</td>
-    //             <td></td>
-    //           </tr>
-    //           <tr>
-    //             <td></td>
-    //             <td></td>
-    //             <td></td>
-    //             <td></td>
-    //             <td></td>
-    //           </tr>
-    //           <tr>
-    //             <td></td>
-    //             <td></td>
-    //             <td></td>
-    //             <td></td>
-    //             <td></td>
-    //           </tr>
-    //         </table>
-    //       </body>
-    //     </html>
-    //   `);
-    //   printWindow.document.close();
-    //   setTimeout(() => {
-    //     printWindow.print();
-    //   }, 500);
-    // });
-    
-    // Search functionality
+    // Search functionality (original behavior)
     $('#search-input').on('keyup', function() {
       const value = $(this).val().toLowerCase();
       $('.file-row').filter(function() {
@@ -255,5 +176,193 @@
         $(this).toggle(rowText.indexOf(value) > -1);
       });
     });
+    
+    // API Integration Functions (background functionality)
+    
+    // Try to load data from API
+    function tryLoadApiData() {
+      $.ajax({
+        url: `${API_BASE}/file-trackings?per_page=10`,
+        method: 'GET',
+        success: function(response) {
+          if (response.success && response.data.data && response.data.data.length > 0) {
+            console.log('API data available:', response.data.data.length, 'records');
+            // Optionally enhance the existing table with API data
+            enhanceTableWithApiData(response.data.data);
+          }
+        },
+        error: function(xhr) {
+          console.log('API not available, using static data');
+        }
+      });
+    }
+    
+    // Enhance existing table with API data
+    function enhanceTableWithApiData(apiData) {
+      // Add RFID indicators to existing rows if they have RFID tags
+      $('.file-row').each(function(index) {
+        if (apiData[index] && apiData[index].rfid_tag) {
+          const fileNumberCell = $(this).find('td:nth-child(2) .flex');
+          fileNumberCell.append('<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded ml-2">RFID</span>');
+        }
+      });
+    }
+    
+    // RFID scan functionality (enhanced with API)
+    function scanRfidTag(rfidTag) {
+      $.ajax({
+        url: `${API_BASE}/rfid/scan/${rfidTag}`,
+        method: 'GET',
+        success: function(response) {
+          if (response.success) {
+            showRfidScanResult(response.data);
+          } else {
+            showError('RFID tag not found');
+          }
+        },
+        error: function(xhr) {
+          console.error('Error scanning RFID tag:', xhr);
+          // Fallback to showing the modal with static data
+          $('#rfid-modal').removeClass('hidden');
+        }
+      });
+    }
+    
+    // Show RFID scan result
+    function showRfidScanResult(tracking) {
+      // Update modal content with tracking data
+      const modalContent = `
+        <div class="p-6">
+          <h3 class="text-lg font-semibold mb-4">RFID Scan Result</h3>
+          <div class="space-y-3">
+            <div><strong>File Number:</strong> ${tracking.file_indexing?.file_number || 'N/A'}</div>
+            <div><strong>Current Location:</strong> ${tracking.current_location || 'N/A'}</div>
+            <div><strong>Current Handler:</strong> ${tracking.current_handler || 'N/A'}</div>
+            <div><strong>Status:</strong> ${getStatusBadge(tracking.status)}</div>
+            <div><strong>RFID Tag:</strong> ${tracking.rfid_tag}</div>
+            ${tracking.is_overdue ? '<div class="text-red-600 font-semibold">⚠️ This file is overdue!</div>' : ''}
+          </div>
+          <div class="mt-6 flex gap-2">
+            <button class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm" onclick="viewFileDetails(${tracking.id})">View Details</button>
+            <button class="bg-gray-600 text-white px-4 py-2 rounded-md text-sm" onclick="updateFileLocation(${tracking.id})">Update Location</button>
+            <button class="border rounded-md px-4 py-2 text-sm" onclick="closeRfidModal()">Close</button>
+          </div>
+        </div>
+      `;
+      
+      // Update the modal if it exists, otherwise show the original modal
+      const modalElement = $('#rfid-modal .modal-content');
+      if (modalElement.length) {
+        modalElement.html(modalContent);
+      }
+      $('#rfid-modal').removeClass('hidden');
+    }
+    
+    // Get status badge HTML
+    function getStatusBadge(status) {
+      const badges = {
+        'active': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>',
+        'checked_out': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Checked Out</span>',
+        'overdue': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Overdue</span>',
+        'returned': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Returned</span>',
+        'lost': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Lost</span>',
+        'archived': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Archived</span>'
+      };
+      return badges[status] || '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Unknown</span>';
+    }
+    
+    // View file details (enhanced with API)
+    function viewFileDetails(trackingId) {
+      $.ajax({
+        url: `${API_BASE}/file-trackings/${trackingId}`,
+        method: 'GET',
+        success: function(response) {
+          if (response.success) {
+            updateFileDetailsFromApi(response.data);
+          }
+        },
+        error: function(xhr) {
+          console.error('Error loading file details:', xhr);
+        }
+      });
+    }
+    
+    // Load file details from API
+    function loadFileDetails(trackingId) {
+      $.ajax({
+        url: `${API_BASE}/file-trackings/${trackingId}`,
+        method: 'GET',
+        success: function(response) {
+          if (response.success) {
+            // Reload the page to show the selected file details
+            // In a more sophisticated implementation, you would update the sidebar dynamically
+            window.location.href = window.location.pathname + '?selected=' + trackingId;
+          } else {
+            showError('Failed to load file details');
+          }
+        },
+        error: function(xhr) {
+          console.error('Error loading file details:', xhr);
+          showError('Error loading file details');
+        }
+      });
+    }
+    
+    // Update file details from API data
+    function updateFileDetailsFromApi(tracking) {
+      updateFileDetails(tracking.id, tracking.file_indexing?.file_number, tracking.status);
+      closeRfidModal();
+    }
+    
+    // Show error message
+    function showError(message) {
+      console.error('Error:', message);
+      // You can implement a better notification system here
+    }
+    
+    // Show success message
+    function showSuccess(message) {
+      console.log('Success:', message);
+      // You can implement a better notification system here
+    }
+    
+    // Close RFID modal
+    function closeRfidModal() {
+      $('#rfid-modal').addClass('hidden');
+    }
+    
+    // Update file location (enhanced with API)
+    function updateFileLocation(trackingId) {
+      const newLocation = prompt('Enter new location:');
+      if (newLocation) {
+        $.ajax({
+          url: `${API_BASE}/file-trackings/${trackingId}`,
+          method: 'PUT',
+          data: JSON.stringify({
+            current_location: newLocation,
+            reason: 'Location updated via RFID scan'
+          }),
+          contentType: 'application/json',
+          success: function(response) {
+            if (response.success) {
+              showSuccess('Location updated successfully');
+              closeRfidModal();
+            } else {
+              showError('Failed to update location');
+            }
+          },
+          error: function(xhr) {
+            console.error('Error updating location:', xhr);
+            showError('Error updating location');
+          }
+        });
+      }
+    }
+    
+    // Make functions globally available for onclick handlers
+    window.viewFileDetails = viewFileDetails;
+    window.updateFileLocation = updateFileLocation;
+    window.closeRfidModal = closeRfidModal;
+    window.scanRfidTag = scanRfidTag;
   });
 </script>

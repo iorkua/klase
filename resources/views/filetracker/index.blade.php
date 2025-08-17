@@ -39,17 +39,42 @@
                                 </svg>
                                 Scan RFID Tags
                             </button>
-                            <button class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm flex items-center">
+                            <a href="{{ route('filetracker.create') }}" class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm flex items-center hover:bg-blue-700">
                                 <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                                 </svg>
                                 Track New File
-                            </button>
+                            </a>
                         </div>
                     </div>
                 </header>
 
                 <div class="flex flex-1 p-6 space-x-6">
+                    <!-- Success Message -->
+                    @if(session('success'))
+                        <div class="fixed top-4 right-4 z-50 bg-green-50 border border-green-200 rounded-md p-4 shadow-lg">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-green-800">{{ session('success') }}</p>
+                                </div>
+                                <div class="ml-auto pl-3">
+                                    <div class="-mx-1.5 -my-1.5">
+                                        <button type="button" class="inline-flex bg-green-50 rounded-md p-1.5 text-green-500 hover:bg-green-100" onclick="this.parentElement.parentElement.parentElement.parentElement.remove()">
+                                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
                     <!-- Main Content (2/3 width) -->
                     <div class="w-2/3 space-y-6">
                         @include('filetracker.partials.file-table')

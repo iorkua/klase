@@ -223,6 +223,7 @@ tailwind.config = {
                                         <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 100px;">RegNo</th>
                                         <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">Type</th>
                                         <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 180px;">Applicant Name</th>
+                                        <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">Land Use</th>
                                         <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 200px;">Plot Details</th>
                                         <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">Document Status</th>
                                         <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">Last Updated</th>
@@ -322,7 +323,7 @@ function showLoadingState(tableBodyId) {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="12" class="text-center py-8">
+                <td colspan="13" class="text-center py-8">
                     <div class="loading-spinner mx-auto mb-2"></div>
                     <p class="text-gray-600">Loading EDMS data...</p>
                 </td>
@@ -336,7 +337,7 @@ function showErrorState(tableBodyId) {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="12" class="text-center py-8">
+                <td colspan="13" class="text-center py-8">
                     <i data-lucide="alert-circle" class="h-8 w-8 text-red-500 mx-auto mb-2"></i>
                     <p class="text-red-600">Failed to load EDMS data</p>
                     <button onclick="loadEDMSData()" class="mt-2 text-blue-600 hover:text-blue-800">
@@ -436,6 +437,11 @@ function renderEDMSTable() {
                 </td>
                 <td class="p-2" style="max-width: 180px;">
                     <div class="text-xs font-medium text-gray-900 truncate" title="${app.applicant_name || 'N/A'}">${app.applicant_name || 'N/A'}</div>
+                </td>
+                <td class="p-2" style="max-width: 120px;">
+                    <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                        ${app.current_land_use && app.current_land_use !== 'N/A' ? app.current_land_use.charAt(0).toUpperCase() + app.current_land_use.slice(1).toLowerCase() : 'N/A'}
+                    </div>
                 </td>
                 <td class="p-2" style="max-width: 200px;">
                     <div class="text-xs text-gray-900 truncate" title="${app.plot_details || 'N/A'}">${app.plot_details || 'N/A'}</div>

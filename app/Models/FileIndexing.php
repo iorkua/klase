@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\ApplicationMother;
 use App\Models\Scanning;
 use App\Models\PageTyping;
+use App\Models\FileTracking;
 
 class FileIndexing extends Model
 {
@@ -74,6 +75,26 @@ class FileIndexing extends Model
     public function recertificationApplication()
     {
         return $this->belongsTo('App\Models\RecertificationApplication', 'recertification_application_id');
+    }
+
+    public function fileTracking()
+    {
+        return $this->hasOne(FileTracking::class, 'file_indexing_id');
+    }
+
+    public function getTrackingStatusAttribute()
+    {
+        $tracking = $this->fileTracking;
+        if (!$tracking) {
+            return 'Not Tracked';
+        }
+        
+        return ucfirst(str_replace('_', ' ', $tracking->status));
+    }
+
+    public function getIsTrackedAttribute()
+    {
+        return $this->fileTracking !== null;
     }
 }
 

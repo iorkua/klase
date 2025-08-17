@@ -208,6 +208,7 @@ tailwind.config = {
                                         <th class="text-left p-4 font-medium text-gray-700">RegNo</th>
                                         <th class="text-left p-4 font-medium text-gray-700">Application Type</th>
                                         <th class="text-left p-4 font-medium text-gray-700">Applicant Name</th>
+                                        <th class="text-left p-4 font-medium text-gray-700">Land Use</th>
                                         <th class="text-left p-4 font-medium text-gray-700">Plot Details</th>
                                         <th class="text-left p-4 font-medium text-gray-700">LGA</th>
                                         <th class="text-left p-4 font-medium text-gray-700">Application Date</th>
@@ -307,7 +308,7 @@ function showLoadingState(tableBodyId) {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="12" class="text-center py-8">
+                <td colspan="13" class="text-center py-8">
                     <div class="loading-spinner mx-auto mb-2"></div>
                     <p class="text-gray-600">Loading GIS data...</p>
                 </td>
@@ -321,7 +322,7 @@ function showErrorState(tableBodyId) {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="12" class="text-center py-8">
+                <td colspan="13" class="text-center py-8">
                     <i data-lucide="alert-circle" class="h-8 w-8 text-red-500 mx-auto mb-2"></i>
                     <p class="text-red-600">Failed to load GIS data</p>
                     <button onclick="loadGISData()" class="mt-2 text-blue-600 hover:text-blue-800">
@@ -374,6 +375,45 @@ function getGISStatusBadge(status) {
         default:
             return '<span class="badge badge-default">Pending Capture</span>';
     }
+}
+
+// Land use badge rendering function
+function renderLandUseBadge(landUse) {
+    const raw = (landUse ?? '').toString().trim();
+    const lower = raw.toLowerCase();
+
+    // Normalize empty/NA-like values
+    if (!raw || ['n/a', 'n./a', 'na', '-', 'null', 'undefined'].includes(lower)) {
+        return '<div class="text-sm text-gray-500">N/A</div>';
+    }
+
+    // Canonical label mapping (case-insensitive)
+    const labelMap = {
+        'residential': 'Residential',
+        'commercial': 'Commercial',
+        'industrial': 'Industrial',
+        'agricultural': 'Agricultural',
+        'mixed use': 'Mixed Use',
+        'mixed-use': 'Mixed Use',
+        'institutional': 'Institutional',
+        'recreational': 'Recreational'
+    };
+    const label = labelMap[lower] || raw;
+
+    // Define land use colors (by canonical label)
+    const landUseColors = {
+        'Residential': 'bg-blue-100 text-blue-800',
+        'Commercial': 'bg-green-100 text-green-800',
+        'Industrial': 'bg-orange-100 text-orange-800',
+        'Agricultural': 'bg-yellow-100 text-yellow-800',
+        'Mixed Use': 'bg-purple-100 text-purple-800',
+        'Institutional': 'bg-indigo-100 text-indigo-800',
+        'Recreational': 'bg-pink-100 text-pink-800'
+    };
+
+    const colorClass = landUseColors[label] || 'bg-gray-100 text-gray-800';
+
+    return `<div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${colorClass}">${label}</div>`;
 }
 
 function formatDate(dateString) {
@@ -440,6 +480,9 @@ function renderGISTable() {
                 </td>
                 <td class="p-4">
                     <div class="font-medium text-gray-900">${app.applicant_name || 'N/A'}</div>
+                </td>
+                <td class="p-4">
+                    ${renderLandUseBadge(app.current_land_use || app.land_use || app.landUse || app.landUseType)}
                 </td>
                 <td class="p-4">
                     <div class="text-gray-900">${app.plot_details || 'N/A'}</div>

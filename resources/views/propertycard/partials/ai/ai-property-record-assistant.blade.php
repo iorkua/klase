@@ -1475,28 +1475,89 @@ function renderInstruments() {
   noInstruments.classList.add('hidden');
 
   const instrumentTypes = [
-    'DEED OF ASSIGNMENT',
-    'CERTIFICATE OF OCCUPANCY',
-    'RIGHT OF OCCUPANCY',
-    'DEED OF MORTGAGE',
-    'TRIPARTITE MORTGAGE',
-    'DEED OF LEASE',
-    'DEED OF SUB-LEASE',
-    'DEED OF SUB-UNDER LEASE',
-    'DEED OF SURRENDER',
-    'DEED OF ASSENT',
-    'DEED OF RELEASE',
-    'POWER OF ATTORNEY',
-    'IRREVOCABLE POWER OF ATTORNEY',
-    'DEED OF SUB-DIVISION',
-    'DEED OF MERGER',
-    'SURVEY PLAN',
-    'RECERTIFICATION',
-    'OTHER'
+    'Deed of Transfer',
+    'Certificate of Occupancy',
+    'ST Certificate of Occupancy',
+    'SLTR Certificate of Occupancy',
+    'Irrevocable Power of Attorney',
+    'Deed of Release',
+    'Deed of Assignment',
+    'ST Assignment',
+    'Deed of Mortgage',
+    'Tripartite Mortgage',
+    'Deed of Sub Lease',
+    'Deed of Sub Under Lease',
+    'Power of Attorney',
+    'Deed of Surrender',
+    'Indenture of Lease',
+    'Deed of Variation',
+    'Customary Right of Occupancy',
+    'Vesting Assent',
+    'Court Judgement',
+    'Exchange of Letters',
+    'Tenancy Agreement',
+    'Revocation of Power of Attorney',
+    'Deed of Convenyence',
+    'Memorandom of Agreement',
+    'Quarry Lease',
+    'Private Lease',
+    'Deed of Gift',
+    'Deed of Partition',
+    'Non-European Occupational Lease',
+    'Deed of Revocation',
+    'Deed of lease',
+    'Deed of Reconveyance',
+    'Letter of Administration',
+    'Customary Inhertitance',
+    'Certificate of Purchase',
+    'Deed of Rectification',
+    'Building Lease',
+    'Memorandum of Loss',
+    'Vesting Deed',
+    'ST Fragmentation',
+    'Other'
   ];
+
+  // Party labels for different transaction types
+  const partyLabels = {
+    'Power of Attorney': { first: 'Grantor', second: 'Grantee' },
+    'Deed of Assignment': { first: 'Assignor', second: 'Assignee' },
+    'ST Assignment': { first: 'Assignor', second: 'Assignee' },
+    'Deed of Mortgage': { first: 'Mortgagor', second: 'Mortgagee' },
+    'Tripartite Mortgage': { first: 'Mortgagor', second: 'Mortgagee' },
+    'Certificate of Occupancy': { first: 'Grantor', second: 'Grantee' },
+    'ST Certificate of Occupancy': { first: 'Grantor', second: 'Grantee' },
+    'SLTR Certificate of Occupancy': { first: 'Grantor', second: 'Grantee' },
+    'Customary Right of Occupancy': { first: 'Grantor', second: 'Grantee' },
+    'Deed of Transfer': { first: 'Transferor', second: 'Transferee' },
+    'Deed of Gift': { first: 'Donor', second: 'Donee' },
+    'Deed of lease': { first: 'Lessor', second: 'Lessee' },
+    'Deed of Sub Lease': { first: 'Lessor', second: 'Lessee' },
+    'Deed of Sub Under Lease': { first: 'Lessor', second: 'Lessee' },
+    'Indenture of Lease': { first: 'Lessor', second: 'Lessee' },
+    'Quarry Lease': { first: 'Lessor', second: 'Lessee' },
+    'Private Lease': { first: 'Lessor', second: 'Lessee' },
+    'Building Lease': { first: 'Lessor', second: 'Lessee' },
+    'Tenancy Agreement': { first: 'Landlord', second: 'Tenant' },
+    'Deed of Release': { first: 'Releasor', second: 'Releasee' },
+    'Deed of Surrender': { first: 'Surrenderor', second: 'Surrenderee' },
+    'Letter of Administration': { first: 'Administrator', second: 'Beneficiary' },
+    'Certificate of Purchase': { first: 'Vendor', second: 'Purchaser' }
+  };
+
+  const getPartyLabels = (type) => {
+    return partyLabels[type] || { first: 'Grantor', second: 'Grantee' };
+  };
+
+  const isGovernmentTransaction = (type) => {
+    const govTypes = ['Certificate of Occupancy', 'ST Certificate of Occupancy', 'SLTR Certificate of Occupancy', 'Customary Right of Occupancy'];
+    return govTypes.includes(type);
+  };
 
   container.innerHTML = instruments.map((instrument, index) => {
     const isEditing = editingInstrumentId === instrument.id;
+    const currentPartyLabels = getPartyLabels(instrument.type);
+    const isGovTransaction = isGovernmentTransaction(instrument.type);
     
     return `
       <div class="bg-white rounded-lg border instrument-card ${isEditing ? 'editing' : ''}">
@@ -1519,125 +1580,167 @@ function renderInstruments() {
         
         ${isEditing ? `
           <div class="p-4 space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="space-y-2">
-                <label class="text-xs font-medium text-gray-700">Instrument Type</label>
-                <select onchange="updateInstrument('${instrument.id}', 'type', this.value)" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10">
-                  <option value="">Select instrument type</option>
-                  ${instrumentTypes.map(type => `
-                    <option value="${type}" ${instrument.type === type ? 'selected' : ''}>${type}</option>
-                  `).join('')}
-                </select>
-              </div>
-              <div class="space-y-2">
-                <label class="text-xs font-medium text-gray-700">Description</label>
-                <input
-                  type="text"
-                  value="${instrument.description || ''}"
-                  onchange="updateInstrument('${instrument.id}', 'description', this.value)"
-                  placeholder="Brief description"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
-                />
-              </div>
-            </div>
-            
-            <!-- Parties Section -->
-            <div class="space-y-2">
-              <label class="text-xs font-medium text-gray-700">Parties Involved</label>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 bg-gray-50 rounded-md">
-                <div class="space-y-1">
-                  <label class="text-xs text-gray-600">Assignor/Grantor</label>
-                  <input
-                    type="text"
-                    value="${instrument.parties?.assignor || instrument.parties?.grantor || ''}"
-                    onchange="updateInstrument('${instrument.id}', 'parties.assignor', this.value)"
-                    placeholder="Name of assignor/grantor"
-                    class="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                  />
-                </div>
-                <div class="space-y-1">
-                  <label class="text-xs text-gray-600">Assignee/Grantee</label>
-                  <input
-                    type="text"
-                    value="${instrument.parties?.assignee || instrument.parties?.grantee || ''}"
-                    onchange="updateInstrument('${instrument.id}', 'parties.assignee', this.value)"
-                    placeholder="Name of assignee/grantee"
-                    class="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                  />
-                </div>
-                ${instrument.type?.includes('MORTGAGE') ? `
+            <!-- Instrument Type Section -->
+            <div class="form-section">
+              <h4 class="text-lg font-medium text-gray-900 mb-3">Instrument Type</h4>
+              <div class="space-y-3">
+                <!-- Transaction Type and Date -->
+                <div class="grid grid-cols-2 gap-3">
                   <div class="space-y-1">
-                    <label class="text-xs text-gray-600">Mortgagor</label>
-                    <input
-                      type="text"
-                      value="${instrument.parties?.mortgagor || ''}"
-                      onchange="updateInstrument('${instrument.id}', 'parties.mortgagor', this.value)"
-                      placeholder="Name of mortgagor"
-                      class="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                    />
+                    <label class="text-sm">Transaction Type</label>
+                    <select onchange="updateInstrument('${instrument.id}', 'type', this.value)" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10">
+                      <option value="">Select type</option>
+                      ${instrumentTypes.map(type => `
+                        <option value="${type}" ${instrument.type === type ? 'selected' : ''}>${type}</option>
+                      `).join('')}
+                    </select>
                   </div>
                   <div class="space-y-1">
-                    <label class="text-xs text-gray-600">Mortgagee</label>
-                    <input
-                      type="text"
-                      value="${instrument.parties?.mortgagee || ''}"
-                      onchange="updateInstrument('${instrument.id}', 'parties.mortgagee', this.value)"
-                      placeholder="Name of mortgagee"
-                      class="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                    />
-                  </div>
-                ` : ''}
-              </div>
-            </div>
-            
-            <!-- Registration Details Section -->
-            <div class="space-y-2">
-              <label class="text-xs font-medium text-gray-700">Registration Details</label>
-              <div class="grid grid-cols-3 gap-3 p-3 bg-gray-50 rounded-md">
-                <div class="space-y-1">
-                  <label class="text-xs text-gray-600">Serial No.</label>
-                  <input
-                    type="text"
-                    value="${instrument.registrationDetails?.serialNo || ''}"
-                    onchange="updateInstrument('${instrument.id}', 'registrationDetails.serialNo', this.value)"
-                    placeholder="e.g. 1"
-                    class="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                  />
-                </div>
-                <div class="space-y-1">
-                  <label class="text-xs text-gray-600">Page</label>
-                  <input
-                    type="text"
-                    value="${instrument.registrationDetails?.page || ''}"
-                    onchange="updateInstrument('${instrument.id}', 'registrationDetails.page', this.value)"
-                    placeholder="e.g. 1"
-                    class="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                  />
-                </div>
-                <div class="space-y-1">
-                  <label class="text-xs text-gray-600">Volume</label>
-                  <input
-                    type="text"
-                    value="${instrument.registrationDetails?.vol || ''}"
-                    onchange="updateInstrument('${instrument.id}', 'registrationDetails.vol', this.value)"
-                    placeholder="e.g. 2"
-                    class="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                  />
-                </div>
-              </div>
-              ${instrument.registrationDetails?.regNo ? `
-                <div class="mt-2 p-2 bg-green-50 border border-green-100 rounded-md">
-                  <div class="flex items-center justify-between">
-                    <span class="text-xs text-green-700">REG NO:</span>
-                    <span class="text-sm font-medium text-green-800">${instrument.registrationDetails.regNo}</span>
+                    <label class="text-sm">Transaction/Certificate Date</label>
+                    <input type="date" 
+                           value="${instrument.transactionDate || ''}"
+                           onchange="updateInstrument('${instrument.id}', 'transactionDate', this.value)" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10">
                   </div>
                 </div>
-              ` : ''}
+
+                <!-- Registration Number -->
+                <div class="space-y-1">
+                  <label class="text-sm">Registration Number</label>
+                  <div class="grid grid-cols-5 gap-2">
+                    <div>
+                      <label class="text-xs">Serial No.</label>
+                      <input type="text"
+                             value="${instrument.registrationDetails?.serialNo || ''}"
+                             onchange="updateInstrument('${instrument.id}', 'registrationDetails.serialNo', this.value)"
+                             placeholder="e.g. 1"
+                             class="w-full px-2 py-1 border border-gray-300 rounded text-xs">
+                    </div>
+                    <div>
+                      <label class="text-xs text-gray-500">Page No. (Auto-filled)</label>
+                      <input type="text"
+                             value="${instrument.registrationDetails?.page || instrument.registrationDetails?.serialNo || ''}"
+                             readonly
+                             class="w-full px-2 py-1 border border-gray-300 rounded text-xs bg-gray-100 text-gray-500 cursor-not-allowed"
+                             placeholder="Same as Serial No.">
+                    </div>
+                    <div>
+                      <label class="text-xs">Volume No.</label>
+                      <input type="text"
+                             value="${instrument.registrationDetails?.vol || ''}"
+                             onchange="updateInstrument('${instrument.id}', 'registrationDetails.vol', this.value)"
+                             placeholder="e.g. 2"
+                             class="w-full px-2 py-1 border border-gray-300 rounded text-xs">
+                    </div>
+                    <div>
+                      <label class="text-xs">Reg Date</label>
+                      <input type="date"
+                             value="${instrument.regDate || new Date().toISOString().split('T')[0]}"
+                             onchange="updateInstrument('${instrument.id}', 'regDate', this.value)"
+                             class="w-full px-2 py-1 border border-gray-300 rounded text-xs">
+                    </div>
+                    <div>
+                      <label class="text-xs">Reg Time</label>
+                      <input type="time"
+                             value="${instrument.regTime || '09:00'}"
+                             onchange="updateInstrument('${instrument.id}', 'regTime', this.value)"
+                             class="w-full px-2 py-1 border border-gray-300 rounded text-xs">
+                    </div>
+                  </div>
+                  
+                  ${instrument.registrationDetails?.regNo ? `
+                    <div class="mt-2 p-3 bg-blue-50 border-2 border-blue-200 rounded-lg shadow-sm">
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                          </svg>
+                          <span class="text-sm font-semibold text-blue-700">Registration Number:</span>
+                        </div>
+                        <span class="text-lg font-bold text-blue-800 tracking-wider">${instrument.registrationDetails.regNo}</span>
+                      </div>
+                    </div>
+                  ` : ''}
+                </div>
+
+                <!-- Land Use and Period -->
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="space-y-1">
+                    <label class="text-sm">Land Use</label>
+                    <select onchange="updateInstrument('${instrument.id}', 'landUse', this.value)" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10">
+                      <option value="">Select land use</option>
+                      <option value="RESIDENTIAL" ${instrument.landUse === 'RESIDENTIAL' ? 'selected' : ''}>RESIDENTIAL</option>
+                      <option value="AGRICULTURAL" ${instrument.landUse === 'AGRICULTURAL' ? 'selected' : ''}>AGRICULTURAL</option>
+                      <option value="COMMERCIAL" ${instrument.landUse === 'COMMERCIAL' ? 'selected' : ''}>COMMERCIAL</option>
+                      <option value="COMMERCIAL ( WARE HOUSE)" ${instrument.landUse === 'COMMERCIAL ( WARE HOUSE)' ? 'selected' : ''}>COMMERCIAL ( WARE HOUSE)</option>
+                      <option value="COMMERCIAL (OFFICES)" ${instrument.landUse === 'COMMERCIAL (OFFICES)' ? 'selected' : ''}>COMMERCIAL (OFFICES)</option>
+                      <option value="COMMERCIAL (PETROL FILLING STATION)" ${instrument.landUse === 'COMMERCIAL (PETROL FILLING STATION)' ? 'selected' : ''}>COMMERCIAL (PETROL FILLING STATION)</option>
+                      <option value="COMMERCIAL (RICE PROCESSING)" ${instrument.landUse === 'COMMERCIAL (RICE PROCESSING)' ? 'selected' : ''}>COMMERCIAL (RICE PROCESSING)</option>
+                      <option value="COMMERCIAL (SCHOOL)" ${instrument.landUse === 'COMMERCIAL (SCHOOL)' ? 'selected' : ''}>COMMERCIAL (SCHOOL)</option>
+                      <option value="COMMERCIAL (SHOPS & PUBLIC CONVINIENCE)" ${instrument.landUse === 'COMMERCIAL (SHOPS & PUBLIC CONVINIENCE)' ? 'selected' : ''}>COMMERCIAL (SHOPS & PUBLIC CONVINIENCE)</option>
+                      <option value="COMMERCIAL (SHOPS AND OFFICES)" ${instrument.landUse === 'COMMERCIAL (SHOPS AND OFFICES)' ? 'selected' : ''}>COMMERCIAL (SHOPS AND OFFICES)</option>
+                      <option value="COMMERCIAL (SHOPS)" ${instrument.landUse === 'COMMERCIAL (SHOPS)' ? 'selected' : ''}>COMMERCIAL (SHOPS)</option>
+                      <option value="COMMERCIAL (WAREHOUSE)" ${instrument.landUse === 'COMMERCIAL (WAREHOUSE)' ? 'selected' : ''}>COMMERCIAL (WAREHOUSE)</option>
+                      <option value="COMMERCIAL (WORKSHOP AND OFFICES)" ${instrument.landUse === 'COMMERCIAL (WORKSHOP AND OFFICES)' ? 'selected' : ''}>COMMERCIAL (WORKSHOP AND OFFICES)</option>
+                      <option value="COMMERCIAL AND RESIDENTIAL" ${instrument.landUse === 'COMMERCIAL AND RESIDENTIAL' ? 'selected' : ''}>COMMERCIAL AND RESIDENTIAL</option>
+                      <option value="INDUSTRIAL" ${instrument.landUse === 'INDUSTRIAL' ? 'selected' : ''}>INDUSTRIAL</option>
+                      <option value="INDUSTRIAL (SMALL SCALE)" ${instrument.landUse === 'INDUSTRIAL (SMALL SCALE)' ? 'selected' : ''}>INDUSTRIAL (SMALL SCALE)</option>
+                      <option value="RESIDENTIAL AND COMMERCIAL" ${instrument.landUse === 'RESIDENTIAL AND COMMERCIAL' ? 'selected' : ''}>RESIDENTIAL AND COMMERCIAL</option>
+                      <option value="RESIDENTIAL/COMMERCIAL" ${instrument.landUse === 'RESIDENTIAL/COMMERCIAL' ? 'selected' : ''}>RESIDENTIAL/COMMERCIAL</option>
+                      <option value="RESIDENTIAL/COMMERCIAL LAYOUT" ${instrument.landUse === 'RESIDENTIAL/COMMERCIAL LAYOUT' ? 'selected' : ''}>RESIDENTIAL/COMMERCIAL LAYOUT</option>
+                    </select>
+                  </div>
+
+                  <div class="space-y-1">
+                    <label class="text-sm">Period/Tenancy</label>
+                    <div class="flex space-x-1">
+                      <input type="number" 
+                             value="${instrument.period || ''}"
+                             onchange="updateInstrument('${instrument.id}', 'period', this.value)"
+                             placeholder="Period"
+                             class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10">
+                      <select onchange="updateInstrument('${instrument.id}', 'periodUnit', this.value)" class="w-[90px] px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10">
+                        <option value="Days" ${instrument.periodUnit === 'Days' ? 'selected' : ''}>Days</option>
+                        <option value="Months" ${instrument.periodUnit === 'Months' ? 'selected' : ''}>Months</option>
+                        <option value="Years" ${instrument.periodUnit === 'Years' || !instrument.periodUnit ? 'selected' : ''}>Years</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
+
+            <!-- Transaction Details Section -->
+            ${instrument.type ? `
+              <div class="form-section">
+                <h4 class="text-lg font-medium text-gray-900 mb-3">Transaction Details</h4>
+                
+                <!-- Party Fields -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div class="space-y-1">
+                    <label class="text-sm font-medium">${currentPartyLabels.first}</label>
+                    <input type="text" 
+                           value="${instrument.parties?.assignor || instrument.parties?.grantor || (isGovTransaction ? 'KANO STATE GOVERNMENT' : '')}"
+                           onchange="updateInstrument('${instrument.id}', 'parties.assignor', this.value)"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 ${isGovTransaction ? 'bg-gray-100 text-gray-800' : ''}"
+                           ${isGovTransaction ? 'readonly' : ''}
+                           placeholder="${isGovTransaction ? 'KANO STATE GOVERNMENT' : 'Enter ' + currentPartyLabels.first.toLowerCase() + ' name'}">
+                  </div>
+                  <div class="space-y-1">
+                    <label class="text-sm font-medium">${currentPartyLabels.second}</label>
+                    <input type="text" 
+                           value="${instrument.parties?.assignee || instrument.parties?.grantee || ''}"
+                           onchange="updateInstrument('${instrument.id}', 'parties.assignee', this.value)"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
+                           placeholder="Enter ${currentPartyLabels.second.toLowerCase()} name">
+                  </div>
+                </div>
+              </div>
+            ` : ''}
             
-            <!-- Notes Section -->
+            <!-- Additional Notes Section -->
             <div class="space-y-2">
-              <label class="text-xs font-medium text-gray-700">Additional Notes</label>
+              <label class="text-sm font-medium text-gray-700">Additional Notes</label>
               <textarea
                 value="${instrument.notes || ''}"
                 onchange="updateInstrument('${instrument.id}', 'notes', this.value)"
@@ -1656,17 +1759,23 @@ function renderInstruments() {
         ` : `
           <div class="p-4">
             <div class="text-sm text-gray-600 space-y-1">
-              ${instrument.description ? `
-                <p><span class="font-medium">Description:</span> ${instrument.description}</p>
+              ${instrument.transactionDate ? `
+                <p><span class="font-medium">Date:</span> ${instrument.transactionDate}</p>
               ` : ''}
               ${(instrument.parties?.assignor || instrument.parties?.grantor) ? `
-                <p><span class="font-medium">From:</span> ${instrument.parties.assignor || instrument.parties.grantor}</p>
+                <p><span class="font-medium">${currentPartyLabels.first}:</span> ${instrument.parties.assignor || instrument.parties.grantor}</p>
               ` : ''}
               ${(instrument.parties?.assignee || instrument.parties?.grantee) ? `
-                <p><span class="font-medium">To:</span> ${instrument.parties.assignee || instrument.parties.grantee}</p>
+                <p><span class="font-medium">${currentPartyLabels.second}:</span> ${instrument.parties.assignee || instrument.parties.grantee}</p>
               ` : ''}
               ${instrument.registrationDetails?.regNo ? `
                 <p><span class="font-medium">Reg No:</span> ${instrument.registrationDetails.regNo}</p>
+              ` : ''}
+              ${instrument.landUse ? `
+                <p><span class="font-medium">Land Use:</span> ${instrument.landUse}</p>
+              ` : ''}
+              ${instrument.period && instrument.periodUnit ? `
+                <p><span class="font-medium">Period:</span> ${instrument.period} ${instrument.periodUnit}</p>
               ` : ''}
               ${instrument.notes ? `
                 <p><span class="font-medium">Notes:</span> ${instrument.notes}</p>

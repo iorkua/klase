@@ -146,7 +146,7 @@ tailwind.config = {
             <!-- Header -->
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-900">Certification Management</h1>
+                    <h1 class="text-3xl font-bold text-gray-900">CofO Management</h1>
                     <p class="text-gray-600">Manage certificate generation and issuance for approved applications</p>
                 </div>
                 <div class="flex gap-3">
@@ -234,7 +234,7 @@ tailwind.config = {
                     <div class="flex items-center justify-between">
                         <h3 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
                             <i data-lucide="award" class="h-5 w-5 text-blue-600"></i>
-                            Certificate Management
+                            CofO Management
                         </h3>
                     </div>
                 </div>
@@ -273,6 +273,7 @@ tailwind.config = {
                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 100px;">RegNo</th>
                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">Type</th>
                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 180px;">Applicant Name</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">Land Use</th>
                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 200px;">Plot Details</th>
                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 100px;">LGA</th>
                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">Application Date</th>
@@ -302,13 +303,15 @@ tailwind.config = {
                                 <table class="w-full" style="min-width: 1000px;">
                                     <thead>
                                         <tr class="border-b bg-gray-50">
-                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">CofO Serial No</th>  
+                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">CofO Serial No</th>
+                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">Batch Info</th>  
                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 140px;">New KANGIS FileNo</th>
                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">KANGIS FileNo</th>
                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 100px;">MLS FNo</th>
                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 100px;">RegNo</th>
                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">Type</th>
                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 180px;">Applicant Name</th>
+                                            <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">Land Use</th>
                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 200px;">Plot Details</th>
                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 100px;">LGA</th>
                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">Generated Date</th>
@@ -502,7 +505,7 @@ function showLoadingState(tableBodyId) {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="12" class="text-center py-8">
+                <td colspan="13" class="text-center py-8">
                     <div class="loading-spinner mx-auto mb-2"></div>
                     <p class="text-gray-600">Loading certification data...</p>
                 </td>
@@ -516,7 +519,7 @@ function showErrorState(tableBodyId) {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="12" class="text-center py-8">
+                <td colspan="13" class="text-center py-8">
                     <i data-lucide="alert-circle" class="h-8 w-8 text-red-500 mx-auto mb-2"></i>
                     <p class="text-red-600">Failed to load certification data</p>
                     <button onclick="loadCertificationData()" class="mt-2 text-blue-600 hover:text-blue-800">
@@ -567,6 +570,9 @@ function renderCertificationTables() {
     const notGeneratedData = certificationData.filter(app => !app.certificate_generated);
     const generatedData = certificationData.filter(app => app.certificate_generated);
     
+    // Sort generated data: records with CofO Serial No first, then others
+    const sortedGeneratedData = sortGeneratedDataWithBatching(generatedData);
+    
     // Update tab counts
     document.getElementById('not-generated-tab-count').textContent = notGeneratedData.length;
     document.getElementById('generated-tab-count').textContent = generatedData.length;
@@ -574,8 +580,46 @@ function renderCertificationTables() {
     // Render not generated table
     renderTable('not-generated-table-body', 'not-generated-no-results', notGeneratedData, false);
     
-    // Render generated table
-    renderTable('generated-table-body', 'generated-no-results', generatedData, true);
+    // Render generated table with batched data
+    renderTable('generated-table-body', 'generated-no-results', sortedGeneratedData, true);
+}
+
+function sortGeneratedDataWithBatching(generatedData) {
+    // Separate records with and without CofO Serial Numbers
+    const withSerialNo = generatedData.filter(app => 
+        app.cofo_number && app.cofo_number !== 'N/A' && app.cofo_number.trim() !== ''
+    );
+    const withoutSerialNo = generatedData.filter(app => 
+        !app.cofo_number || app.cofo_number === 'N/A' || app.cofo_number.trim() === ''
+    );
+    
+    // Sort records with serial numbers by creation date or ID for consistent batching
+    withSerialNo.sort((a, b) => {
+        // Sort by certificate_generated_date first, then by ID
+        const dateA = new Date(a.certificate_generated_date || a.created_at || 0);
+        const dateB = new Date(b.certificate_generated_date || b.created_at || 0);
+        
+        if (dateA.getTime() !== dateB.getTime()) {
+            return dateA - dateB;
+        }
+        return (a.id || 0) - (b.id || 0);
+    });
+    
+    // Add batch information to records with serial numbers
+    const batchedWithSerialNo = withSerialNo.map((app, index) => {
+        const batchNumber = Math.floor(index / 150) + 11; // Start from batch 11
+        const batchPosition = (index % 150) + 1; // Position within batch (1-150)
+        
+        return {
+            ...app,
+            batch_number: batchNumber,
+            batch_position: batchPosition,
+            batch_info: `Batch ${batchNumber} No${batchPosition}`
+        };
+    });
+    
+    // Return records with serial numbers first, then others
+    return [...batchedWithSerialNo, ...withoutSerialNo];
 }
 
 function renderTable(tableBodyId, noResultsId, data, isGenerated) {
@@ -602,61 +646,132 @@ function renderTable(tableBodyId, noResultsId, data, isGenerated) {
         const actionMenuId = `action-menu-${app.id}`;
         const dateField = isGenerated ? (app.certificate_generated_date || 'N/A') : (app.created_at || 'N/A');
         
-        return `
-            <tr class="table-row border-b hover:bg-gray-50">
-   <td class="p-2" style="max-width: 120px;">
-                    <div class="text-xs text-gray-900 truncate" >${app.cofo_number|| 'N/A'}</div>
-                </td>
-                <td class="p-2" style="max-width: 140px;">
-                    <div class="text-xs text-gray-900 truncate" title="${app.NewKANGISFileno || 'N/A'}">${app.NewKANGISFileno || 'N/A'}</div>
-                </td>
-                <td class="p-2" style="max-width: 120px;">
-                    <div class="text-xs text-gray-900 truncate" title="${app.kangisFileNo || 'N/A'}">${app.kangisFileNo || 'N/A'}</div>
-                </td>
-                <td class="p-2" style="max-width: 100px;">
-                    <div class="text-xs text-gray-900 truncate" title="${app.mlsfNo || 'N/A'}">${app.mlsfNo || 'N/A'}</div>
-                </td>
-                <td class="p-2" style="max-width: 100px;">
-                    <div class="text-xs text-gray-900 truncate" title="${app.reg_no || 'N/A'}">${app.reg_no || 'N/A'}</div>
-                </td>
-                <td class="p-2" style="max-width: 120px;">
-                    <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getApplicationTypeClass(app.applicant_type)}">
-                        ${app.applicant_type || 'N/A'}
-                    </div>
-                </td>
-                <td class="p-2" style="max-width: 180px;">
-                    <div class="text-xs font-medium text-gray-900 truncate" title="${app.applicant_name || 'N/A'}">${app.applicant_name || 'N/A'}</div>
-                </td>
-                <td class="p-2" style="max-width: 200px;">
-                    <div class="text-xs text-gray-900 truncate" title="${app.plot_details || 'N/A'}">${app.plot_details || 'N/A'}</div>
-                </td>
-                <td class="p-2" style="max-width: 100px;">
-                    <div class="text-xs text-gray-900 truncate">${app.lga_name || 'N/A'}</div>
-                </td>
-                <td class="p-2" style="max-width: 120px;">
-                    <div class="text-xs text-gray-900 truncate">${dateField}</div>
-                </td>
-                <td class="p-2" style="max-width: 100px;">
-                    ${getStatusBadge(isGenerated)}
-                </td>
-                <td class="p-2" style="max-width: 100px;">
-                    <div class="relative">
-                        <button 
-                            onclick="toggleActionMenu('${actionMenuId}')"
-                            class="inline-flex items-center justify-center rounded-md font-medium text-sm px-2 py-1 transition-all cursor-pointer bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50"
-                        >
-                            <i data-lucide="more-horizontal" class="h-3 w-3"></i>
-                        </button>
-                        
-                        <div id="${actionMenuId}" class="hidden absolute right-0 top-full mt-1 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-50">
-                            <div class="py-1">
-                                ${generateActionMenuItems(app, isGenerated)}
+        // Different row structure for generated vs not generated tabs
+        if (isGenerated) {
+            return `
+                <tr class="table-row border-b hover:bg-gray-50">
+                    <td class="p-2" style="max-width: 120px;">
+                        <div class="text-xs text-gray-900 truncate">${app.cofo_number || 'N/A'}</div>
+                    </td>
+                    <td class="p-2" style="max-width: 120px;">
+                        <div class="text-xs font-medium ${app.batch_info ? 'text-blue-600' : 'text-gray-500'} truncate">
+                            ${app.batch_info || 'No Batch'}
+                        </div>
+                    </td>
+                    <td class="p-2" style="max-width: 140px;">
+                        <div class="text-xs text-gray-900 truncate" title="${app.NewKANGISFileno || 'N/A'}">${app.NewKANGISFileno || 'N/A'}</div>
+                    </td>
+                    <td class="p-2" style="max-width: 120px;">
+                        <div class="text-xs text-gray-900 truncate" title="${app.kangisFileNo || 'N/A'}">${app.kangisFileNo || 'N/A'}</div>
+                    </td>
+                    <td class="p-2" style="max-width: 100px;">
+                        <div class="text-xs text-gray-900 truncate" title="${app.mlsfNo || 'N/A'}">${app.mlsfNo || 'N/A'}</div>
+                    </td>
+                    <td class="p-2" style="max-width: 100px;">
+                        <div class="text-xs text-gray-900 truncate" title="${app.reg_no || 'N/A'}">${app.reg_no || 'N/A'}</div>
+                    </td>
+                    <td class="p-2" style="max-width: 120px;">
+                        <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getApplicationTypeClass(app.applicant_type)}">
+                            ${app.applicant_type || 'N/A'}
+                        </div>
+                    </td>
+                    <td class="p-2" style="max-width: 180px;">
+                        <div class="text-xs font-medium text-gray-900 truncate" title="${app.applicant_name || 'N/A'}">${app.applicant_name || 'N/A'}</div>
+                    </td>
+                    <td class="p-2" style="max-width: 120px;">
+                        <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                            ${app.land_use ? app.land_use.charAt(0).toUpperCase() + app.land_use.slice(1).toLowerCase() : 'N/A'}
+                        </div>
+                    </td>
+                    <td class="p-2" style="max-width: 200px;">
+                        <div class="text-xs text-gray-900 truncate" title="${app.plot_details || 'N/A'}">${app.plot_details || 'N/A'}</div>
+                    </td>
+                    <td class="p-2" style="max-width: 100px;">
+                        <div class="text-xs text-gray-900 truncate">${app.lga_name || 'N/A'}</div>
+                    </td>
+                    <td class="p-2" style="max-width: 120px;">
+                        <div class="text-xs text-gray-900 truncate">${dateField}</div>
+                    </td>
+                    <td class="p-2" style="max-width: 100px;">
+                        ${getStatusBadge(isGenerated)}
+                    </td>
+                    <td class="p-2" style="max-width: 100px;">
+                        <div class="relative">
+                            <button 
+                                onclick="toggleActionMenu('${actionMenuId}')"
+                                class="inline-flex items-center justify-center rounded-md font-medium text-sm px-2 py-1 transition-all cursor-pointer bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50"
+                            >
+                                <i data-lucide="more-horizontal" class="h-3 w-3"></i>
+                            </button>
+                            
+                            <div id="${actionMenuId}" class="hidden absolute right-0 top-full mt-1 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                                <div class="py-1">
+                                    ${generateActionMenuItems(app, isGenerated)}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </td>
-            </tr>
-        `;
+                    </td>
+                </tr>
+            `;
+        } else {
+            return `
+                <tr class="table-row border-b hover:bg-gray-50">
+                    <td class="p-2" style="max-width: 140px;">
+                        <div class="text-xs text-gray-900 truncate" title="${app.NewKANGISFileno || 'N/A'}">${app.NewKANGISFileno || 'N/A'}</div>
+                    </td>
+                    <td class="p-2" style="max-width: 120px;">
+                        <div class="text-xs text-gray-900 truncate" title="${app.kangisFileNo || 'N/A'}">${app.kangisFileNo || 'N/A'}</div>
+                    </td>
+                    <td class="p-2" style="max-width: 100px;">
+                        <div class="text-xs text-gray-900 truncate" title="${app.mlsfNo || 'N/A'}">${app.mlsfNo || 'N/A'}</div>
+                    </td>
+                    <td class="p-2" style="max-width: 100px;">
+                        <div class="text-xs text-gray-900 truncate" title="${app.reg_no || 'N/A'}">${app.reg_no || 'N/A'}</div>
+                    </td>
+                    <td class="p-2" style="max-width: 120px;">
+                        <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getApplicationTypeClass(app.applicant_type)}">
+                            ${app.applicant_type || 'N/A'}
+                        </div>
+                    </td>
+                    <td class="p-2" style="max-width: 180px;">
+                        <div class="text-xs font-medium text-gray-900 truncate" title="${app.applicant_name || 'N/A'}">${app.applicant_name || 'N/A'}</div>
+                    </td>
+                    <td class="p-2" style="max-width: 120px;">
+                        <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                            ${app.land_use ? app.land_use.charAt(0).toUpperCase() + app.land_use.slice(1).toLowerCase() : 'N/A'}
+                        </div>
+                    </td>
+                    <td class="p-2" style="max-width: 200px;">
+                        <div class="text-xs text-gray-900 truncate" title="${app.plot_details || 'N/A'}">${app.plot_details || 'N/A'}</div>
+                    </td>
+                    <td class="p-2" style="max-width: 100px;">
+                        <div class="text-xs text-gray-900 truncate">${app.lga_name || 'N/A'}</div>
+                    </td>
+                    <td class="p-2" style="max-width: 120px;">
+                        <div class="text-xs text-gray-900 truncate">${dateField}</div>
+                    </td>
+                    <td class="p-2" style="max-width: 100px;">
+                        ${getStatusBadge(isGenerated)}
+                    </td>
+                    <td class="p-2" style="max-width: 100px;">
+                        <div class="relative">
+                            <button 
+                                onclick="toggleActionMenu('${actionMenuId}')"
+                                class="inline-flex items-center justify-center rounded-md font-medium text-sm px-2 py-1 transition-all cursor-pointer bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50"
+                            >
+                                <i data-lucide="more-horizontal" class="h-3 w-3"></i>
+                            </button>
+                            
+                            <div id="${actionMenuId}" class="hidden absolute right-0 top-full mt-1 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                                <div class="py-1">
+                                    ${generateActionMenuItems(app, isGenerated)}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
     }).join('');
     
     tableBody.innerHTML = rows;
@@ -757,8 +872,11 @@ function setupSearch() {
             const notGeneratedData = filteredData.filter(app => !app.certificate_generated);
             const generatedData = filteredData.filter(app => app.certificate_generated);
             
+            // Apply batching to filtered generated data
+            const sortedGeneratedData = sortGeneratedDataWithBatching(generatedData);
+            
             renderTable('not-generated-table-body', 'not-generated-no-results', notGeneratedData, false);
-            renderTable('generated-table-body', 'generated-no-results', generatedData, true);
+            renderTable('generated-table-body', 'generated-no-results', sortedGeneratedData, true);
         }, 300);
     });
 }

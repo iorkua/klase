@@ -106,3 +106,24 @@ Route::get('/test-file-numbers', function() {
         ]
     ]);
 });
+
+// File Tracking API Routes - KLAES Lands Module File Tracker
+use App\Http\Controllers\FileTrackingController;
+
+// Main file tracking endpoints
+Route::get('/file-trackings', [FileTrackingController::class, 'index']);
+Route::post('/file-trackings', [FileTrackingController::class, 'store']);
+Route::get('/file-trackings/{id}', [FileTrackingController::class, 'show']);
+Route::put('/file-trackings/{id}', [FileTrackingController::class, 'update']);
+Route::delete('/file-trackings/{id}', [FileTrackingController::class, 'destroy']);
+
+// Movement tracking
+Route::post('/file-trackings/{id}/move', [FileTrackingController::class, 'addMovement']);
+
+// RFID integration endpoints
+Route::post('/rfid/register', [FileTrackingController::class, 'registerRfid']);
+Route::get('/rfid/scan/{tag}', [FileTrackingController::class, 'scanRfid']);
+Route::get('/rfid/report', [FileTrackingController::class, 'generateReport']);
+
+// Batch operations
+Route::post('/file-trackings/batch/overdue', [FileTrackingController::class, 'batchUpdateOverdue']);

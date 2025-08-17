@@ -57,6 +57,7 @@ try {
             'applicant_type' => $app->applicant_type ?? 'N/A',
             'plot_details' => $plotDetails,
             'lga_name' => $app->lga_name ?? 'N/A',
+            'current_land_use' => $app->current_land_use ?? 'N/A',
             'created_at' => $app->created_at ? date('d M Y', strtotime($app->created_at)) : 'N/A',
             'cofo_number' => $app->cofo_number ?? 'N/A',
             'acknowledgement' => $app->acknowledgement ?? null,

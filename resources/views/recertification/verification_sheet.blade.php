@@ -316,11 +316,28 @@ function getVerificationStatusBadge(status) {
 
 // Land use badge rendering function
 function renderLandUseBadge(landUse) {
-    if (!landUse || landUse === 'N/A') {
+    const raw = (landUse ?? '').toString().trim();
+    const lower = raw.toLowerCase();
+
+    // Normalize empty/NA-like values
+    if (!raw || ['n/a', 'n./a', 'na', '-', 'null', 'undefined'].includes(lower)) {
         return '<div class="text-sm text-gray-500">N/A</div>';
     }
-    
-    // Define land use colors
+
+    // Canonical label mapping (case-insensitive)
+    const labelMap = {
+        'residential': 'Residential',
+        'commercial': 'Commercial',
+        'industrial': 'Industrial',
+        'agricultural': 'Agricultural',
+        'mixed use': 'Mixed Use',
+        'mixed-use': 'Mixed Use',
+        'institutional': 'Institutional',
+        'recreational': 'Recreational'
+    };
+    const label = labelMap[lower] || raw;
+
+    // Define land use colors (by canonical label)
     const landUseColors = {
         'Residential': 'bg-blue-100 text-blue-800',
         'Commercial': 'bg-green-100 text-green-800',
@@ -330,12 +347,10 @@ function renderLandUseBadge(landUse) {
         'Institutional': 'bg-indigo-100 text-indigo-800',
         'Recreational': 'bg-pink-100 text-pink-800'
     };
-    
-    const colorClass = landUseColors[landUse] || 'bg-gray-100 text-gray-800';
-    
-    return `<div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${colorClass}">
-        ${landUse}
-    </div>`;
+
+    const colorClass = landUseColors[label] || 'bg-gray-100 text-gray-800';
+
+    return `<div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${colorClass}">${label}</div>`;
 }
 
 function renderVerificationTable(data) {
@@ -385,7 +400,7 @@ function renderVerificationTable(data) {
                     <div class="text-sm font-medium text-gray-900">${app.applicant_name || 'N/A'}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    ${renderLandUseBadge(app.current_land_use)}
+                    ${renderLandUseBadge(app.current_land_use || app.land_use || app.landUse || app.landUseType)}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-900">${app.plot_details || 'N/A'}</div>

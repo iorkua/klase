@@ -1,0 +1,383 @@
+@extends('layouts.app')
+@section('page-title')
+    {{ __('Track New File') }}
+@endsection
+
+@section('content')
+    @include('filetracker.assets.style')
+    <!-- Main Content -->
+    <div class="flex-1 overflow-auto">
+        <!-- Header -->
+        @include('admin.header')
+        <!-- Dashboard Content -->
+        <div class="p-6">
+            <div class="flex flex-col min-h-screen">
+                <!-- Page Header -->
+                <header class="bg-white shadow-sm px-6 py-4 border-b mb-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-2xl font-bold">Track New File</h1>
+                            <p class="text-sm text-gray-500">Register a new file for tracking and monitoring</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <a href="{{ route('filetracker.index') }}" class="border rounded-md px-4 py-2 text-sm flex items-center hover:bg-gray-50">
+                                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                                </svg>
+                                Back to File Tracker
+                            </a>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Form Content -->
+                <div class="flex-1">
+                    <div class="max-w-4xl mx-auto">
+                        <form action="{{ route('filetracker.store') }}" method="POST" class="space-y-6">
+                            @csrf
+                            
+                            <!-- Error Messages -->
+                            @if ($errors->any())
+                                <div class="bg-red-50 border border-red-200 rounded-md p-4">
+                                    <div class="flex">
+                                        <div class="flex-shrink-0">
+                                            <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="ml-3">
+                                            <h3 class="text-sm font-medium text-red-800">Please correct the following errors:</h3>
+                                            <div class="mt-2 text-sm text-red-700">
+                                                <ul class="list-disc pl-5 space-y-1">
+                                                    @foreach ($errors->all() as $error)
+                                                        <li>{{ $error }}</li>
+                                                    @endforeach
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+
+                            <!-- File Selection Section -->
+                            <div class="bg-white rounded-lg shadow-sm border p-6">
+                                <h2 class="text-lg font-semibold mb-4">File Selection</h2>
+                                
+                                <div class="grid grid-cols-1 gap-4">
+                                    <div>
+                                        <label for="file_search" class="block text-sm font-medium text-gray-700 mb-2">
+                                            Search and Select File
+                                        </label>
+                                        <div class="relative">
+                                            <input type="text" 
+                                                   id="file_search" 
+                                                   placeholder="Type file number, title, or survey plan number..."
+                                                   class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                   autocomplete="off">
+                                            <div id="file_search_results" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 hidden max-h-60 overflow-y-auto"></div>
+                                        </div>
+                                        <input type="hidden" name="file_indexing_id" id="file_indexing_id" value="{{ old('file_indexing_id') }}">
+                                        <div id="selected_file_info" class="mt-3 p-3 bg-gray-50 rounded-md hidden">
+                                            <h4 class="font-medium text-gray-900">Selected File:</h4>
+                                            <div id="selected_file_details" class="text-sm text-gray-600 mt-1"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tracking Information Section -->
+                            <div class="bg-white rounded-lg shadow-sm border p-6">
+                                <h2 class="text-lg font-semibold mb-4">Tracking Information</h2>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label for="current_location" class="block text-sm font-medium text-gray-700 mb-2">
+                                            Current Location <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="text" 
+                                               name="current_location" 
+                                               id="current_location" 
+                                               value="{{ old('current_location') }}"
+                                               class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('current_location') border-red-500 @enderror"
+                                               placeholder="e.g., Archive Room A, Legal Department"
+                                               required>
+                                        @error('current_location')
+                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <label for="current_handler" class="block text-sm font-medium text-gray-700 mb-2">
+                                            Current Handler <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="text" 
+                                               name="current_handler" 
+                                               id="current_handler" 
+                                               value="{{ old('current_handler') }}"
+                                               class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('current_handler') border-red-500 @enderror"
+                                               placeholder="e.g., John Doe, Department Head"
+                                               required>
+                                        @error('current_handler')
+                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <label for="current_holder" class="block text-sm font-medium text-gray-700 mb-2">
+                                            Current Holder
+                                        </label>
+                                        <input type="text" 
+                                               name="current_holder" 
+                                               id="current_holder" 
+                                               value="{{ old('current_holder') }}"
+                                               class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('current_holder') border-red-500 @enderror"
+                                               placeholder="e.g., Legal Department, Survey Unit">
+                                        @error('current_holder')
+                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <label for="status" class="block text-sm font-medium text-gray-700 mb-2">
+                                            Status <span class="text-red-500">*</span>
+                                        </label>
+                                        <select name="status" 
+                                                id="status" 
+                                                class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('status') border-red-500 @enderror"
+                                                required>
+                                            <option value="">Select Status</option>
+                                            <option value="active" {{ old('status') == 'active' ? 'selected' : '' }}>Active</option>
+                                            <option value="checked_out" {{ old('status') == 'checked_out' ? 'selected' : '' }}>Checked Out</option>
+                                            <option value="returned" {{ old('status') == 'returned' ? 'selected' : '' }}>Returned</option>
+                                            <option value="archived" {{ old('status') == 'archived' ? 'selected' : '' }}>Archived</option>
+                                        </select>
+                                        @error('status')
+                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <label for="date_received" class="block text-sm font-medium text-gray-700 mb-2">
+                                            Date Received <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="date" 
+                                               name="date_received" 
+                                               id="date_received" 
+                                               value="{{ old('date_received', date('Y-m-d')) }}"
+                                               class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('date_received') border-red-500 @enderror"
+                                               required>
+                                        @error('date_received')
+                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <label for="due_date" class="block text-sm font-medium text-gray-700 mb-2">
+                                            Due Date
+                                        </label>
+                                        <input type="date" 
+                                               name="due_date" 
+                                               id="due_date" 
+                                               value="{{ old('due_date') }}"
+                                               class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('due_date') border-red-500 @enderror">
+                                        @error('due_date')
+                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- RFID/QR Code Section -->
+                            <div class="bg-white rounded-lg shadow-sm border p-6">
+                                <h2 class="text-lg font-semibold mb-4">RFID & QR Code (Optional)</h2>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label for="rfid_tag" class="block text-sm font-medium text-gray-700 mb-2">
+                                            RFID Tag
+                                        </label>
+                                        <input type="text" 
+                                               name="rfid_tag" 
+                                               id="rfid_tag" 
+                                               value="{{ old('rfid_tag') }}"
+                                               class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('rfid_tag') border-red-500 @enderror"
+                                               placeholder="e.g., RFID-001234">
+                                        @error('rfid_tag')
+                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <label for="qr_code" class="block text-sm font-medium text-gray-700 mb-2">
+                                            QR Code
+                                        </label>
+                                        <input type="text" 
+                                               name="qr_code" 
+                                               id="qr_code" 
+                                               value="{{ old('qr_code') }}"
+                                               class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('qr_code') border-red-500 @enderror"
+                                               placeholder="e.g., QR-001234">
+                                        @error('qr_code')
+                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Notes Section -->
+                            <div class="bg-white rounded-lg shadow-sm border p-6">
+                                <h2 class="text-lg font-semibold mb-4">Additional Notes</h2>
+                                
+                                <div>
+                                    <label for="notes" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Initial Notes
+                                    </label>
+                                    <textarea name="notes" 
+                                              id="notes" 
+                                              rows="4"
+                                              class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('notes') border-red-500 @enderror"
+                                              placeholder="Add any initial notes about this file tracking...">{{ old('notes') }}</textarea>
+                                    @error('notes')
+                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <!-- Form Actions -->
+                            <div class="flex justify-end space-x-4 pt-6">
+                                <a href="{{ route('filetracker.index') }}" 
+                                   class="border rounded-md px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                                    Cancel
+                                </a>
+                                <button type="submit" 
+                                        class="bg-blue-600 text-white px-6 py-2 rounded-md text-sm font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                                    Create File Tracking
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        @include('admin.footer')
+    </div>
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- File Search Script -->
+    <script>
+        $(document).ready(function() {
+            let searchTimeout;
+            
+            // File search functionality
+            $('#file_search').on('input', function() {
+                const query = $(this).val().trim();
+                
+                clearTimeout(searchTimeout);
+                
+                if (query.length < 2) {
+                    $('#file_search_results').addClass('hidden');
+                    return;
+                }
+                
+                searchTimeout = setTimeout(() => {
+                    searchFiles(query);
+                }, 300);
+            });
+            
+            // Hide results when clicking outside
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('#file_search, #file_search_results').length) {
+                    $('#file_search_results').addClass('hidden');
+                }
+            });
+            
+            function searchFiles(query) {
+                $.ajax({
+                    url: '{{ route("filetracker.search-files") }}',
+                    method: 'GET',
+                    data: { query: query },
+                    success: function(response) {
+                        if (response.success && response.data.length > 0) {
+                            displaySearchResults(response.data);
+                        } else {
+                            displayNoResults();
+                        }
+                    },
+                    error: function() {
+                        displayError();
+                    }
+                });
+            }
+            
+            function displaySearchResults(files) {
+                let html = '';
+                files.forEach(function(file) {
+                    html += `
+                        <div class="file-result p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0" 
+                             data-file-id="${file.id}" 
+                             data-file-number="${file.file_number}"
+                             data-file-title="${file.file_title || ''}"
+                             data-old-file-number="${file.old_file_number || ''}"
+                             data-survey-plan="${file.survey_plan_number || ''}">
+                            <div class="font-medium text-gray-900">${file.file_number}</div>
+                            <div class="text-sm text-gray-600">${file.file_title || 'No Title'}</div>
+                            ${file.old_file_number ? `<div class="text-xs text-gray-500">Old: ${file.old_file_number}</div>` : ''}
+                            ${file.survey_plan_number ? `<div class="text-xs text-gray-500">Survey: ${file.survey_plan_number}</div>` : ''}
+                        </div>
+                    `;
+                });
+                
+                $('#file_search_results').html(html).removeClass('hidden');
+            }
+            
+            function displayNoResults() {
+                $('#file_search_results').html(`
+                    <div class="p-3 text-center text-gray-500 text-sm">
+                        No files found matching your search
+                    </div>
+                `).removeClass('hidden');
+            }
+            
+            function displayError() {
+                $('#file_search_results').html(`
+                    <div class="p-3 text-center text-red-500 text-sm">
+                        Error searching files. Please try again.
+                    </div>
+                `).removeClass('hidden');
+            }
+            
+            // Handle file selection
+            $(document).on('click', '.file-result', function() {
+                const fileId = $(this).data('file-id');
+                const fileNumber = $(this).data('file-number');
+                const fileTitle = $(this).data('file-title');
+                const oldFileNumber = $(this).data('old-file-number');
+                const surveyPlan = $(this).data('survey-plan');
+                
+                // Set the hidden input
+                $('#file_indexing_id').val(fileId);
+                
+                // Update the search input
+                $('#file_search').val(fileNumber);
+                
+                // Show selected file info
+                let detailsHtml = `
+                    <div><strong>File Number:</strong> ${fileNumber}</div>
+                    ${fileTitle ? `<div><strong>Title:</strong> ${fileTitle}</div>` : ''}
+                    ${oldFileNumber ? `<div><strong>Old File Number:</strong> ${oldFileNumber}</div>` : ''}
+                    ${surveyPlan ? `<div><strong>Survey Plan:</strong> ${surveyPlan}</div>` : ''}
+                `;
+                
+                $('#selected_file_details').html(detailsHtml);
+                $('#selected_file_info').removeClass('hidden');
+                
+                // Hide results
+                $('#file_search_results').addClass('hidden');
+            });
+        });
+    </script>
+@endsection
