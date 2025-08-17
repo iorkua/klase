@@ -588,9 +588,11 @@
             </div>
 
 
+            @if(!$is_ai)
             <div class="flex justify-end space-x-3 pt-2 border-t mt-4 sticky bottom-0 bg-white z-10">
             <button id="property-submit-btn" type="submit" class="btn btn-primary">Submit</button>
         </div>
+            @endif
         </div>
         
       

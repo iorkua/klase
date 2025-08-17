@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -178,7 +178,7 @@ tailwind.config = {
         <input
           id="file-input"
           type="file"
-          accept="image/jpeg,image/png,application/pdf"
+            accept="image/jpeg,image/png,application/pdf"
           class="hidden"
         />
         <button
@@ -1054,7 +1054,7 @@ function extractPropertyInstrumentDetails(text, fileName) {
     /Registered\s+as\s+No\.?\s*(\d+)\s*\/?\s*Page\s*(\d+)\s*\/?\s*Volume\s*(\d+)/i,
     /Registration\s+No\.?\s*(\d+)\s*\/?\s*Page\s*(\d+)\s*\/?\s*Vol\.?\s*(\d+)/i,
     /Reg\.?\s*No\.?\s*(\d+)\s*\/?\s*P\.?\s*(\d+)\s*\/?\s*V\.?\s*(\d+)/i,
-    /Serial\s+No\.?\s*(\d+)\s*Page\s*(\d+)\s*Volume\s*(\d+)/i
+    /Serial\s+No\.?\s*(\d+)\s*Page\s*(\d+)\s*Volume\s*(\d+)/i,
   ];
   
   for (const pattern of regDetailsPatterns) {
@@ -1170,7 +1170,7 @@ function hideAiProcessing() {
 
 function updateAiProcessingUI() {
   // Update progress bar
-  document.getElementById('ai-progress-text').textContent = `${aiProgress}% Complete`;
+  document.getElementById('ai-progress-text').textContent = `${Math.round(aiProgress)}% Complete`;
   document.getElementById('ai-progress-bar').style.width = `${aiProgress}%`;
   
   // Update stage indicators
@@ -1293,7 +1293,7 @@ function populatePropertyForm() {
   // Update confidence/summary text
   let confidenceText = `Review the details extracted by the AI. Add or modify instruments as needed, then save the record. Confidence: ${data.confidence}% (${data.extractionStatus})`;
   if (data.oldFileNo && data.fileNo) {
-    confidenceText += ` | Found transition: ${data.oldFileNo} → ${data.fileNo}`;
+    confidenceText += ` | Found transition: ${data.oldFileNo} ? ${data.fileNo}`;
   } else if (data.oldFileNo) {
     confidenceText += ` | Old File No: ${data.oldFileNo}`;
   }
@@ -1810,28 +1810,163 @@ function toggleRawText() {
 }
 
 function handleSaveRecord() {
-  if (!extractedPropertyData) return;
+  const form = document.getElementById('property-record-form');
+  if (!form) {
+    showToast('Form not found. Cannot save record.', 'error');
+    return;
+  }
 
-  // Collect form data
-  const formData = {
-    ...extractedPropertyData,
-    fileNumberType: document.getElementById('file-number-type').value,
-    filePrefix: document.getElementById('file-prefix').value,
-    fileSerialNo: document.getElementById('file-serial-no').value,
-    fileNo: document.getElementById('complete-file-no').value,
-    plotNo: document.getElementById('plot-no').value,
-    lgsaOrCity: document.getElementById('lga-city').value,
-    propertyHolder: document.getElementById('property-holder').value,
-    description: document.getElementById('property-description').value,
-    instruments: instruments
-  };
+  // Validate that we have extracted data and instruments
+  if (!extractedPropertyData) {
+    showToast('No property data extracted. Please run AI extraction first.', 'error');
+    return;
+  }
 
-  // Here you would typically save to your database
-  console.log('Saving property record:', formData);
-  showToast('Property record saved successfully!', 'success');
+  if (instruments.length === 0) {
+    showToast('Please add at least one instrument before saving.', 'error');
+    return;
+  }
 
-  // Optionally reset the form after saving
-  // resetState();
+  // Show loading
+  showToast('Saving property record...', 'info');
+
+  // Prepare form data from AI extracted data and instruments
+  const formData = new FormData();
+  
+  // Add CSRF token
+  const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
+                form.querySelector('input[name="_token"]')?.value || '';
+  if (token) {
+    formData.append('_token', token);
+  }
+
+  // Add basic property data from AI extraction
+  if (extractedPropertyData.kangisFileNo) {
+    formData.append('kangisFileNo', extractedPropertyData.kangisFileNo);
+  }
+  if (extractedPropertyData.mlsFileNo) {
+    formData.append('mlsFNo', extractedPropertyData.mlsFileNo);
+  }
+  if (extractedPropertyData.fileNo && !extractedPropertyData.kangisFileNo && !extractedPropertyData.mlsFileNo) {
+    formData.append('fileno', extractedPropertyData.fileNo);
+  }
+
+  // Add property details
+  formData.append('plot_no', extractedPropertyData.plotNo || '');
+  formData.append('lgsaOrCity', extractedPropertyData.lgsaOrCity || '');
+  formData.append('property_description', extractedPropertyData.description || '');
+  
+  // Use the first instrument for transaction details
+  const primaryInstrument = instruments[0];
+  
+  // Add required fields that might be missing
+  formData.append('title_type', 'Statutory'); // Default title type
+  formData.append('instrumentType', primaryInstrument?.type || '');
+  if (primaryInstrument) {
+    formData.append('transactionType', primaryInstrument.type || '');
+    formData.append('transactionDate', primaryInstrument.transactionDate || new Date().toISOString().split('T')[0]);
+    
+    // Registration details
+    formData.append('serialNo', primaryInstrument.registrationDetails?.serialNo || '');
+    formData.append('pageNo', primaryInstrument.registrationDetails?.page || primaryInstrument.registrationDetails?.serialNo || '');
+    formData.append('volumeNo', primaryInstrument.registrationDetails?.vol || '');
+      formData.append('regDate', primaryInstrument.regDate || new Date().toISOString().split('T')[0]);
+      formData.append('regTime', primaryInstrument.regTime || '09:00');
+
+      // Land use and period
+    formData.append('landUse', primaryInstrument.landUse || '');
+    formData.append('period', primaryInstrument.period || '');
+    formData.append('periodUnit', primaryInstrument.periodUnit || 'Years');
+
+    // Party information based on transaction type
+    const transactionType = primaryInstrument.type?.toLowerCase() || '';
+    if (transactionType.includes('assignment')) {
+      formData.append('Assignor', primaryInstrument.parties?.assignor || '');
+      formData.append('Assignee', primaryInstrument.parties?.assignee || '');
+    } else if (transactionType.includes('mortgage')) {
+      formData.append('Mortgagor', primaryInstrument.parties?.assignor || '');
+      formData.append('Mortgagee', primaryInstrument.parties?.assignee || '');
+    } else if (transactionType.includes('surrender')) {
+      formData.append('Surrenderor', primaryInstrument.parties?.assignor || '');
+      formData.append('Surrenderee', primaryInstrument.parties?.assignee || '');
+    } else if (transactionType.includes('lease')) {
+      formData.append('Lessor', primaryInstrument.parties?.assignor || '');
+      formData.append('Lessee', primaryInstrument.parties?.assignee || '');
+    } else {
+      formData.append('Grantor', primaryInstrument.parties?.assignor || '');
+      formData.append('Grantee', primaryInstrument.parties?.assignee || '');
+    }
+  }
+
+  // Submit to the backend
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+  fetch(form.action, {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest',,
+      'Accept': 'application/json',,
+      'X-CSRF-TOKEN': token
+    },
+    signal: controller.signal
+  })
+  .then(async (response) => {
+    clearTimeout(timeoutId);
+    
+    if (response.redirected) {
+      window.location.href = response.url;
+      return null;
+    }
+    
+    const contentType = response.headers.get('Content-Type') || '';
+    
+    if (!response.ok) {
+      if (contentType.includes('application/json')) {
+        const errData = await response.json().catch(() => ({}));
+        const messages = errData.errors ? Object.values(errData.errors).flat() : [errData.message || 'Request failed'];
+        throw new Error(messages.join('\n'));
+      } else {
+        const text = await response.text().catch(() => '');
+        throw new Error(text || ('HTTP ' + response.status));
+      }
+    }
+    
+    if (contentType.includes('application/json')) {
+      return response.json();
+    } else {
+      // Non-JSON success, reload to reflect changes
+      showToast('Property record saved successfully!', 'success');
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+      return null;
+    }
+  })
+  .then((data) => {
+    if (!data) return;
+    
+    if (data.status === 'success' || data.success === true) {
+      showToast('Property record saved successfully!', 'success');
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } else {
+      // Handle validation errors
+      let errorMessage = data.message || 'An error occurred';
+      if (data.errors) {
+        const errorList = Object.values(data.errors).flat();
+        errorMessage = errorList.join('\n');
+      }
+      showToast('Validation Error: ' + errorMessage, 'error');
+    }
+  })
+  .catch((error) => {
+    clearTimeout(timeoutId);
+    console.error('Error saving property record:', error);
+    showToast('Error: ' + (error.message || 'Failed to save property record'), 'error');
+  });
 }
 
 function resetState() {
@@ -1987,3 +2122,27 @@ function removeToast(toastId) {
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
