@@ -53,7 +53,8 @@ tailwind.config = {
             <div class="bg-white rounded-lg shadow-xl border border-gray-200">
                 <!-- Header -->
                 <div class="p-6 border-b border-gray-200">
-                    <div class="flex items-start justify-between">
+                    <div class="flex items-start gap-1">
+                        <!-- Main Header - Left Side -->
                         <div class="text-center flex-1">
                             <div class="space-y-1">
                                 <div class="font-bold text-lg">KANO STATE GEOGRAPHIC INFORMATION SYSTEMS (KANGIS)</div>
@@ -63,8 +64,8 @@ tailwind.config = {
                             </div>
                         </div>
                         
-                        <!-- File Numbers Display - Moved to the right -->
-                        <div class="ml-8">
+                        <!-- File Numbers Display - Right Side -->
+                        <div  s>
                             <!-- New KANGIS File Number (Auto-generated) -->
                             <div class="bg-blue-50 px-4 py-3 rounded-lg border border-blue-200">
                                 <div class="text-sm font-medium text-blue-700 uppercase tracking-wide text-center mb-1">New KANGIS File No</div>

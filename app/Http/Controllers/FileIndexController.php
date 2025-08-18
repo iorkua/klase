@@ -709,6 +709,95 @@ class FileIndexController extends Controller
     /**
      * Get file indexing list for other modules (AJAX)
      */
+    public function checkFileStatus(Request $request)
+    {
+        try {
+            $fileno = trim($request->get('fileno', ''));
+            if ($fileno === '') {
+                return response()->json(['success' => false, 'message' => 'Missing fileno'], 422);
+            }
+
+            // Find file_indexings by file_number
+            $fileIndex = FileIndexing::on('sqlsrv')
+                ->with(['scannings', 'pagetypings'])
+                ->where('file_number', $fileno)
+                ->first();
+
+            if (!$fileIndex) {
+                // Try to resolve fileno from mother_applications or subapplications
+                $mother = DB::connection('sqlsrv')->table('mother_applications')
+                    ->where('fileno', $fileno)
+                    ->orWhere('np_fileno', $fileno)
+                    ->first();
+
+                $sub = null;
+                if (!$mother) {
+                    $sub = DB::connection('sqlsrv')->table('subapplications')
+                        ->where('fileno', $fileno)
+                        ->first();
+                }
+
+                if ($mother) {
+                    $fileIndex = FileIndexing::on('sqlsrv')
+                        ->with(['scannings', 'pagetypings'])
+                        ->where('main_application_id', $mother->id)
+                        ->first();
+                } elseif ($sub) {
+                    $fileIndex = FileIndexing::on('sqlsrv')
+                        ->with(['scannings', 'pagetypings'])
+                        ->where('subapplication_id', $sub->id)
+                        ->first();
+                }
+            }
+
+            if (!$fileIndex) {
+                return response()->json([
+                    'success' => true,
+                    'exists' => false,
+                    'message' => 'No file indexing record found for the provided file number'
+                ]);
+            }
+
+            $typedCount = $fileIndex->pagetypings ? $fileIndex->pagetypings->count() : 0;
+            $scannedCount = $fileIndex->scannings ? $fileIndex->scannings->count() : 0;
+            $status = 'indexed';
+            if ($typedCount > 0) {
+                $status = 'typed';
+            } elseif ($scannedCount > 0) {
+                $status = 'scanned';
+            }
+
+            return response()->json([
+                'success' => true,
+                'exists' => true,
+                'status' => $status,
+                'file_indexing' => [
+                    'id' => $fileIndex->id,
+                    'file_number' => $fileIndex->file_number,
+                    'file_title' => $fileIndex->file_title,
+                    'plot_number' => $fileIndex->plot_number,
+                    'district' => $fileIndex->district,
+                    'lga' => $fileIndex->lga,
+                    'land_use_type' => $fileIndex->land_use_type,
+                    'has_cofo' => (bool) $fileIndex->has_cofo,
+                    'is_merged' => (bool) $fileIndex->is_merged,
+                    'has_transaction' => (bool) $fileIndex->has_transaction,
+                    'is_co_owned_plot' => (bool) $fileIndex->is_co_owned_plot,
+                    'scanning_count' => $scannedCount,
+                    'page_typing_count' => $typedCount,
+                ],
+            ]);
+        } catch (Exception $e) {
+            Log::error('Error checking file status', [
+                'error' => $e->getMessage(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error checking file status'
+            ], 500);
+        }
+    }
+
     public function getFileIndexingList(Request $request)
     {
         try {

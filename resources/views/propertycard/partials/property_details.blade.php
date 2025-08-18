@@ -354,7 +354,7 @@
                     }
                 }
             ],
-            order: [[5, 'desc']], // Order by Transaction Date column (index 5) in descending order
+            order: [[6, 'desc']], // Order by Date Captured column (index 6) in descending order
             pageLength: 25,
             responsive: true,
             language: {

@@ -158,6 +158,7 @@ Route::middleware(['auth'])->group(function () {
         // AJAX routes
         Route::get('/search/applications', [FileIndexController::class, 'searchApplications'])->name('fileindexing.search-applications');
         Route::get('/list/file-indexings', [FileIndexController::class, 'getFileIndexingList'])->name('fileindexing.list');
+        Route::get('/check/fileno', [FileIndexController::class, 'checkFileStatus'])->name('fileindexing.check-fileno');
     });
    
     Route::prefix('pagetyping')->group(function () {

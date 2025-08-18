@@ -304,7 +304,8 @@ tailwind.config = {
                                     <thead>
                                         <tr class="border-b bg-gray-50">
                                              <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">CofO Serial No</th>
-                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">Batch Info</th>  
+                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 80px;">Batch</th>
+                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 60px;">No</th>  
                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 140px;">New KANGIS FileNo</th>
                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 120px;">KANGIS FileNo</th>
                                             <th class="text-left p-2 font-medium text-gray-700 text-xs" style="min-width: 100px;">MLS FNo</th>
@@ -503,9 +504,10 @@ function loadCertificationData() {
 function showLoadingState(tableBodyId) {
     const tableBody = document.getElementById(tableBodyId);
     if (tableBody) {
+        const colspan = tableBodyId === 'generated-table-body' ? '15' : '12'; // Generated table has more columns
         tableBody.innerHTML = `
             <tr>
-                <td colspan="13" class="text-center py-8">
+                <td colspan="${colspan}" class="text-center py-8">
                     <div class="loading-spinner mx-auto mb-2"></div>
                     <p class="text-gray-600">Loading certification data...</p>
                 </td>
@@ -517,9 +519,10 @@ function showLoadingState(tableBodyId) {
 function showErrorState(tableBodyId) {
     const tableBody = document.getElementById(tableBodyId);
     if (tableBody) {
+        const colspan = tableBodyId === 'generated-table-body' ? '15' : '12'; // Generated table has more columns
         tableBody.innerHTML = `
             <tr>
-                <td colspan="13" class="text-center py-8">
+                <td colspan="${colspan}" class="text-center py-8">
                     <i data-lucide="alert-circle" class="h-8 w-8 text-red-500 mx-auto mb-2"></i>
                     <p class="text-red-600">Failed to load certification data</p>
                     <button onclick="loadCertificationData()" class="mt-2 text-blue-600 hover:text-blue-800">
@@ -653,9 +656,14 @@ function renderTable(tableBodyId, noResultsId, data, isGenerated) {
                     <td class="p-2" style="max-width: 120px;">
                         <div class="text-xs text-gray-900 truncate">${app.cofo_number || 'N/A'}</div>
                     </td>
-                    <td class="p-2" style="max-width: 120px;">
-                        <div class="text-xs font-medium ${app.batch_info ? 'text-blue-600' : 'text-gray-500'} truncate">
-                            ${app.batch_info || 'No Batch'}
+                    <td class="p-2" style="max-width: 80px;">
+                        <div class="text-xs font-medium ${app.batch_number ? 'text-blue-600' : 'text-gray-500'} truncate">
+                            ${app.batch_number || 'N/A'}
+                        </div>
+                    </td>
+                    <td class="p-2" style="max-width: 60px;">
+                        <div class="text-xs font-medium ${app.batch_position ? 'text-blue-600' : 'text-gray-500'} truncate">
+                            ${app.batch_position || 'N/A'}
                         </div>
                     </td>
                     <td class="p-2" style="max-width: 140px;">

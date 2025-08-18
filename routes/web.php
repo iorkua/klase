@@ -193,6 +193,33 @@ Route::group(
         Route::delete('logged/{id}/history', [UserController::class, 'loggedHistoryDestroy'])->name('logged.history.destroy');
     }
 );
+
+//-------------------------------User Activity Logs-------------------------------------------
+Route::group(
+    [
+        'middleware' => [
+            'auth',
+            'XSS',
+        ],
+    ],
+    function () {
+        Route::get('user-activity-logs', [App\Http\Controllers\UserActivityLogController::class, 'index'])->name('user-activity-logs.index');
+        Route::get('user-activity-logs/{id}', [App\Http\Controllers\UserActivityLogController::class, 'show'])->name('user-activity-logs.show');
+        Route::delete('user-activity-logs/{id}', [App\Http\Controllers\UserActivityLogController::class, 'destroy'])->name('user-activity-logs.destroy');
+        Route::get('user-activity-logs/stats/data', [App\Http\Controllers\UserActivityLogController::class, 'getStats'])->name('user-activity-logs.stats');
+        Route::get('user-activity-logs/online/users', [App\Http\Controllers\UserActivityLogController::class, 'getOnlineUsers'])->name('user-activity-logs.online-users');
+        Route::get('user-activity-logs/chart/data', [App\Http\Controllers\UserActivityLogController::class, 'getChartData'])->name('user-activity-logs.chart-data');
+        Route::get('user-activity-logs/export/csv', [App\Http\Controllers\UserActivityLogController::class, 'export'])->name('user-activity-logs.export');
+        Route::post('user-activity-logs/bulk-delete', [App\Http\Controllers\UserActivityLogController::class, 'bulkDelete'])->name('user-activity-logs.bulk-delete');
+        Route::post('user-activity-logs/clean-old', [App\Http\Controllers\UserActivityLogController::class, 'cleanOldLogs'])->name('user-activity-logs.clean-old');
+        Route::get('user-activity-logs/settings/get', [App\Http\Controllers\UserActivityLogController::class, 'getSettings'])->name('user-activity-logs.settings.get');
+        Route::post('user-activity-logs/settings/save', [App\Http\Controllers\UserActivityLogController::class, 'saveSettings'])->name('user-activity-logs.settings.save');
+        Route::get('user-activity-logs/settings/global', [App\Http\Controllers\UserActivityLogController::class, 'getGlobalSettings'])->name('user-activity-logs.settings.global');
+        Route::post('user-activity-logs/settings/global', [App\Http\Controllers\UserActivityLogController::class, 'saveGlobalSettings'])->name('user-activity-logs.settings.global.save');
+        Route::get('user-activity-logs/cleanup/status', [App\Http\Controllers\UserActivityLogController::class, 'getCleanupStatus'])->name('user-activity-logs.cleanup.status');
+        Route::post('user-activity-logs/cleanup/auto', [App\Http\Controllers\UserActivityLogController::class, 'runAutomaticCleanup'])->name('user-activity-logs.cleanup.auto');
+    }
+);
 //-------------------------------Document-------------------------------------------
 Route::group(
     [

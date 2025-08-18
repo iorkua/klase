@@ -1169,6 +1169,77 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Auto-fill when fileno selected or typed
+    document.addEventListener('ct-fileno-selected', async function(e) {
+        try {
+            const fileno = e.detail?.fileno || document.getElementById('fileno')?.value;
+            if (!fileno) return;
+            const res = await fetch(`{{ route('fileindexing.check-fileno') }}?fileno=${encodeURIComponent(fileno)}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.success && data.exists) {
+                // Fill fields
+                const setVal = (selector, val) => {
+                    const el = document.querySelector(selector);
+                    if (el && typeof val !== 'undefined' && val !== null) {
+                        el.value = val;
+                    }
+                };
+                setVal('#file-title', data.file_indexing.file_title || '');
+                setVal('input[placeholder*="PL-"]', data.file_indexing.plot_number || '');
+                const landUseSelect = document.getElementById('landUse');
+                if (landUseSelect && data.file_indexing.land_use_type) {
+                    landUseSelect.value = data.file_indexing.land_use_type;
+                }
+                const districtSelect = document.querySelector('select[name="district"]');
+                if (districtSelect && data.file_indexing.district) {
+                    districtSelect.value = data.file_indexing.district;
+                }
+                const lgaInput = document.querySelector('input[name="lga"]');
+                if (lgaInput && data.file_indexing.lga) {
+                    lgaInput.value = data.file_indexing.lga;
+                }
+                // Checkboxes
+                const setCheck = (id, val) => {
+                    const el = document.getElementById(id);
+                    if (el) { el.checked = !!val; el.disabled = true; }
+                };
+                setCheck('has-cofo', data.file_indexing.has_cofo);
+                setCheck('has-transaction', data.file_indexing.has_transaction);
+                setCheck('co-owned-plot', data.file_indexing.is_co_owned_plot);
+                setCheck('merged-plot', data.file_indexing.is_merged);
+
+                // Lock and grey-out only if page-typed
+                if (data.status === 'typed') {
+                    const lockReadOnly = (selector) => {
+                        const el = document.querySelector(selector);
+                        if (el) { el.readOnly = true; el.disabled = true; el.classList.add('bg-gray-100'); }
+                    };
+                    lockReadOnly('#file-title');
+                    lockReadOnly('input[placeholder*="PL-"]');
+                    const landUseSelect2 = document.getElementById('landUse');
+                    if (landUseSelect2) { landUseSelect2.disabled = true; landUseSelect2.classList.add('bg-gray-100'); }
+                    const districtSelect2 = document.querySelector('select[name="district"]');
+                    if (districtSelect2) { districtSelect2.disabled = true; districtSelect2.classList.add('bg-gray-100'); }
+                    const lgaInput2 = document.querySelector('input[name="lga"]');
+                    if (lgaInput2) { lgaInput2.readOnly = true; lgaInput2.classList.add('bg-gray-100'); }
+                }
+
+                // Notify user if already page typed
+                if (data.status === 'typed') {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'File Already Page Typed',
+                        text: 'This file has page typing records. Fields are auto-filled and locked.',
+                        confirmButtonColor: '#3085d6'
+                    });
+                }
+            }
+        } catch (err) {
+            console.warn('Auto-fill check failed', err);
+        }
+    });
+
     // Make functions available globally
     window.showNewFileDialog = showNewFileDialog;
     window.closeNewFileDialog = closeNewFileDialog;

@@ -98,35 +98,31 @@
                                     name="title"
                                     class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
                                 >
-                                   
-      
-    <option value="" disabled selected>Select title</option>
-    <option value="Mr.">Mr.</option>
-    <option value="Mrs.">Mrs.</option>
-    <option value="Chief">Chief</option>
-    <option value="Master">Master</option>
-    <option value="Capt">Capt</option>
-    <option value="Coln">Coln</option>
-    <option value="Pastor">Pastor</option>
-    <option value="King">King</option>
-    <option value="Prof">Prof</option>
-    <option value="Dr.">Dr.</option>
-    <option value="Alhaji">Alhaji</option>
-    <option value="Alhaja">Alhaja</option>
-    <option value="High Chief">High Chief</option>
-    <option value="Lady">Lady</option>
-    <option value="Bishop">Bishop</option>
-    <option value="Senator">Senator</option>
-    <option value="Messr">Messr</option>
-    <option value="Honorable">Honorable</option>
-    <option value="Miss">Miss</option>
-    <option value="Rev.">Rev.</option>
-    <option value="Barr.">Barr.</option>
-    <option value="Arc.">Arc.</option>
-    <option value="Sister">Sister</option>
-    <option value="Other">Other</option>
-</select>
-
+                                    <option value="" disabled selected>Select title</option>
+                                    <option value="Mr.">Mr.</option>
+                                    <option value="Mrs.">Mrs.</option>
+                                    <option value="Chief">Chief</option>
+                                    <option value="Master">Master</option>
+                                    <option value="Capt">Capt</option>
+                                    <option value="Coln">Coln</option>
+                                    <option value="Pastor">Pastor</option>
+                                    <option value="King">King</option>
+                                    <option value="Prof">Prof</option>
+                                    <option value="Dr.">Dr.</option>
+                                    <option value="Alhaji">Alhaji</option>
+                                    <option value="Alhaja">Alhaja</option>
+                                    <option value="High Chief">High Chief</option>
+                                    <option value="Lady">Lady</option>
+                                    <option value="Bishop">Bishop</option>
+                                    <option value="Senator">Senator</option>
+                                    <option value="Messr">Messr</option>
+                                    <option value="Honorable">Honorable</option>
+                                    <option value="Miss">Miss</option>
+                                    <option value="Rev.">Rev.</option>
+                                    <option value="Barr.">Barr.</option>
+                                    <option value="Arc.">Arc.</option>
+                                    <option value="Sister">Sister</option>
+                                    <option value="Other">Other</option>
                                 </select>
                             </div>
                             
@@ -274,48 +270,67 @@
                         </div>
                     </div>
 
-                    <!-- Corporate Fields -->
+                    <!-- Corporate Fields (Used for both Corporate and Government Body) -->
                     <div id="corporate-fields" class="space-y-4 hidden">
+                        <div class="bg-purple-50 p-4 rounded-lg mb-4">
+                            <h4 class="font-semibold text-purple-900 mb-2" id="corporate-header">Corporate Details</h4>
+                            <p class="text-sm text-purple-800" id="corporate-description">Please provide the following corporate information:</p>
+                        </div>
+                        
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="form-field col-span-1 md:col-span-2">
                                 <label for="organisationName" class="block text-sm font-medium text-gray-700 mb-1">
-                                    Organisation Name <span class="text-red-500">*</span>
+                                    Organization Name <span class="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
                                     id="organisationName"
                                     name="organisationName"
                                     class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 uppercase"
-                                    placeholder="ORGANISATION NAME"
+                                    placeholder="ORGANIZATION NAME"
                                 />
-                                <div class="error-message">Organisation name is required</div>
+                                <div class="error-message">Organization name is required</div>
                             </div>
+                            
                             <div class="form-field">
-                                <label for="companyRcNumber" class="block text-sm font-medium text-gray-700 mb-1">
-                                    Company RC Number <span class="text-red-500">*</span>
+                                <label for="cacRegistrationStatus" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Registration Status with CAC <span class="text-red-500">*</span>
                                 </label>
-                                <input
-                                    type="text"
-                                    id="companyRcNumber"
-                                    name="companyRcNumber"
+                                <select
+                                    id="cacRegistrationStatus"
+                                    name="cacRegistrationStatus"
                                     class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
-                                    placeholder="RC NUMBER"
-                                />
-                                <div class="error-message">Company RC number is required</div>
+                                >
+                                    <option value="" disabled selected>Select Registration Status</option>
+                                    <option value="Registered">Registered</option>
+                                    <option value="Pending">Pending</option>
+                                    <option value="Not Registered">Not Registered</option>
+                                </select>
+                                <div class="error-message">Registration status is required</div>
                             </div>
+                            
                             <div class="form-field">
                                 <label for="typeOfOrganisation" class="block text-sm font-medium text-gray-700 mb-1">
-                                    Type of Organisation <span class="text-red-500">*</span>
+                                    Type of Organization <span class="text-red-500">*</span>
                                 </label>
-                                <input
-                                    type="text"
+                                <select
                                     id="typeOfOrganisation"
                                     name="typeOfOrganisation"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 uppercase"
-                                    placeholder="E.G. PRIVATE LTD, NGO"
-                                />
-                                <div class="error-message">Type of organisation is required</div>
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
+                                >
+                                    <option value="" disabled selected>Select Organization Type</option>
+                                    <option value="Limited Liability Company">Limited Liability Company</option>
+                                    <option value="Partnership">Partnership</option>
+                                    <option value="PLC">PLC</option>
+                                    <option value="NGO">NGO</option>
+                                    <option value="Diplomatic Mission">Diplomatic Mission</option>
+                                    <option value="Government Institution">Government Institution</option>
+                                    <option value="Cooperative Society">Cooperative Society</option>
+                                    <option value="Registered Enterprise Business">Registered Enterprise Business</option>
+                                </select>
+                                <div class="error-message">Type of organization is required</div>
                             </div>
+                            
                             <div class="form-field">
                                 <label for="typeOfBusiness" class="block text-sm font-medium text-gray-700 mb-1">
                                     Type of Business <span class="text-red-500">*</span>
@@ -325,9 +340,55 @@
                                     id="typeOfBusiness"
                                     name="typeOfBusiness"
                                     class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 uppercase"
-                                    placeholder="E.G. CONSTRUCTION, TRADING"
+                                    placeholder="E.G. CONSTRUCTION, TRADING, MANUFACTURING"
                                 />
                                 <div class="error-message">Type of business is required</div>
+                            </div>
+                            
+                            <div class="form-field">
+                                <label for="cacRegistrationNumber" class="block text-sm font-medium text-gray-700 mb-1">
+                                    CAC Registration Number <span class="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    id="cacRegistrationNumber"
+                                    name="cacRegistrationNumber"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
+                                    placeholder="CAC REGISTRATION NUMBER"
+                                />
+                                <div class="error-message">CAC registration number is required</div>
+                            </div>
+                            
+                            <div class="form-field">
+                                <label for="businessSize" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Size of Business <span class="text-red-500">*</span>
+                                </label>
+                                <select
+                                    id="businessSize"
+                                    name="businessSize"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
+                                >
+                                    <option value="" disabled selected>Select Business Size</option>
+                                    <option value="Small Scale">Small Scale</option>
+                                    <option value="Medium Scale">Medium Scale</option>
+                                    <option value="Large Scale">Large Scale</option>
+                                    <option value="Not in Operation">Not in Operation</option>
+                                </select>
+                                <div class="error-message">Business size is required</div>
+                            </div>
+                            
+                            <div class="form-field">
+                                <label for="taxIdentificationNumber" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Tax Identification Number (TIN) <span class="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    id="taxIdentificationNumber"
+                                    name="taxIdentificationNumber"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
+                                    placeholder="TAX IDENTIFICATION NUMBER"
+                                />
+                                <div class="error-message">Tax identification number is required</div>
                             </div>
                         </div>
                     </div>
@@ -395,13 +456,32 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Step 1 - Setting up applicant type handler');
     
     const applicantTypeSelect = document.getElementById('applicantType');
+    const individualFields = document.getElementById('individual-fields');
+    const corporateFields = document.getElementById('corporate-fields');
+    const multipleOwnersFields = document.getElementById('multiple-owners-fields');
     const individualPhotoSection = document.getElementById('individual-photo-section');
     const multipleOwnersSidebar = document.getElementById('multiple-owners-sidebar');
+    const corporateHeader = document.getElementById('corporate-header');
+    const corporateDescription = document.getElementById('corporate-description');
     
-    function updateFileUploadSections(applicantType) {
-        console.log('Updating file upload sections for:', applicantType);
+    function updateFormSections(applicantType) {
+        console.log('Updating form sections for:', applicantType);
         
-        // Hide all sections first using inline styles to override any CSS conflicts
+        // Hide all form sections first
+        if (individualFields) {
+            individualFields.classList.add('hidden');
+            console.log('Hidden individual fields');
+        }
+        if (corporateFields) {
+            corporateFields.classList.add('hidden');
+            console.log('Hidden corporate fields');
+        }
+        if (multipleOwnersFields) {
+            multipleOwnersFields.classList.add('hidden');
+            console.log('Hidden multiple owners fields');
+        }
+        
+        // Hide all file upload sections first using inline styles to override any CSS conflicts
         if (individualPhotoSection) {
             individualPhotoSection.style.display = 'none';
             console.log('Hidden individual photo section');
@@ -411,9 +491,13 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Hidden multiple owners sidebar');
         }
         
-        // Show appropriate section based on applicant type
+        // Show appropriate sections based on applicant type
         switch(applicantType) {
             case 'Individual':
+                if (individualFields) {
+                    individualFields.classList.remove('hidden');
+                    console.log('Showed individual fields');
+                }
                 if (individualPhotoSection) {
                     individualPhotoSection.style.display = 'block';
                     console.log('Showed individual photo section');
@@ -421,12 +505,40 @@ document.addEventListener('DOMContentLoaded', function() {
                 break;
                 
             case 'Corporate':
+                if (corporateFields) {
+                    corporateFields.classList.remove('hidden');
+                    console.log('Showed corporate fields');
+                }
+                // Update header for Corporate
+                if (corporateHeader) {
+                    corporateHeader.textContent = 'Corporate Details';
+                }
+                if (corporateDescription) {
+                    corporateDescription.textContent = 'Please provide the following corporate information:';
+                }
+                console.log('Corporate type selected - no document upload section');
+                break;
+                
             case 'Government Body':
-                // No document upload section for corporate/government anymore
-                console.log('Corporate/Government type selected - no document upload section');
+                if (corporateFields) {
+                    corporateFields.classList.remove('hidden');
+                    console.log('Showed corporate fields for Government Body');
+                }
+                // Update header for Government Body
+                if (corporateHeader) {
+                    corporateHeader.textContent = 'Government Body Details';
+                }
+                if (corporateDescription) {
+                    corporateDescription.textContent = 'Please provide the following government body information:';
+                }
+                console.log('Government Body type selected - no document upload section');
                 break;
                 
             case 'Multiple Owners':
+                if (multipleOwnersFields) {
+                    multipleOwnersFields.classList.remove('hidden');
+                    console.log('Showed multiple owners fields');
+                }
                 if (multipleOwnersSidebar) {
                     multipleOwnersSidebar.style.display = 'block';
                     console.log('Showed multiple owners sidebar');
@@ -437,12 +549,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (applicantTypeSelect) {
         // Set initial state
-        updateFileUploadSections(applicantTypeSelect.value);
+        updateFormSections(applicantTypeSelect.value);
         
         // Add change listener
         applicantTypeSelect.addEventListener('change', function() {
             console.log('Applicant type changed to:', this.value);
-            updateFileUploadSections(this.value);
+            updateFormSections(this.value);
         });
         
         console.log('Applicant type handler setup complete');

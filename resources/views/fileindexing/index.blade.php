@@ -3,7 +3,7 @@
     {{ __('File Indexing') }}
 @endsection
  
-
+ 
 @section('content')
   @include('fileindexing.css.style')
     <!-- Main Content -->
@@ -326,7 +326,7 @@
           
           <div class="form-group">
             <label for="file-title" class="form-label required">File Title</label>
-            <input type="text" id="file-title" class="input" placeholder="e.g. John Doe's Property">
+            <input type="text" id="file-title" class="input" placeholder="e.g. John Doe's Application">
           </div>
         </div>
         

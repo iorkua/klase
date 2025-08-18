@@ -36,9 +36,9 @@
 
   <!-- Hidden inputs for form submission -->
   <input type="hidden" name="activeFileTab" :value="tab">
-  <input type="hidden" name="mlsFNo" :value="mlsPreview()">
-  <input type="hidden" name="kangisFileNo" :value="kangisPreview()">
-  <input type="hidden" name="NewKANGISFileno" :value="newkangisPreview()">
+  <input type="hidden" name="mlsFNo" :value="mlsPreview()" @change="$dispatch('ct-fileno-selected', { fileno: mlsPreview() })">
+  <input type="hidden" name="kangisFileNo" :value="kangisPreview()" @change="$dispatch('ct-fileno-selected', { fileno: kangisPreview() })">
+  <input type="hidden" name="NewKANGISFileno" :value="newkangisPreview()" @change="$dispatch('ct-fileno-selected', { fileno: newkangisPreview() })">
 
   <!-- Tab Navigation -->
   <div class="flex space-x-1 mb-4 bg-gray-100 p-1 rounded-lg">
@@ -86,7 +86,7 @@
     <div class="grid grid-cols-3 gap-4 mb-4">
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">File Prefix</label>
-        <select x-model="mlsPrefix" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        <select x-model="mlsPrefix" @change="$dispatch('ct-fileno-selected', { fileno: mlsPreview() })" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
           <option value="">Select prefix</option>
           <option>COM</option>
           <option>RES</option>
@@ -98,11 +98,11 @@
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Year</label>
-        <input type="text" x-model="mlsYear" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="2024">
+        <input type="text" x-model="mlsYear" @blur="$dispatch('ct-fileno-selected', { fileno: mlsPreview() })" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="2024">
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Serial No</label>
-        <input type="text" x-model="mlsSerial" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="572">
+        <input type="text" x-model="mlsSerial" @blur="$dispatch('ct-fileno-selected', { fileno: mlsPreview() })" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="572">
       </div>
     </div>
 
@@ -119,7 +119,7 @@
     <div class="grid grid-cols-3 gap-4">
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">File Prefix</label>
-        <select x-model="kangisPrefix" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        <select x-model="kangisPrefix" @change="$dispatch('ct-fileno-selected', { fileno: kangisPreview() })" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
           <option value="">Select Prefix</option>
           <option>KNML</option>
           <option>MNKL</option>
@@ -129,7 +129,7 @@
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Serial Number</label>
-        <input type="text" x-model="kangisNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. 0001 or 2500">
+        <input type="text" x-model="kangisNumber" @blur="$dispatch('ct-fileno-selected', { fileno: kangisPreview() })" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. 0001 or 2500">
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Full FileNo</label>
@@ -144,14 +144,14 @@
     <div class="grid grid-cols-3 gap-4">
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">File Prefix</label>
-        <select x-model="newkangisPrefix" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        <select x-model="newkangisPrefix" @change="$dispatch('ct-fileno-selected', { fileno: newkangisPreview() })" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
           <option value="">Select Prefix</option>
           <option>KN</option>
         </select>
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Serial Number</label>
-        <input type="text" x-model="newkangisNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. 1586">
+        <input type="text" x-model="newkangisNumber" @blur="$dispatch('ct-fileno-selected', { fileno: newkangisPreview() })" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. 1586">
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Full FileNo</label>

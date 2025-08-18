@@ -8,203 +8,274 @@
             </h3>
         </div>
         <div class="p-4 space-y-6">
+            <!-- Title Document Status Section -->
             <div class="bg-blue-50 p-4 rounded-lg">
-                <h4 class="font-semibold text-blue-900 mb-2">Required Documents</h4>
-                <p class="text-sm text-blue-800">Please upload the following documents as applicable to your application. All documents should be clear, legible, and in PDF, JPG, or PNG format (Max: 5MB each).</p>
+                <h4 class="font-semibold text-blue-900 mb-3">Title Document Status (Submitted)</h4>
+                <p class="text-sm text-blue-800 mb-4">Please check all title documents that have been submitted:</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <label class="flex items-center space-x-3 p-2 rounded hover:bg-blue-100 cursor-pointer">
+                        <input type="checkbox" name="title_documents[]" value="right_of_occupancy" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">(a) Right of Occupancy</span>
+                    </label>
+                    
+                    <label class="flex items-center space-x-3 p-2 rounded hover:bg-blue-100 cursor-pointer">
+                        <input type="checkbox" name="title_documents[]" value="certificate_of_occupancy" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">(b) Certificate of Occupancy</span>
+                    </label>
+                    
+                    <label class="flex items-center space-x-3 p-2 rounded hover:bg-blue-100 cursor-pointer">
+                        <input type="checkbox" name="title_documents[]" value="deed_of_assignment" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">(c) Deed of Assignment</span>
+                    </label>
+                    
+                    <label class="flex items-center space-x-3 p-2 rounded hover:bg-blue-100 cursor-pointer">
+                        <input type="checkbox" name="title_documents[]" value="deed_of_sublease" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">(d) Deed of Sublease</span>
+                    </label>
+                    
+                    <label class="flex items-center space-x-3 p-2 rounded hover:bg-blue-100 cursor-pointer">
+                        <input type="checkbox" name="title_documents[]" value="deed_of_mortgage" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">(e) Deed of Mortgage</span>
+                    </label>
+                    
+                    <label class="flex items-center space-x-3 p-2 rounded hover:bg-blue-100 cursor-pointer">
+                        <input type="checkbox" name="title_documents[]" value="deed_of_gift" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">(f) Deed of Gift</span>
+                    </label>
+                    
+                    <label class="flex items-center space-x-3 p-2 rounded hover:bg-blue-100 cursor-pointer">
+                        <input type="checkbox" name="title_documents[]" value="power_of_attorney" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">(g) Power of Attorney</span>
+                    </label>
+                    
+                    <label class="flex items-center space-x-3 p-2 rounded hover:bg-blue-100 cursor-pointer">
+                        <input type="checkbox" name="title_documents[]" value="devolution_order" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">(h) Devolution Order</span>
+                    </label>
+                    
+                    <label class="flex items-center space-x-3 p-2 rounded hover:bg-blue-100 cursor-pointer">
+                        <input type="checkbox" name="title_documents[]" value="letter_of_administration" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">(i) Letter of Administration</span>
+                    </label>
+                    
+                    <label class="flex items-center space-x-3 p-2 rounded hover:bg-blue-100 cursor-pointer">
+                        <input type="checkbox" name="title_documents[]" value="others" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">(j) Others......</span>
+                    </label>
+                </div>
+                
+                <!-- Description field for other documents -->
+                <div class="mt-4">
+                    <label for="otherDocumentsDescription" class="block text-sm font-medium text-gray-700 mb-1">
+                        Description (if Others selected)
+                    </label>
+                    <input
+                        type="text"
+                        id="otherDocumentsDescription"
+                        name="otherDocumentsDescription"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
+                        placeholder="Describe the document type"
+                    />
+                </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Right of Occupancy -->
-                <div class="document-upload-section">
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
-                        <input type="file" id="rightOfOccupancy" name="rightOfOccupancy" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
-                        <i data-lucide="file-text" class="h-8 w-8 mx-auto mb-2 text-gray-400"></i>
-                        <div class="text-sm font-semibold mb-2">(a) Right of Occupancy</div>
-                        <button type="button" class="upload-btn inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-blue-600 text-white hover:bg-blue-700" data-target="rightOfOccupancy">
-                            <i data-lucide="upload" class="h-4 w-4 mr-1"></i>
-                            Choose File
-                        </button>
-                        <div class="file-info mt-2 text-sm text-gray-600 hidden">
-                            <div class="file-name font-medium text-xs"></div>
-                            <div class="file-size text-xs text-gray-500"></div>
-                        </div>
-                        <div class="text-xs text-gray-500 mt-2">PDF, JPG, PNG (Max: 5MB)</div>
-                    </div>
+            <!-- Individual Document Uploads -->
+            <div id="individual-documents" class="space-y-4">
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-green-900 mb-2">Document Uploads for Individual</h4>
+                    <p class="text-sm text-green-800">Please upload the following documents. All documents should be clear, legible, and in PDF, JPG, or PNG format (Max: 5MB each).</p>
                 </div>
 
-                <!-- Certificate of Occupancy -->
-                <div class="document-upload-section">
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
-                        <input type="file" id="certificateOfOccupancy" name="certificateOfOccupancy" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
-                        <i data-lucide="file-text" class="h-8 w-8 mx-auto mb-2 text-gray-400"></i>
-                        <div class="text-sm font-semibold mb-2">(b) Certificate of Occupancy</div>
-                        <button type="button" class="upload-btn inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-blue-600 text-white hover:bg-blue-700" data-target="certificateOfOccupancy">
-                            <i data-lucide="upload" class="h-4 w-4 mr-1"></i>
-                            Choose File
-                        </button>
-                        <div class="file-info mt-2 text-sm text-gray-600 hidden">
-                            <div class="file-name font-medium text-xs"></div>
-                            <div class="file-size text-xs text-gray-500"></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Original Certificate -->
+                    <div class="document-upload-section">
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-green-400 transition-colors">
+                            <input type="file" id="originalCertificate" name="originalCertificate" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
+                            <i data-lucide="file-text" class="h-8 w-8 mx-auto mb-2 text-gray-400"></i>
+                            <div class="text-sm font-semibold mb-2">Original Certificate (if available)</div>
+                            <button type="button" class="upload-btn inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-green-600 text-white hover:bg-green-700" data-target="originalCertificate">
+                                <i data-lucide="upload" class="h-4 w-4 mr-1"></i>
+                                Choose File
+                            </button>
+                            <div class="file-info mt-2 text-sm text-gray-600 hidden">
+                                <div class="file-name font-medium text-xs"></div>
+                                <div class="file-size text-xs text-gray-500"></div>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2">PDF, JPG, PNG (Max: 5MB)</div>
                         </div>
-                        <div class="text-xs text-gray-500 mt-2">PDF, JPG, PNG (Max: 5MB)</div>
+                    </div>
+
+                    <!-- Police Report -->
+                    <div class="document-upload-section">
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-green-400 transition-colors">
+                            <input type="file" id="policeReport" name="policeReport" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
+                            <i data-lucide="file-text" class="h-8 w-8 mx-auto mb-2 text-gray-400"></i>
+                            <div class="text-sm font-semibold mb-2">Police Report (for lost certificates)</div>
+                            <button type="button" class="upload-btn inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-green-600 text-white hover:bg-green-700" data-target="policeReport">
+                                <i data-lucide="upload" class="h-4 w-4 mr-1"></i>
+                                Choose File
+                            </button>
+                            <div class="file-info mt-2 text-sm text-gray-600 hidden">
+                                <div class="file-name font-medium text-xs"></div>
+                                <div class="file-size text-xs text-gray-500"></div>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2">PDF, JPG, PNG (Max: 5MB)</div>
+                        </div>
+                    </div>
+
+                    <!-- Sworn Affidavit -->
+                    <div class="document-upload-section">
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-green-400 transition-colors">
+                            <input type="file" id="swornAffidavit" name="swornAffidavit" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
+                            <i data-lucide="file-text" class="h-8 w-8 mx-auto mb-2 text-gray-400"></i>
+                            <div class="text-sm font-semibold mb-2">Sworn Affidavit</div>
+                            <button type="button" class="upload-btn inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-green-600 text-white hover:bg-green-700" data-target="swornAffidavit">
+                                <i data-lucide="upload" class="h-4 w-4 mr-1"></i>
+                                Choose File
+                            </button>
+                            <div class="file-info mt-2 text-sm text-gray-600 hidden">
+                                <div class="file-name font-medium text-xs"></div>
+                                <div class="file-size text-xs text-gray-500"></div>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2">PDF, JPG, PNG (Max: 5MB)</div>
+                        </div>
+                    </div>
+
+                    <!-- Valid Identification -->
+                    <div class="document-upload-section">
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-green-400 transition-colors">
+                            <input type="file" id="validIdentification" name="validIdentification" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
+                            <i data-lucide="file-text" class="h-8 w-8 mx-auto mb-2 text-gray-400"></i>
+                            <div class="text-sm font-semibold mb-2">Valid Identification (NIN, Driver's License, etc.)</div>
+                            <button type="button" class="upload-btn inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-green-600 text-white hover:bg-green-700" data-target="validIdentification">
+                                <i data-lucide="upload" class="h-4 w-4 mr-1"></i>
+                                Choose File
+                            </button>
+                            <div class="file-info mt-2 text-sm text-gray-600 hidden">
+                                <div class="file-name font-medium text-xs"></div>
+                                <div class="file-size text-xs text-gray-500"></div>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2">PDF, JPG, PNG (Max: 5MB)</div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Passport Photographs -->
+                    <div class="document-upload-section">
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-green-400 transition-colors">
+                            <input type="file" id="recentPassportPhotos" name="recentPassportPhotos" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
+                            <i data-lucide="file-text" class="h-8 w-8 mx-auto mb-2 text-gray-400"></i>
+                            <div class="text-sm font-semibold mb-2">Recent Passport Photographs</div>
+                            <button type="button" class="upload-btn inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-green-600 text-white hover:bg-green-700" data-target="recentPassportPhotos">
+                                <i data-lucide="upload" class="h-4 w-4 mr-1"></i>
+                                Choose File
+                            </button>
+                            <div class="file-info mt-2 text-sm text-gray-600 hidden">
+                                <div class="file-name font-medium text-xs"></div>
+                                <div class="file-size text-xs text-gray-500"></div>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2">PDF, JPG, PNG (Max: 5MB)</div>
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Deed of Assignment -->
-                <div class="document-upload-section">
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
-                        <input type="file" id="deedOfAssignment" name="deedOfAssignment" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
-                        <i data-lucide="file-text" class="h-8 w-8 mx-auto mb-2 text-gray-400"></i>
-                        <div class="text-sm font-semibold mb-2">(c) Deed of Assignment</div>
-                        <button type="button" class="upload-btn inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-blue-600 text-white hover:bg-blue-700" data-target="deedOfAssignment">
-                            <i data-lucide="upload" class="h-4 w-4 mr-1"></i>
-                            Choose File
-                        </button>
-                        <div class="file-info mt-2 text-sm text-gray-600 hidden">
-                            <div class="file-name font-medium text-xs"></div>
-                            <div class="file-size text-xs text-gray-500"></div>
-                        </div>
-                        <div class="text-xs text-gray-500 mt-2">PDF, JPG, PNG (Max: 5MB)</div>
-                    </div>
+            <!-- Corporate/Government Document Uploads -->
+            <div id="corporate-documents" class="space-y-4 hidden">
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-purple-900 mb-2">🧾 Supporting Documents Required</h4>
+                    <p class="text-sm text-purple-800 mb-3">To validate the information in this section, applicants must attach:</p>
                 </div>
 
-                <!-- Deed of Sublease -->
-                <div class="document-upload-section">
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
-                        <input type="file" id="deedOfSublease" name="deedOfSublease" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
-                        <i data-lucide="file-text" class="h-8 w-8 mx-auto mb-2 text-gray-400"></i>
-                        <div class="text-sm font-semibold mb-2">(d) Deed of Sublease</div>
-                        <button type="button" class="upload-btn inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-blue-600 text-white hover:bg-blue-700" data-target="deedOfSublease">
-                            <i data-lucide="upload" class="h-4 w-4 mr-1"></i>
-                            Choose File
-                        </button>
-                        <div class="file-info mt-2 text-sm text-gray-600 hidden">
-                            <div class="file-name font-medium text-xs"></div>
-                            <div class="file-size text-xs text-gray-500"></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Certificate of Incorporation -->
+                    <div class="document-upload-section">
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors">
+                            <input type="file" id="certificateOfIncorporation" name="certificateOfIncorporation" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
+                            <i data-lucide="file-text" class="h-8 w-8 mx-auto mb-2 text-gray-400"></i>
+                            <div class="text-sm font-semibold mb-2">Certificate of Incorporation</div>
+                            <button type="button" class="upload-btn inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-purple-600 text-white hover:bg-purple-700" data-target="certificateOfIncorporation">
+                                <i data-lucide="upload" class="h-4 w-4 mr-1"></i>
+                                Choose File
+                            </button>
+                            <div class="file-info mt-2 text-sm text-gray-600 hidden">
+                                <div class="file-name font-medium text-xs"></div>
+                                <div class="file-size text-xs text-gray-500"></div>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2">PDF, JPG, PNG (Max: 5MB)</div>
                         </div>
-                        <div class="text-xs text-gray-500 mt-2">PDF, JPG, PNG (Max: 5MB)</div>
                     </div>
-                </div>
 
-                <!-- Deed of Mortgage -->
-                <div class="document-upload-section">
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
-                        <input type="file" id="deedOfMortgage" name="deedOfMortgage" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
-                        <i data-lucide="file-text" class="h-8 w-8 mx-auto mb-2 text-gray-400"></i>
-                        <div class="text-sm font-semibold mb-2">(e) Deed of Mortgage</div>
-                        <button type="button" class="upload-btn inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-blue-600 text-white hover:bg-blue-700" data-target="deedOfMortgage">
-                            <i data-lucide="upload" class="h-4 w-4 mr-1"></i>
-                            Choose File
-                        </button>
-                        <div class="file-info mt-2 text-sm text-gray-600 hidden">
-                            <div class="file-name font-medium text-xs"></div>
-                            <div class="file-size text-xs text-gray-500"></div>
+                    <!-- CAC Registration Documents -->
+                    <div class="document-upload-section">
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors">
+                            <input type="file" id="cacRegistrationDocs" name="cacRegistrationDocs" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
+                            <i data-lucide="file-text" class="h-8 w-8 mx-auto mb-2 text-gray-400"></i>
+                            <div class="text-sm font-semibold mb-2">CAC Registration Documents</div>
+                            <button type="button" class="upload-btn inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-purple-600 text-white hover:bg-purple-700" data-target="cacRegistrationDocs">
+                                <i data-lucide="upload" class="h-4 w-4 mr-1"></i>
+                                Choose File
+                            </button>
+                            <div class="file-info mt-2 text-sm text-gray-600 hidden">
+                                <div class="file-name font-medium text-xs"></div>
+                                <div class="file-size text-xs text-gray-500"></div>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2">PDF, JPG, PNG (Max: 5MB)</div>
                         </div>
-                        <div class="text-xs text-gray-500 mt-2">PDF, JPG, PNG (Max: 5MB)</div>
                     </div>
-                </div>
 
-                <!-- Deed of Gift -->
-                <div class="document-upload-section">
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
-                        <input type="file" id="deedOfGift" name="deedOfGift" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
-                        <i data-lucide="file-text" class="h-8 w-8 mx-auto mb-2 text-gray-400"></i>
-                        <div class="text-sm font-semibold mb-2">(f) Deed of Gift</div>
-                        <button type="button" class="upload-btn inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-blue-600 text-white hover:bg-blue-700" data-target="deedOfGift">
-                            <i data-lucide="upload" class="h-4 w-4 mr-1"></i>
-                            Choose File
-                        </button>
-                        <div class="file-info mt-2 text-sm text-gray-600 hidden">
-                            <div class="file-name font-medium text-xs"></div>
-                            <div class="file-size text-xs text-gray-500"></div>
+                    <!-- Memorandum and Articles of Association -->
+                    <div class="document-upload-section">
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors">
+                            <input type="file" id="memorandumArticles" name="memorandumArticles" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
+                            <i data-lucide="file-text" class="h-8 w-8 mx-auto mb-2 text-gray-400"></i>
+                            <div class="text-sm font-semibold mb-2">Memorandum and Articles of Association</div>
+                            <button type="button" class="upload-btn inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-purple-600 text-white hover:bg-purple-700" data-target="memorandumArticles">
+                                <i data-lucide="upload" class="h-4 w-4 mr-1"></i>
+                                Choose File
+                            </button>
+                            <div class="file-info mt-2 text-sm text-gray-600 hidden">
+                                <div class="file-name font-medium text-xs"></div>
+                                <div class="file-size text-xs text-gray-500"></div>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2">PDF, JPG, PNG (Max: 5MB)</div>
                         </div>
-                        <div class="text-xs text-gray-500 mt-2">PDF, JPG, PNG (Max: 5MB)</div>
                     </div>
-                </div>
 
-                <!-- Power of Attorney -->
-                <div class="document-upload-section">
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
-                        <input type="file" id="powerOfAttorney" name="powerOfAttorney" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
-                        <i data-lucide="file-text" class="h-8 w-8 mx-auto mb-2 text-gray-400"></i>
-                        <div class="text-sm font-semibold mb-2">(g) Power of Attorney</div>
-                        <button type="button" class="upload-btn inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-blue-600 text-white hover:bg-blue-700" data-target="powerOfAttorney">
-                            <i data-lucide="upload" class="h-4 w-4 mr-1"></i>
-                            Choose File
-                        </button>
-                        <div class="file-info mt-2 text-sm text-gray-600 hidden">
-                            <div class="file-name font-medium text-xs"></div>
-                            <div class="file-size text-xs text-gray-500"></div>
+                    <!-- Particulars of Directors -->
+                    <div class="document-upload-section">
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors">
+                            <input type="file" id="particularsOfDirectors" name="particularsOfDirectors" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
+                            <i data-lucide="file-text" class="h-8 w-8 mx-auto mb-2 text-gray-400"></i>
+                            <div class="text-sm font-semibold mb-2">Particulars of Directors</div>
+                            <button type="button" class="upload-btn inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-purple-600 text-white hover:bg-purple-700" data-target="particularsOfDirectors">
+                                <i data-lucide="upload" class="h-4 w-4 mr-1"></i>
+                                Choose File
+                            </button>
+                            <div class="file-info mt-2 text-sm text-gray-600 hidden">
+                                <div class="file-name font-medium text-xs"></div>
+                                <div class="file-size text-xs text-gray-500"></div>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2">PDF, JPG, PNG (Max: 5MB)</div>
                         </div>
-                        <div class="text-xs text-gray-500 mt-2">PDF, JPG, PNG (Max: 5MB)</div>
                     </div>
-                </div>
 
-                <!-- Devolution Order -->
-                <div class="document-upload-section">
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
-                        <input type="file" id="devolutionOrder" name="devolutionOrder" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
-                        <i data-lucide="file-text" class="h-8 w-8 mx-auto mb-2 text-gray-400"></i>
-                        <div class="text-sm font-semibold mb-2">(h) Devolution Order</div>
-                        <button type="button" class="upload-btn inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-blue-600 text-white hover:bg-blue-700" data-target="devolutionOrder">
-                            <i data-lucide="upload" class="h-4 w-4 mr-1"></i>
-                            Choose File
-                        </button>
-                        <div class="file-info mt-2 text-sm text-gray-600 hidden">
-                            <div class="file-name font-medium text-xs"></div>
-                            <div class="file-size text-xs text-gray-500"></div>
+                    <!-- Registered Deed of Mortgage -->
+                    <div class="document-upload-section">
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors">
+                            <input type="file" id="registeredDeedOfMortgage" name="registeredDeedOfMortgage" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
+                            <i data-lucide="file-text" class="h-8 w-8 mx-auto mb-2 text-gray-400"></i>
+                            <div class="text-sm font-semibold mb-2">Registered Deed of Mortgage (if applicable)</div>
+                            <button type="button" class="upload-btn inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-purple-600 text-white hover:bg-purple-700" data-target="registeredDeedOfMortgage">
+                                <i data-lucide="upload" class="h-4 w-4 mr-1"></i>
+                                Choose File
+                            </button>
+                            <div class="file-info mt-2 text-sm text-gray-600 hidden">
+                                <div class="file-name font-medium text-xs"></div>
+                                <div class="file-size text-xs text-gray-500"></div>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2">PDF, JPG, PNG (Max: 5MB)</div>
                         </div>
-                        <div class="text-xs text-gray-500 mt-2">PDF, JPG, PNG (Max: 5MB)</div>
-                    </div>
-                </div>
-
-                <!-- Letter of Administration -->
-                <div class="document-upload-section">
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
-                        <input type="file" id="letterOfAdministration" name="letterOfAdministration" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
-                        <i data-lucide="file-text" class="h-8 w-8 mx-auto mb-2 text-gray-400"></i>
-                        <div class="text-sm font-semibold mb-2">(i) Letter of Administration</div>
-                        <button type="button" class="upload-btn inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-blue-600 text-white hover:bg-blue-700" data-target="letterOfAdministration">
-                            <i data-lucide="upload" class="h-4 w-4 mr-1"></i>
-                            Choose File
-                        </button>
-                        <div class="file-info mt-2 text-sm text-gray-600 hidden">
-                            <div class="file-name font-medium text-xs"></div>
-                            <div class="file-size text-xs text-gray-500"></div>
-                        </div>
-                        <div class="text-xs text-gray-500 mt-2">PDF, JPG, PNG (Max: 5MB)</div>
-                    </div>
-                </div>
-
-                <!-- Others -->
-                <div class="document-upload-section">
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
-                        <input type="file" id="otherDocuments" name="otherDocuments" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
-                        <i data-lucide="file-text" class="h-8 w-8 mx-auto mb-2 text-gray-400"></i>
-                        <div class="text-sm font-semibold mb-2">(j) Others......</div>
-                        <button type="button" class="upload-btn inline-flex items-center justify-center rounded-md font-medium text-sm px-3 py-1.5 transition-all cursor-pointer bg-blue-600 text-white hover:bg-blue-700" data-target="otherDocuments">
-                            <i data-lucide="upload" class="h-4 w-4 mr-1"></i>
-                            Choose File
-                        </button>
-                        <div class="file-info mt-2 text-sm text-gray-600 hidden">
-                            <div class="file-name font-medium text-xs"></div>
-                            <div class="file-size text-xs text-gray-500"></div>
-                        </div>
-                        <div class="text-xs text-gray-500 mt-2">PDF, JPG, PNG (Max: 5MB)</div>
-                    </div>
-                    
-                    <!-- Description field for other documents -->
-                    <div class="mt-3">
-                        <label for="otherDocumentsDescription" class="block text-sm font-medium text-gray-700 mb-1">
-                            Description (if Others selected)
-                        </label>
-                        <input
-                            type="text"
-                            id="otherDocumentsDescription"
-                            name="otherDocumentsDescription"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
-                            placeholder="Describe the document type"
-                        />
                     </div>
                 </div>
             </div>
@@ -215,8 +286,7 @@
                     Important Notes
                 </h4>
                 <ul class="text-sm text-yellow-800 space-y-1">
-                    <li>• All documents are optional but may be required based on your specific case</li>
-                    <li>• Documents should be clear, legible, and properly scanned</li>
+                    <li>• All documents should be clear, legible, and properly scanned</li>
                     <li>• Accepted formats: PDF, JPG, PNG (Maximum file size: 5MB each)</li>
                     <li>• Original documents may be requested during verification</li>
                     <li>• Ensure all uploaded documents are relevant to your application</li>
@@ -230,7 +300,62 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Setup document upload handlers
     setupDocumentUploads();
+    
+    // Setup applicant type change handler for document sections
+    setupDocumentSectionToggle();
 });
+
+function setupDocumentSectionToggle() {
+    const applicantTypeSelect = document.getElementById('applicantType');
+    const individualDocuments = document.getElementById('individual-documents');
+    const corporateDocuments = document.getElementById('corporate-documents');
+    
+    function updateDocumentSections(applicantType) {
+        console.log('Updating document sections for:', applicantType);
+        
+        // Hide all sections first
+        if (individualDocuments) {
+            individualDocuments.classList.add('hidden');
+        }
+        if (corporateDocuments) {
+            corporateDocuments.classList.add('hidden');
+        }
+        
+        // Show appropriate section based on applicant type
+        switch(applicantType) {
+            case 'Individual':
+            case 'Multiple Owners':
+                if (individualDocuments) {
+                    individualDocuments.classList.remove('hidden');
+                    console.log('Showed individual documents section');
+                }
+                break;
+                
+            case 'Corporate':
+            case 'Government Body':
+                if (corporateDocuments) {
+                    corporateDocuments.classList.remove('hidden');
+                    console.log('Showed corporate documents section');
+                }
+                break;
+        }
+    }
+    
+    if (applicantTypeSelect) {
+        // Set initial state
+        updateDocumentSections(applicantTypeSelect.value);
+        
+        // Add change listener
+        applicantTypeSelect.addEventListener('change', function() {
+            console.log('Applicant type changed to:', this.value);
+            updateDocumentSections(this.value);
+        });
+        
+        console.log('Document section toggle setup complete');
+    } else {
+        console.error('Applicant type select not found for document sections!');
+    }
+}
 
 function setupDocumentUploads() {
     console.log('Setting up document upload handlers...');
@@ -242,11 +367,12 @@ function setupDocumentUploads() {
         const targetId = button.getAttribute('data-target');
         const fileInput = document.getElementById(targetId);
         const section = button.closest('.document-upload-section');
-        const fileInfo = section.querySelector('.file-info');
-        const fileName = section.querySelector('.file-name');
-        const fileSize = section.querySelector('.file-size');
         
-        if (fileInput) {
+        if (fileInput && section) {
+            const fileInfo = section.querySelector('.file-info');
+            const fileName = section.querySelector('.file-name');
+            const fileSize = section.querySelector('.file-size');
+            
             // Button click handler
             button.addEventListener('click', () => {
                 fileInput.click();
@@ -283,19 +409,32 @@ function setupDocumentUploads() {
                         fileInfo.classList.remove('hidden');
                     }
                     
-                    // Update button text
+                    // Update button text and style
+                    const isIndividualDoc = section.closest('#individual-documents');
+                    const isCorporateDoc = section.closest('#corporate-documents');
+                    
                     button.innerHTML = `
                         <i data-lucide="check-circle" class="h-4 w-4 mr-1"></i>
                         File Selected
                     `;
-                    button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-                    button.classList.add('bg-green-600', 'hover:bg-green-700');
+                    
+                    if (isIndividualDoc) {
+                        button.classList.remove('bg-green-600', 'hover:bg-green-700');
+                        button.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                    } else if (isCorporateDoc) {
+                        button.classList.remove('bg-purple-600', 'hover:bg-purple-700');
+                        button.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                    }
                     
                     // Update border color
                     const uploadArea = section.querySelector('.border-dashed');
                     if (uploadArea) {
                         uploadArea.classList.remove('border-gray-300');
-                        uploadArea.classList.add('border-green-400', 'bg-green-50');
+                        if (isIndividualDoc) {
+                            uploadArea.classList.add('border-green-400', 'bg-green-50');
+                        } else if (isCorporateDoc) {
+                            uploadArea.classList.add('border-purple-400', 'bg-purple-50');
+                        }
                     }
                     
                     // Re-initialize Lucide icons
@@ -310,18 +449,27 @@ function setupDocumentUploads() {
                         fileInfo.classList.add('hidden');
                     }
                     
-                    // Reset button text
+                    // Reset button text and style
+                    const isIndividualDoc = section.closest('#individual-documents');
+                    const isCorporateDoc = section.closest('#corporate-documents');
+                    
                     button.innerHTML = `
                         <i data-lucide="upload" class="h-4 w-4 mr-1"></i>
                         Choose File
                     `;
-                    button.classList.remove('bg-green-600', 'hover:bg-green-700');
-                    button.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                    
+                    if (isIndividualDoc) {
+                        button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                        button.classList.add('bg-green-600', 'hover:bg-green-700');
+                    } else if (isCorporateDoc) {
+                        button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                        button.classList.add('bg-purple-600', 'hover:bg-purple-700');
+                    }
                     
                     // Reset border color
                     const uploadArea = section.querySelector('.border-dashed');
                     if (uploadArea) {
-                        uploadArea.classList.remove('border-green-400', 'bg-green-50');
+                        uploadArea.classList.remove('border-green-400', 'bg-green-50', 'border-purple-400', 'bg-purple-50');
                         uploadArea.classList.add('border-gray-300');
                     }
                     
