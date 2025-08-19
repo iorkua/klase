@@ -109,8 +109,8 @@ class UserActivityLogController extends Controller
                             </button>';
                 
                 if (auth()->user()->can('delete logged history')) {
-                    $actions .= '<button onclick="deleteActivity(' . $log->id . ')" class="text-red-600 hover:text-red-900" title="Delete">
-                                    <i class="fas fa-trash"></i>
+                    $actions .= '<button onclick="logoutUser(' . $log->user_id . ')" class="text-orange-600 hover:text-orange-900" title="Logout User">
+                                    <i class="fas fa-sign-out-alt"></i>
                                 </button>';
                 }
                 $actions .= '</div>';
@@ -184,6 +184,105 @@ class UserActivityLogController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error deleting activity log: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Logout user by admin
+     */
+    public function logoutUser(Request $request, $userId)
+    {
+        try {
+            // Log the request for debugging
+            \Log::info('Logout user request', [
+                'user_id' => $userId,
+                'admin_user' => auth()->id(),
+                'request_data' => $request->all()
+            ]);
+
+            // Check if user has permission to logout users
+            if (!auth()->user()->can('delete logged history')) {
+                \Log::warning('Unauthorized logout attempt', [
+                    'admin_user' => auth()->id(),
+                    'target_user' => $userId
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized access'
+                ], 403);
+            }
+
+            // Find the user
+            $user = User::find($userId);
+            if (!$user) {
+                \Log::error('User not found for logout', ['user_id' => $userId]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found'
+                ], 404);
+            }
+
+            // Get user name safely
+            $userName = $user->name ?? ($user->first_name . ' ' . $user->last_name) ?? $user->email ?? 'Unknown User';
+            
+            // Update all active sessions for this user to offline
+            $updatedSessions = UserActivityLog::where('user_id', $userId)
+                ->where('is_online', true)
+                ->update([
+                    'is_online' => false,
+                    'logout_time' => now(),
+                    'activity_type' => 'logout',
+                    'activity_description' => 'Logged out by admin'
+                ]);
+
+            // Invalidate all sessions for this user
+            $deletedSessions = 0;
+            try {
+                // Try SQL Server connection first (since that's where your main data is)
+                $deletedSessions = DB::connection('sqlsrv')->table('sessions')->where('user_id', $userId)->delete();
+            } catch (\Exception $sessionException) {
+                \Log::warning('Could not delete sessions from SQL Server sessions table', [
+                    'user_id' => $userId,
+                    'error' => $sessionException->getMessage()
+                ]);
+                
+                // Fallback to default connection (MySQL) if SQL Server fails
+                try {
+                    $deletedSessions = DB::table('sessions')->where('user_id', $userId)->delete();
+                } catch (\Exception $mysqlException) {
+                    \Log::warning('Could not delete sessions from MySQL sessions table either', [
+                        'user_id' => $userId,
+                        'sqlsrv_error' => $sessionException->getMessage(),
+                        'mysql_error' => $mysqlException->getMessage()
+                    ]);
+                    // Continue without failing - the user activity logs update is more important
+                }
+            }
+
+            \Log::info('User logged out by admin', [
+                'user_id' => $userId,
+                'user_name' => $userName,
+                'admin_user' => auth()->id(),
+                'updated_sessions' => $updatedSessions,
+                'deleted_sessions' => $deletedSessions
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User ' . $userName . ' has been logged out successfully.'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error logging out user', [
+                'user_id' => $userId,
+                'admin_user' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error logging out user: ' . $e->getMessage()
             ], 500);
         }
     }

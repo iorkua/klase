@@ -53,25 +53,23 @@ tailwind.config = {
             <div class="bg-white rounded-lg shadow-xl border border-gray-200">
                 <!-- Header -->
                 <div class="p-6 border-b border-gray-200">
-                    <div class="flex items-start gap-1">
-                        <!-- Main Header - Left Side -->
-                        <div class="text-center flex-1">
-                            <div class="space-y-1">
-                                <div class="font-bold text-lg">KANO STATE GEOGRAPHIC INFORMATION SYSTEMS (KANGIS)</div>
-                                <div class="text-sm text-gray-600">MINISTRY OF LAND AND PHYSICAL PLANNING KANO STATE</div>
-                                <div class="text-sm font-semibold">APPLICATION FOR RE-CERTIFICATION OR RE-ISSUANCE OF C-of-O</div>
-                                <div id="form-type-display" class="text-xs text-gray-500">INDIVIDUAL FORM</div>
-                            </div>
+                    <div class="relative">
+                        <!-- Main Header - Centered -->
+                        <div class="text-center space-y-1">
+                            <div class="font-bold text-lg">KANO STATE GEOGRAPHIC INFORMATION SYSTEMS (KANGIS)</div>
+                            <div class="text-sm text-gray-600">MINISTRY OF LAND AND PHYSICAL PLANNING KANO STATE</div>
+                            <div class="text-sm font-semibold">APPLICATION FOR RE-CERTIFICATION OR RE-ISSUANCE OF C-of-O</div>
+                            <div id="form-type-display" class="text-xs text-gray-500">INDIVIDUAL FORM</div>
                         </div>
                         
-                        <!-- File Numbers Display - Right Side -->
-                        <div  s>
+                        <!-- File Numbers Display - Top Right Corner, Close to Header -->
+                        <div class="absolute top-0 right-0">
                             <!-- New KANGIS File Number (Auto-generated) -->
-                            <div class="bg-blue-50 px-4 py-3 rounded-lg border border-blue-200">
-                                <div class="text-sm font-medium text-blue-700 uppercase tracking-wide text-center mb-1">New KANGIS File No</div>
+                            <div class="bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
+                                <div class="text-xs font-medium text-blue-700 uppercase tracking-wide text-center mb-1">New KANGIS File No</div>
                                 <div class="flex items-center gap-2 justify-center">
-                                    <i data-lucide="file-text" class="h-5 w-5 text-blue-600"></i>
-                                    <span id="new-kangis-file-number-display" class="text-lg font-bold text-blue-900 font-mono">Loading...</span>
+                                    <i data-lucide="file-text" class="h-4 w-4 text-blue-600"></i>
+                                    <span id="new-kangis-file-number-display" class="text-sm font-bold text-blue-900 font-mono">Loading...</span>
                                 </div>
                                 <div class="text-xs text-blue-500 text-center mt-1">Auto-generated</div>
                             </div>

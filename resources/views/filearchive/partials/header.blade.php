@@ -10,10 +10,7 @@
                     <i data-lucide="download" class="h-4 w-4"></i>
                     Export
                 </button>
-                <button id="add-file-button" class="btn btn-primary gap-2" data-modal-target="add-file-modal">
-                    <i data-lucide="plus" class="h-4 w-4"></i>
-                    Add File
-                </button>
+                 
             </div>
         </div>
     </div>

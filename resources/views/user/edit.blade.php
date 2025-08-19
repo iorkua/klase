@@ -281,16 +281,28 @@
                                 {{-- 8. User Type --}}
                                 <div class="w-full md:w-1/2 px-2 mb-4">
                                     <div>
-                                        {{ Form::label('user_type', __('User Type'), ['class' => 'block text-sm font-medium text-gray-700 mb-1']) }}
-                                        <select name="user_type" id="user_type"
-                                            class="w-full p-2 border border-gray-300 rounded-md text-sm"
-                                            @change="userTypeId = $event.target.value; userTypeName = $event.target.selectedOptions[0].text; fetchUserLevels(userTypeId);"
-                                            required>
-                                            <option value="">Select User Type</option>
-                                            @foreach($userTypes as $userType)
-                                                <option value="{{ $userType->id }}" {{ old('user_type', $user->type) == $userType->name ? 'selected' : '' }}>{{ $userType->name }}</option>
-                                            @endforeach
-                                        </select>
+                                    {{ Form::label('user_type', __('User Type'), ['class' => 'block text-sm font-medium text-gray-700 mb-1']) }}
+<select name="user_type" id="user_type"
+    class="w-full p-2 border border-gray-300 rounded-md text-sm"
+    @change="userTypeId = $event.target.value; userTypeName = $event.target.selectedOptions[0].text; fetchUserLevels(userTypeId);"
+    required>
+    <option value="">Select User Type</option>
+    @php
+        $userTypes =  DB::connection('sqlsrv')->table('user_types')
+                      ->select('id', 'name', 'code')
+                      ->where('is_active', 1)
+                      ->orderBy('name')
+                      ->get();
+    @endphp
+    @foreach($userTypes as $userType)
+        <option value="{{ $userType->id }}" {{ old('user_type', $user->type) == $userType->name ? 'selected' : '' }}>{{ $userType->name }}</option>
+    @endforeach
+</select> 
+@php
+    $userTypes = App\Models\UserType::where('is_active', 1)
+                                   ->orderBy('name')
+                                   ->get(['id', 'name', 'code']);
+@endphp
                                     </div>
                                 </div>
                             </div>

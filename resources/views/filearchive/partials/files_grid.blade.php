@@ -17,37 +17,36 @@
             </button>
         </div>
     </div>
-
-    <div class="p-6">
+<div class="p-6">
         @if($completedFiles->count() > 0)
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="files-grid">
                 @foreach($completedFiles as $file)
                     <div class="border rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer file-card" 
                          data-id="{{ $file->id }}" onclick="showFileDetails({{ $file->id }})">
-                        <div class="aspect-[3/4] bg-gray-100 relative">
+                        <div class="aspect-[4/3] bg-gray-100 relative">
                             <!-- Document cover with document-style preview -->
                             <div class="absolute inset-0 flex flex-col bg-white">
-                                <div class="h-8 bg-red-500 flex items-center justify-between px-3">
+                                <div class="h-6 bg-red-500 flex items-center justify-between px-3">
                                     <div class="flex space-x-1">
-                                        <div class="w-3 h-3 rounded-full bg-gray-200 opacity-70"></div>
-                                        <div class="w-3 h-3 rounded-full bg-gray-200 opacity-70"></div>
-                                        <div class="w-3 h-3 rounded-full bg-gray-200 opacity-70"></div>
+                                        <div class="w-2 h-2 rounded-full bg-gray-200 opacity-70"></div>
+                                        <div class="w-2 h-2 rounded-full bg-gray-200 opacity-70"></div>
+                                        <div class="w-2 h-2 rounded-full bg-gray-200 opacity-70"></div>
                                     </div>
                                     <span class="text-white font-medium text-xs">PDF</span>
                                 </div>
-                                <div class="flex-1 flex flex-col p-4 overflow-hidden">
+                                <div class="flex-1 flex flex-col p-3 overflow-hidden">
                                     <!-- Document-style content preview -->
-                                    <div class="w-full h-3 bg-gray-200 rounded mb-2"></div>
-                                    <div class="w-3/4 h-3 bg-gray-200 rounded mb-3"></div>
-                                    <div class="w-full h-2 bg-gray-100 rounded mb-2"></div>
-                                    <div class="w-full h-2 bg-gray-100 rounded mb-2"></div>
-                                    <div class="w-5/6 h-2 bg-gray-100 rounded mb-3"></div>
-                                    <div class="w-full flex justify-center my-2">
-                                        <div class="w-16 h-12 bg-gray-200 rounded"></div>
+                                    <div class="w-full h-2 bg-gray-200 rounded mb-1"></div>
+                                    <div class="w-3/4 h-2 bg-gray-200 rounded mb-2"></div>
+                                    <div class="w-full h-1.5 bg-gray-100 rounded mb-1"></div>
+                                    <div class="w-full h-1.5 bg-gray-100 rounded mb-1"></div>
+                                    <div class="w-5/6 h-1.5 bg-gray-100 rounded mb-2"></div>
+                                    <div class="w-full flex justify-center my-1">
+                                        <div class="w-12 h-8 bg-gray-200 rounded"></div>
                                     </div>
-                                    <div class="w-full h-2 bg-gray-100 rounded mb-2"></div>
-                                    <div class="w-full h-2 bg-gray-100 rounded mb-2"></div>
-                                    <div class="w-4/5 h-2 bg-gray-100 rounded"></div>
+                                    <div class="w-full h-1.5 bg-gray-100 rounded mb-1"></div>
+                                    <div class="w-full h-1.5 bg-gray-100 rounded mb-1"></div>
+                                    <div class="w-4/5 h-1.5 bg-gray-100 rounded"></div>
                                 </div>
                             </div>
 
@@ -129,4 +128,6 @@
             </div>
         @endif
     </div>
+ 
+ 
 </div>

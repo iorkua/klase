@@ -127,7 +127,7 @@
                             <div class="flex items-center space-x-3">
                                 <button onclick="bulkDelete()" id="bulk-delete-btn" class="hidden inline-flex items-center px-3 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50">
                                     <i class="fas fa-trash mr-2"></i>
-                                    Delete Selected
+                                    Delete Selected Logs
                                 </button>
                                 <span class="text-sm text-gray-500" id="selected-count"></span>
                             </div>
@@ -137,9 +137,7 @@
                         <table id="activity-logs-table" class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        <input type="checkbox" id="select-all" class="rounded border-gray-300 text-blue-600 shadow-sm">
-                                    </th>
+                                   
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device Info</th>
@@ -449,15 +447,7 @@ function initializeDataTable() {
             }
         },
         columns: [
-            {
-                data: 'id',
-                name: 'id',
-                orderable: false,
-                searchable: false,
-                render: function(data, type, row) {
-                    return '<input type="checkbox" class="row-checkbox rounded border-gray-300 text-blue-600" value="' + data + '">';
-                }
-            },
+          
             {
                 data: null,
                 name: 'user_name',
@@ -821,35 +811,68 @@ function closeActivityModal() {
     $('#activity-details-modal').addClass('hidden');
 }
 
-function deleteActivity(id) {
+function logoutUser(userId) {
+    console.log('Logout user called with userId:', userId);
+    
     Swal.fire({
         title: 'Are you sure?',
-        text: 'This activity log will be permanently deleted.',
+        text: 'This will log out the user from all their active sessions.',
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#ef4444',
+        confirmButtonColor: '#f59e0b',
         cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Yes, delete it!'
+        confirmButtonText: 'Yes, logout user!'
     }).then((result) => {
         if (result.isConfirmed) {
+            const url = '{{ route("user-activity-logs.logout-user", ":userId") }}'.replace(':userId', userId);
+            console.log('Making request to:', url);
+            
             $.ajax({
-                url: '{{ route("user-activity-logs.destroy", ":id") }}'.replace(':id', id),
-                type: 'DELETE',
+                url: url,
+                type: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
+                beforeSend: function() {
+                    console.log('Sending logout request...');
+                },
                 success: function(response) {
+                    console.log('Success response:', response);
                     if (response.success) {
-                        Swal.fire('Deleted!', response.message, 'success');
+                        Swal.fire('Success!', response.message, 'success');
                         if (activityTable) {
                             activityTable.ajax.reload();
                         }
+                        // Also refresh online users if on that tab
+                        if (currentTab === 'online-users') {
+                            refreshOnlineUsers();
+                        }
+                        updateStatistics();
                     } else {
                         Swal.fire('Error', response.message, 'error');
                     }
                 },
-                error: function() {
-                    Swal.fire('Error', 'Failed to delete activity log', 'error');
+                error: function(xhr, status, error) {
+                    console.error('AJAX Error:', {
+                        status: xhr.status,
+                        statusText: xhr.statusText,
+                        responseText: xhr.responseText,
+                        error: error
+                    });
+                    
+                    let errorMessage = 'Failed to logout user';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.responseText) {
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            errorMessage = response.message || errorMessage;
+                        } catch (e) {
+                            errorMessage = 'Server error: ' + xhr.status + ' ' + xhr.statusText;
+                        }
+                    }
+                    
+                    Swal.fire('Error', errorMessage, 'error');
                 }
             });
         }

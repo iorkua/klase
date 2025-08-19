@@ -189,7 +189,7 @@ function setupApplicantTypeToggle() {
             '#surname', '#firstName', '#occupation', '#dateOfBirth', '#nationality', '#stateOfOrigin',
             'input[name="gender"]', 'input[name="maritalStatus"]'
         ], false);
-        setRequired(['#organisationName', '#cacRegistrationNo', '#typeOfOrganisation', '#typeOfBusiness'], false);
+        setRequired(['#organisationName', '#cacRegistrationNumber', '#typeOfOrganisation', '#typeOfBusiness'], false);
         setOwnersRequired(false);
 
         // Show appropriate sections based on applicant type
@@ -211,18 +211,19 @@ function setupApplicantTypeToggle() {
                 corporateDocumentSection.classList.remove('hidden');
                 console.log('Showed corporate document section');
             }
-            setRequired(['#organisationName', '#cacRegistrationNo', '#typeOfOrganisation', '#typeOfBusiness'], true);
+            setRequired(['#organisationName', '#cacRegistrationNumber', '#typeOfOrganisation', '#typeOfBusiness'], true);
         } else if (value === 'Government Body') {
             console.log('Showing Government Body sections');
-            if (individual) individual.classList.remove('hidden');
+            if (corporate) corporate.classList.remove('hidden');
             if (corporateDocumentSection) {
                 corporateDocumentSection.classList.remove('hidden');
                 console.log('Showed corporate document section for Government Body');
             }
-            setRequired([
-                '#surname', '#firstName', '#occupation', '#dateOfBirth', '#nationality', '#stateOfOrigin',
-                'input[name="gender"]', 'input[name="maritalStatus"]'
-            ], true);
+            const corporateHeaderEl = document.getElementById('corporate-header');
+            const corporateDescEl = document.getElementById('corporate-description');
+            if (corporateHeaderEl) corporateHeaderEl.textContent = 'Government Body Details';
+            if (corporateDescEl) corporateDescEl.textContent = 'Please provide the following government body information:';
+            setRequired(['#organisationName', '#cacRegistrationNumber', '#typeOfOrganisation', '#typeOfBusiness'], true);
         } else if (value === 'Multiple Owners') {
             console.log('Showing Multiple Owners sections');
             if (multipleOwners) multipleOwners.classList.remove('hidden');
@@ -1378,7 +1379,17 @@ function populateApplicationSummary() {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div><span class="font-medium text-gray-700">Applicant Type:</span> <span class="ml-2 text-gray-900">Corporate</span></div>
                 <div><span class="font-medium text-gray-700">Organisation Name:</span> <span class="ml-2 text-gray-900">${formatText(getValue('organisationName'))}</span></div>
-                <div><span class="font-medium text-gray-700">CAC Registration No:</span> <span class="ml-2 text-gray-900">${formatText(getValue('cacRegistrationNo'))}</span></div>
+                <div><span class="font-medium text-gray-700">CAC Registration No:</span> <span class="ml-2 text-gray-900">${formatText(getValue('cacRegistrationNumber'))}</span></div>
+                <div><span class="font-medium text-gray-700">Type of Organisation:</span> <span class="ml-2 text-gray-900">${formatText(getValue('typeOfOrganisation'))}</span></div>
+                <div><span class="font-medium text-gray-700">Type of Business:</span> <span class="ml-2 text-gray-900">${formatText(getValue('typeOfBusiness'))}</span></div>
+            </div>
+        `;
+    } else if (applicantType === 'Government Body') {
+        applicantDetailsContainer.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div><span class="font-medium text-gray-700">Applicant Type:</span> <span class="ml-2 text-gray-900">Government Body</span></div>
+                <div><span class="font-medium text-gray-700">Organisation Name:</span> <span class="ml-2 text-gray-900">${formatText(getValue('organisationName'))}</span></div>
+                <div><span class="font-medium text-gray-700">Registration Status:</span> <span class="ml-2 text-gray-900">${formatText(getValue('cacRegistrationStatus'))}</span></div>
                 <div><span class="font-medium text-gray-700">Type of Organisation:</span> <span class="ml-2 text-gray-900">${formatText(getValue('typeOfOrganisation'))}</span></div>
                 <div><span class="font-medium text-gray-700">Type of Business:</span> <span class="ml-2 text-gray-900">${formatText(getValue('typeOfBusiness'))}</span></div>
             </div>

@@ -55,6 +55,7 @@ use App\Http\Controllers\StInstrumentRegistrationController;
 */
 require __DIR__ . '/auth.php';
 require __DIR__ . '/recertification_routes.php';
+require __DIR__ . '/file_numbers.php';
 Route::get('/', [HomeController::class, 'index'])->middleware(
     [
         'XSS',
@@ -206,6 +207,7 @@ Route::group(
         Route::get('user-activity-logs', [App\Http\Controllers\UserActivityLogController::class, 'index'])->name('user-activity-logs.index');
         Route::get('user-activity-logs/{id}', [App\Http\Controllers\UserActivityLogController::class, 'show'])->name('user-activity-logs.show');
         Route::delete('user-activity-logs/{id}', [App\Http\Controllers\UserActivityLogController::class, 'destroy'])->name('user-activity-logs.destroy');
+        Route::post('user-activity-logs/logout-user/{userId}', [App\Http\Controllers\UserActivityLogController::class, 'logoutUser'])->name('user-activity-logs.logout-user');
         Route::get('user-activity-logs/stats/data', [App\Http\Controllers\UserActivityLogController::class, 'getStats'])->name('user-activity-logs.stats');
         Route::get('user-activity-logs/online/users', [App\Http\Controllers\UserActivityLogController::class, 'getOnlineUsers'])->name('user-activity-logs.online-users');
         Route::get('user-activity-logs/chart/data', [App\Http\Controllers\UserActivityLogController::class, 'getChartData'])->name('user-activity-logs.chart-data');
@@ -462,6 +464,9 @@ Route::resource('fileindex', 'App\Http\Controllers\FileIndexingController');
 Route::post('fileindex/save-cofo', 'App\Http\Controllers\FileIndexingController@saveCofO')->name('fileindex.save-cofo');
  
 Route::post('fileindex/save-transaction', [FileIndexingController::class, 'savePropertyTransaction'])->name('fileindex.save-transaction');
+
+// Check if a fileno has already been indexed
+Route::get('/fileindex/check-indexed', [FileIndexingController::class, 'checkIndexed'])->name('fileindex.check-indexed');
  
 // File Scanning
 Route::get('/filescanning/index', [FileScanningController::class, 'index'])->name('filescanning.index');
@@ -799,6 +804,4 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'propertycard'], func
     Route::get('/ai', [App\Http\Controllers\PropertyCardAiController::class, 'index'])->name('propertycard.ai');
 });
 
-
-
-
+ 

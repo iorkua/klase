@@ -19,9 +19,23 @@ class FileNumberController extends Controller
     {
         $totalCount = DB::connection('sqlsrv')
             ->table('fileNumber')
+            ->where('type', 'Generated')
             ->count();
 
         return view('generate_fileno.mlsfno', compact('totalCount'));
+    }
+
+    /**
+     * Display the Capture Existing File page
+     */
+    public function captureIndex()
+    {
+        $totalCount = DB::connection('sqlsrv')
+            ->table('fileNumber')
+            ->whereIn('type', ['Captured', 'Migrated'])
+            ->count();
+
+        return view('generate_fileno.capture_existing', compact('totalCount'));
     }
 
     /**
@@ -35,11 +49,18 @@ class FileNumberController extends Controller
             $start = $request->input('start', 0);
             $length = $request->input('length', 10);
             $searchValue = $request->input('search.value', '');
+            $source = $request->input('source', 'New'); // Default to 'New' for generate page
 
             // Base query for counting (without ORDER BY)
             $baseQuery = DB::connection('sqlsrv')
                 ->table('fileNumber');
-                // Temporarily remove is_deleted filter to see all records
+
+            // Filter by source
+            if ($source === 'New') {
+                $baseQuery->where('type', 'Generated');
+            } elseif ($source === 'Captured') {
+                $baseQuery->whereIn('type', ['Captured', 'Migrated']);
+            }
 
             // Get total count
             $totalRecords = $baseQuery->count();
@@ -68,9 +89,15 @@ class FileNumberController extends Controller
                     'FileName',
                     'type',
                     'created_by',
-                    'created_at'
+                    'created_at',
+                    'SOURCE'
                 ])
-                // Temporarily remove is_deleted filter to see all records
+                ->when($source === 'New', function($query) {
+                    $query->where('type', 'Generated');
+                })
+                ->when($source === 'Captured', function($query) {
+                    $query->whereIn('type', ['Captured', 'Migrated']);
+                })
                 ->when(!empty($searchValue), function($query) use ($searchValue) {
                     $query->where(function($q) use ($searchValue) {
                         $q->where('kangisFileNo', 'like', "%{$searchValue}%")
@@ -134,6 +161,16 @@ class FileNumberController extends Controller
                 'error' => 'Error loading data: ' . $e->getMessage()
             ]);
         }
+    }
+
+    /**
+     * Get data for Capture Existing Files DataTables
+     */
+    public function getCaptureData(Request $request)
+    {
+        // Set source to 'Captured' and call getData
+        $request->merge(['source' => 'Captured']);
+        return $this->getData($request);
     }
 
     /**
@@ -287,6 +324,100 @@ class FileNumberController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error generating MLS File number: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Store a captured existing file number
+     */
+    public function captureStore(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'file_name' => 'required|string|max:255',
+            'file_option' => 'required|in:normal,temporary,extension,miscellaneous,sltr',
+            'prefix' => 'required_if:file_option,normal,temporary|string|max:20',
+            'middle_prefix' => 'required_if:file_option,miscellaneous|string|max:20',
+            'serial_no' => 'required|string|max:20',
+            'year' => 'required_if:file_option,normal,temporary|integer|min:1900|max:2050',
+            'existing_file_no' => 'required_if:file_option,extension'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $fileOption = $request->file_option;
+            $mlsfNo = '';
+
+            if ($fileOption === 'extension') {
+                // For extensions, use the existing file number with "AND EXTENSION"
+                $mlsfNo = $request->existing_file_no . ' AND EXTENSION';
+            } elseif ($fileOption === 'miscellaneous') {
+                // Format: MISC-KN-0203
+                $mlsfNo = 'MISC-' . $request->middle_prefix . '-' . $request->serial_no;
+            } elseif ($fileOption === 'sltr') {
+                // Format: SLTR-0203567
+                $mlsfNo = 'SLTR-' . $request->serial_no;
+            } else {
+                // Normal and temporary format with prefix, year, and serial
+                $mlsfNo = $request->prefix . '-' . $request->year . '-' . str_pad($request->serial_no, 4, '0', STR_PAD_LEFT);
+                
+                if ($fileOption === 'temporary') {
+                    $mlsfNo .= '(T)';
+                }
+            }
+
+            // Check if file number already exists
+            $exists = DB::connection('sqlsrv')
+                ->table('fileNumber')
+                ->where('mlsfNo', $mlsfNo)
+                ->exists();
+
+            if ($exists) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File number already exists: ' . $mlsfNo
+                ], 409);
+            }
+
+            // Insert new record
+            $id = DB::connection('sqlsrv')
+                ->table('fileNumber')
+                ->insertGetId([
+                    'mlsfNo' => $mlsfNo,
+                    'kangisFileNo' => null,
+                    'NewKANGISFileNo' => null,
+                    'FileName' => $request->file_name,
+                    'type' => 'Captured',
+                    'location' => $request->prefix ?? 'MISC',
+                    'created_by' => Auth::user()->name ?? Auth::user()->email ?? 'System',
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Existing file number captured successfully: ' . $mlsfNo,
+                'data' => [
+                    'id' => $id,
+                    'mlsfNo' => $mlsfNo,
+                    'kangisFileNo' => null,
+                    'NewKANGISFileNo' => null,
+                    'FileName' => $request->file_name
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error capturing existing file number: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error capturing existing file number: ' . $e->getMessage()
             ], 500);
         }
     }

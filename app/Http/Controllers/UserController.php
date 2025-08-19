@@ -220,7 +220,7 @@ class UserController extends Controller
                     }
                 }
 
-                return redirect()->route('users.index')->with('success', __('User successfully created.'). '</br>'.$errorMessage);
+                return redirect()->route('users.index')->with('success', __('User successfully created.'));
             }
         } else {
             return redirect()->back()->with('error', __('Permission Denied.'));

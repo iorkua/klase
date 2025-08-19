@@ -537,7 +537,16 @@
        <i data-lucide="hash" class="h-3.5 w-3.5 text-blue-400"></i>
        <span>Generate New FileNo (MLSFileNo)</span>
      </a>
-     @endif
+     
+       <!-- Capture Existing File -->
+       @if($hasRole('EDMS - File Number Generation') || $hasRole('Supper Admin'))
+       <a href="{{route('existing-file-numbers.index')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('existing-file-numbers.index') ? 'active' : '' }}">
+         <i data-lucide="folder-plus" class="h-3.5 w-3.5 text-blue-400"></i>
+         <span>Capture an Existing File</span>
+       </a>
+       @endif
+
+        @endif
 
       <div class="sidebar-submodule-header flex items-center justify-between py-1.5 px-3 cursor-pointer rounded-md" data-section="fileTracker">
         <a href="{{ route('filetracker.index') }}" class="flex items-center gap-2 w-full {{ request()->routeIs('filetracker.index') ? 'active' : '' }}">
@@ -1379,6 +1388,10 @@
 
       <div class="pl-4 mt-1 space-y-0.5 hidden" data-content="admin">
         @if($hasRole('User Account'))
+        <a href="{{ route('user-activity-logs.index') }}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('user-activity-log.index') ? 'active' : '' }}">
+          <i data-lucide="users" class="h-4 w-4"></i>
+          <span>Activity Logs</span>
+        </a>
         <a href="{{route('users.index')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('users.index') ? 'active' : '' }}">
           <i data-lucide="user-cog" class="h-4 w-4"></i>
           <span>User Account</span>
@@ -1406,10 +1419,7 @@
           <span>System Settings</span>
         </a>
 
-        <a href="{{ route('user-activity-logs.index') }}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('user-activity-log.index') ? 'active' : '' }}">
-          <i data-lucide="users" class="h-4 w-4"></i>
-          <span>Activity Logs</span>
-        </a>
+      
         @endif
       </div>
     </div>
@@ -1766,3 +1776,4 @@ if (window.location.pathname.includes('/recertification')) {
   }, 200);
 }
 </script>
+

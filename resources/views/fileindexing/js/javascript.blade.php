@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Dynamic data from database
     let pendingFiles = [];
-    let indexedFiles = @json($recentIndexes ?? []);
+    let recentIndexedFiles = @json($recentIndexes ?? []);
     let availableApplications = [];
     
     // State variables
@@ -271,7 +271,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const indexedCountEl = document.getElementById('indexed-files-count');
         
         if (pendingCountEl) pendingCountEl.textContent = pendingFiles.length;
-        if (indexedCountEl) indexedCountEl.textContent = indexedFiles.length;
+        if (indexedCountEl) indexedCountEl.textContent = recentIndexedFiles.length;
     }
 
     function updateSelectedFilesCount() {
@@ -1169,75 +1169,150 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Auto-fill when fileno selected or typed
-    document.addEventListener('ct-fileno-selected', async function(e) {
+    // Helpers to lock/unlock inputs with Tailwind styles
+    function lockField(el) {
+        if (!el) return;
+        el.disabled = true;
+        el.readOnly = true;
+        el.classList.add('bg-gray-100', 'opacity-75', 'cursor-not-allowed');
+    }
+    function unlockField(el) {
+        if (!el) return;
+        el.disabled = false;
+        el.readOnly = false;
+        el.classList.remove('bg-gray-100', 'opacity-75', 'cursor-not-allowed');
+    }
+
+    // Embed indexed files data directly into JavaScript (no AJAX needed)
+    const indexedFilesLookup = {};
+    
+    @php
+        try {
+            $indexedFilesData = DB::connection('sqlsrv')
+                ->table('file_indexings')
+                ->select('file_number', 'file_title', 'land_use_type', 'plot_number', 'district', 'lga', 'has_cofo', 'is_merged', 'has_transaction', 'is_problematic', 'is_co_owned_plot')
+                ->get()
+                ->keyBy('file_number');
+        } catch (\Exception $e) {
+            $indexedFilesData = collect();
+        }
+    @endphp
+    
+    @foreach($indexedFilesData as $fileNumber => $fileData)
+        indexedFilesLookup['{{ $fileNumber }}'] = {
+            file_number: '{{ $fileData->file_number }}',
+            file_title: '{{ addslashes($fileData->file_title ?? '') }}',
+            land_use_type: '{{ $fileData->land_use_type ?? '' }}',
+            plot_number: '{{ $fileData->plot_number ?? '' }}',
+            district: '{{ $fileData->district ?? '' }}',
+            lga: '{{ $fileData->lga ?? '' }}',
+            has_cofo: {{ $fileData->has_cofo ? 'true' : 'false' }},
+            is_merged: {{ $fileData->is_merged ? 'true' : 'false' }},
+            has_transaction: {{ $fileData->has_transaction ? 'true' : 'false' }},
+            is_problematic: {{ $fileData->is_problematic ? 'true' : 'false' }},
+            is_co_owned_plot: {{ $fileData->is_co_owned_plot ? 'true' : 'false' }}
+        };
+    @endforeach
+    
+    console.log('Indexed files loaded:', indexedFilesLookup);
+
+    // Auto-fill when fileno selected; if already indexed, populate and lock fields
+    document.addEventListener('ct-fileno-selected', function(e) {
+        console.log('ct-fileno-selected event received:', e.detail);
         try {
             const fileno = e.detail?.fileno || document.getElementById('fileno')?.value;
-            if (!fileno) return;
-            const res = await fetch(`{{ route('fileindexing.check-fileno') }}?fileno=${encodeURIComponent(fileno)}`);
-            if (!res.ok) return;
-            const data = await res.json();
-            if (data.success && data.exists) {
+            console.log('Checking fileno:', fileno);
+            if (!fileno) {
+                console.log('No fileno provided, skipping check');
+                return;
+            }
+            
+            // Check if file is already indexed (direct lookup, no AJAX)
+            const indexedFile = indexedFilesLookup[fileno];
+            console.log('Indexed file lookup result:', indexedFile);
+            
+            if (indexedFile) {
+                console.log('File already indexed, populating fields...');
+                const rec = indexedFile;
+                
                 // Fill fields
                 const setVal = (selector, val) => {
                     const el = document.querySelector(selector);
+                    console.log(`Setting ${selector} to:`, val, 'Element found:', !!el);
                     if (el && typeof val !== 'undefined' && val !== null) {
                         el.value = val;
                     }
+                    return el;
                 };
-                setVal('#file-title', data.file_indexing.file_title || '');
-                setVal('input[placeholder*="PL-"]', data.file_indexing.plot_number || '');
+                
+                const ft = setVal('#file-title', rec.file_title || '');
+                const pn = setVal('input[placeholder*="PL-"]', rec.plot_number || '');
+                
                 const landUseSelect = document.getElementById('landUse');
-                if (landUseSelect && data.file_indexing.land_use_type) {
-                    landUseSelect.value = data.file_indexing.land_use_type;
+                console.log('Land use select found:', !!landUseSelect, 'Setting to:', rec.land_use_type);
+                if (landUseSelect && rec.land_use_type) {
+                    landUseSelect.value = rec.land_use_type;
                 }
-                const districtSelect = document.querySelector('select[name="district"]');
-                if (districtSelect && data.file_indexing.district) {
-                    districtSelect.value = data.file_indexing.district;
+                
+                const districtSelect = document.querySelector('select[name="district"]') || document.getElementById('district');
+                console.log('District select found:', !!districtSelect, 'Setting to:', rec.district);
+                if (districtSelect && rec.district) {
+                    districtSelect.value = rec.district;
                 }
+                
                 const lgaInput = document.querySelector('input[name="lga"]');
-                if (lgaInput && data.file_indexing.lga) {
-                    lgaInput.value = data.file_indexing.lga;
+                console.log('LGA input found:', !!lgaInput, 'Setting to:', rec.lga);
+                if (lgaInput && rec.lga) {
+                    lgaInput.value = rec.lga;
                 }
+                
                 // Checkboxes
                 const setCheck = (id, val) => {
                     const el = document.getElementById(id);
-                    if (el) { el.checked = !!val; el.disabled = true; }
+                    console.log(`Setting checkbox ${id} to:`, val, 'Element found:', !!el);
+                    if (el) { 
+                        el.checked = !!val; 
+                        lockField(el); 
+                    }
                 };
-                setCheck('has-cofo', data.file_indexing.has_cofo);
-                setCheck('has-transaction', data.file_indexing.has_transaction);
-                setCheck('co-owned-plot', data.file_indexing.is_co_owned_plot);
-                setCheck('merged-plot', data.file_indexing.is_merged);
+                setCheck('has-cofo', rec.has_cofo);
+                setCheck('has-transaction', rec.has_transaction);
+                setCheck('co-owned-plot', rec.is_co_owned_plot);
+                setCheck('merged-plot', rec.is_merged);
 
-                // Lock and grey-out only if page-typed
-                if (data.status === 'typed') {
-                    const lockReadOnly = (selector) => {
-                        const el = document.querySelector(selector);
-                        if (el) { el.readOnly = true; el.disabled = true; el.classList.add('bg-gray-100'); }
-                    };
-                    lockReadOnly('#file-title');
-                    lockReadOnly('input[placeholder*="PL-"]');
-                    const landUseSelect2 = document.getElementById('landUse');
-                    if (landUseSelect2) { landUseSelect2.disabled = true; landUseSelect2.classList.add('bg-gray-100'); }
-                    const districtSelect2 = document.querySelector('select[name="district"]');
-                    if (districtSelect2) { districtSelect2.disabled = true; districtSelect2.classList.add('bg-gray-100'); }
-                    const lgaInput2 = document.querySelector('input[name="lga"]');
-                    if (lgaInput2) { lgaInput2.readOnly = true; lgaInput2.classList.add('bg-gray-100'); }
-                }
+                // Lock and grey-out inputs
+                console.log('Locking fields...');
+                lockField(ft);
+                lockField(pn);
+                lockField(landUseSelect);
+                lockField(districtSelect);
+                lockField(lgaInput);
 
-                // Notify user if already page typed
-                if (data.status === 'typed') {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'File Already Page Typed',
-                        text: 'This file has page typing records. Fields are auto-filled and locked.',
-                        confirmButtonColor: '#3085d6'
-                    });
-                }
+                // Notify user
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Already Indexed',
+                    text: 'This file is already indexed. Fields have been auto-filled and locked.',
+                    confirmButtonColor: '#3085d6'
+                });
+            } else {
+                console.log('File not indexed yet, fields remain editable');
             }
         } catch (err) {
-            console.warn('Auto-fill check failed', err);
+            console.error('Auto-fill check failed:', err);
         }
+    });
+
+    // Re-enable fields on clear
+    document.addEventListener('ct-fileno-cleared', function() {
+        console.log('ct-fileno-cleared event received, unlocking fields...');
+        const ids = ['#file-title'];
+        ids.forEach(sel => unlockField(document.querySelector(sel)));
+        unlockField(document.querySelector('input[placeholder*="PL-"]'));
+        unlockField(document.getElementById('landUse'));
+        unlockField(document.querySelector('select[name="district"]') || document.getElementById('district'));
+        unlockField(document.querySelector('input[name="lga"]'));
+        ['has-cofo','has-transaction','co-owned-plot','merged-plot'].forEach(id => unlockField(document.getElementById(id)));
     });
 
     // Make functions available globally

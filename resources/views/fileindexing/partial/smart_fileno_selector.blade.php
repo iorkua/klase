@@ -11,43 +11,88 @@
         <select id="fileno-select" class="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option value="">Select File Number</option>
             @php
-                $fileNumbers = DB::connection('sqlsrv')
-                    ->select("SELECT 
-                                [id],
-                                [kangisFileNo],
-                                [mlsfNo], 
-                                [NewKANGISFileNo]
-                              FROM [klas].[dbo].[fileNumber]
-                              ORDER BY [id] DESC");
-            @endphp
-            @foreach($fileNumbers as $fileRecord)
-                @php
-                    // Determine which file number to display (priority: MLS -> KANGIS -> New KANGIS)
+                // Collect filenos from fileNumber, subapplications, and mother_applications
+                $entries = [];
+
+                // 1) fileNumber table (keep rich attributes)
+                $fileNumbers = DB::connection('sqlsrv')->select("\n                    SELECT [id], [kangisFileNo], [mlsfNo], [NewKANGISFileNo]\n                    FROM [klas].[dbo].[fileNumber]\n                    ORDER BY [id] DESC\n                ");
+                foreach ($fileNumbers as $fr) {
                     $displayFileNo = '';
-                    
-                    if (!empty($fileRecord->mlsfNo)) {
-                        $displayFileNo = $fileRecord->mlsfNo;
-                    } elseif (!empty($fileRecord->kangisFileNo)) {
-                        $displayFileNo = $fileRecord->kangisFileNo;
-                    } elseif (!empty($fileRecord->NewKANGISFileNo)) {
-                        $displayFileNo = $fileRecord->NewKANGISFileNo;
+                    if (!empty($fr->mlsfNo)) {
+                        $displayFileNo = $fr->mlsfNo;
+                    } elseif (!empty($fr->kangisFileNo)) {
+                        $displayFileNo = $fr->kangisFileNo;
+                    } elseif (!empty($fr->NewKANGISFileNo)) {
+                        $displayFileNo = $fr->NewKANGISFileNo;
                     }
-                    
-                    // Only show records that have at least one file number
-                    if (empty($displayFileNo)) continue;
-                @endphp
-                
-                <option value="{{ $fileRecord->id }}" 
-                        data-id="{{ $fileRecord->id }}"
-                        data-fileno="{{ $displayFileNo }}"
-                        data-kangis-fileno="{{ $fileRecord->kangisFileNo ?? '' }}"
-                        data-mls-fileno="{{ $fileRecord->mlsfNo ?? '' }}"
-                        data-newkangis-fileno="{{ $fileRecord->NewKANGISFileNo ?? '' }}">
-                    {{ $displayFileNo }}
+                    $displayFileNo = trim((string) $displayFileNo);
+                    if ($displayFileNo === '') continue;
+
+                    $key = strtoupper($displayFileNo);
+                    if (!isset($entries[$key])) {
+                        $entries[$key] = [
+                            'source' => 'fileNumber',
+                            'id' => $fr->id,
+                            'fileno' => $displayFileNo,
+                            'kangisFileNo' => $fr->kangisFileNo ?? '',
+                            'mlsfNo' => $fr->mlsfNo ?? '',
+                            'NewKANGISFileNo' => $fr->NewKANGISFileNo ?? '',
+                        ];
+                    }
+                }
+
+                // 2) subapplications table
+                $subapps = DB::connection('sqlsrv')->select("\n                    SELECT [id], [fileno]\n                    FROM [klas].[dbo].[subapplications]\n                    WHERE [fileno] IS NOT NULL AND LTRIM(RTRIM([fileno])) <> ''\n                    ORDER BY [id] DESC\n                ");
+                foreach ($subapps as $sa) {
+                    $fileno = trim((string) $sa->fileno);
+                    if ($fileno === '') continue;
+                    $key = strtoupper($fileno);
+                    if (!isset($entries[$key])) {
+                        $entries[$key] = [
+                            'source' => 'subapplications',
+                            'id' => $sa->id,
+                            'fileno' => $fileno,
+                            'kangisFileNo' => '',
+                            'mlsfNo' => '',
+                            'NewKANGISFileNo' => '',
+                        ];
+                    }
+                }
+
+                // 3) mother_applications table
+                $mothers = DB::connection('sqlsrv')->select("\n                    SELECT [id], [fileno]\n                    FROM [klas].[dbo].[mother_applications]\n                    WHERE [fileno] IS NOT NULL AND LTRIM(RTRIM([fileno])) <> ''\n                    ORDER BY [id] DESC\n                ");
+                foreach ($mothers as $ma) {
+                    $fileno = trim((string) $ma->fileno);
+                    if ($fileno === '') continue;
+                    $key = strtoupper($fileno);
+                    if (!isset($entries[$key])) {
+                        $entries[$key] = [
+                            'source' => 'mother_applications',
+                            'id' => $ma->id,
+                            'fileno' => $fileno,
+                            'kangisFileNo' => '',
+                            'mlsfNo' => '',
+                            'NewKANGISFileNo' => '',
+                        ];
+                    }
+                }
+            @endphp
+            @foreach($entries as $entry)
+                <option value="{{ $entry['source'] }}:{{ $entry['id'] }}" 
+                        data-id="{{ $entry['source'] }}:{{ $entry['id'] }}"
+                        data-fileno="{{ $entry['fileno'] }}"
+                        data-kangis-fileno="{{ $entry['kangisFileNo'] }}"
+                        data-mls-fileno="{{ $entry['mlsfNo'] }}"
+                        data-newkangis-fileno="{{ $entry['NewKANGISFileNo'] }}"
+                        data-source="{{ $entry['source'] }}">
+                    {{ $entry['fileno'] }}
+                    @if($entry['fileno'] === 'RES-455')
+                        <!-- Debug: RES-455 found in dropdown -->
+                    @endif
                 </option>
             @endforeach
         </select>
-        <p class="text-xs text-gray-500 mt-1">Search and select file numbers from fileNumber database</p>
+        <p class="text-xs text-gray-500 mt-1">Search and select file numbers from fileNumber, subapplications, and mother_applications tables</p>
         
         <!-- Selected File Number Display (in dropdown mode) -->
         <div id="selected-fileno-display" class="hidden mt-3">
@@ -109,6 +154,22 @@ function smartFilenoSelector() {
         
         init() {
             console.log('Smart CT Fileno Selector initialized');
+            
+            // Debug: Log all available options
+            const selectElement = document.getElementById('fileno-select');
+            if (selectElement) {
+                const options = Array.from(selectElement.options);
+                console.log('Available file numbers in dropdown:', options.map(opt => opt.dataset.fileno || opt.text).filter(text => text && text !== 'Select File Number'));
+                
+                // Check specifically for RES-455
+                const res455Option = options.find(opt => opt.dataset.fileno === 'RES-455');
+                if (res455Option) {
+                    console.log('RES-455 found in dropdown:', res455Option);
+                } else {
+                    console.log('RES-455 NOT found in dropdown');
+                }
+            }
+            
             this.initializeSelect2();
         },
         
@@ -186,6 +247,7 @@ function smartFilenoSelector() {
             this.displayAllFileNumbers();
             
             // Dispatch event for other components
+            console.log('Dispatching ct-fileno-selected event with fileno:', this.selectedFileno);
             this.$dispatch('ct-fileno-selected', {
                 fileno: this.selectedFileno,
                 application: this.selectedApplication
@@ -254,6 +316,7 @@ function smartFilenoSelector() {
             }
             
             // Dispatch clear event
+            console.log('Dispatching ct-fileno-cleared event');
             this.$dispatch('ct-fileno-cleared');
         }
     }
