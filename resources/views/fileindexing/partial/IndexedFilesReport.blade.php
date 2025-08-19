@@ -359,14 +359,44 @@
                             </svg>
                             <input type="search" placeholder="Search indexed files..." class="Input w-full pl-8" id="search-input">
                         </div>
-                        <button class="Button Button-variant-outline gap-2 bg-transparent" id="download-report">
-                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="7 10 12 15 17 10"></polyline>
-                                <line x1="12" y1="15" x2="12" y2="3"></line>
-                            </svg>
-                            Download Report
-                        </button>
+                        <div class="relative">
+                            <button class="Button Button-variant-outline gap-2 bg-transparent" id="actions-menu-btn">
+                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="1"></circle>
+                                    <circle cx="12" cy="5" r="1"></circle>
+                                    <circle cx="12" cy="19" r="1"></circle>
+                                </svg>
+                                Actions
+                            </button>
+                            <div class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-10 hidden" id="actions-menu">
+                                <div class="py-1">
+                                    <button class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" id="generate-tracking-sheet">
+                                        <svg class="h-4 w-4 inline mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14 2 14 8 20 8"></polyline>
+                                        </svg>
+                                        Generate Tracking Sheet
+                                    </button>
+                                    <button class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" id="print-tracking-sheet">
+                                        <svg class="h-4 w-4 inline mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2 2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                                            <rect width="12" height="8" x="6" y="14"></rect>
+                                        </svg>
+                                        Print Tracking Sheet
+                                    </button>
+                                    <hr class="my-1">
+                                    <button class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" id="download-report">
+                                        <svg class="h-4 w-4 inline mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="7 10 12 15 17 10"></polyline>
+                                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                                        </svg>
+                                        Download Report
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -393,6 +423,9 @@
                     <table class="Table">
                         <thead class="TableHeader">
                             <tr class="TableRow">
+                                <th class="TableHead min-w-[50px]">
+                                    <input type="checkbox" id="select-all-indexed" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                </th>
                                 <th class="TableHead cursor-pointer min-w-[150px]" data-sort="file_number">
                                     File&nbsp;Number
                                     <svg class="ml-2 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -516,6 +549,14 @@
         const closeModalBtn = document.getElementById('close-modal');
         const modalContent = document.getElementById('modal-content');
         const modalTitle = document.getElementById('modal-title');
+        const selectAllCheckbox = document.getElementById('select-all-indexed');
+        const actionsMenuBtn = document.getElementById('actions-menu-btn');
+        const actionsMenu = document.getElementById('actions-menu');
+        const generateTrackingSheetBtn = document.getElementById('generate-tracking-sheet');
+        const printTrackingSheetBtn = document.getElementById('print-tracking-sheet');
+
+        // Selected files tracking
+        let selectedFiles = new Set();
 
         // Current sort state
         let currentSort = {
@@ -622,6 +663,9 @@
                 }
                 
                 row.innerHTML = `
+                    <td class="TableCell">
+                        <input type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 file-checkbox" data-file-id="${file.id}" ${selectedFiles.has(file.id) ? 'checked' : ''}>
+                    </td>
                     <td class="TableCell font-medium">${file.file_number || 'N/A'}</td>
                     <td class="TableCell">${file.file_title || 'Untitled'}</td>
                     <td class="TableCell">${formatDate(file.created_at)}</td>
@@ -663,6 +707,13 @@
                     showFileDetails(fileId);
                 });
             });
+
+            // Add event listeners to checkboxes
+            document.querySelectorAll('.file-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', handleFileSelection);
+            });
+
+            updateSelectAllCheckbox();
         }
 
         // Show file details in modal
@@ -860,6 +911,362 @@
             document.body.removeChild(link);
         }
 
+        // Handle file selection
+        function handleFileSelection(event) {
+            const fileId = parseInt(event.target.getAttribute('data-file-id'));
+            
+            if (event.target.checked) {
+                selectedFiles.add(fileId);
+            } else {
+                selectedFiles.delete(fileId);
+            }
+            
+            updateSelectAllCheckbox();
+            updateNewFileIndexButton();
+        }
+
+        // Handle select all checkbox
+        function handleSelectAll(event) {
+            const isChecked = event.target.checked;
+            
+            if (isChecked) {
+                // Select all visible files
+                filteredAndSortedIndexedFiles.forEach(file => {
+                    selectedFiles.add(file.id);
+                });
+            } else {
+                // Deselect all files
+                selectedFiles.clear();
+            }
+            
+            // Update individual checkboxes
+            document.querySelectorAll('.file-checkbox').forEach(checkbox => {
+                const fileId = parseInt(checkbox.getAttribute('data-file-id'));
+                checkbox.checked = selectedFiles.has(fileId);
+            });
+            
+            updateNewFileIndexButton();
+        }
+
+        // Update select all checkbox state
+        function updateSelectAllCheckbox() {
+            const visibleFileIds = filteredAndSortedIndexedFiles.map(f => f.id);
+            const selectedVisibleFiles = visibleFileIds.filter(id => selectedFiles.has(id));
+            
+            if (selectedVisibleFiles.length === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else if (selectedVisibleFiles.length === visibleFileIds.length) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            }
+        }
+
+        // Update New File Index button based on selection
+        function updateNewFileIndexButton() {
+            const newFileIndexBtn = document.getElementById('new-file-index-btn');
+            if (!newFileIndexBtn) return;
+
+            const selectedCount = selectedFiles.size;
+            
+            if (selectedCount === 0) {
+                newFileIndexBtn.innerHTML = `
+                    <i data-lucide="folder-plus" class="h-5 w-5 mr-2"></i>
+                    <span class="font-medium">New File Index</span>
+                `;
+            } else if (selectedCount === 1) {
+                newFileIndexBtn.innerHTML = `
+                    <i data-lucide="file-text" class="h-5 w-5 mr-2"></i>
+                    <span class="font-medium">Generate Tracking Sheet</span>
+                `;
+            } else {
+                newFileIndexBtn.innerHTML = `
+                    <i data-lucide="files" class="h-5 w-5 mr-2"></i>
+                    <span class="font-medium">Generate Batch Tracking Sheets</span>
+                `;
+            }
+            
+            // Re-initialize lucide icons
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
+        // Toggle actions menu
+        function toggleActionsMenu() {
+            actionsMenu.classList.toggle('hidden');
+        }
+
+        // Generate tracking sheet
+        function generateTrackingSheet() {
+            if (selectedFiles.size === 0) {
+                alert('Please select at least one file to generate tracking sheet.');
+                return;
+            }
+
+            const selectedFileData = Array.from(selectedFiles).map(fileId => {
+                return indexedFiles.find(f => f.id === fileId);
+            }).filter(Boolean);
+
+            // Create simple tracking sheet content
+            let trackingSheetContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>File Tracking Sheet</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        .header { text-align: center; margin-bottom: 30px; }
+                        .file-info { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; }
+                        .file-number { font-weight: bold; font-size: 18px; }
+                        .details { margin-top: 10px; }
+                        .detail-row { margin: 5px 0; }
+                        .tracking-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+                        .tracking-table th, .tracking-table td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+                        .tracking-table th { background-color: #f5f5f5; }
+                        @media print { body { margin: 0; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>File Tracking Sheet</h1>
+                        <p>Generated on: ${new Date().toLocaleDateString()}</p>
+                    </div>
+            `;
+
+            selectedFileData.forEach(file => {
+                trackingSheetContent += `
+                    <div class="file-info">
+                        <div class="file-number">File Number: ${file.file_number || 'N/A'}</div>
+                        <div class="details">
+                            <div class="detail-row"><strong>Title:</strong> ${file.file_title || 'Untitled'}</div>
+                            <div class="detail-row"><strong>Land Use:</strong> ${file.land_use_type || 'N/A'}</div>
+                            <div class="detail-row"><strong>District:</strong> ${file.district || 'N/A'}</div>
+                            <div class="detail-row"><strong>Plot Number:</strong> ${file.plot_number || 'N/A'}</div>
+                            <div class="detail-row"><strong>Indexed Date:</strong> ${formatDate(file.created_at)}</div>
+                        </div>
+                        <table class="tracking-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Action</th>
+                                    <th>Officer</th>
+                                    <th>Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                                <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                                <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                                <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                                <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            });
+
+            trackingSheetContent += `
+                </body>
+                </html>
+            `;
+
+            // Create blob and download
+            const blob = new Blob([trackingSheetContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `tracking_sheet_${new Date().toISOString().split('T')[0]}.html`;
+            link.click();
+            URL.revokeObjectURL(url);
+
+            actionsMenu.classList.add('hidden');
+        }
+
+        // Print tracking sheet
+        function printTrackingSheet() {
+            if (selectedFiles.size === 0) {
+                alert('Please select at least one file to print tracking sheet.');
+                return;
+            }
+
+            const selectedFileData = Array.from(selectedFiles).map(fileId => {
+                return indexedFiles.find(f => f.id === fileId);
+            }).filter(Boolean);
+
+            // Create simple tracking sheet content
+            let trackingSheetContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>File Tracking Sheet</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        .header { text-align: center; margin-bottom: 30px; }
+                        .file-info { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; page-break-inside: avoid; }
+                        .file-number { font-weight: bold; font-size: 18px; }
+                        .details { margin-top: 10px; }
+                        .detail-row { margin: 5px 0; }
+                        .tracking-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+                        .tracking-table th, .tracking-table td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+                        .tracking-table th { background-color: #f5f5f5; }
+                        @media print { body { margin: 0; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>File Tracking Sheet</h1>
+                        <p>Generated on: ${new Date().toLocaleDateString()}</p>
+                    </div>
+            `;
+
+            selectedFileData.forEach(file => {
+                trackingSheetContent += `
+                    <div class="file-info">
+                        <div class="file-number">File Number: ${file.file_number || 'N/A'}</div>
+                        <div class="details">
+                            <div class="detail-row"><strong>Title:</strong> ${file.file_title || 'Untitled'}</div>
+                            <div class="detail-row"><strong>Land Use:</strong> ${file.land_use_type || 'N/A'}</div>
+                            <div class="detail-row"><strong>District:</strong> ${file.district || 'N/A'}</div>
+                            <div class="detail-row"><strong>Plot Number:</strong> ${file.plot_number || 'N/A'}</div>
+                            <div class="detail-row"><strong>Indexed Date:</strong> ${formatDate(file.created_at)}</div>
+                        </div>
+                        <table class="tracking-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Action</th>
+                                    <th>Officer</th>
+                                    <th>Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                                <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                                <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                                <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                                <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            });
+
+            trackingSheetContent += `
+                </body>
+                </html>
+            `;
+
+            // Open in new window and print
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(trackingSheetContent);
+            printWindow.document.close();
+            printWindow.focus();
+            printWindow.print();
+
+            actionsMenu.classList.add('hidden');
+        }
+
         // Initialize the page when loaded
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', function() {
+            init();
+            
+            // Add event listeners for new functionality
+            selectAllCheckbox.addEventListener('change', handleSelectAll);
+            actionsMenuBtn.addEventListener('click', toggleActionsMenu);
+            generateTrackingSheetBtn.addEventListener('click', generateTrackingSheet);
+            printTrackingSheetBtn.addEventListener('click', printTrackingSheet);
+            
+            // Close actions menu when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!actionsMenuBtn.contains(event.target) && !actionsMenu.contains(event.target)) {
+                    actionsMenu.classList.add('hidden');
+                }
+            });
+        });
     </script>
+
+<script>
+// Fix for Generate Batch Tracking Sheets button - ensure it's always enabled when files are selected
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait for the page to fully load
+    setTimeout(function() {
+        // Add a mutation observer to watch for button text changes
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                    const newFileIndexBtn = document.getElementById('new-file-index-btn');
+                    if (newFileIndexBtn && (
+                        newFileIndexBtn.textContent.includes('Generate Tracking Sheet') || 
+                        newFileIndexBtn.textContent.includes('Generate Batch Tracking Sheets')
+                    )) {
+                        newFileIndexBtn.disabled = false;
+                        newFileIndexBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        console.log('Button enabled for tracking sheet generation');
+                    }
+                }
+            });
+        });
+        
+        // Start observing the button for changes
+        const newFileIndexBtn = document.getElementById('new-file-index-btn');
+        if (newFileIndexBtn) {
+            observer.observe(newFileIndexBtn, {
+                childList: true,
+                subtree: true,
+                characterData: true
+            });
+            
+            // Also enable it immediately if it's already showing tracking sheet text
+            if (newFileIndexBtn.textContent.includes('Generate Tracking Sheet') || 
+                newFileIndexBtn.textContent.includes('Generate Batch Tracking Sheets')) {
+                newFileIndexBtn.disabled = false;
+                newFileIndexBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+        
+        // Ensure action menu buttons work properly
+        const generateBtn = document.getElementById('generate-tracking-sheet');
+        const printBtn = document.getElementById('print-tracking-sheet');
+        
+        if (generateBtn) {
+            generateBtn.addEventListener('click', function() {
+                const selectedCheckboxes = document.querySelectorAll('#indexed-tab .file-checkbox:checked');
+                if (selectedCheckboxes.length === 0) {
+                    alert('Please select at least one file to generate tracking sheets.');
+                    return;
+                }
+                
+                // Call the existing function if available
+                if (typeof generateTrackingSheet === 'function') {
+                    generateTrackingSheet();
+                } else {
+                    console.log('generateTrackingSheet function not found');
+                    alert('Generating tracking sheets for ' + selectedCheckboxes.length + ' selected files...');
+                }
+            });
+        }
+        
+        if (printBtn) {
+            printBtn.addEventListener('click', function() {
+                const selectedCheckboxes = document.querySelectorAll('#indexed-tab .file-checkbox:checked');
+                if (selectedCheckboxes.length === 0) {
+                    alert('Please select at least one file to print tracking sheets.');
+                    return;
+                }
+                
+                // Call the existing function if available
+                if (typeof printTrackingSheet === 'function') {
+                    printTrackingSheet();
+                } else {
+                    console.log('printTrackingSheet function not found');
+                    alert('Printing tracking sheets for ' + selectedCheckboxes.length + ' selected files...');
+                }
+            });
+        }
+    }, 500);
+});
+</script>

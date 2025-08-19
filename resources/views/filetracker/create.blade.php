@@ -42,7 +42,7 @@
                                     </svg>
                                     <div>
                                         <h3 class="text-sm font-medium text-blue-800">Batch Tracking Mode</h3>
-                                        <p class="text-sm text-blue-700">You are creating tracking records for multiple files. Batch #<span id="batch-number">Loading...</span></p>
+                                        <p class="text-sm text-blue-700">You are creating tracking records for multiple files.</p>
                                     </div>
                                 </div>
                             </div>
@@ -50,7 +50,6 @@
 
                         <form action="{{ request('batch') === 'true' ? route('filetracker.store-batch') : route('filetracker.store') }}" method="POST" class="space-y-6" id="tracking-form">
                             @csrf
-                            <input type="hidden" name="batch_no" id="batch_no" value="">
                             
                             <!-- Error Messages -->
                             @if ($errors->any())
@@ -162,10 +161,10 @@
                                                 class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('status') border-red-500 @enderror"
                                                 required>
                                             <option value="">Select Status</option>
-                                            <option value="active" {{ old('status') == 'active' ? 'selected' : '' }}>Active</option>
-                                            <option value="checked_out" {{ old('status') == 'checked_out' ? 'selected' : '' }}>Checked Out</option>
-                                            <option value="returned" {{ old('status') == 'returned' ? 'selected' : '' }}>Returned</option>
-                                            <option value="archived" {{ old('status') == 'archived' ? 'selected' : '' }}>Archived</option>
+                                            <option value="in_process" {{ old('status') == 'in_process' ? 'selected' : '' }}>In Process</option>
+                                            <option value="pending" {{ old('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                                            <option value="on_hold" {{ old('status') == 'on_hold' ? 'selected' : '' }}>On Hold</option>
+                                            <option value="completed" {{ old('status') == 'completed' ? 'selected' : '' }}>Completed</option>
                                         </select>
                                         @error('status')
                                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -197,43 +196,6 @@
                                                value="{{ old('due_date') }}"
                                                class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('due_date') border-red-500 @enderror">
                                         @error('due_date')
-                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- RFID/QR Code Section -->
-                            <div class="bg-white rounded-lg shadow-sm border p-6">
-                                <h2 class="text-lg font-semibold mb-4">RFID & QR Code (Optional)</h2>
-                                
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label for="rfid_tag" class="block text-sm font-medium text-gray-700 mb-2">
-                                            RFID Tag
-                                        </label>
-                                        <input type="text" 
-                                               name="rfid_tag" 
-                                               id="rfid_tag" 
-                                               value="{{ old('rfid_tag') }}"
-                                               class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('rfid_tag') border-red-500 @enderror"
-                                               placeholder="e.g., RFID-001234">
-                                        @error('rfid_tag')
-                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-
-                                    <div>
-                                        <label for="qr_code" class="block text-sm font-medium text-gray-700 mb-2">
-                                            QR Code
-                                        </label>
-                                        <input type="text" 
-                                               name="qr_code" 
-                                               id="qr_code" 
-                                               value="{{ old('qr_code') }}"
-                                               class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('qr_code') border-red-500 @enderror"
-                                               placeholder="e.g., QR-001234">
-                                        @error('qr_code')
                                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                         @enderror
                                     </div>
@@ -301,19 +263,7 @@
             function initializeBatchMode() {
                 const fileIds = '{{ request("files") }}'.split(',').filter(id => id.trim() !== '');
                 
-                // Get batch number
-                $.ajax({
-                    url: '{{ route("filetracker.get-next-batch-number") }}',
-                    method: 'GET',
-                    success: function(response) {
-                        if (response.success) {
-                            $('#batch-number').text(response.batch_no);
-                            $('#batch_no').val(response.batch_no);
-                        }
-                    }
-                });
-                
-                // Load selected files
+                // Load selected files directly
                 if (fileIds.length > 0) {
                     loadSelectedFiles(fileIds);
                 }
@@ -369,15 +319,13 @@
             // Create batch forms
             function createBatchForms() {
                 const formContainer = $('#tracking-form');
-                const originalForm = formContainer.html();
                 
                 // Clear the form and rebuild for batch
                 formContainer.empty();
                 
-                // Add CSRF token and batch number
+                // Add CSRF token
                 formContainer.append(`
                     @csrf
-                    <input type="hidden" name="batch_no" value="${$('#batch_no').val()}">
                 `);
                 
                 selectedFiles.forEach((file, index) => {
@@ -416,7 +364,7 @@
                                         <span class="ml-2 text-sm text-gray-500">${file.file_title || 'No Title'}</span>
                                     </div>
                                     <div class="text-sm text-gray-500">
-                                        Batch #${$('#batch_no').val()}
+                                        Batch Processing
                                     </div>
                                 </div>
                                 <div class="flex items-center space-x-2">
@@ -485,10 +433,10 @@
                                                 class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                 required>
                                             <option value="">Select Status</option>
-                                            <option value="active" selected>Active</option>
-                                            <option value="checked_out">Checked Out</option>
-                                            <option value="returned">Returned</option>
-                                            <option value="archived">Archived</option>
+                                            <option value="in_process" selected>In Process</option>
+                                            <option value="pending">Pending</option>
+                                            <option value="on_hold">On Hold</option>
+                                            <option value="completed">Completed</option>
                                         </select>
                                     </div>
 
@@ -510,29 +458,6 @@
                                         <input type="date" 
                                                name="files[${index}][due_date]" 
                                                class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                    </div>
-                                </div>
-                                
-                                <!-- RFID/QR Code -->
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                                            RFID Tag
-                                        </label>
-                                        <input type="text" 
-                                               name="files[${index}][rfid_tag]" 
-                                               class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                               placeholder="e.g., RFID-001234">
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                                            QR Code
-                                        </label>
-                                        <input type="text" 
-                                               name="files[${index}][qr_code]" 
-                                               class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                               placeholder="e.g., QR-001234">
                                     </div>
                                 </div>
                                 

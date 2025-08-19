@@ -296,25 +296,121 @@
       e.stopPropagation();
     });
     
-    // File view functionality (clicking on file rows or view buttons)
-    $('.file-row, .file-view-btn').click(function(e) {
+    // File view functionality (clicking on file rows or view buttons) - dynamic sidebar update (no reload)
+    $(document).on('click', '.file-row, .file-view-btn', function(e) {
       e.preventDefault();
-      
-      // Get the tracking ID from the row
+
+      // Get the tracking ID from the row/button
       const trackingId = $(this).closest('tr').data('tracking-id') || $(this).data('tracking-id');
-      
       if (!trackingId) {
         console.error('No tracking ID found');
         return;
       }
-      
+
       // Highlight the selected row
       $('.file-row').removeClass('bg-gray-50');
       $(this).closest('tr').addClass('bg-gray-50');
-      
-      // Load file details from API
-      loadFileDetails(trackingId);
+
+      // Fetch file details via API and update sidebar
+      $.ajax({
+        url: `${API_BASE}/file-trackings/${trackingId}`,
+        method: 'GET',
+        success: function(response) {
+          if (response.success && response.data) {
+            updateSidebarDetails(response.data);
+          } else {
+            console.error('Failed to load file details');
+          }
+        },
+        error: function(xhr) {
+          console.error('Error loading file details:', xhr);
+        }
+      });
     });
+
+    function updateSidebarDetails(tracking) {
+      // Update ID
+      const idText = 'TRK-' + String(tracking.id).padStart(6, '0');
+      $('.file-details .px-6.py-4.border-b p.text-sm.text-gray-500').text(idText);
+
+      // Update title
+      const title = tracking.file_indexing?.file_title || 'File Title Not Available';
+      $('.file-details h2').nextAll('div').find('h3').text(title);
+
+      // Update status badge
+      const statusMap = {
+        'in_process': { text: 'In Process', cls: 'badge-default' },
+        'pending': { text: 'Pending', cls: 'badge-warning' },
+        'on_hold': { text: 'On Hold', cls: 'badge-destructive' },
+        'completed': { text: 'Completed', cls: 'badge-outline' }
+      };
+      const statusInfo = statusMap[tracking.status] || { text: tracking.status, cls: 'badge-secondary' };
+      const $badge = $('.file-details .px-6.py-4.border-b .badge');
+      $badge.removeClass().addClass('badge ' + statusInfo.cls).text(statusInfo.text);
+
+      // Update numbers
+      const fileNumber = tracking.file_indexing?.file_number || 'N/A';
+      const oldFileNumber = tracking.file_indexing?.old_file_number || null;
+      const surveyPlan = tracking.file_indexing?.survey_plan_number || null;
+      
+      const $numbers = $('.file-details').find('p.text-sm.font-medium:contains("File Numbers")').closest('div').next('.space-y-1');
+      $numbers.find('div:contains("File Number:")').find('p.text-xs.font-medium').text(fileNumber);
+      if (oldFileNumber) {
+        // ensure exists or append
+      }
+
+      // Update RFID
+      const rfid = tracking.rfid_tag || null;
+      const $rfidWrap = $('.file-details').find('p.text-sm.font-medium:contains("RFID Tag")').parent();
+      if (rfid) {
+        $rfidWrap.find('p.text-sm').first().text(rfid);
+        $rfidWrap.find('p.text-xs.text-gray-500').text('Last updated: ' + (tracking.updated_at || '')); 
+      } else {
+        $rfidWrap.find('p.text-sm').first().text('Not assigned');
+        $rfidWrap.find('p.text-xs.text-gray-500').text('No RFID tag assigned to this file');
+      }
+
+      // Update Current Location / Handler
+      $('.file-details').find('p.text-sm.font-medium:contains("Current Location")').parent().find('p.text-sm').last().text(tracking.current_location || 'Not Set');
+      $('.file-details').find('p.text-sm.font-medium:contains("Current Handler")').parent().find('p.text-sm').last().text(tracking.current_handler || 'Not Assigned');
+
+      // Update dates
+      const dateReceived = tracking.date_received || null;
+      const dueDate = tracking.due_date || null;
+      $('.file-details').find('p.text-sm.font-medium:contains("Date Received")').parent().find('p.text-sm').last().text(dateReceived || 'Not Set');
+      const $dueWrap = $('.file-details').find('p.text-sm.font-medium:contains("Due Date")').parent();
+      if (dueDate) {
+        $dueWrap.find('p.text-sm').first().text(dueDate);
+      } else {
+        $dueWrap.find('p.text-sm').first().text('Not Set');
+      }
+
+      // Movement history (top 5)
+      const $history = $('.file-details').find('h4:contains("Movement History")').next();
+      $history.empty();
+      if (tracking.movement_history && tracking.movement_history.length > 0) {
+        tracking.movement_history.slice(0,5).forEach(mv => {
+          const when = mv.timestamp ? new Date(mv.timestamp) : null;
+          const whenText = when ? when.toISOString().slice(0,16).replace('T',' ') : '';
+          $history.append(`
+            <div class="relative pl-5 pb-3">
+              <div class="absolute top-0 left-0 h-5 w-5 rounded-full bg-blue-600 flex items-center justify-center">
+                <div class="h-2 w-2 rounded-full bg-white"></div>
+              </div>
+              <div class="ml-2">
+                <div class="flex items-center text-xs text-gray-500">${whenText}</div>
+                <p class="text-sm font-medium mt-1">${(mv.action || 'Action').replace('_',' ')}</p>
+                ${mv.to_location || mv.initial_location ? `<div class="flex items-center text-xs mt-1">${mv.from_location ? mv.from_location + ' → ' : ''}${mv.to_location || mv.initial_location}</div>` : ''}
+                ${mv.user_name ? `<div class="flex items-center text-xs mt-1">${mv.user_name}</div>` : ''}
+                ${mv.reason ? `<p class="text-xs text-gray-500 mt-1">${mv.reason}</p>` : ''}
+              </div>
+            </div>
+          `);
+        });
+      } else {
+        $history.append('<div class="text-center py-4"><p class="text-sm text-gray-500">No movement history available</p></div>');
+      }
+    }
 
     // View buttons from RFID modal
     $('.view-file-btn').click(function() {
@@ -592,4 +688,38 @@
     window.closeRfidModal = closeRfidModal;
     window.scanRfidTag = scanRfidTag;
   });
+
+// Fix for table row clicks - add simple click handler
+.ready(function() {
+  .on('click', 'tr.file-row', function(e) {
+    e.preventDefault();
+    const trackingId = .data('tracking-id');
+    if (trackingId) {
+      console.log('Row clicked, tracking ID:', trackingId);
+      
+      // Highlight the selected row
+      tr.file-row.removeClass('bg-gray-50');
+      .addClass('bg-gray-50');
+      
+      // Update sidebar with row data (simple fallback)
+      const fileId = 'TRK-' + String(trackingId).padStart(6, '0');
+      const status = .find('.badge').text().trim();
+      const location = .find('td:nth-child(4)').text().trim();
+      const handler = .find('td:nth-child(5)').text().trim();
+      
+      // Update sidebar elements
+      .file-details .px-6.py-4.border-b p.text-sm.text-gray-500.text(fileId);
+      if (status) .file-details .px-6.py-4.border-b .badge.text(status);
+      
+      // Update location and handler if elements exist
+      const locationEl = .file-details.find('p.text-sm.font-medium:contains("Current Location")').parent().find('p.text-sm').last();
+      if (locationEl.length && location) locationEl.text(location);
+      
+      const handlerEl = .file-details.find('p.text-sm.font-medium:contains("Current Handler")').parent().find('p.text-sm').last();
+      if (handlerEl.length && handler) handlerEl.text(handler);
+      
+      console.log('Sidebar updated with basic info');
+    }
+  });
+});
 </script>

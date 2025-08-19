@@ -147,9 +147,7 @@ class FileTrackerController extends Controller
             try {
                 $fileIndexing = FileIndexing::find($fileIndexingId);
                 if ($fileIndexing) {
-                    $existingTracking = DB::connection('sqlsrv')->table('file_trackings')
-                        ->where('file_indexing_id', $fileIndexingId)
-                        ->first();
+                    $existingTracking = FileTracking::where('file_indexing_id', $fileIndexingId)->first();
                 }
             } catch (\Exception $e) {
                 Log::error('Error loading file for tracking form', [
@@ -232,11 +230,10 @@ class FileTrackerController extends Controller
      */
     public function store(Request $request) {
         try {
-            // Basic validation without unique constraints
             $validatedData = $request->validate([
                 'file_indexing_id' => 'required|integer',
-                'rfid_tag' => 'nullable|string|max:100',
-                'qr_code' => 'nullable|string|max:100',
+                'rfid_tag' => 'nullable|string|max:100|unique:file_trackings,rfid_tag',
+                'qr_code' => 'nullable|string|max:100|unique:file_trackings,qr_code',
                 'current_location' => 'required|string|max:255',
                 'current_holder' => 'nullable|string|max:255',
                 'current_handler' => 'required|string|max:255',
@@ -257,56 +254,19 @@ class FileTrackerController extends Controller
                     ->withInput();
             }
 
-            // Check if file is already being tracked using SQL Server connection
-            $existingTracking = DB::connection('sqlsrv')->table('file_trackings')
-                ->where('file_indexing_id', $validatedData['file_indexing_id'])
-                ->first();
+            // Check if file is already being tracked
+            $existingTracking = FileTracking::where('file_indexing_id', $validatedData['file_indexing_id'])->first();
             if ($existingTracking) {
                 return redirect()->back()
                     ->withErrors(['file_indexing_id' => 'This file is already being tracked.'])
                     ->withInput();
             }
 
-            // Check for duplicate RFID tag using SQL Server connection
-            if (!empty($validatedData['rfid_tag'] ?? null)) {
-                $existingRfid = DB::connection('sqlsrv')->table('file_trackings')
-                    ->where('rfid_tag', $validatedData['rfid_tag'])
-                    ->first();
-                if ($existingRfid) {
-                    return redirect()->back()
-                        ->withErrors(['rfid_tag' => 'This RFID tag is already in use.'])
-                        ->withInput();
-                }
-            }
-
-            // Check for duplicate QR code using SQL Server connection
-            if (!empty($validatedData['qr_code'] ?? null)) {
-                $existingQr = DB::connection('sqlsrv')->table('file_trackings')
-                    ->where('qr_code', $validatedData['qr_code'])
-                    ->first();
-                if ($existingQr) {
-                    return redirect()->back()
-                        ->withErrors(['qr_code' => 'This QR code is already in use.'])
-                        ->withInput();
-                }
-            }
-
-            // Get file details for QR code generation
-            $fileDetails = DB::connection('sqlsrv')->table('file_indexings')
-                ->where('id', $validatedData['file_indexing_id'])
-                ->first();
-
-            // Generate QR code using file number and title if not provided
-            if (empty($validatedData['qr_code']) && $fileDetails) {
-                $titlePart = $fileDetails->file_title ? substr(str_replace([' ', '/', '\\', ':', '*', '?', '"', '<', '>', '|'], '-', $fileDetails->file_title), 0, 20) : 'UNTITLED';
-                $validatedData['qr_code'] = $fileDetails->file_number . '-' . $titlePart;
-            }
-
-            // Create the tracking entry using raw SQL (insert selected status as-is)
-            $insertData = [
+            // Create the tracking entry using raw SQL to bypass constraints
+            $trackingId = DB::connection('sqlsrv')->table('file_trackings')->insertGetId([
                 'file_indexing_id' => $validatedData['file_indexing_id'],
-                'rfid_tag' => $validatedData['rfid_tag'] ?? null,
-                'qr_code' => $validatedData['qr_code'] ?? null,
+                'rfid_tag' => $validatedData['rfid_tag'],
+                'qr_code' => $validatedData['qr_code'],
                 'current_location' => $validatedData['current_location'],
                 'current_holder' => $validatedData['current_holder'],
                 'current_handler' => $validatedData['current_handler'],
@@ -324,8 +284,7 @@ class FileTrackerController extends Controller
                     'initial_handler' => $validatedData['current_handler'],
                     'initial_status' => $validatedData['status']
                 ]])
-            ];
-            $trackingId = DB::connection('sqlsrv')->table('file_trackings')->insertGetId($insertData);
+            ]);
             
             // Get the created tracking record
             $tracking = FileTracking::find($trackingId);
@@ -371,7 +330,11 @@ class FileTrackerController extends Controller
                 'id', 'file_number', 'file_title', 'land_use_type', 
                 'district', 'created_at'
             )
-            // Show all indexed files regardless of tracking status
+            ->whereNotIn('id', function($subQuery) {
+                $subQuery->select('file_indexing_id')
+                         ->from('file_trackings')
+                         ->whereNotNull('file_indexing_id');
+            })
             ->orderBy('created_at', 'desc')
             ->limit(100)
             ->get();
@@ -400,6 +363,31 @@ class FileTrackerController extends Controller
     }
 
     /**
+     * Get next batch number for tracking
+     */
+    public function getNextBatchNumber() {
+        try {
+            $lastBatch = FileTracking::max('batch_no');
+            $nextBatch = $lastBatch ? $lastBatch + 1 : 1;
+            
+            return response()->json([
+                'success' => true,
+                'batch_no' => $nextBatch
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting next batch number', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error getting batch number'
+            ], 500);
+        }
+    }
+
+    /**
      * Store multiple file tracking entries (batch processing)
      */
     public function storeBatch(Request $request) {
@@ -415,7 +403,8 @@ class FileTrackerController extends Controller
                 'files.*.date_received' => 'required|date',
                 'files.*.due_date' => 'nullable|date|after:files.*.date_received',
                 'files.*.status' => 'required|string|in:in_process,pending,on_hold,completed',
-                'files.*.notes' => 'nullable|string|max:1000'
+                'files.*.notes' => 'nullable|string|max:1000',
+                'batch_no' => 'required|integer'
             ]);
 
             $createdTrackings = [];
@@ -435,59 +424,34 @@ class FileTrackerController extends Controller
                         continue;
                     }
 
-                    // Check if file is already being tracked using SQL Server connection
-                    $existingTracking = DB::connection('sqlsrv')->table('file_trackings')
-                        ->where('file_indexing_id', $fileData['file_indexing_id'])
-                        ->first();
+                    // Check if file is already being tracked
+                    $existingTracking = FileTracking::where('file_indexing_id', $fileData['file_indexing_id'])->first();
                     if ($existingTracking) {
                         $errors[] = "File {$fileData['file_indexing_id']} is already being tracked";
                         continue;
                     }
 
-                    // Check for duplicate RFID tags using SQL Server connection
-                    if (!empty($fileData['rfid_tag'] ?? null)) {
-                        $existingRfid = DB::connection('sqlsrv')->table('file_trackings')
-                            ->where('rfid_tag', $fileData['rfid_tag'])
-                            ->first();
+                    // Check for duplicate RFID tags in this batch
+                    if (!empty($fileData['rfid_tag'])) {
+                        $existingRfid = FileTracking::where('rfid_tag', $fileData['rfid_tag'])->first();
                         if ($existingRfid) {
                             $errors[] = "RFID tag {$fileData['rfid_tag']} is already in use";
                             continue;
                         }
                     }
 
-                    // Check for duplicate QR codes using SQL Server connection
-                    if (!empty($fileData['qr_code'] ?? null)) {
-                        $existingQr = DB::connection('sqlsrv')->table('file_trackings')
-                            ->where('qr_code', $fileData['qr_code'])
-                            ->first();
-                        if ($existingQr) {
-                            $errors[] = "QR code {$fileData['qr_code']} is already in use";
-                            continue;
-                        }
-                    }
-
-                    // Get file details for QR code generation
-                    $fileDetails = DB::connection('sqlsrv')->table('file_indexings')
-                        ->where('id', $fileData['file_indexing_id'])
-                        ->first();
-
-                    // Generate QR code using file number and title if not provided
-                    if (empty($fileData['qr_code']) && $fileDetails) {
-                        $titlePart = $fileDetails->file_title ? substr(str_replace([' ', '/', '\\', ':', '*', '?', '"', '<', '>', '|'], '-', $fileDetails->file_title), 0, 20) : 'UNTITLED';
-                        $fileData['qr_code'] = $fileDetails->file_number . '-' . $titlePart;
-                    }
-
-                    // Create the tracking entry using raw SQL (insert selected status as-is)
-                    $insertData = [
+                    // Create the tracking entry using raw SQL to bypass constraints
+                    $trackingId = DB::connection('sqlsrv')->table('file_trackings')->insertGetId([
                         'file_indexing_id' => $fileData['file_indexing_id'],
-                        'rfid_tag' => $fileData['rfid_tag'] ?? null,
-                        'qr_code' => $fileData['qr_code'] ?? null,
+                        'rfid_tag' => $fileData['rfid_tag'],
+                        'qr_code' => $fileData['qr_code'],
                         'current_location' => $fileData['current_location'],
                         'current_holder' => $fileData['current_holder'],
                         'current_handler' => $fileData['current_handler'],
                         'date_received' => $fileData['date_received'],
                         'due_date' => $fileData['due_date'],
                         'status' => $fileData['status'],
+                        'batch_no' => $validatedData['batch_no'],
                         'created_at' => now(),
                         'updated_at' => now(),
                         'movement_history' => json_encode([[
@@ -499,8 +463,7 @@ class FileTrackerController extends Controller
                             'initial_handler' => $fileData['current_handler'],
                             'initial_status' => $fileData['status']
                         ]])
-                    ];
-                    $trackingId = DB::connection('sqlsrv')->table('file_trackings')->insertGetId($insertData);
+                    ]);
                     
                     // Get the created tracking record
                     $tracking = FileTracking::find($trackingId);
@@ -531,6 +494,7 @@ class FileTrackerController extends Controller
             DB::commit();
 
             Log::info('Batch file tracking created successfully', [
+                'batch_no' => $validatedData['batch_no'],
                 'created_count' => count($createdTrackings),
                 'errors_count' => count($errors),
                 'user_id' => auth()->id()
