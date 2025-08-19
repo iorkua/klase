@@ -296,6 +296,185 @@ class FileTrackerController extends Controller
     }
 
     /**
+     * Get indexed files that are not yet being tracked (AJAX endpoint)
+     */
+    public function getIndexedFiles(Request $request) {
+        try {
+            // Get files from file_indexings that are not yet being tracked
+            $indexedFiles = FileIndexing::select(
+                'id', 'file_number', 'file_title', 'land_use_type', 
+                'district', 'created_at'
+            )
+            ->whereNotIn('id', function($subQuery) {
+                $subQuery->select('file_indexing_id')
+                         ->from('file_trackings')
+                         ->whereNotNull('file_indexing_id');
+            })
+            ->orderBy('created_at', 'desc')
+            ->limit(100)
+            ->get();
+
+            Log::info('Indexed files retrieved for tracking', [
+                'count' => $indexedFiles->count(),
+                'user_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $indexedFiles
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error retrieving indexed files', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving indexed files'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get next batch number for tracking
+     */
+    public function getNextBatchNumber() {
+        try {
+            $lastBatch = FileTracking::max('batch_no');
+            $nextBatch = $lastBatch ? $lastBatch + 1 : 1;
+            
+            return response()->json([
+                'success' => true,
+                'batch_no' => $nextBatch
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting next batch number', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error getting batch number'
+            ], 500);
+        }
+    }
+
+    /**
+     * Store multiple file tracking entries (batch processing)
+     */
+    public function storeBatch(Request $request) {
+        try {
+            $validatedData = $request->validate([
+                'files' => 'required|array|min:1',
+                'files.*.file_indexing_id' => 'required|integer|exists:file_indexings,id',
+                'files.*.rfid_tag' => 'nullable|string|max:100',
+                'files.*.qr_code' => 'nullable|string|max:100',
+                'files.*.current_location' => 'required|string|max:255',
+                'files.*.current_holder' => 'nullable|string|max:255',
+                'files.*.current_handler' => 'required|string|max:255',
+                'files.*.date_received' => 'required|date',
+                'files.*.due_date' => 'nullable|date|after:files.*.date_received',
+                'files.*.status' => 'required|string|in:active,checked_out,overdue,returned,lost,archived',
+                'files.*.notes' => 'nullable|string|max:1000',
+                'batch_no' => 'required|integer'
+            ]);
+
+            $createdTrackings = [];
+            $errors = [];
+
+            DB::beginTransaction();
+
+            foreach ($validatedData['files'] as $index => $fileData) {
+                try {
+                    // Check if file is already being tracked
+                    $existingTracking = FileTracking::where('file_indexing_id', $fileData['file_indexing_id'])->first();
+                    if ($existingTracking) {
+                        $errors[] = "File {$fileData['file_indexing_id']} is already being tracked";
+                        continue;
+                    }
+
+                    // Check for duplicate RFID tags in this batch
+                    if (!empty($fileData['rfid_tag'])) {
+                        $existingRfid = FileTracking::where('rfid_tag', $fileData['rfid_tag'])->first();
+                        if ($existingRfid) {
+                            $errors[] = "RFID tag {$fileData['rfid_tag']} is already in use";
+                            continue;
+                        }
+                    }
+
+                    // Create the tracking entry
+                    $tracking = FileTracking::create([
+                        'file_indexing_id' => $fileData['file_indexing_id'],
+                        'rfid_tag' => $fileData['rfid_tag'],
+                        'qr_code' => $fileData['qr_code'],
+                        'current_location' => $fileData['current_location'],
+                        'current_holder' => $fileData['current_holder'],
+                        'current_handler' => $fileData['current_handler'],
+                        'date_received' => $fileData['date_received'],
+                        'due_date' => $fileData['due_date'],
+                        'status' => $fileData['status'],
+                        'batch_no' => $validatedData['batch_no'],
+                    ]);
+
+                    // Add initial notes to movement history if provided
+                    if (!empty($fileData['notes'])) {
+                        $tracking->addMovementEntry([
+                            'action' => 'initial_notes',
+                            'notes' => $fileData['notes'],
+                            'reason' => 'Initial batch tracking setup'
+                        ]);
+                    }
+
+                    $createdTrackings[] = $tracking;
+
+                } catch (\Exception $e) {
+                    $errors[] = "Error creating tracking for file {$fileData['file_indexing_id']}: " . $e->getMessage();
+                }
+            }
+
+            if (empty($createdTrackings)) {
+                DB::rollBack();
+                return redirect()->back()
+                    ->withErrors(['batch' => 'No files were successfully tracked. ' . implode(', ', $errors)])
+                    ->withInput();
+            }
+
+            DB::commit();
+
+            Log::info('Batch file tracking created successfully', [
+                'batch_no' => $validatedData['batch_no'],
+                'created_count' => count($createdTrackings),
+                'errors_count' => count($errors),
+                'user_id' => auth()->id()
+            ]);
+
+            $message = count($createdTrackings) . ' files tracked successfully';
+            if (!empty($errors)) {
+                $message .= '. Some files had errors: ' . implode(', ', $errors);
+            }
+
+            return redirect()->route('filetracker.index')
+                ->with('success', $message);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error('Error creating batch file tracking', [
+                'error' => $e->getMessage(),
+                'request_data' => $request->all(),
+                'user_id' => auth()->id()
+            ]);
+
+            return redirect()->back()
+                ->withErrors(['error' => 'An error occurred while creating the batch file tracking. Please try again.'])
+                ->withInput();
+        }
+    }
+
+    /**
      * Search for files to track (AJAX endpoint)
      */
     public function searchFiles(Request $request) {

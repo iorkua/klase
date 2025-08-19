@@ -21,18 +21,88 @@
     <!-- Tabs -->
     <div class="mt-4">
       <div class="grid grid-cols-6 gap-1 rounded-md bg-gray-100 p-1">
-        <button class="tab-button active rounded-md px-3 py-1 text-sm font-medium bg-white shadow" data-tab="all">All</button>
+        <button class="tab-button active rounded-md px-3 py-1 text-sm font-medium bg-white shadow" data-tab="indexed">
+          <svg class="h-3.5 w-3.5 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          Indexed Files
+        </button>
+        <button class="tab-button rounded-md px-3 py-1 text-sm font-medium" data-tab="all">All</button>
         <button class="tab-button rounded-md px-3 py-1 text-sm font-medium" data-tab="in-process">In Process</button>
         <button class="tab-button rounded-md px-3 py-1 text-sm font-medium" data-tab="pending">Pending</button>
         <button class="tab-button rounded-md px-3 py-1 text-sm font-medium" data-tab="on-hold">On Hold</button>
-        <button class="tab-button rounded-md px-3 py-1 text-sm font-medium" data-tab="awaiting">Awaiting Approval</button>
         <button class="tab-button rounded-md px-3 py-1 text-sm font-medium" data-tab="completed">Completed</button>
       </div>
     </div>
   </div>
   
-  <!-- Table -->
-  <div class="p-6">
+  <!-- Indexed Files Tab Content -->
+  <div class="p-6 tab-content active" id="indexed-files-content">
+    <!-- Batch Selection Controls -->
+    <div class="mb-4 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <label class="flex items-center">
+          <input type="checkbox" id="select-all-indexed" class="mr-2 rounded border-gray-300">
+          <span class="text-sm font-medium">Select All</span>
+        </label>
+        <span class="text-sm text-gray-500" id="selected-count">0 selected</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="batch-track-btn" class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm flex items-center hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+          <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          
+        </button>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b">
+            <th class="text-left py-3 px-4 font-medium w-12">
+              <input type="checkbox" id="header-checkbox" class="rounded border-gray-300">
+            </th>
+            <th class="text-left py-3 px-4 font-medium">File Number</th>
+            <th class="text-left py-3 px-4 font-medium">File Title</th>
+            <th class="text-left py-3 px-4 font-medium">Land Use</th>
+            <th class="text-left py-3 px-4 font-medium">District</th>
+            <th class="text-left py-3 px-4 font-medium">Date Indexed</th>
+            <th class="text-right py-3 px-4 font-medium">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="indexed-files-tbody">
+          <!-- Indexed files will be loaded here via AJAX -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Loading State -->
+    <div id="indexed-files-loading" class="py-8 px-4 text-center text-gray-500">
+      <div class="flex flex-col items-center">
+        <svg class="animate-spin h-8 w-8 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p class="text-lg font-medium">Loading indexed files...</p>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="indexed-files-empty" class="py-8 px-4 text-center text-gray-500" style="display: none;">
+      <div class="flex flex-col items-center">
+        <svg class="h-12 w-12 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        <p class="text-lg font-medium">No indexed files available for tracking</p>
+        <p class="text-sm">All indexed files are already being tracked</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tracking Files Tab Content -->
+  <div class="p-6 tab-content" id="tracking-files-content" style="display: none;">
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead>

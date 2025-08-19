@@ -391,6 +391,7 @@ let autoRefreshInterval;
 $(document).ready(function() {
     loadUsers();
     setupEventListeners();
+    setDatesToTodayAndDisable();
     initializeDataTable(); // Initialize DataTable since Activity Logs is the default tab
     startAutoRefresh();
     loadSettings();
@@ -442,8 +443,9 @@ function initializeDataTable() {
                 d.status = $('#status_filter').val();
                 d.device_type = $('#device_filter').val();
                 d.browser = $('#browser_filter').val();
-                d.date_from = $('#date_from').val();
-                d.date_to = $('#date_to').val();
+                // Enforce showing only today's logs in the table
+                d.date_from = getTodayDate();
+                d.date_to = getTodayDate();
             }
         },
         columns: [
@@ -488,6 +490,22 @@ function setupEventListeners() {
     $(document).on('change', '.row-checkbox', function() {
         updateSelectedRows();
     });
+}
+
+// Helper: return today's date in YYYY-MM-DD (local time)
+function getTodayDate() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+// Helper: set date inputs to today and disable them to avoid confusion
+function setDatesToTodayAndDisable() {
+    const today = getTodayDate();
+    $('#date_from').val(today).prop('disabled', true);
+    $('#date_to').val(today).prop('disabled', true);
 }
 
 function updateSelectedRows() {
@@ -709,8 +727,8 @@ function clearFilters() {
     $('#status_filter').val('');
     $('#device_filter').val('');
     $('#browser_filter').val('');
-    $('#date_from').val('');
-    $('#date_to').val('');
+    // Keep the table constrained to today's logs
+    setDatesToTodayAndDisable();
     if (activityTable) {
         activityTable.ajax.reload();
     }

@@ -33,8 +33,24 @@
                 <!-- Form Content -->
                 <div class="flex-1">
                     <div class="max-w-4xl mx-auto">
-                        <form action="{{ route('filetracker.store') }}" method="POST" class="space-y-6">
+                        <!-- Batch Info (if batch tracking) -->
+                        @if(request('batch') === 'true')
+                            <div class="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
+                                <div class="flex items-center">
+                                    <svg class="h-5 w-5 text-blue-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <div>
+                                        <h3 class="text-sm font-medium text-blue-800">Batch Tracking Mode</h3>
+                                        <p class="text-sm text-blue-700">You are creating tracking records for multiple files. Batch #<span id="batch-number">Loading...</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
+                        <form action="{{ request('batch') === 'true' ? route('filetracker.store-batch') : route('filetracker.store') }}" method="POST" class="space-y-6" id="tracking-form">
                             @csrf
+                            <input type="hidden" name="batch_no" id="batch_no" value="">
                             
                             <!-- Error Messages -->
                             @if ($errors->any())
@@ -267,33 +283,316 @@
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
-    <!-- File Search Script -->
+    <!-- File Search and Batch Tracking Script -->
     <script>
         $(document).ready(function() {
             let searchTimeout;
+            let selectedFiles = [];
+            let isBatchMode = {{ request('batch') === 'true' ? 'true' : 'false' }};
             
-            // File search functionality
-            $('#file_search').on('input', function() {
-                const query = $(this).val().trim();
+            // Initialize batch mode if needed
+            if (isBatchMode) {
+                initializeBatchMode();
+            } else {
+                initializeSingleMode();
+            }
+            
+            // Initialize batch mode
+            function initializeBatchMode() {
+                const fileIds = '{{ request("files") }}'.split(',').filter(id => id.trim() !== '');
                 
-                clearTimeout(searchTimeout);
+                // Get batch number
+                $.ajax({
+                    url: '{{ route("filetracker.get-next-batch-number") }}',
+                    method: 'GET',
+                    success: function(response) {
+                        if (response.success) {
+                            $('#batch-number').text(response.batch_no);
+                            $('#batch_no').val(response.batch_no);
+                        }
+                    }
+                });
                 
-                if (query.length < 2) {
-                    $('#file_search_results').addClass('hidden');
-                    return;
+                // Load selected files
+                if (fileIds.length > 0) {
+                    loadSelectedFiles(fileIds);
                 }
+            }
+            
+            // Initialize single mode
+            function initializeSingleMode() {
+                const fileId = '{{ request("files") }}';
+                if (fileId && fileId.trim() !== '') {
+                    loadSelectedFiles([fileId]);
+                }
+            }
+            
+            // Load selected files and create forms
+            function loadSelectedFiles(fileIds) {
+                $.ajax({
+                    url: '{{ route("filetracker.get-indexed-files") }}',
+                    method: 'GET',
+                    success: function(response) {
+                        if (response.success) {
+                            const allFiles = response.data;
+                            selectedFiles = allFiles.filter(file => fileIds.includes(file.id.toString()));
+                            
+                            if (isBatchMode && selectedFiles.length > 1) {
+                                createBatchForms();
+                            } else if (selectedFiles.length === 1) {
+                                autoFillSingleForm(selectedFiles[0]);
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Auto-fill single form
+            function autoFillSingleForm(file) {
+                $('#file_indexing_id').val(file.id);
+                $('#file_search').val(file.file_number);
                 
-                searchTimeout = setTimeout(() => {
-                    searchFiles(query);
-                }, 300);
+                let detailsHtml = `
+                    <div><strong>File Number:</strong> ${file.file_number}</div>
+                    <div><strong>Title:</strong> ${file.file_title || 'No Title'}</div>
+                    <div><strong>Land Use:</strong> ${file.land_use_type || 'N/A'}</div>
+                    <div><strong>District:</strong> ${file.district || 'N/A'}</div>
+                `;
+                
+                $('#selected_file_details').html(detailsHtml);
+                $('#selected_file_info').removeClass('hidden');
+                
+                // Hide file search section since file is pre-selected
+                $('#file_search').prop('readonly', true).addClass('bg-gray-100');
+            }
+            
+            // Create batch forms
+            function createBatchForms() {
+                const formContainer = $('#tracking-form');
+                const originalForm = formContainer.html();
+                
+                // Clear the form and rebuild for batch
+                formContainer.empty();
+                
+                // Add CSRF token and batch number
+                formContainer.append(`
+                    @csrf
+                    <input type="hidden" name="batch_no" value="${$('#batch_no').val()}">
+                `);
+                
+                selectedFiles.forEach((file, index) => {
+                    const isFirst = index === 0;
+                    const formHtml = createFileTrackingForm(file, index, isFirst);
+                    formContainer.append(formHtml);
+                });
+                
+                // Add submit button
+                formContainer.append(`
+                    <div class="flex justify-end space-x-4 pt-6">
+                        <a href="{{ route('filetracker.index') }}" 
+                           class="border rounded-md px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                            Cancel
+                        </a>
+                        <button type="submit" 
+                                class="bg-blue-600 text-white px-6 py-2 rounded-md text-sm font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                            Create Batch Tracking (${selectedFiles.length} files)
+                        </button>
+                    </div>
+                `);
+            }
+            
+            // Create individual file tracking form
+            function createFileTrackingForm(file, index, isExpanded) {
+                const expandedClass = isExpanded ? '' : 'collapsed';
+                const displayStyle = isExpanded ? 'block' : 'none';
+                
+                return `
+                    <div class="bg-white rounded-lg shadow-sm border mb-6 file-form ${expandedClass}">
+                        <div class="px-6 py-4 border-b cursor-pointer form-header" data-index="${index}">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <div class="flex items-center">
+                                        <span class="text-lg font-semibold text-gray-900">${file.file_number}</span>
+                                        <span class="ml-2 text-sm text-gray-500">${file.file_title || 'No Title'}</span>
+                                    </div>
+                                    <div class="text-sm text-gray-500">
+                                        Batch #${$('#batch_no').val()}
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-sm text-gray-500">Form ${index + 1} of ${selectedFiles.length}</span>
+                                    <svg class="h-5 w-5 text-gray-400 transform transition-transform form-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-content" style="display: ${displayStyle};">
+                            <div class="p-6 space-y-6">
+                                <input type="hidden" name="files[${index}][file_indexing_id]" value="${file.id}">
+                                
+                                <!-- File Info Display -->
+                                <div class="bg-gray-50 rounded-md p-4">
+                                    <h4 class="font-medium text-gray-900 mb-2">File Information</h4>
+                                    <div class="grid grid-cols-2 gap-4 text-sm">
+                                        <div><strong>File Number:</strong> ${file.file_number}</div>
+                                        <div><strong>Title:</strong> ${file.file_title || 'No Title'}</div>
+                                        <div><strong>Land Use:</strong> ${file.land_use_type || 'N/A'}</div>
+                                        <div><strong>District:</strong> ${file.district || 'N/A'}</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Tracking Information -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            Current Location <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="text" 
+                                               name="files[${index}][current_location]" 
+                                               class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                               placeholder="e.g., Archive Room A, Legal Department"
+                                               required>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            Current Handler <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="text" 
+                                               name="files[${index}][current_handler]" 
+                                               class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                               placeholder="e.g., John Doe, Department Head"
+                                               required>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            Current Holder
+                                        </label>
+                                        <input type="text" 
+                                               name="files[${index}][current_holder]" 
+                                               class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                               placeholder="e.g., Legal Department, Survey Unit">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            Status <span class="text-red-500">*</span>
+                                        </label>
+                                        <select name="files[${index}][status]" 
+                                                class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                required>
+                                            <option value="">Select Status</option>
+                                            <option value="active" selected>Active</option>
+                                            <option value="checked_out">Checked Out</option>
+                                            <option value="returned">Returned</option>
+                                            <option value="archived">Archived</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            Date Received <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="date" 
+                                               name="files[${index}][date_received]" 
+                                               value="${new Date().toISOString().split('T')[0]}"
+                                               class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                               required>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            Due Date
+                                        </label>
+                                        <input type="date" 
+                                               name="files[${index}][due_date]" 
+                                               class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                </div>
+                                
+                                <!-- RFID/QR Code -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            RFID Tag
+                                        </label>
+                                        <input type="text" 
+                                               name="files[${index}][rfid_tag]" 
+                                               class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                               placeholder="e.g., RFID-001234">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            QR Code
+                                        </label>
+                                        <input type="text" 
+                                               name="files[${index}][qr_code]" 
+                                               class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                               placeholder="e.g., QR-001234">
+                                    </div>
+                                </div>
+                                
+                                <!-- Notes -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Initial Notes
+                                    </label>
+                                    <textarea name="files[${index}][notes]" 
+                                              rows="3"
+                                              class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                              placeholder="Add any initial notes about this file tracking..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Handle form header clicks (expand/collapse)
+            $(document).on('click', '.form-header', function() {
+                const $form = $(this).closest('.file-form');
+                const $content = $form.find('.form-content');
+                const $chevron = $(this).find('.form-chevron');
+                
+                if ($form.hasClass('collapsed')) {
+                    $form.removeClass('collapsed');
+                    $content.slideDown();
+                    $chevron.removeClass('rotate-180');
+                } else {
+                    $form.addClass('collapsed');
+                    $content.slideUp();
+                    $chevron.addClass('rotate-180');
+                }
             });
             
-            // Hide results when clicking outside
-            $(document).on('click', function(e) {
-                if (!$(e.target).closest('#file_search, #file_search_results').length) {
-                    $('#file_search_results').addClass('hidden');
-                }
-            });
+            // File search functionality (for single mode)
+            if (!isBatchMode) {
+                $('#file_search').on('input', function() {
+                    const query = $(this).val().trim();
+                    
+                    clearTimeout(searchTimeout);
+                    
+                    if (query.length < 2) {
+                        $('#file_search_results').addClass('hidden');
+                        return;
+                    }
+                    
+                    searchTimeout = setTimeout(() => {
+                        searchFiles(query);
+                    }, 300);
+                });
+                
+                // Hide results when clicking outside
+                $(document).on('click', function(e) {
+                    if (!$(e.target).closest('#file_search, #file_search_results').length) {
+                        $('#file_search_results').addClass('hidden');
+                    }
+                });
+            }
             
             function searchFiles(query) {
                 $.ajax({
@@ -350,7 +649,7 @@
                 `).removeClass('hidden');
             }
             
-            // Handle file selection
+            // Handle file selection (single mode)
             $(document).on('click', '.file-result', function() {
                 const fileId = $(this).data('file-id');
                 const fileNumber = $(this).data('file-number');

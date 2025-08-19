@@ -7,8 +7,33 @@
     let currentPage = 1;
     let currentFilters = {};
     
+    // Indexed Files functionality
+    let selectedIndexedFiles = [];
+    
     // Try to load data from API, but keep original UI functionality
     tryLoadApiData();
+    
+    // Load indexed files by default since it's the active tab
+    loadIndexedFiles();
+    
+    // Initialize header button for indexed files tab (default active tab)
+    updateHeaderButtonForIndexedTab();
+    
+    // Handle header track button click
+    $('#header-track-btn').click(function() {
+      if (selectedIndexedFiles.length === 0) {
+        // If no files selected, go to regular create page
+        window.location.href = '{{ route("filetracker.create") }}';
+      } else if (selectedIndexedFiles.length === 1) {
+        // Single file tracking
+        const fileId = selectedIndexedFiles[0].id;
+        window.location.href = `{{ route("filetracker.create") }}?files=${fileId}`;
+      } else {
+        // Batch tracking
+        const fileIds = selectedIndexedFiles.map(f => f.id).join(',');
+        window.location.href = `{{ route("filetracker.create") }}?files=${fileIds}&batch=true`;
+      }
+    });
     
     // Toggle RFID mode
     $('#rfid-mode').change(function() {
@@ -52,7 +77,7 @@
       $('#rfid-modal').addClass('hidden');
     });
     
-    // Tab functionality (original)
+    // Tab functionality (enhanced for indexed files)
     $('.tab-button').click(function() {
       const tabId = $(this).data('tab');
       
@@ -60,13 +85,215 @@
       $('.tab-button').removeClass('active bg-white shadow');
       $(this).addClass('active bg-white shadow');
       
-      // Show/hide rows based on tab
-      if (tabId === 'all') {
-        $('.file-row').show();
+      // Handle different tab content
+      if (tabId === 'indexed') {
+        // Show indexed files tab content
+        $('#indexed-files-content').show();
+        $('#tracking-files-content').hide();
+        loadIndexedFiles();
+        // Enable header button functionality for indexed files
+        updateHeaderButtonForIndexedTab();
       } else {
-        $('.file-row').hide();
-        $('.file-row[data-status="' + tabId + '"]').show();
+        // Show tracking files tab content
+        $('#indexed-files-content').hide();
+        $('#tracking-files-content').show();
+        
+        // Reset header button for other tabs
+        $('#header-track-btn').prop('disabled', false);
+        $('#header-track-text').text('Track New File');
+        
+        // Show/hide rows based on tab for tracking files
+        if (tabId === 'all') {
+          $('.file-row').show();
+        } else {
+          $('.file-row').hide();
+          $('.file-row[data-status="' + tabId + '"]').show();
+        }
       }
+    });
+
+    // Load indexed files via AJAX
+    function loadIndexedFiles() {
+      $('#indexed-files-loading').show();
+      $('#indexed-files-empty').hide();
+      $('#indexed-files-tbody').empty();
+
+      $.ajax({
+        url: '{{ route("filetracker.get-indexed-files") }}',
+        method: 'GET',
+        success: function(response) {
+          $('#indexed-files-loading').hide();
+          
+          if (response.success && response.data.length > 0) {
+            displayIndexedFiles(response.data);
+          } else {
+            $('#indexed-files-empty').show();
+          }
+        },
+        error: function(xhr) {
+          $('#indexed-files-loading').hide();
+          console.error('Error loading indexed files:', xhr);
+          $('#indexed-files-empty').show();
+        }
+      });
+    }
+
+    // Display indexed files in table
+    function displayIndexedFiles(files) {
+      let html = '';
+      files.forEach(function(file) {
+        html += `
+          <tr class="border-b hover:bg-gray-50 indexed-file-row" data-file-id="${file.id}">
+            <td class="py-3 px-4">
+              <input type="checkbox" class="indexed-file-checkbox rounded border-gray-300" 
+                     value="${file.id}" data-file-number="${file.file_number}" 
+                     data-file-title="${file.file_title || ''}">
+            </td>
+            <td class="py-3 px-4 font-medium">${file.file_number}</td>
+            <td class="py-3 px-4">${file.file_title || 'No Title'}</td>
+            <td class="py-3 px-4">${file.land_use_type || 'N/A'}</td>
+            <td class="py-3 px-4">${file.district || 'N/A'}</td>
+            <td class="py-3 px-4">${formatDate(file.created_at)}</td>
+            <td class="py-3 px-4 text-right">
+              <div class="flex justify-end gap-2">
+                <div class="relative">
+                  <button class="action-menu-btn p-1 rounded-md hover:bg-gray-100" 
+                          data-file-id="${file.id}" title="More Options">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"></path>
+                    </svg>
+                  </button>
+                  <div class="action-dropdown absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10 hidden">
+                    <div class="py-1">
+                      <button class="start-tracking-dropdown-btn w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center" 
+                              data-file-id="${file.id}">
+                        <svg class="h-4 w-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        Start Tracking File
+                      </button>
+                      <button class="view-file-btn w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center" 
+                              data-file-id="${file.id}">
+                        <svg class="h-4 w-4 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        View Details
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+      $('#indexed-files-tbody').html(html);
+    }
+
+    // Format date helper
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
+
+    // Handle checkbox selection for indexed files
+    $(document).on('change', '.indexed-file-checkbox', function() {
+      updateSelectedFiles();
+    });
+
+    // Handle select all checkbox
+    $(document).on('change', '#select-all-indexed, #header-checkbox', function() {
+      const isChecked = $(this).is(':checked');
+      $('.indexed-file-checkbox').prop('checked', isChecked);
+      updateSelectedFiles();
+    });
+
+    // Update header button for indexed files tab
+    function updateHeaderButtonForIndexedTab() {
+      const count = selectedIndexedFiles.length;
+      const $headerBtn = $('#header-track-btn');
+      const $headerText = $('#header-track-text');
+      
+      if (count > 0) {
+        $headerBtn.prop('disabled', false);
+        if (count === 1) {
+          $headerText.text('Track New File');
+        } else {
+          $headerText.text(`Track Batch Files (${count})`);
+        }
+      } else {
+        $headerBtn.prop('disabled', true);
+        $headerText.text('Track New File');
+      }
+    }
+
+    // Update selected files count and header button state
+    function updateSelectedFiles() {
+      selectedIndexedFiles = [];
+      $('.indexed-file-checkbox:checked').each(function() {
+        selectedIndexedFiles.push({
+          id: $(this).val(),
+          file_number: $(this).data('file-number'),
+          file_title: $(this).data('file-title')
+        });
+      });
+
+      const count = selectedIndexedFiles.length;
+      $('#selected-count').text(`${count} selected`);
+      
+      // Update header button
+      updateHeaderButtonForIndexedTab();
+    }
+
+    // Handle individual start tracking button
+    $(document).on('click', '.start-tracking-btn', function() {
+      const fileId = $(this).data('file-id');
+      window.location.href = `{{ route('filetracker.create') }}?files=${fileId}`;
+    });
+
+    // Handle action menu dropdown toggle
+    $(document).on('click', '.action-menu-btn', function(e) {
+      e.stopPropagation();
+      const $dropdown = $(this).siblings('.action-dropdown');
+      
+      // Close all other dropdowns
+      $('.action-dropdown').not($dropdown).addClass('hidden');
+      
+      // Toggle current dropdown
+      $dropdown.toggleClass('hidden');
+    });
+
+    // Handle start tracking from dropdown
+    $(document).on('click', '.start-tracking-dropdown-btn', function(e) {
+      e.stopPropagation();
+      const fileId = $(this).data('file-id');
+      window.location.href = `{{ route('filetracker.create') }}?files=${fileId}`;
+    });
+
+    // Handle view file from dropdown
+    $(document).on('click', '.view-file-btn', function(e) {
+      e.stopPropagation();
+      const fileId = $(this).data('file-id');
+      // Add view file functionality here if needed
+      console.log('View file:', fileId);
+      
+      // Close dropdown
+      $(this).closest('.action-dropdown').addClass('hidden');
+    });
+
+    // Close dropdowns when clicking outside
+    $(document).on('click', function() {
+      $('.action-dropdown').addClass('hidden');
+    });
+
+    // Prevent dropdown from closing when clicking inside it
+    $(document).on('click', '.action-dropdown', function(e) {
+      e.stopPropagation();
     });
     
     // File view functionality (clicking on file rows or view buttons)

@@ -39,12 +39,12 @@
                                 </svg>
                                 Scan RFID Tags
                             </button>
-                            <a href="{{ route('filetracker.create') }}" class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm flex items-center hover:bg-blue-700">
+                            <button id="header-track-btn" class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm flex items-center hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
                                 <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                                 </svg>
-                                Track New File
-                            </a>
+                                <span id="header-track-text">Track New File</span>
+                            </button>
                         </div>
                     </div>
                 </header>

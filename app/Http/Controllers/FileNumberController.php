@@ -53,7 +53,10 @@ class FileNumberController extends Controller
 
             // Base query for counting (without ORDER BY)
             $baseQuery = DB::connection('sqlsrv')
-                ->table('fileNumber');
+                ->table('fileNumber')
+                ->where(function($q) {
+                    $q->whereNull('is_deleted')->orWhere('is_deleted', 0);
+                });
 
             // Filter by source
             if ($source === 'New') {
@@ -92,6 +95,9 @@ class FileNumberController extends Controller
                     'created_at',
                     'SOURCE'
                 ])
+                ->where(function($q) {
+                    $q->whereNull('is_deleted')->orWhere('is_deleted', 0);
+                })
                 ->when($source === 'New', function($query) {
                     $query->where('type', 'Generated');
                 })
@@ -187,6 +193,9 @@ class FileNumberController extends Controller
                 ->where('mlsfNo', 'like', '%-' . $currentYear . '-%')
                 ->whereNotNull('mlsfNo')
                 ->where('mlsfNo', '!=', '')
+                ->where(function($q) {
+                    $q->whereNull('is_deleted')->orWhere('is_deleted', 0);
+                })
                 ->get();
 
             $maxSerial = 0;
@@ -225,6 +234,9 @@ class FileNumberController extends Controller
                 ->select('mlsfNo')
                 ->whereNotNull('mlsfNo')
                 ->where('mlsfNo', '!=', '')
+                ->where(function($q) {
+                    $q->whereNull('is_deleted')->orWhere('is_deleted', 0);
+                })
                 ->orderBy('mlsfNo', 'desc')
                 ->limit(100)
                 ->get();
@@ -245,11 +257,12 @@ class FileNumberController extends Controller
         $validator = Validator::make($request->all(), [
             'file_name' => 'required|string|max:255',
             'application_type' => 'required|in:new,conversion',
-            'land_use' => 'required|string|max:10',
-            'year' => 'required|integer|min:2020|max:2050',
+            'land_use' => 'required_unless:file_option,miscellaneous,sltr|string|max:20',
+            'year' => 'required_unless:file_option,miscellaneous,sltr|integer|min:2020|max:2050',
             'serial_no' => 'required|integer|min:1',
-            'file_option' => 'required|in:normal,temporary,extension',
-            'existing_file_no' => 'required_if:file_option,extension'
+            'file_option' => 'required|in:normal,temporary,extension,miscellaneous,sltr',
+            'existing_file_no' => 'required_if:file_option,extension',
+            'middle_prefix' => 'required_if:file_option,miscellaneous|string|max:20'
         ]);
 
         if ($validator->fails()) {
@@ -267,6 +280,12 @@ class FileNumberController extends Controller
             if ($fileOption === 'extension') {
                 // For extensions, use the existing file number with "AND EXTENSION"
                 $mlsfNo = $request->existing_file_no . ' AND EXTENSION';
+            } elseif ($fileOption === 'miscellaneous') {
+                // Format: MISC-KN-0203
+                $mlsfNo = 'MISC-' . $request->middle_prefix . '-' . $request->serial_no;
+            } elseif ($fileOption === 'sltr') {
+                // Format: SLTR-0203567
+                $mlsfNo = 'SLTR-' . $request->serial_no;
             } else {
                 // Generate new file number
                 $serialNo = str_pad($request->serial_no, 4, '0', STR_PAD_LEFT);
@@ -301,6 +320,7 @@ class FileNumberController extends Controller
                     'NewKANGISFileNo' => null,  // Leave empty
                     'FileName' => $request->file_name,
                     'type' => 'Generated',
+                    'is_deleted' => 0,
                     'location' => $request->land_use,
                     'created_by' => Auth::user()->name ?? Auth::user()->email ?? 'System',
                     'created_at' => now(),
@@ -395,6 +415,7 @@ class FileNumberController extends Controller
                     'NewKANGISFileNo' => null,
                     'FileName' => $request->file_name,
                     'type' => 'Captured',
+                    'is_deleted' => 0,
                     'location' => $request->prefix ?? 'MISC',
                     'created_by' => Auth::user()->name ?? Auth::user()->email ?? 'System',
                     'created_at' => now(),
@@ -554,6 +575,7 @@ class FileNumberController extends Controller
                             'NewKANGISFileNo' => !empty($newKangisFileNo) ? $newKangisFileNo : null,
                             'FileName' => !empty($fileName) ? $fileName : null,
                             'type' => 'Migrated',
+                            'is_deleted' => 0,
                             'created_by' => 'Migrated',
                             'created_at' => now(),
                             'updated_at' => now()
@@ -629,6 +651,9 @@ class FileNumberController extends Controller
             $record = DB::connection('sqlsrv')
                 ->table('fileNumber')
                 ->where('id', $id)
+                ->where(function($q) {
+                    $q->whereNull('is_deleted')->orWhere('is_deleted', 0);
+                })
                 ->first();
 
             if (!$record) {
@@ -669,6 +694,9 @@ class FileNumberController extends Controller
             $record = DB::connection('sqlsrv')
                 ->table('fileNumber')
                 ->where('id', $id)
+                ->where(function($q) {
+                    $q->whereNull('is_deleted')->orWhere('is_deleted', 0);
+                })
                 ->first();
 
             if (!$record) {
@@ -710,6 +738,9 @@ class FileNumberController extends Controller
             $record = DB::connection('sqlsrv')
                 ->table('fileNumber')
                 ->where('id', $id)
+                ->where(function($q) {
+                    $q->whereNull('is_deleted')->orWhere('is_deleted', 0);
+                })
                 ->first();
 
             if (!$record) {
@@ -719,11 +750,15 @@ class FileNumberController extends Controller
                 ], 404);
             }
 
-            // Delete the record
+            // Soft delete: set is_deleted = 1
             DB::connection('sqlsrv')
                 ->table('fileNumber')
                 ->where('id', $id)
-                ->delete();
+                ->update([
+                    'is_deleted' => 1,
+                    'updated_by' => Auth::user()->name ?? Auth::user()->email ?? 'System',
+                    'updated_at' => now()
+                ]);
 
             return response()->json([
                 'success' => true,
@@ -746,6 +781,9 @@ class FileNumberController extends Controller
         try {
             $count = DB::connection('sqlsrv')
                 ->table('fileNumber')
+                ->where(function($q) {
+                    $q->whereNull('is_deleted')->orWhere('is_deleted', 0);
+                })
                 ->count();
 
             return response()->json(['count' => $count]);

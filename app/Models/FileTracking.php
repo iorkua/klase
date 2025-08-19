@@ -21,6 +21,7 @@ class FileTracking extends Model
         'date_received',
         'due_date',
         'status',
+        'batch_no',
         'movement_history',
         'created_at',
         'updated_at',

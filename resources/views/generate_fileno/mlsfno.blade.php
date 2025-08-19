@@ -196,6 +196,14 @@
                                         <input type="radio" name="file_option" value="extension" class="mr-3 text-blue-600" onchange="updatePreview()">
                                         <span class="text-sm">Extension</span>
                                     </label>
+                                    <label class="flex items-center cursor-pointer p-2 rounded hover:bg-gray-50">
+                                        <input type="radio" name="file_option" value="miscellaneous" class="mr-3 text-blue-600" onchange="updatePreview()">
+                                        <span class="text-sm">Miscellaneous</span>
+                                    </label>
+                                    <label class="flex items-center cursor-pointer p-2 rounded hover:bg-gray-50">
+                                        <input type="radio" name="file_option" value="sltr" class="mr-3 text-blue-600" onchange="updatePreview()">
+                                        <span class="text-sm">SLTR</span>
+                                    </label>
                                 </div>
                             </div>
                         </div>
@@ -216,10 +224,21 @@
                                 </select>
                             </div>
 
+                            <!-- Middle Prefix (for miscellaneous files) -->
+                            <div id="middlePrefixSection" class="hidden">
+                                <label for="middlePrefix" class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i data-lucide="tag" class="w-4 h-4 inline mr-1"></i>
+                                    Middle Prefix
+                                </label>
+                                <input type="text" id="middlePrefix" name="middle_prefix" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                       placeholder="e.g., KN" value="KN" onchange="updatePreview()">
+                            </div>
+
                             <!-- Year and Serial Number Grid -->
                             <div class="grid grid-cols-2 gap-4">
                                 <!-- Year -->
-                                <div>
+                                <div id="yearSection">
                                     <label for="year" class="block text-sm font-medium text-gray-700 mb-2">
                                         <i data-lucide="calendar" class="w-4 h-4 inline mr-1"></i>
                                         Year
@@ -498,7 +517,13 @@
                                 confirmButtonColor: '#ef4444'
                             });
                         }
-                        return json.data || [];
+                        const allRows = json.data || [];
+                        // Client-side safety filter: show only Generated records
+                        const filtered = allRows.filter(r => (r.type || '').toLowerCase() === 'generated');
+                        if (filtered.length !== allRows.length) {
+                            console.warn(`Filtered out ${allRows.length - filtered.length} non-generated records from table view.`);
+                        }
+                        return filtered;
                     },
                     error: function(xhr, error, code) {
                         console.error('DataTables AJAX error:', error);
@@ -718,12 +743,17 @@
             const landUse = document.getElementById('landUse').value;
             const fileOption = document.querySelector('input[name="file_option"]:checked')?.value;
             const existingFileNo = document.getElementById('existingFileNo').value;
+            const middlePrefix = document.getElementById('middlePrefix') ? document.getElementById('middlePrefix').value : '';
             const preview = document.getElementById('mlsfPreview');
             
             let previewText = '-';
             
             if (fileOption === 'extension' && existingFileNo) {
                 previewText = existingFileNo + ' AND EXTENSION';
+            } else if (fileOption === 'miscellaneous' && middlePrefix && serialNo) {
+                previewText = `MISC-${middlePrefix}-${serialNo}`;
+            } else if (fileOption === 'sltr' && serialNo) {
+                previewText = `SLTR-${serialNo}`;
             } else if (serialNo && year && landUse) {
                 const paddedSerial = serialNo.toString().padStart(4, '0');
                 previewText = `${landUse}-${year}-${paddedSerial}`;
@@ -743,12 +773,26 @@
                 preview.classList.add('text-gray-400');
             }
             
-            // Show/hide extension file selection
+            // Show/hide sections based on file option
             const extensionSection = document.getElementById('extensionFileSection');
+            const middlePrefixSection = document.getElementById('middlePrefixSection');
+            const yearSection = document.getElementById('yearSection');
+            
             if (fileOption === 'extension') {
                 extensionSection.classList.remove('hidden');
             } else {
                 extensionSection.classList.add('hidden');
+            }
+            
+            if (fileOption === 'miscellaneous') {
+                middlePrefixSection.classList.remove('hidden');
+                yearSection.classList.add('hidden');
+            } else if (fileOption === 'sltr') {
+                middlePrefixSection.classList.add('hidden');
+                yearSection.classList.add('hidden');
+            } else {
+                middlePrefixSection.classList.add('hidden');
+                yearSection.classList.remove('hidden');
             }
         }
 
@@ -1251,6 +1295,12 @@
             
             // Add event listener for existing file number dropdown
             document.getElementById('existingFileNo').addEventListener('change', updatePreview);
+
+            // Add event for middle prefix input if present
+            const middlePrefixEl = document.getElementById('middlePrefix');
+            if (middlePrefixEl) {
+                middlePrefixEl.addEventListener('input', updatePreview);
+            }
         });
     </script>
 @endsection

@@ -682,7 +682,7 @@ window.testLoadFiles = function() {
             if (list) {
                 let html = '';
                 data.applications.slice(0, 5).forEach(app => {
-                    html += \<div class="p-4 border-b"><strong>\</strong> - \</div>\;
+                    html += `<div class="p-4 border-b"><strong>${app.file_number || 'N/A'}</strong> - ${app.file_title || 'Untitled'}</div>`;
                 });
                 list.innerHTML = html;
             }

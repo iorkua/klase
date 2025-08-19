@@ -34,6 +34,65 @@
       background-color: #f59e0b;
       color: white;
     }
+
+    /* Tab content styles */
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Batch form styles */
+    .file-form.collapsed .form-content {
+      display: none;
+    }
+    
+    .file-form .form-header:hover {
+      background-color: #f9fafb;
+    }
+    
+    .form-chevron {
+      transition: transform 0.2s ease;
+    }
+    
+    .file-form.collapsed .form-chevron {
+      transform: rotate(-90deg);
+    }
+
+    /* Indexed files table styles */
+    .indexed-file-row:hover {
+      background-color: #f9fafb;
+    }
+    
+    .indexed-file-checkbox:checked + label {
+      background-color: #dbeafe;
+    }
+
+    /* Loading animation */
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    
+    .animate-spin {
+      animation: spin 1s linear infinite;
+    }
+
+    /* Responsive grid adjustments */
+    @media (max-width: 768px) {
+      .grid-cols-7 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.25rem;
+      }
+      
+      .tab-button {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.75rem;
+      }
+    }
     
     /* Print styles */
     @media print {
