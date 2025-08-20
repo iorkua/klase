@@ -204,8 +204,8 @@ tailwind.config = {
         </div>
         <div class="text-right">
           <div class="inline-block border border-gray-300 rounded-md px-3 py-1 bg-gray-50">
-            <p class="text-sm font-bold text-blue-600">Tracking ID: <span id="tracking-id">TRK-2023-001</span></p>
-            <p class="text-xs text-gray-500">Generated: <span id="generated-date"></span></p>
+            <p class="text-sm font-bold text-blue-600">Tracking ID: <span id="tracking-id">{{ isset($tracking) ? 'TRK-' . str_pad($tracking->id, 6, '0', STR_PAD_LEFT) : 'TRK-000000' }}</span></p>
+            <p class="text-xs text-gray-500">Generated: <span id="generated-date">{{ now()->format('Y-m-d H:i A') }}</span></p>
           </div>
         </div>
       </div>
@@ -219,14 +219,39 @@ tailwind.config = {
             File Details
           </div>
           <div class="border border-gray-200 rounded-md p-3 bg-gray-50 mb-4">
-            <h3 class="text-base font-bold mb-2 text-gray-900" id="file-title">Certificate of Occupancy - Alhaji Ibrahim Dantata</h3>
+            <h3 class="text-base font-bold mb-2 text-gray-900" id="file-title">{{ isset($tracking) ? ($tracking->fileIndexing->file_title ?? 'No Title Available') : 'No File Selected' }}</h3>
             <div class="flex items-center gap-2 mb-2">
-              <span class="badge badge-default" id="status-badge">
-                Status: In Process
-              </span>
-              <span class="badge badge-default" id="priority-badge">
-                Priority: Normal
-              </span>
+              @if(isset($tracking))
+                @php
+                  $statusBadge = match($tracking->status) {
+                    'active' => ['badge-default', 'Active'],
+                    'checked_out' => ['badge-warning', 'Checked Out'],
+                    'overdue' => ['badge-destructive', 'Overdue'],
+                    'returned' => ['badge-outline', 'Returned'],
+                    'lost' => ['badge-destructive', 'Lost'],
+                    'archived' => ['badge-outline', 'Archived'],
+                    'in_process' => ['badge-default', 'In Process'],
+                    'pending' => ['badge-warning', 'Pending'],
+                    'on_hold' => ['badge-destructive', 'On Hold'],
+                    'completed' => ['badge-outline', 'Completed'],
+                    default => ['badge-secondary', ucfirst($tracking->status)]
+                  };
+                  $priorityBadge = match($tracking->status) {
+                    'overdue' => ['badge-destructive', 'High Priority'],
+                    'checked_out' => ['badge-warning', 'Medium Priority'],
+                    default => ['badge-default', 'Normal Priority']
+                  };
+                @endphp
+                <span class="badge {{ $statusBadge[0] }}" id="status-badge">
+                  Status: {{ $statusBadge[1] }}
+                </span>
+                <span class="badge {{ $priorityBadge[0] }}" id="priority-badge">
+                  Priority: {{ $priorityBadge[1] }}
+                </span>
+              @else
+                <span class="badge badge-secondary" id="status-badge">Status: Unknown</span>
+                <span class="badge badge-default" id="priority-badge">Priority: Normal</span>
+              @endif
             </div>
           </div>
 
@@ -239,24 +264,24 @@ tailwind.config = {
               <div class="bg-white rounded-md border border-gray-200 p-2">
                 <div class="space-y-1 text-xs">
                   <div class="flex justify-between">
-                    <span class="text-gray-600">MLSF Number:</span>
-                    <span class="font-medium" id="mlsf-number">RES-2015-4859</span>
+                    <span class="text-gray-600">MLS Number:</span>
+                    <span class="font-medium" id="mls-number">{{ isset($mlsNumber) ? $mlsNumber : 'N/A' }}</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-gray-600">KANGIS Number:</span>
-                    <span class="font-medium" id="kangis-number">KNGP 00338</span>
+                    <span class="font-medium" id="kangis-number">{{ isset($kangisNumber) ? $kangisNumber : 'N/A' }}</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-gray-600">New KANGIS:</span>
-                    <span class="font-medium" id="new-kangis-number">KNO001</span>
+                    <span class="font-medium" id="new-kangis-number">{{ isset($newKangisNumber) ? $newKangisNumber : 'N/A' }}</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-gray-600">Date Received:</span>
-                    <span class="font-medium" id="date-received">2023-06-15</span>
+                    <span class="font-medium" id="date-received">{{ isset($tracking) ? ($tracking->date_received ? $tracking->date_received->format('Y-m-d') : 'N/A') : 'N/A' }}</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-gray-600">Due Date:</span>
-                    <span class="font-medium" id="due-date">2023-06-30</span>
+                    <span class="font-medium" id="due-date">{{ isset($tracking) ? ($tracking->due_date ? $tracking->due_date->format('Y-m-d') : 'N/A') : 'N/A' }}</span>
                   </div>
                 </div>
               </div>
@@ -273,8 +298,8 @@ tailwind.config = {
                       <i data-lucide="map-pin" class="h-3 w-3"></i>
                     </div>
                     <div>
-                      <p class="font-medium" id="current-location">Customer Care Unit</p>
-                      <p class="text-gray-500">Last updated: <span id="last-updated">2023-06-15</span></p>
+                      <p class="font-medium" id="current-location">{{ isset($tracking) ? ($tracking->current_location ?? 'Not Set') : 'Not Set' }}</p>
+                      <p class="text-gray-500">Last updated: <span id="last-updated">{{ isset($tracking) ? $tracking->updated_at->format('Y-m-d') : 'N/A' }}</span></p>
                     </div>
                   </div>
                   <div class="flex items-center gap-2">
@@ -282,7 +307,7 @@ tailwind.config = {
                       <i data-lucide="user" class="h-3 w-3"></i>
                     </div>
                     <div>
-                      <p class="font-medium" id="current-handler">Aisha Mohammed</p>
+                      <p class="font-medium" id="current-handler">{{ isset($tracking) ? ($tracking->current_handler ?? 'Not Assigned') : 'Not Assigned' }}</p>
                       <p class="text-gray-500">Current handler</p>
                     </div>
                   </div>
@@ -291,10 +316,21 @@ tailwind.config = {
                       <i data-lucide="radio" class="h-3 w-3"></i>
                     </div>
                     <div>
-                      <p class="font-medium" id="last-scanned">2023-06-15 11:45 AM</p>
-                      <p class="text-gray-500">Last RFID scan</p>
+                      <p class="font-medium" id="last-scanned">{{ isset($tracking) ? $tracking->updated_at->format('Y-m-d H:i A') : 'N/A' }}</p>
+                      <p class="text-gray-500">Last updated</p>
                     </div>
                   </div>
+                  @if(isset($tracking) && $tracking->rfid_tag)
+                    <div class="flex items-center gap-2">
+                      <div class="bg-indigo-100 text-indigo-700 p-1 rounded">
+                        <i data-lucide="tag" class="h-3 w-3"></i>
+                      </div>
+                      <div>
+                        <p class="font-medium" id="rfid-tag">{{ $tracking->rfid_tag }}</p>
+                        <p class="text-gray-500">RFID Tag</p>
+                      </div>
+                    </div>
+                  @endif
                 </div>
               </div>
             </div>
@@ -310,11 +346,13 @@ tailwind.config = {
             <div class="flex flex-col items-center">
               <canvas id="qr-code-canvas" width="100" height="100" class="mx-auto mb-1"></canvas>
               <p class="text-xs font-medium text-center">Contains file details</p>
-              <p class="text-xs text-gray-500">MLSF: <span id="mlsf-display">RES-2015-4859</span></p>
-              <div class="mt-1 inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-200 text-xs">
-                <i data-lucide="tag" class="h-3 w-3"></i>
-                <span class="font-medium" id="rfid-display">RFID-00125478</span>
-              </div>
+              <p class="text-xs text-gray-500">File: <span id="file-display">{{ isset($tracking) ? ($tracking->fileIndexing->file_number ?? 'N/A') : 'N/A' }}</span></p>
+              @if(isset($tracking) && $tracking->rfid_tag)
+                <div class="mt-1 inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-200 text-xs">
+                  <i data-lucide="tag" class="h-3 w-3"></i>
+                  <span class="font-medium" id="rfid-display">{{ $tracking->rfid_tag }}</span>
+                </div>
+              @endif
             </div>
           </div>
         </div>
@@ -337,7 +375,40 @@ tailwind.config = {
               </tr>
             </thead>
             <tbody id="history-table-body">
-              <!-- History entries will be populated by JavaScript -->
+              @if(isset($tracking) && $tracking->movement_history)
+                @foreach(array_slice($tracking->movement_history, 0, 10) as $index => $movement)
+                  <tr class="{{ $index % 2 === 0 ? 'bg-gray-50' : 'bg-white' }}">
+                    <td class="py-1 px-2 border-b text-xs">
+                      <div class="flex items-center gap-1">
+                        <i data-lucide="calendar" class="h-2 w-2 text-gray-400"></i>
+                        <span>{{ \Carbon\Carbon::parse($movement['timestamp'] ?? now())->format('Y-m-d H:i A') }}</span>
+                      </div>
+                    </td>
+                    <td class="py-1 px-2 border-b text-xs">
+                      <div class="flex items-center gap-1">
+                        <i data-lucide="map-pin" class="h-2 w-2 text-gray-400"></i>
+                        <span>{{ $movement['to_location'] ?? $movement['initial_location'] ?? 'Unknown' }}</span>
+                      </div>
+                    </td>
+                    <td class="py-1 px-2 border-b text-xs">
+                      <div class="flex items-center gap-1">
+                        <i data-lucide="user" class="h-2 w-2 text-gray-400"></i>
+                        <span>{{ $movement['user_name'] ?? 'System' }}</span>
+                      </div>
+                    </td>
+                    <td class="py-1 px-2 border-b text-xs">{{ ucfirst(str_replace('_', ' ', $movement['action'] ?? 'Unknown action')) }}</td>
+                    <td class="py-1 px-2 border-b text-xs">
+                      <span class="{{ isset($movement['rfid_tag']) ? 'text-blue-600 font-medium' : 'text-gray-600' }}">
+                        {{ isset($movement['rfid_tag']) ? 'RFID Scan' : 'Manual' }}
+                      </span>
+                    </td>
+                  </tr>
+                @endforeach
+              @else
+                <tr>
+                  <td colspan="5" class="py-3 px-2 text-center text-gray-500 text-xs">No movement history available</td>
+                </tr>
+              @endif
             </tbody>
           </table>
         </div>
@@ -363,8 +434,17 @@ tailwind.config = {
           </div>
           <div class="bg-white rounded-md border border-gray-200 p-3 h-[80px]">
             <p class="text-xs text-gray-700" id="notes-content">
-              All documents verified and ready for processing
-            </p>
+                @if(isset($tracking) && $tracking->movement_history)
+                  @php
+                    $movementHistory = $tracking->movement_history;
+                    $lastMovement = is_array($movementHistory) && count($movementHistory) > 0 ? $movementHistory[0] : null;
+                    $notes = $lastMovement['notes'] ?? 'No notes available';
+                  @endphp
+                  {{ $notes }}
+                @else
+                  No notes available
+                @endif
+              </p>
           </div>
         </div>
       </div>
@@ -392,99 +472,29 @@ tailwind.config = {
 </div>
 
 <script>
-
-  // Auto-print functionality
-  function autoPrint() {
-    // Set a delay to ensure all content is fully rendered
-    setTimeout(() => {
-      console.log('Auto-printing document...');
-      window.print();
-    }, 1500); // 1.5-second delay before printing
-  }
-
-  // Document ready
-  document.addEventListener('DOMContentLoaded', () => {
-    console.log('Page loaded, initializing tracking sheet...');
-    populateTrackingSheet();
-    console.log('Tracking sheet initialization complete');
-    
-    // Trigger automatic printing after content is loaded
-    autoPrint();
-  });
-// Sample file data
+// Get file details from server-side data
 const fileDetails = {
-  id: "TRK-2023-001",
-  fileName: "Certificate of Occupancy - Alhaji Ibrahim Dantata",
-  fileNumber: "RES-2015-4859",
-  kangisFileNo: "KNGP 00338",
-  newKangisFileNo: "KNO001",
-  currentLocation: "Customer Care Unit",
-  currentHandler: "Aisha Mohammed",
-  status: "In Process",
-  priority: "Normal",
-  dateReceived: "2023-06-15",
-  dueDate: "2023-06-30",
-  rfidTag: "RFID-00125478",
-  lastScanned: "2023-06-15 11:45 AM",
-  history: [
-    {
-      date: "2023-06-15",
-      time: "09:30 AM",
-      location: "Reception",
-      handler: "Fatima Usman",
-      action: "File received and registered",
-      notes: "All documents verified",
-      trackingMethod: "Manual",
-    },
-    {
-      date: "2023-06-15",
-      time: "11:45 AM",
-      location: "Customer Care Unit",
-      handler: "Aisha Mohammed",
-      action: "File assigned for processing",
-      notes: "Priority set to normal",
-      trackingMethod: "RFID Scan",
-    },
-    {
-      date: "2023-06-16",
-      time: "02:15 PM",
-      location: "Legal Department",
-      handler: "Musa Abdullahi",
-      action: "Legal review initiated",
-      notes: "Documents under review",
-      trackingMethod: "RFID Scan",
-    },
-  ],
+  id: "{{ isset($tracking) ? 'TRK-' . str_pad($tracking->id, 6, '0', STR_PAD_LEFT) : 'TRK-000000' }}",
+  fileName: "{{ isset($tracking) ? ($tracking->fileIndexing->file_title ?? 'No Title Available') : 'No File Selected' }}",
+  fileNumber: "{{ isset($tracking) ? ($tracking->fileIndexing->file_number ?? 'N/A') : 'N/A' }}",
+  mlsNumber: "{{ isset($mlsNumber) ? $mlsNumber : 'N/A' }}",
+  kangisFileNo: "{{ isset($kangisNumber) ? $kangisNumber : 'N/A' }}",
+  newKangisFileNo: "{{ isset($newKangisNumber) ? $newKangisNumber : 'N/A' }}",
+  currentLocation: "{{ isset($tracking) ? ($tracking->current_location ?? 'Not Set') : 'Not Set' }}",
+  currentHandler: "{{ isset($tracking) ? ($tracking->current_handler ?? 'Not Assigned') : 'Not Assigned' }}",
+  status: "{{ isset($tracking) ? ucfirst($tracking->status) : 'Unknown' }}",
+  priority: "{{ isset($tracking) && $tracking->status === 'overdue' ? 'High' : 'Normal' }}",
+  dateReceived: "{{ isset($tracking) ? ($tracking->date_received ? $tracking->date_received->format('Y-m-d') : 'N/A') : 'N/A' }}",
+  dueDate: "{{ isset($tracking) ? ($tracking->due_date ? $tracking->due_date->format('Y-m-d') : 'N/A') : 'N/A' }}",
+  rfidTag: "{{ isset($tracking) && $tracking->rfid_tag ? $tracking->rfid_tag : 'Not Assigned' }}",
+  lastScanned: "{{ isset($tracking) ? $tracking->updated_at->format('Y-m-d H:i A') : 'N/A' }}",
 };
 
 // DOM elements
 const elements = {
   printBtn: document.getElementById('print-btn'),
   qrCodeCanvas: document.getElementById('qr-code-canvas'),
-  historyTableBody: document.getElementById('history-table-body'),
-  generatedDate: document.getElementById('generated-date'),
 };
-
-// Helper function - getBadgeClass
-function getBadgeClass(status, type = 'status') {
-  if (type === 'status') {
-    switch (status) {
-      case 'Completed': return 'badge-outline';
-      case 'In Process': return 'badge-default';
-      case 'Pending': return 'badge-secondary';
-      case 'On Hold': return 'badge-destructive';
-      case 'Awaiting Approval': return 'badge-warning';
-      default: return 'badge-default';
-    }
-  } else if (type === 'priority') {
-    switch (status) {
-      case 'Urgent': return 'badge-destructive';
-      case 'High': return 'badge-warning';
-      case 'Low': return 'badge-outline';
-      default: return 'badge-default';
-    }
-  }
-}
 
 function generateQRCode() {
   console.log('Starting QR code generation...');
@@ -523,78 +533,6 @@ function generateQRCode() {
   }
 }
 
-function populateTrackingSheet() {
-  console.log('Populating tracking sheet...');
-  
-  // Update text content
-  document.getElementById('tracking-id').textContent = fileDetails.id;
-  document.getElementById('file-title').textContent = fileDetails.fileName;
-  document.getElementById('mlsf-display').textContent = fileDetails.fileNumber;
-  document.getElementById('rfid-display').textContent = fileDetails.rfidTag;
-  document.getElementById('mlsf-number').textContent = fileDetails.fileNumber;
-  document.getElementById('kangis-number').textContent = fileDetails.kangisFileNo;
-  document.getElementById('new-kangis-number').textContent = fileDetails.newKangisFileNo;
-  document.getElementById('date-received').textContent = fileDetails.dateReceived;
-  document.getElementById('due-date').textContent = fileDetails.dueDate;
-  document.getElementById('current-location').textContent = fileDetails.currentLocation;
-  document.getElementById('current-handler').textContent = fileDetails.currentHandler;
-  document.getElementById('last-scanned').textContent = fileDetails.lastScanned;
-  document.getElementById('last-updated').textContent = fileDetails.history[fileDetails.history.length - 1]?.date;
-  document.getElementById('notes-content').textContent = fileDetails.history[fileDetails.history.length - 1]?.notes || "No notes available";
-  elements.generatedDate.textContent = new Date().toLocaleString();
-
-  // Update badges
-  const statusBadge = document.getElementById('status-badge');
-  statusBadge.textContent = `Status: ${fileDetails.status}`;
-  statusBadge.className = `badge ${getBadgeClass(fileDetails.status, 'status')}`;
-
-  const priorityBadge = document.getElementById('priority-badge');
-  priorityBadge.textContent = `Priority: ${fileDetails.priority}`;
-  priorityBadge.className = `badge ${getBadgeClass(fileDetails.priority, 'priority')}`;
-
-  // Populate history table
-  elements.historyTableBody.innerHTML = '';
-  fileDetails.history.forEach((entry, index) => {
-    const row = document.createElement('tr');
-    row.className = index % 2 === 0 ? "bg-gray-50" : "bg-white";
-    row.innerHTML = `
-      <td class="py-1 px-2 border-b text-xs">
-        <div class="flex items-center gap-1">
-          <i data-lucide="calendar" class="h-2 w-2 text-gray-400"></i>
-          <span>${entry.date} ${entry.time}</span>
-        </div>
-      </td>
-      <td class="py-1 px-2 border-b text-xs">
-        <div class="flex items-center gap-1">
-          <i data-lucide="map-pin" class="h-2 w-2 text-gray-400"></i>
-          <span>${entry.location}</span>
-        </div>
-      </td>
-      <td class="py-1 px-2 border-b text-xs">
-        <div class="flex items-center gap-1">
-          <i data-lucide="user" class="h-2 w-2 text-gray-400"></i>
-          <span>${entry.handler}</span>
-        </div>
-      </td>
-      <td class="py-1 px-2 border-b text-xs">${entry.action}</td>
-      <td class="py-1 px-2 border-b text-xs">
-        <span class="${entry.trackingMethod === "RFID Scan" ? "text-blue-600 font-medium" : "text-gray-600"}">
-          ${entry.trackingMethod}
-        </span>
-      </td>
-    `;
-    elements.historyTableBody.appendChild(row);
-  });
-
-  // Re-initialize Lucide icons
-  lucide.createIcons();
-  
-  // Generate QR code
-  setTimeout(() => {
-    generateQRCode();
-  }, 100);
-}
-
 function handlePrint() {
   // Set a slight delay to ensure all elements are properly laid out
   setTimeout(() => {
@@ -602,14 +540,36 @@ function handlePrint() {
   }, 200);
 }
 
+// Auto-print functionality
+function autoPrint() {
+  // Set a delay to ensure all content is fully rendered
+  setTimeout(() => {
+    console.log('Auto-printing document...');
+    window.print();
+  }, 1500); // 1.5-second delay before printing
+}
+
 // Event listeners
-elements.printBtn.addEventListener('click', handlePrint);
+if (elements.printBtn) {
+  elements.printBtn.addEventListener('click', handlePrint);
+}
 
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Page loaded, initializing tracking sheet...');
-  populateTrackingSheet();
+  
+  // Re-initialize Lucide icons
+  lucide.createIcons();
+  
+  // Generate QR code
+  setTimeout(() => {
+    generateQRCode();
+  }, 100);
+  
   console.log('Tracking sheet initialization complete');
+  
+  // Trigger automatic printing after content is loaded
+  autoPrint();
 });
 </script>
 </body>

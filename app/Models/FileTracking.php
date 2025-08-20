@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class FileTracking extends Model
 {
@@ -89,24 +90,50 @@ class FileTracking extends Model
      */
     public function addMovementEntry(array $movementData): void
     {
-        $history = $this->movement_history ?? [];
-        
-        $movement = array_merge([
-            'timestamp' => Carbon::now()->toISOString(),
-            'user_id' => auth()->id(),
-            'user_name' => auth()->user()->name ?? 'System',
-        ], $movementData);
-        
-        array_unshift($history, $movement);
-        
-        // Keep only last 100 movements to prevent excessive data
-        if (count($history) > 100) {
-            $history = array_slice($history, 0, 100);
+        try {
+            // Get current history as array (this creates a copy, not a reference)
+            $currentHistory = $this->movement_history ?? [];
+            
+            // Ensure it's an array
+            if (!is_array($currentHistory)) {
+                $currentHistory = [];
+            }
+            
+            $movement = array_merge([
+                'timestamp' => Carbon::now()->toISOString(),
+                'user_id' => auth()->id(),
+                'user_name' => auth()->user()->name ?? 'System',
+            ], $movementData);
+            
+            // Create new array with the new movement at the beginning
+            $newHistory = array_merge([$movement], $currentHistory);
+            
+            // Keep only last 100 movements to prevent excessive data
+            if (count($newHistory) > 100) {
+                $newHistory = array_slice($newHistory, 0, 100);
+            }
+            
+            // Use direct database update to avoid model casting issues
+            DB::connection('sqlsrv')->table('file_trackings')
+                ->where('id', $this->id)
+                ->update([
+                    'movement_history' => json_encode($newHistory),
+                    'updated_at' => Carbon::now()
+                ]);
+                
+            // Refresh the model to get the updated data
+            $this->refresh();
+            
+        } catch (\Exception $e) {
+            \Log::error('Error adding movement entry', [
+                'tracking_id' => $this->id,
+                'movement_data' => $movementData,
+                'error' => $e->getMessage()
+            ]);
+            
+            // Don't throw exception to avoid breaking the flow
+            // Just log the error and continue
         }
-        
-        $this->movement_history = $history;
-        $this->updated_at = Carbon::now();
-        $this->save();
     }
 
     /**
@@ -212,13 +239,15 @@ class FileTracking extends Model
             $model->created_at = Carbon::now();
             $model->updated_at = Carbon::now();
             
-            // Initialize movement history
+            // Initialize movement history properly
             if (empty($model->movement_history)) {
                 $model->movement_history = [];
             }
-            
-            // Add initial creation entry
-            $history = $model->movement_history;
+        });
+
+        static::created(function ($model) {
+            // Add initial creation entry after the model is created
+            $history = $model->movement_history ?? [];
             array_unshift($history, [
                 'action' => 'created',
                 'timestamp' => Carbon::now()->toISOString(),
@@ -228,7 +257,9 @@ class FileTracking extends Model
                 'initial_handler' => $model->current_handler,
                 'initial_status' => $model->status,
             ]);
-            $model->movement_history = $history;
+            
+            // Use update to avoid indirect modification issue
+            $model->update(['movement_history' => $history]);
         });
 
         static::updating(function ($model) {

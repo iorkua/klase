@@ -767,6 +767,33 @@
     window.updateFileLocation = updateFileLocation;
     window.closeRfidModal = closeRfidModal;
     window.scanRfidTag = scanRfidTag;
+    
+    // Print selected file function
+    window.printSelectedFile = function() {
+      // Get the currently selected/highlighted tracking ID
+      const $selectedRow = $('.file-row.bg-gray-50');
+      let trackingId = null;
+      
+      if ($selectedRow.length > 0) {
+        trackingId = $selectedRow.data('tracking-id');
+      }
+      
+      if (!trackingId) {
+        // Try to get from sidebar content
+        const sidebarId = $('.file-details .px-6.py-4.border-b p.text-sm.text-gray-500').text();
+        if (sidebarId && sidebarId.includes('TRK-')) {
+          trackingId = parseInt(sidebarId.replace('TRK-', '').replace(/^0+/, ''));
+        }
+      }
+      
+      if (trackingId) {
+        const printUrl = '{{ route("filetracker.print") }}?id=' + trackingId;
+        console.log('Opening print URL:', printUrl);
+        window.open(printUrl, '_blank');
+      } else {
+        alert('Please select a file first by clicking on it in the table.');
+      }
+    };
   });
 
   // Fix for table row clicks - add simple click handler

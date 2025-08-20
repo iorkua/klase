@@ -93,32 +93,151 @@ class FileTrackerController extends Controller
     /**
      * Display the print view for file tracker
      */
-    public function print() {
+    public function print(Request $request) {
         $PageTitle = 'File Tracker - Print View';
         $PageDescription = 'Print view for file tracking reports';
         
         try {
-            // Get data for printing
-            $trackings = FileTracking::with(['fileIndexing', 'currentHandlerUser'])
-                ->orderBy('created_at', 'desc')
-                ->get();
+            $tracking = null;
+            $mlsNumber = 'N/A';
+            $kangisNumber = 'N/A'; 
+            $newKangisNumber = 'N/A';
+            
+            // Get specific tracking record if ID provided
+            $trackingId = $request->get('id');
+            if ($trackingId) {
+                $tracking = FileTracking::with(['fileIndexing'])
+                    ->find($trackingId);
+                    
+                if ($tracking && $tracking->fileIndexing) {
+                    $fileNumber = $tracking->fileIndexing->file_number;
+                    
+                    // Step 1: Try to get file numbers from fileNumber table
+                    try {
+                        $fileNumberRecord = DB::connection('sqlsrv')->table('fileNumber')
+                            ->where('fileNumber', $fileNumber)
+                            ->first();
+                            
+                        if ($fileNumberRecord) {
+                            $mlsNumber = $fileNumberRecord->mlsfNo ?? 'N/A';
+                            $kangisNumber = $fileNumberRecord->kangisFileNo ?? 'N/A';
+                            $newKangisNumber = $fileNumberRecord->NewKANGISFileNo ?? 'N/A';
+                        } else {
+                            // Step 2: Use pattern recognition fallback
+                            $fileClassification = $this->classifyFileNumber($fileNumber);
+                            $mlsNumber = $fileClassification['mls'];
+                            $kangisNumber = $fileClassification['kangis'];
+                            $newKangisNumber = $fileClassification['newKangis'];
+                        }
+                    } catch (\Exception $e) {
+                        Log::warning('Error accessing fileNumber table, using pattern recognition', [
+                            'file_number' => $fileNumber,
+                            'error' => $e->getMessage()
+                        ]);
+                        
+                        // Fallback to pattern recognition
+                        $fileClassification = $this->classifyFileNumber($fileNumber);
+                        $mlsNumber = $fileClassification['mls'];
+                        $kangisNumber = $fileClassification['kangis'];
+                        $newKangisNumber = $fileClassification['newKangis'];
+                    }
+                }
+            }
                 
             Log::info('File Tracker print view accessed', [
                 'user_id' => auth()->id(),
-                'total_records' => $trackings->count()
+                'tracking_id' => $trackingId,
+                'file_classification' => [
+                    'mls' => $mlsNumber,
+                    'kangis' => $kangisNumber, 
+                    'newKangis' => $newKangisNumber
+                ]
             ]);
             
-            return view('filetracker.print', compact('PageTitle', 'PageDescription', 'trackings'));
+            return view('filetracker.print', compact(
+                'PageTitle', 
+                'PageDescription', 
+                'tracking',
+                'mlsNumber',
+                'kangisNumber', 
+                'newKangisNumber'
+            ));
             
         } catch (\Exception $e) {
             Log::error('Error loading File Tracker print view', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
+                'tracking_id' => $request->get('id')
             ]);
             
-            $trackings = collect();
-            return view('filetracker.print', compact('PageTitle', 'PageDescription', 'trackings'));
+            $tracking = null;
+            $mlsNumber = 'N/A';
+            $kangisNumber = 'N/A';
+            $newKangisNumber = 'N/A';
+            
+            return view('filetracker.print', compact(
+                'PageTitle', 
+                'PageDescription', 
+                'tracking',
+                'mlsNumber',
+                'kangisNumber',
+                'newKangisNumber'
+            ));
         }
+    }
+
+    /**
+     * Classify file number using pattern recognition
+     */
+    private function classifyFileNumber($fileNumber) {
+        $classification = [
+            'mls' => 'N/A',
+            'kangis' => 'N/A', 
+            'newKangis' => 'N/A'
+        ];
+        
+        if (!$fileNumber) {
+            return $classification;
+        }
+        
+        // Clean the file number
+        $cleanFileNumber = trim($fileNumber);
+        
+        // Classification order (to avoid false hits)
+        
+        // 1. New KANGIS patterns first (no space)
+        if (preg_match('/^KN\d{4}$/', $cleanFileNumber)) {
+            $classification['newKangis'] = $cleanFileNumber;
+            return $classification;
+        }
+        
+        // 2. KANGIS patterns (with space)
+        if (preg_match('/^KNML \d{5}$/', $cleanFileNumber) || 
+            preg_match('/^MLKN \d{5,6}$/', $cleanFileNumber)) {
+            $classification['kangis'] = $cleanFileNumber;
+            return $classification;
+        }
+        
+        // 3. MLS patterns (comprehensive list based on your patterns)
+        $mlsPatterns = [
+            // AG patterns
+            '/^AG-(19|20)\d{2}-\d{1,3}$/',           // AG-2021-001, AG-2023-02
+            '/^AG-RC-(19|20)\d{2}-\d{2,3}$/',        // AG-RC-2014-001, AG-RC-2014-02
+            '/^AG-RC-\d{2}-\d{1,3}$/',               // AG-RC-81-30, AG-RC-83-7 (legacy)
+            
+            // COM patterns (including CON-COM)
+            '/^COM-(19|20)\d{2}-\d{1,3}$/',          // COM-2000-176
+            '/^CON-COM-(19|20)\d{2}-\d{1,3}$/',      // CON-COM-2024-980
+        ];
+        
+        foreach ($mlsPatterns as $pattern) {
+            if (preg_match($pattern, $cleanFileNumber)) {
+                $classification['mls'] = $cleanFileNumber;
+                return $classification;
+            }
+        }
+        
+        return $classification;
     }
 
     /**
@@ -372,6 +491,8 @@ class FileTrackerController extends Controller
                 $movementData['notes'] = $validatedData['notes'];
             }
 
+            // Reload the tracking to get updated data before adding movement entry
+            $tracking = $tracking->fresh();
             $tracking->addMovementEntry($movementData);
 
             Log::info('File tracking updated successfully', [
