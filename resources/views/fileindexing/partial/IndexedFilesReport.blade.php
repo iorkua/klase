@@ -1020,7 +1020,7 @@
                     <style>
                         body { font-family: Arial, sans-serif; margin: 20px; }
                         .header { text-align: center; margin-bottom: 30px; }
-                        .file-info { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; }
+                        .file-info { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; page-break-inside: avoid; }
                         .file-number { font-weight: bold; font-size: 18px; }
                         .details { margin-top: 10px; }
                         .detail-row { margin: 5px 0; }
@@ -1074,14 +1074,16 @@
                 </html>
             `;
 
-            // Create blob and download
-            const blob = new Blob([trackingSheetContent], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `tracking_sheet_${new Date().toISOString().split('T')[0]}.html`;
-            link.click();
-            URL.revokeObjectURL(url);
+            // Open in new window for PDF generation
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(trackingSheetContent);
+            printWindow.document.close();
+            printWindow.focus();
+            
+            // Wait for content to load then trigger print dialog for PDF save
+            setTimeout(() => {
+                printWindow.print();
+            }, 500);
 
             actionsMenu.classList.add('hidden');
         }

@@ -222,6 +222,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/', [FileTrackerController::class, 'index'])->name('filetracker.index');
     Route::get('/create', [FileTrackerController::class, 'create'])->name('filetracker.create');
     Route::post('/store', [FileTrackerController::class, 'store'])->name('filetracker.store');
+    Route::put('/update/{id}', [FileTrackerController::class, 'update'])->name('filetracker.update');
     Route::post('/store-batch', [FileTrackerController::class, 'storeBatch'])->name('filetracker.store-batch');
     Route::get('/print', [FileTrackerController::class, 'print'])->name('filetracker.print');
     Route::post('/upload', [FileTrackerController::class, 'upload'])->name('filetracker.upload');

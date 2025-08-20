@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('page-title')
-    {{ __('Track New File') }}
+    {{ $existingTracking ? __('Update File Tracking') : __('Track New File') }}
 @endsection
 
 @section('content')
@@ -16,8 +16,10 @@
                 <header class="bg-white shadow-sm px-6 py-4 border-b mb-6">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h1 class="text-2xl font-bold">Track New File</h1>
-                            <p class="text-sm text-gray-500">Register a new file for tracking and monitoring</p>
+                            <h1 class="text-2xl font-bold">{{ $existingTracking ? 'Update File Tracking' : 'Track New File' }}</h1>
+                            <p class="text-sm text-gray-500">
+                                {{ $existingTracking ? 'Update file tracking information' : 'Register a new file for tracking and monitoring' }}
+                            </p>
                         </div>
                         <div class="flex items-center gap-2">
                             <a href="{{ route('filetracker.index') }}" class="border rounded-md px-4 py-2 text-sm flex items-center hover:bg-gray-50">
@@ -33,8 +35,23 @@
                 <!-- Form Content -->
                 <div class="flex-1">
                     <div class="max-w-4xl mx-auto">
+                        <!-- Update Info (if updating) -->
+                        @if($existingTracking)
+                            <div class="bg-green-50 border border-green-200 rounded-md p-4 mb-6">
+                                <div class="flex items-center">
+                                    <svg class="h-5 w-5 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                    </svg>
+                                    <div>
+                                        <h3 class="text-sm font-medium text-green-800">Update Mode</h3>
+                                        <p class="text-sm text-green-700">You are updating tracking information for: {{ $fileIndexing->file_number ?? 'N/A' }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
                         <!-- Batch Info (if batch tracking) -->
-                        @if(request('batch') === 'true')
+                        @if(request('batch') === 'true' && !$existingTracking)
                             <div class="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
                                 <div class="flex items-center">
                                     <svg class="h-5 w-5 text-blue-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -48,8 +65,12 @@
                             </div>
                         @endif
 
-                        <form action="{{ request('batch') === 'true' ? route('filetracker.store-batch') : route('filetracker.store') }}" method="POST" class="space-y-6" id="tracking-form">
+                        <form action="{{ $existingTracking ? route('filetracker.update', $existingTracking->id) : (request('batch') === 'true' ? route('filetracker.store-batch') : route('filetracker.store')) }}" 
+                              method="POST" class="space-y-6" id="tracking-form">
                             @csrf
+                            @if($existingTracking)
+                                @method('PUT')
+                            @endif
                             
                             <!-- Error Messages -->
                             @if ($errors->any())
@@ -74,31 +95,52 @@
                                 </div>
                             @endif
 
-                            <!-- File Selection Section -->
-                            <div class="bg-white rounded-lg shadow-sm border p-6">
-                                <h2 class="text-lg font-semibold mb-4">File Selection</h2>
-                                
-                                <div class="grid grid-cols-1 gap-4">
-                                    <div>
-                                        <label for="file_search" class="block text-sm font-medium text-gray-700 mb-2">
-                                            Search and Select File
-                                        </label>
-                                        <div class="relative">
-                                            <input type="text" 
-                                                   id="file_search" 
-                                                   placeholder="Type file number, title, or survey plan number..."
-                                                   class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                   autocomplete="off">
-                                            <div id="file_search_results" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 hidden max-h-60 overflow-y-auto"></div>
-                                        </div>
-                                        <input type="hidden" name="file_indexing_id" id="file_indexing_id" value="{{ old('file_indexing_id') }}">
-                                        <div id="selected_file_info" class="mt-3 p-3 bg-gray-50 rounded-md hidden">
-                                            <h4 class="font-medium text-gray-900">Selected File:</h4>
-                                            <div id="selected_file_details" class="text-sm text-gray-600 mt-1"></div>
+                            @if($existingTracking)
+                                <!-- File Information Display (Update Mode) -->
+                                <div class="bg-white rounded-lg shadow-sm border p-6">
+                                    <h2 class="text-lg font-semibold mb-4">File Information</h2>
+                                    <div class="bg-gray-50 rounded-md p-4">
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                            <div><strong>File Number:</strong> {{ $fileIndexing->file_number ?? 'N/A' }}</div>
+                                            <div><strong>File Title:</strong> {{ $fileIndexing->file_title ?? 'No Title' }}</div>
+                                            <div><strong>Land Use:</strong> {{ $fileIndexing->land_use_type ?? 'N/A' }}</div>
+                                            <div><strong>District:</strong> {{ $fileIndexing->district ?? 'N/A' }}</div>
+                                            @if($fileIndexing->old_file_number)
+                                                <div><strong>Old File Number:</strong> {{ $fileIndexing->old_file_number }}</div>
+                                            @endif
+                                            @if($fileIndexing->survey_plan_number)
+                                                <div><strong>Survey Plan:</strong> {{ $fileIndexing->survey_plan_number }}</div>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            @else
+                                <!-- File Selection Section (Create Mode) -->
+                                <div class="bg-white rounded-lg shadow-sm border p-6">
+                                    <h2 class="text-lg font-semibold mb-4">File Selection</h2>
+                                    
+                                    <div class="grid grid-cols-1 gap-4">
+                                        <div>
+                                            <label for="file_search" class="block text-sm font-medium text-gray-700 mb-2">
+                                                Search and Select File
+                                            </label>
+                                            <div class="relative">
+                                                <input type="text" 
+                                                       id="file_search" 
+                                                       placeholder="Type file number, title, or survey plan number..."
+                                                       class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                       autocomplete="off">
+                                                <div id="file_search_results" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 hidden max-h-60 overflow-y-auto"></div>
+                                            </div>
+                                            <input type="hidden" name="file_indexing_id" id="file_indexing_id" value="{{ old('file_indexing_id') }}">
+                                            <div id="selected_file_info" class="mt-3 p-3 bg-gray-50 rounded-md hidden">
+                                                <h4 class="font-medium text-gray-900">Selected File:</h4>
+                                                <div id="selected_file_details" class="text-sm text-gray-600 mt-1"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
 
                             <!-- Tracking Information Section -->
                             <div class="bg-white rounded-lg shadow-sm border p-6">
@@ -112,7 +154,7 @@
                                         <input type="text" 
                                                name="current_location" 
                                                id="current_location" 
-                                               value="{{ old('current_location') }}"
+                                               value="{{ old('current_location', $existingTracking->current_location ?? '') }}"
                                                class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('current_location') border-red-500 @enderror"
                                                placeholder="e.g., Archive Room A, Legal Department"
                                                required>
@@ -128,7 +170,7 @@
                                         <input type="text" 
                                                name="current_handler" 
                                                id="current_handler" 
-                                               value="{{ old('current_handler') }}"
+                                               value="{{ old('current_handler', $existingTracking->current_handler ?? '') }}"
                                                class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('current_handler') border-red-500 @enderror"
                                                placeholder="e.g., John Doe, Department Head"
                                                required>
@@ -144,7 +186,7 @@
                                         <input type="text" 
                                                name="current_holder" 
                                                id="current_holder" 
-                                               value="{{ old('current_holder') }}"
+                                               value="{{ old('current_holder', $existingTracking->current_holder ?? '') }}"
                                                class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('current_holder') border-red-500 @enderror"
                                                placeholder="e.g., Legal Department, Survey Unit">
                                         @error('current_holder')
@@ -161,10 +203,10 @@
                                                 class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('status') border-red-500 @enderror"
                                                 required>
                                             <option value="">Select Status</option>
-                                            <option value="in_process" {{ old('status') == 'in_process' ? 'selected' : '' }}>In Process</option>
-                                            <option value="pending" {{ old('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                                            <option value="on_hold" {{ old('status') == 'on_hold' ? 'selected' : '' }}>On Hold</option>
-                                            <option value="completed" {{ old('status') == 'completed' ? 'selected' : '' }}>Completed</option>
+                                            <option value="in_process" {{ old('status', $existingTracking->status ?? '') == 'in_process' ? 'selected' : '' }}>In Process</option>
+                                            <option value="pending" {{ old('status', $existingTracking->status ?? '') == 'pending' ? 'selected' : '' }}>Pending</option>
+                                            <option value="on_hold" {{ old('status', $existingTracking->status ?? '') == 'on_hold' ? 'selected' : '' }}>On Hold</option>
+                                            <option value="completed" {{ old('status', $existingTracking->status ?? '') == 'completed' ? 'selected' : '' }}>Completed</option>
                                         </select>
                                         @error('status')
                                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -178,7 +220,7 @@
                                         <input type="date" 
                                                name="date_received" 
                                                id="date_received" 
-                                               value="{{ old('date_received', date('Y-m-d')) }}"
+                                               value="{{ old('date_received', $existingTracking ? $existingTracking->date_received?->format('Y-m-d') : date('Y-m-d')) }}"
                                                class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('date_received') border-red-500 @enderror"
                                                required>
                                         @error('date_received')
@@ -193,28 +235,61 @@
                                         <input type="date" 
                                                name="due_date" 
                                                id="due_date" 
-                                               value="{{ old('due_date') }}"
+                                               value="{{ old('due_date', $existingTracking ? $existingTracking->due_date?->format('Y-m-d') : '') }}"
                                                class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('due_date') border-red-500 @enderror">
                                         @error('due_date')
                                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                         @enderror
                                     </div>
+
+                                    @if($existingTracking)
+                                        <!-- RFID and QR Code fields for updates -->
+                                        <div>
+                                            <label for="rfid_tag" class="block text-sm font-medium text-gray-700 mb-2">
+                                                RFID Tag
+                                            </label>
+                                            <input type="text" 
+                                                   name="rfid_tag" 
+                                                   id="rfid_tag" 
+                                                   value="{{ old('rfid_tag', $existingTracking->rfid_tag ?? '') }}"
+                                                   class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('rfid_tag') border-red-500 @enderror"
+                                                   placeholder="e.g., RFID123456">
+                                            @error('rfid_tag')
+                                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                            @enderror
+                                        </div>
+
+                                        <div>
+                                            <label for="qr_code" class="block text-sm font-medium text-gray-700 mb-2">
+                                                QR Code
+                                            </label>
+                                            <input type="text" 
+                                                   name="qr_code" 
+                                                   id="qr_code" 
+                                                   value="{{ old('qr_code', $existingTracking->qr_code ?? '') }}"
+                                                   class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('qr_code') border-red-500 @enderror"
+                                                   placeholder="e.g., QR123456">
+                                            @error('qr_code')
+                                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                            @enderror
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
 
                             <!-- Notes Section -->
                             <div class="bg-white rounded-lg shadow-sm border p-6">
-                                <h2 class="text-lg font-semibold mb-4">Additional Notes</h2>
+                                <h2 class="text-lg font-semibold mb-4">{{ $existingTracking ? 'Update Notes' : 'Additional Notes' }}</h2>
                                 
                                 <div>
                                     <label for="notes" class="block text-sm font-medium text-gray-700 mb-2">
-                                        Initial Notes
+                                        {{ $existingTracking ? 'Update Notes' : 'Initial Notes' }}
                                     </label>
                                     <textarea name="notes" 
                                               id="notes" 
                                               rows="4"
                                               class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('notes') border-red-500 @enderror"
-                                              placeholder="Add any initial notes about this file tracking...">{{ old('notes') }}</textarea>
+                                              placeholder="{{ $existingTracking ? 'Add notes about this update...' : 'Add any initial notes about this file tracking...' }}">{{ old('notes') }}</textarea>
                                     @error('notes')
                                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                     @enderror
@@ -229,7 +304,7 @@
                                 </a>
                                 <button type="submit" 
                                         class="bg-blue-600 text-white px-6 py-2 rounded-md text-sm font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                                    Create File Tracking
+                                    {{ $existingTracking ? 'Update File Tracking' : 'Create File Tracking' }}
                                 </button>
                             </div>
                         </form>
@@ -251,9 +326,13 @@
             let searchTimeout;
             let selectedFiles = [];
             let isBatchMode = {{ request('batch') === 'true' ? 'true' : 'false' }};
+            let isUpdateMode = {{ $existingTracking ? 'true' : 'false' }};
             
-            // Initialize batch mode if needed
-            if (isBatchMode) {
+            // Initialize based on mode
+            if (isUpdateMode) {
+                // Update mode - no initialization needed, form is pre-filled
+                console.log('Update mode initialized');
+            } else if (isBatchMode) {
                 initializeBatchMode();
             } else {
                 initializeSingleMode();

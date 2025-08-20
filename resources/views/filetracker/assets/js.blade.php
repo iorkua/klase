@@ -77,7 +77,7 @@
       $('#rfid-modal').addClass('hidden');
     });
     
-    // Tab functionality (enhanced for indexed files)
+    // Tab functionality (enhanced for indexed files and tracking files)
     $('.tab-button').click(function() {
       const tabId = $(this).data('tab');
       
@@ -102,15 +102,44 @@
         $('#header-track-btn').prop('disabled', false);
         $('#header-track-text').text('Track New File');
         
-        // Show/hide rows based on tab for tracking files
-        if (tabId === 'all') {
-          $('.file-row').show();
-        } else {
-          $('.file-row').hide();
-          $('.file-row[data-status="' + tabId + '"]').show();
-        }
+        // Apply status filtering for tracking files based on tab
+        filterTrackingFilesByTab(tabId);
       }
     });
+
+    // Filter tracking files based on tab selection
+    function filterTrackingFilesByTab(tabId) {
+      $('.file-row').each(function() {
+        const $row = $(this);
+        const status = $row.data('status');
+        let shouldShow = false;
+
+        switch(tabId) {
+          case 'all':
+            shouldShow = true;
+            break;
+          case 'in-process':
+            // Show files with status Pending or On Hold
+            shouldShow = (status === 'pending' || status === 'on-hold');
+            break;
+          case 'pending':
+            shouldShow = (status === 'pending');
+            break;
+          case 'on-hold':
+            shouldShow = (status === 'on-hold');
+            break;
+          case 'completed':
+            shouldShow = (status === 'completed');
+            break;
+        }
+
+        if (shouldShow) {
+          $row.show();
+        } else {
+          $row.hide();
+        }
+      });
+    }
 
     // Load indexed files via AJAX
     function loadIndexedFiles() {
@@ -279,23 +308,74 @@
     $(document).on('click', '.view-file-btn', function(e) {
       e.stopPropagation();
       const fileId = $(this).data('file-id');
-      // Add view file functionality here if needed
-      console.log('View file:', fileId);
+      // Load file details in sidebar
+      loadIndexedFileDetails(fileId);
       
       // Close dropdown
       $(this).closest('.action-dropdown').addClass('hidden');
     });
 
-    // Close dropdowns when clicking outside
-    $(document).on('click', function() {
-      $('.action-dropdown').addClass('hidden');
+    // Handle update file from dropdown (for tracked files)
+    $(document).on('click', '.update-file-btn', function(e) {
+      e.stopPropagation();
+      const trackingId = $(this).data('tracking-id');
+      window.location.href = `{{ route('filetracker.create') }}?update=${trackingId}`;
     });
 
-    // Prevent dropdown from closing when clicking inside it
-    $(document).on('click', '.action-dropdown', function(e) {
-      e.stopPropagation();
-    });
-    
+    // Load indexed file details for sidebar
+    function loadIndexedFileDetails(fileId) {
+      $.ajax({
+        url: '{{ route("filetracker.get-indexed-files") }}',
+        method: 'GET',
+        success: function(response) {
+          if (response.success && response.data.length > 0) {
+            const file = response.data.find(f => f.id == fileId);
+            if (file) {
+              updateSidebarWithIndexedFile(file);
+            }
+          }
+        },
+        error: function(xhr) {
+          console.error('Error loading indexed file details:', xhr);
+        }
+      });
+    }
+
+    // Update sidebar with indexed file data
+    function updateSidebarWithIndexedFile(file) {
+      // Update title
+      $('.file-details h3').text(file.file_title || 'File Title Not Available');
+      
+      // Update ID display
+      $('.file-details .px-6.py-4.border-b p.text-sm.text-gray-500').text(`IDX-${String(file.id).padStart(6, '0')}`);
+      
+      // Update status badge for indexed file
+      $('.file-details .px-6.py-4.border-b .badge').removeClass().addClass('badge badge-secondary').text('Not Tracked');
+      
+      // Update file numbers
+      const $numbers = $('.file-details').find('p.text-sm.font-medium:contains("File Numbers")').closest('div').next('.space-y-1');
+      $numbers.find('div:contains("File Number:")').find('p.text-xs.font-medium').text(file.file_number);
+      
+      // Clear tracking-specific fields for indexed files
+      $('.file-details').find('p.text-sm.font-medium:contains("Current Location")').parent().find('p.text-sm').last().text('Not Set');
+      $('.file-details').find('p.text-sm.font-medium:contains("Current Handler")').parent().find('p.text-sm').last().text('Not Assigned');
+      $('.file-details').find('p.text-sm.font-medium:contains("Date Received")').parent().find('p.text-sm').last().text('Not Set');
+      $('.file-details').find('p.text-sm.font-medium:contains("Due Date")').parent().find('p.text-sm').first().text('Not Set');
+      
+      // Clear RFID info
+      const $rfidWrap = $('.file-details').find('p.text-sm.font-medium:contains("RFID Tag")').parent();
+      $rfidWrap.find('p.text-sm').first().text('Not assigned');
+      $rfidWrap.find('p.text-xs.text-gray-500').text('No RFID tag assigned to this file');
+      
+      // Clear movement history
+      const $history = $('.file-details').find('h4:contains("Movement History")').next();
+      $history.empty().append('<div class="text-center py-4"><p class="text-sm text-gray-500">File not yet tracked</p></div>');
+      
+      // Highlight the selected indexed file row
+      $('.indexed-file-row').removeClass('bg-gray-50');
+      $(`.indexed-file-row[data-file-id="${file.id}"]`).addClass('bg-gray-50');
+    }
+
     // File view functionality (clicking on file rows or view buttons) - dynamic sidebar update (no reload)
     $(document).on('click', '.file-row, .file-view-btn', function(e) {
       e.preventDefault();
@@ -689,37 +769,37 @@
     window.scanRfidTag = scanRfidTag;
   });
 
-// Fix for table row clicks - add simple click handler
-.ready(function() {
-  .on('click', 'tr.file-row', function(e) {
-    e.preventDefault();
-    const trackingId = .data('tracking-id');
-    if (trackingId) {
-      console.log('Row clicked, tracking ID:', trackingId);
-      
-      // Highlight the selected row
-      tr.file-row.removeClass('bg-gray-50');
-      .addClass('bg-gray-50');
-      
-      // Update sidebar with row data (simple fallback)
-      const fileId = 'TRK-' + String(trackingId).padStart(6, '0');
-      const status = .find('.badge').text().trim();
-      const location = .find('td:nth-child(4)').text().trim();
-      const handler = .find('td:nth-child(5)').text().trim();
-      
-      // Update sidebar elements
-      .file-details .px-6.py-4.border-b p.text-sm.text-gray-500.text(fileId);
-      if (status) .file-details .px-6.py-4.border-b .badge.text(status);
-      
-      // Update location and handler if elements exist
-      const locationEl = .file-details.find('p.text-sm.font-medium:contains("Current Location")').parent().find('p.text-sm').last();
-      if (locationEl.length && location) locationEl.text(location);
-      
-      const handlerEl = .file-details.find('p.text-sm.font-medium:contains("Current Handler")').parent().find('p.text-sm').last();
-      if (handlerEl.length && handler) handlerEl.text(handler);
-      
-      console.log('Sidebar updated with basic info');
-    }
+  // Fix for table row clicks - add simple click handler
+  $(document).ready(function() {
+    $(document).on('click', 'tr.file-row', function(e) {
+      e.preventDefault();
+      const trackingId = $(this).data('tracking-id');
+      if (trackingId) {
+        console.log('Row clicked, tracking ID:', trackingId);
+        
+        // Highlight the selected row
+        $('tr.file-row').removeClass('bg-gray-50');
+        $(this).addClass('bg-gray-50');
+        
+        // Update sidebar with row data (simple fallback)
+        const fileId = 'TRK-' + String(trackingId).padStart(6, '0');
+        const status = $(this).find('.badge').text().trim();
+        const location = $(this).find('td:nth-child(4)').text().trim();
+        const handler = $(this).find('td:nth-child(5)').text().trim();
+        
+        // Update sidebar elements
+        $('.file-details .px-6.py-4.border-b p.text-sm.text-gray-500').text(fileId);
+        if (status) $('.file-details .px-6.py-4.border-b .badge').text(status);
+        
+        // Update location and handler if elements exist
+        const locationEl = $('.file-details').find('p.text-sm.font-medium:contains("Current Location")').parent().find('p.text-sm').last();
+        if (locationEl.length && location) locationEl.text(location);
+        
+        const handlerEl = $('.file-details').find('p.text-sm.font-medium:contains("Current Handler")').parent().find('p.text-sm').last();
+        if (handlerEl.length && handler) handlerEl.text(handler);
+        
+        console.log('Sidebar updated with basic info');
+      }
+    });
   });
-});
 </script>

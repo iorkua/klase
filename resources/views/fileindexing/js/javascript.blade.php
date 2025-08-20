@@ -1110,6 +1110,37 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Add dynamic click handler for the new file index button
+    if (newFileIndexBtn) {
+        newFileIndexBtn.addEventListener('click', function() {
+            const buttonText = this.textContent.trim();
+            
+            if (buttonText.includes('Generate Tracking Sheet') || buttonText.includes('Generate Batch Tracking Sheets')) {
+                // Button is in tracking sheet mode - generate tracking sheets
+                if (typeof generateTrackingSheet === 'function') {
+                    generateTrackingSheet();
+                } else {
+                    // Fallback: try to call the function from IndexedFilesReport
+                    const generateBtn = document.getElementById('generate-tracking-sheet');
+                    if (generateBtn) {
+                        generateBtn.click();
+                    } else {
+                        // If all else fails, show alert
+                        const selectedFiles = document.querySelectorAll('#indexed-tab .file-checkbox:checked');
+                        if (selectedFiles.length > 0) {
+                            alert(`Generating tracking sheets for ${selectedFiles.length} selected file(s)...`);
+                        } else {
+                            alert('Please select at least one file to generate tracking sheets.');
+                        }
+                    }
+                }
+            } else {
+                // Button is in normal mode - show new file dialog
+                showNewFileDialog();
+            }
+        });
+    }
+
     const selectAllCheckbox = document.getElementById('select-all-checkbox');
     if (selectAllCheckbox) {
         selectAllCheckbox.addEventListener('click', toggleSelectAll);
@@ -1130,10 +1161,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
-    if (newFileIndexBtn) {
-        newFileIndexBtn.addEventListener('click', showNewFileDialog);
-    }
+    
     if (closeDialogBtn) {
         closeDialogBtn.addEventListener('click', closeNewFileDialog);
     }

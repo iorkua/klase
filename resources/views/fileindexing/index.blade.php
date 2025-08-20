@@ -241,10 +241,15 @@
         const selectedFiles = document.querySelectorAll('#indexed-tab .file-checkbox:checked');
         
         if (selectedFiles.length >= 1) {
-          // Generate tracking sheet for selected files (single or batch)
-          const generateBtn = document.getElementById('generate-tracking-sheet');
-          if (generateBtn) {
-            generateBtn.click();
+          // Generate tracking sheet for selected files (single or batch) - call the actual function
+          if (typeof generateTrackingSheet === 'function') {
+            generateTrackingSheet();
+          } else {
+            // Fallback: try to call the function from IndexedFilesReport
+            const generateBtn = document.getElementById('generate-tracking-sheet');
+            if (generateBtn) {
+              generateBtn.click();
+            }
           }
         } else {
           // No files selected, show alert
@@ -332,7 +337,7 @@
         </div>
       </div>
       
-      <button class="btn btn-primary flex items-center px-5 py-2.5 shadow-lg hover:shadow-xl transition-all duration-200" id="new-file-index-btn" onclick="handleNewFileIndexClick()">
+      <button class="btn btn-primary flex items-center px-5 py-2.5 shadow-lg hover:shadow-xl transition-all duration-200" id="new-file-index-btn">
         <i data-lucide="folder-plus" class="h-5 w-5 mr-2"></i>
         <span class="font-medium">New File Index</span>
       </button>
@@ -704,7 +709,7 @@
     </div>
     @include('fileindexing.js.javascript')
     
-@endsection
+
 <script>
 // DEBUG: Test file loading
 window.testLoadFiles = function() {
@@ -726,3 +731,4 @@ window.testLoadFiles = function() {
 };
 setTimeout(testLoadFiles, 2000);
 </script>
+@endsection

@@ -218,13 +218,184 @@ class FileTrackerController extends Controller
     /**
      * Show the form for creating a new file tracking entry
      */
-    public function create() {
+    public function create(Request $request) {
         $PageTitle = 'Track New File';
         $PageDescription = 'Register a new file for tracking';
         
-        Log::info('File Tracker create form accessed', ['user_id' => auth()->id()]);
+        // Check if this is an update request
+        $updateTrackingId = $request->get('update');
+        $existingTracking = null;
+        $fileIndexing = null;
         
-        return view('filetracker.create', compact('PageTitle', 'PageDescription'));
+        if ($updateTrackingId) {
+            // Load existing tracking for update
+            try {
+                $existingTracking = FileTracking::with('fileIndexing')->find($updateTrackingId);
+                if ($existingTracking) {
+                    $fileIndexing = $existingTracking->fileIndexing;
+                    $PageTitle = 'Update File Tracking';
+                    $PageDescription = 'Update file tracking information';
+                }
+            } catch (\Exception $e) {
+                Log::error('Error loading tracking for update', [
+                    'tracking_id' => $updateTrackingId,
+                    'error' => $e->getMessage(),
+                    'user_id' => auth()->id()
+                ]);
+                
+                return redirect()->route('filetracker.index')
+                    ->withErrors(['error' => 'File tracking not found']);
+            }
+        }
+        
+        Log::info('File Tracker create/update form accessed', [
+            'user_id' => auth()->id(),
+            'is_update' => !is_null($updateTrackingId),
+            'tracking_id' => $updateTrackingId
+        ]);
+        
+        return view('filetracker.create', compact(
+            'PageTitle', 
+            'PageDescription', 
+            'existingTracking', 
+            'fileIndexing'
+        ));
+    }
+
+    /**
+     * Update an existing file tracking entry
+     */
+    public function update(Request $request, $id) {
+        try {
+            // Find the existing tracking
+            $tracking = FileTracking::find($id);
+            if (!$tracking) {
+                return redirect()->back()
+                    ->withErrors(['error' => 'File tracking not found'])
+                    ->withInput();
+            }
+
+            // Validate the request
+            $validatedData = $request->validate([
+                'rfid_tag' => 'nullable|string|max:100',
+                'qr_code' => 'nullable|string|max:100',
+                'current_location' => 'required|string|max:255',
+                'current_holder' => 'nullable|string|max:255',
+                'current_handler' => 'required|string|max:255',
+                'date_received' => 'required|date',
+                'due_date' => 'nullable|date|after:date_received',
+                'status' => 'required|string|in:in_process,pending,on_hold,completed',
+                'notes' => 'nullable|string|max:1000',
+            ]);
+
+            // Check for duplicate RFID tag (excluding current record)
+            if (!empty($validatedData['rfid_tag'])) {
+                $existingRfid = DB::connection('sqlsrv')->table('file_trackings')
+                    ->where('rfid_tag', $validatedData['rfid_tag'])
+                    ->where('id', '!=', $id)
+                    ->first();
+                if ($existingRfid) {
+                    return redirect()->back()
+                        ->withErrors(['rfid_tag' => 'This RFID tag is already in use by another file.'])
+                        ->withInput();
+                }
+            }
+
+            // Check for duplicate QR code (excluding current record)
+            if (!empty($validatedData['qr_code'])) {
+                $existingQr = DB::connection('sqlsrv')->table('file_trackings')
+                    ->where('qr_code', $validatedData['qr_code'])
+                    ->where('id', '!=', $id)
+                    ->first();
+                if ($existingQr) {
+                    return redirect()->back()
+                        ->withErrors(['qr_code' => 'This QR code is already in use by another file.'])
+                        ->withInput();
+                }
+            }
+
+            // Track changes for movement history
+            $changes = [];
+            $oldData = [
+                'location' => $tracking->current_location,
+                'holder' => $tracking->current_holder,
+                'handler' => $tracking->current_handler,
+                'status' => $tracking->status,
+                'rfid_tag' => $tracking->rfid_tag,
+                'qr_code' => $tracking->qr_code,
+                'due_date' => $tracking->due_date
+            ];
+
+            // Update the tracking record
+            DB::connection('sqlsrv')->table('file_trackings')
+                ->where('id', $id)
+                ->update([
+                    'rfid_tag' => $validatedData['rfid_tag'],
+                    'qr_code' => $validatedData['qr_code'],
+                    'current_location' => $validatedData['current_location'],
+                    'current_holder' => $validatedData['current_holder'],
+                    'current_handler' => $validatedData['current_handler'],
+                    'date_received' => $validatedData['date_received'],
+                    'due_date' => $validatedData['due_date'],
+                    'status' => $validatedData['status'],
+                    'updated_at' => now()
+                ]);
+
+            // Reload the tracking to get updated data
+            $tracking = $tracking->fresh();
+
+            // Build change summary for movement history
+            if ($oldData['location'] !== $validatedData['current_location']) {
+                $changes[] = "Location: {$oldData['location']} → {$validatedData['current_location']}";
+            }
+            if ($oldData['handler'] !== $validatedData['current_handler']) {
+                $changes[] = "Handler: {$oldData['handler']} → {$validatedData['current_handler']}";
+            }
+            if ($oldData['status'] !== $validatedData['status']) {
+                $changes[] = "Status: {$oldData['status']} → {$validatedData['status']}";
+            }
+
+            // Add movement entry for the update
+            $movementData = [
+                'action' => 'updated',
+                'changes' => implode(', ', $changes),
+                'from_location' => $oldData['location'],
+                'to_location' => $validatedData['current_location'],
+                'from_handler' => $oldData['handler'],
+                'to_handler' => $validatedData['current_handler'],
+                'from_status' => $oldData['status'],
+                'to_status' => $validatedData['status'],
+                'reason' => 'File tracking updated via form'
+            ];
+
+            if (!empty($validatedData['notes'])) {
+                $movementData['notes'] = $validatedData['notes'];
+            }
+
+            $tracking->addMovementEntry($movementData);
+
+            Log::info('File tracking updated successfully', [
+                'tracking_id' => $tracking->id,
+                'file_indexing_id' => $tracking->file_indexing_id,
+                'changes' => $changes,
+                'user_id' => auth()->id()
+            ]);
+
+            return redirect()->route('filetracker.index', ['selected' => $tracking->id])
+                ->with('success', 'File tracking updated successfully!');
+
+        } catch (\Exception $e) {
+            Log::error('Error updating file tracking', [
+                'tracking_id' => $id,
+                'error' => $e->getMessage(),
+                'request_data' => $request->all(),
+                'user_id' => auth()->id()
+            ]);
+
+            return redirect()->back()
+                ->withErrors(['error' => 'An error occurred while updating the file tracking. Please try again.'])
+                ->withInput();
+        }
     }
 
     /**
