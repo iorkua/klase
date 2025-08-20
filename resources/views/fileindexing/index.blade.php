@@ -36,7 +36,7 @@
             is_merged: {{ $fileData->is_merged ? 'true' : 'false' }},
             has_transaction: {{ $fileData->has_transaction ? 'true' : 'false' }},
             is_problematic: {{ $fileData->is_problematic ? 'true' : 'false' }},
-            is_co_owned_plot: {{ $fileData->is_co_owned_plot ? 'true' : 'false' }}
+            is_co_owned_plot: {{ ($fileData->is_co_owned_plot ?? false) ? 'true' : 'false' }}
         };
     @endforeach
     

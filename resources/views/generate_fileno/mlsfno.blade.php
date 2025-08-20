@@ -161,7 +161,8 @@
                                         <option value="CON-RES">CON-RES - Conversion to Residential</option>
                                         <option value="CON-COM">CON-COM - Conversion to Commercial</option>
                                         <option value="CON-IND">CON-IND - Conversion to Industrial</option>
-                                        <option value="CON-AGR">CON-AGR - Conversion to Agricultural</option<option value="CON-INS">CON-INS - Conversion to Institutional</option>
+                                        <option value="CON-AGR">CON-AGR - Conversion to Agricultural</option>
+                                        <option value="CON-INS">CON-INS - Conversion to Institutional</option>
                                     </optgroup>
                                     <!-- RC Options -->
                                     <optgroup label="RC Options">
@@ -169,42 +170,26 @@
                                         <option value="COM-RC">COM-RC</option>
                                         <option value="AG-RC">AG-RC</option>
                                         <option value="IND-RC">IND-RC</option>
-                                        <option value="CON-RES-RC">CON-RES-RC</option>
-                                        <option value="CON-COM-RC">CON-COM-RC</option>
-                                        <option value="CON-AG-RC">CON-AG-RC</option>
-                                        <option value="CON-IND-RC">CON-IND-RC</option>
                                     </optgroup>
                                 </select>
                             </div>
 
                             <!-- File Options -->
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-3">
+                                <label for="fileOption" class="block text-sm font-medium text-gray-700 mb-2">
                                     <i data-lucide="settings" class="w-4 h-4 inline mr-1"></i>
                                     File Options
                                 </label>
-                                <div class="space-y-2">
-                                    <label class="flex items-center cursor-pointer p-2 rounded hover:bg-gray-50">
-                                        <input type="radio" name="file_option" value="normal" class="mr-3 text-blue-600" onchange="updatePreview()" checked>
-                                        <span class="text-sm">Normal File</span>
-                                    </label>
-                                    <label class="flex items-center cursor-pointer p-2 rounded hover:bg-gray-50">
-                                        <input type="radio" name="file_option" value="temporary" class="mr-3 text-blue-600" onchange="updatePreview()">
-                                        <span class="text-sm">Temporary File</span>
-                                    </label>
-                                    <label class="flex items-center cursor-pointer p-2 rounded hover:bg-gray-50">
-                                        <input type="radio" name="file_option" value="extension" class="mr-3 text-blue-600" onchange="updatePreview()">
-                                        <span class="text-sm">Extension</span>
-                                    </label>
-                                    <label class="flex items-center cursor-pointer p-2 rounded hover:bg-gray-50">
-                                        <input type="radio" name="file_option" value="miscellaneous" class="mr-3 text-blue-600" onchange="updatePreview()">
-                                        <span class="text-sm">Miscellaneous</span>
-                                    </label>
-                                    <label class="flex items-center cursor-pointer p-2 rounded hover:bg-gray-50">
-                                        <input type="radio" name="file_option" value="sltr" class="mr-3 text-blue-600" onchange="updatePreview()">
-                                        <span class="text-sm">SLTR</span>
-                                    </label>
-                                </div>
+                                <select id="fileOption" name="file_option" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        onchange="updatePreview()">
+                                    <option value="normal" selected>Normal File</option>
+                                    <option value="temporary">Temporary File</option>
+                                    <option value="extension">Extension</option>
+                                    <option value="miscellaneous">Miscellaneous</option>
+                                    <option value="sltr">SLTR</option>
+                                    <option value="sit">SIT</option>
+                                </select>
                             </div>
                         </div>
 
@@ -722,14 +707,17 @@
         function updateApplicationType(type) {
             const newOptions = document.getElementById('newOptions');
             const conversionOptions = document.getElementById('conversionOptions');
+            const rcOptions = document.querySelector('optgroup[label="RC Options"]');
             const landUseSelect = document.getElementById('landUse');
             
             if (type === 'new') {
                 newOptions.style.display = 'block';
                 conversionOptions.style.display = 'none';
+                rcOptions.style.display = 'block';
             } else {
                 newOptions.style.display = 'none';
                 conversionOptions.style.display = 'block';
+                rcOptions.style.display = 'none'; // Hide RC options for conversion
             }
             
             // Reset land use selection
@@ -741,20 +729,71 @@
             const serialNo = document.getElementById('serialNo').value;
             const year = document.getElementById('year').value;
             const landUse = document.getElementById('landUse').value;
-            const fileOption = document.querySelector('input[name="file_option"]:checked')?.value;
+            const fileOption = document.getElementById('fileOption').value;
             const existingFileNo = document.getElementById('existingFileNo').value;
             const middlePrefix = document.getElementById('middlePrefix') ? document.getElementById('middlePrefix').value : '';
             const preview = document.getElementById('mlsfPreview');
+            const serialNoField = document.getElementById('serialNo');
+            
+            // Handle serial number field behavior based on file option
+            if (fileOption === 'miscellaneous' || fileOption === 'sltr' || fileOption === 'sit') {
+                // Clear serial number for these 3 file options and make editable
+                serialNoField.value = '';
+                serialNoField.type = 'text';
+                serialNoField.readOnly = false;
+                serialNoField.classList.remove('bg-gray-100', 'text-gray-600');
+                serialNoField.classList.add('bg-white', 'text-gray-900');
+                
+                // Update placeholder based on type
+                if (fileOption === 'miscellaneous') {
+                    serialNoField.placeholder = 'Enter custom serial (e.g., 001, ABC123)';
+                } else if (fileOption === 'sltr') {
+                    serialNoField.placeholder = 'Enter SLTR serial (e.g., 001, 2024-001)';
+                } else if (fileOption === 'sit') {
+                    serialNoField.placeholder = 'Enter SIT serial (e.g., 001, 2024-001)';
+                }
+            } else if (fileOption === 'extension') {
+                // Disable serial number for extensions
+                serialNoField.value = '';
+                serialNoField.readOnly = true;
+                serialNoField.classList.add('bg-gray-100', 'text-gray-600');
+                serialNoField.placeholder = 'Not required for extensions';
+            } else if (!isOverrideMode) {
+                // Reset to auto-generated for normal/temporary files
+                serialNoField.value = nextSerialNo;
+                serialNoField.type = 'number';
+                serialNoField.readOnly = true;
+                serialNoField.classList.add('bg-gray-100', 'text-gray-600');
+                serialNoField.classList.remove('bg-white', 'text-gray-900');
+                serialNoField.placeholder = 'Auto-generated';
+            }
             
             let previewText = '-';
             
             if (fileOption === 'extension' && existingFileNo) {
                 previewText = existingFileNo + ' AND EXTENSION';
-            } else if (fileOption === 'miscellaneous' && middlePrefix && serialNo) {
-                previewText = `MISC-${middlePrefix}-${serialNo}`;
-            } else if (fileOption === 'sltr' && serialNo) {
-                previewText = `SLTR-${serialNo}`;
-            } else if (serialNo && year && landUse) {
+            } else if (fileOption === 'miscellaneous') {
+                // Only show preview if user has entered both middle prefix and serial
+                if (middlePrefix && serialNo && serialNo.trim() !== '') {
+                    previewText = `MISC-${middlePrefix}-${serialNo}`;
+                } else {
+                    previewText = '-'; // No default preview for miscellaneous
+                }
+            } else if (fileOption === 'sltr') {
+                // Only show preview if user has entered a serial
+                if (serialNo && serialNo.trim() !== '') {
+                    previewText = `SLTR-${serialNo}`;
+                } else {
+                    previewText = '-'; // No default preview for SLTR
+                }
+            } else if (fileOption === 'sit') {
+                // Only show preview if user has entered a serial
+                if (serialNo && serialNo.trim() !== '') {
+                    previewText = `SIT-${serialNo}`;
+                } else {
+                    previewText = '-'; // No default preview for SIT
+                }
+            } else if ((fileOption === 'normal' || fileOption === 'temporary') && serialNo && year && landUse) {
                 const paddedSerial = serialNo.toString().padStart(4, '0');
                 previewText = `${landUse}-${year}-${paddedSerial}`;
                 
@@ -787,7 +826,7 @@
             if (fileOption === 'miscellaneous') {
                 middlePrefixSection.classList.remove('hidden');
                 yearSection.classList.add('hidden');
-            } else if (fileOption === 'sltr') {
+            } else if (fileOption === 'sltr' || fileOption === 'sit') {
                 middlePrefixSection.classList.add('hidden');
                 yearSection.classList.add('hidden');
             } else {
@@ -1288,10 +1327,8 @@
             document.getElementById('year').addEventListener('input', updatePreview);
             document.getElementById('landUse').addEventListener('change', updatePreview);
             
-            // Add event listeners for file option radio buttons
-            document.querySelectorAll('input[name="file_option"]').forEach(radio => {
-                radio.addEventListener('change', updatePreview);
-            });
+            // Add event listeners for file option dropdown
+            document.getElementById('fileOption').addEventListener('change', updatePreview);
             
             // Add event listener for existing file number dropdown
             document.getElementById('existingFileNo').addEventListener('change', updatePreview);

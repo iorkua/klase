@@ -506,7 +506,7 @@
                     <button class="Button Button-variant-default" id="print-labels">
                         <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2 2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
                             <rect width="12" height="8" x="6" y="14"></rect>
                         </svg>
                         Print Labels
@@ -530,8 +530,45 @@
     </div>
 
     <script>
-        // Dynamic data from database
+        // Dynamic data from database with tracking status
         const indexedFiles = @json($recentIndexes ?? []);
+        
+        // Add tracking status to indexed files
+        let fileTrackingStatus = {};
+        
+        // Fetch tracking status for all indexed files
+        async function loadTrackingStatus() {
+            try {
+                const response = await fetch('/api/file-trackings');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        // Create a map of file_indexing_id to tracking status
+                        data.data.forEach(tracking => {
+                            if (tracking.file_indexing_id) {
+                                fileTrackingStatus[tracking.file_indexing_id] = {
+                                    id: tracking.id,
+                                    status: tracking.status,
+                                    rfid_tag: tracking.rfid_tag,
+                                    qr_code: tracking.qr_code,
+                                    current_location: tracking.current_location,
+                                    current_handler: tracking.current_handler,
+                                    date_received: tracking.date_received,
+                                    due_date: tracking.due_date,
+                                    created_at: tracking.created_at,
+                                    updated_at: tracking.updated_at
+                                };
+                            }
+                        });
+                        console.log('Loaded tracking status for', Object.keys(fileTrackingStatus).length, 'files');
+                        // Re-render table with tracking status
+                        renderTable();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading tracking status:', error);
+            }
+        }
 
         // DOM elements
         const emptyState = document.getElementById('empty-state');
@@ -569,6 +606,7 @@
 
         // Initialize the page
         function init() {
+            loadTrackingStatus(); // Load tracking status first
             renderTable();
             updateView();
             
@@ -629,13 +667,39 @@
 
         // Get status badge based on file status
         function getStatusBadge(file) {
-            // Always use green badge for status
-            const statusText = file.pagetypings_count > 0
-                ? 'Typed'
-                : file.scannings_count > 0
-                    ? 'Scanned'
-                    : 'Indexed';
-            return `<span class="Badge Badge-variant-green">${statusText}</span>`;
+            // Check if file has tracking information
+            const trackingInfo = fileTrackingStatus[file.id];
+            if (trackingInfo) {
+                // File is being tracked - show tracking status
+                const statusColors = {
+                    'active': 'Badge-variant-green',
+                    'checked_out': 'Badge-variant-blue',
+                    'overdue': 'Badge-variant-destructive',
+                    'returned': 'Badge-variant-outline',
+                    'lost': 'Badge-variant-destructive',
+                    'archived': 'Badge-variant-secondary',
+                    'in_process': 'Badge-variant-blue',
+                    'pending': 'Badge-variant-outline',
+                    'on_hold': 'Badge-variant-destructive',
+                    'completed': 'Badge-variant-green'
+                };
+                const statusText = trackingInfo.status.replace('_', ' ').toUpperCase();
+                const statusClass = statusColors[trackingInfo.status] || 'Badge-variant-secondary';
+                return `<span class="Badge ${statusClass}">TRACKED: ${statusText}</span>`;
+            } else {
+                // File is not being tracked - show indexing status
+                const statusText = file.pagetypings_count > 0
+                    ? 'Typed'
+                    : file.scannings_count > 0
+                        ? 'Scanned'
+                        : 'Indexed';
+                return `<span class="Badge Badge-variant-green">${statusText}</span>`;
+            }
+        }
+
+        // Check if file can be selected for tracking (i.e., doesn't have tracking info)
+        function canSelectForTracking(file) {
+            return !fileTrackingStatus[file.id];
         }
 
         // Format date for display
@@ -662,9 +726,20 @@
                     row.style.backgroundColor = '#fff1f1';
                 }
                 
+                // Check if file can be selected for tracking
+                const canSelect = canSelectForTracking(file);
+                const checkboxDisabled = !canSelect;
+                const checkboxTitle = canSelect ? 'Select for tracking sheet generation' : 'File is already being tracked';
+                
                 row.innerHTML = `
                     <td class="TableCell">
-                        <input type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 file-checkbox" data-file-id="${file.id}" ${selectedFiles.has(file.id) ? 'checked' : ''}>
+                        <input type="checkbox" 
+                               class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 file-checkbox" 
+                               data-file-id="${file.id}" 
+                               ${selectedFiles.has(file.id) ? 'checked' : ''}
+                               ${checkboxDisabled ? 'disabled' : ''}
+                               title="${checkboxTitle}"
+                               style="${checkboxDisabled ? 'opacity: 0.5; cursor: not-allowed;' : ''}">
                     </td>
                     <td class="TableCell font-medium">${file.file_number || 'N/A'}</td>
                     <td class="TableCell">${file.file_title || 'Untitled'}</td>
@@ -684,7 +759,13 @@
                             <button class="Button Button-variant-outline Button-size-sm view-btn" data-id="${file.id}">
                                 View
                             </button>
-                            ${file.scannings_count === 0 ? `
+                            ${!canSelect ? `
+                                <a href="{{ route('filetracker.index') }}?selected=${fileTrackingStatus[file.id] && fileTrackingStatus[file.id].id ? fileTrackingStatus[file.id].id : ''}" 
+                                   class="Button Button-variant-blue Button-size-sm"
+                                   title="View in File Tracker">
+                                    Track
+                                </a>
+                            ` : file.scannings_count === 0 ? `
                                 <a href="{{ route('scanning.index') }}?file_indexing_id=${file.id}" class="Button Button-variant-default Button-size-sm">
                                     Scan
                                 </a>
@@ -692,8 +773,7 @@
                                 <a href="{{ route('pagetyping.index') }}?file_indexing_id=${file.id}" class="Button Button-variant-default Button-size-sm">
                                     Type
                                 </a>
-                            ` : `
-     `}
+                            ` : ''}
                         </div>
                     </td>
                 `;
@@ -708,8 +788,8 @@
                 });
             });
 
-            // Add event listeners to checkboxes
-            document.querySelectorAll('.file-checkbox').forEach(checkbox => {
+            // Add event listeners to checkboxes (only enabled ones)
+            document.querySelectorAll('.file-checkbox:not([disabled])').forEach(checkbox => {
                 checkbox.addEventListener('change', handleFileSelection);
             });
 
@@ -790,6 +870,40 @@
                     </div>
                 </div>
                 ` : ''}
+                
+                <!-- Add tracking status if available -->
+                ${fileTrackingStatus[file.id] ? `
+                <div class="detail-row">
+                    <div class="detail-label">Tracking Status:</div>
+                    <div class="detail-value">
+                        <span class="Badge Badge-variant-blue">TRACKED: ${fileTrackingStatus[file.id].status.replace('_', ' ').toUpperCase()}</span>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Current Location:</div>
+                    <div class="detail-value">${fileTrackingStatus[file.id].current_location || 'Not specified'}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Current Handler:</div>
+                    <div class="detail-value">${fileTrackingStatus[file.id].current_handler || 'Not specified'}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">RFID Tag:</div>
+                    <div class="detail-value">${fileTrackingStatus[file.id].rfid_tag || 'Not assigned'}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">QR Code:</div>
+                    <div class="detail-value">${fileTrackingStatus[file.id].qr_code || 'Not assigned'}</div>
+                </div>
+                ` : `
+                <div class="detail-row">
+                    <div class="detail-label">Tracking Status:</div>
+                    <div class="detail-value">
+                        <span class="Badge Badge-variant-outline">Not being tracked</span>
+                        <br><small class="text-gray-500">This file can be selected for tracking sheet generation</small>
+                    </div>
+                </div>
+                `}
             `;
 
             modalContent.innerHTML = detailsHTML;
@@ -1000,7 +1114,7 @@
             actionsMenu.classList.toggle('hidden');
         }
 
-        // Generate tracking sheet
+        // Generate tracking sheet with official template
         function generateTrackingSheet() {
             if (selectedFiles.size === 0) {
                 alert('Please select at least one file to generate tracking sheet.');
@@ -1011,60 +1125,207 @@
                 return indexedFiles.find(f => f.id === fileId);
             }).filter(Boolean);
 
-            // Create simple tracking sheet content
+            // Build printable tracking sheet content directly
             let trackingSheetContent = `
                 <!DOCTYPE html>
-                <html>
+                <html lang="en">
                 <head>
-                    <title>File Tracking Sheet</title>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Kano Land State Registry - File Tracking Sheet</title>
+                    <script src="https://cdn.tailwindcss.com"></script>
                     <style>
-                        body { font-family: Arial, sans-serif; margin: 20px; }
-                        .header { text-align: center; margin-bottom: 30px; }
-                        .file-info { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; page-break-inside: avoid; }
-                        .file-number { font-weight: bold; font-size: 18px; }
-                        .details { margin-top: 10px; }
-                        .detail-row { margin: 5px 0; }
-                        .tracking-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-                        .tracking-table th, .tracking-table td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-                        .tracking-table th { background-color: #f5f5f5; }
-                        @media print { body { margin: 0; } }
+                        @media print {
+                            @page {
+                                size: landscape;
+                                margin: 0.5in;
+                            }
+                            body {
+                                print-color-adjust: exact;
+                            }
+                        }
                     </style>
                 </head>
-                <body>
-                    <div class="header">
-                        <h1>File Tracking Sheet</h1>
-                        <p>Generated on: ${new Date().toLocaleDateString()}</p>
-                    </div>
+                <body class="bg-white font-sans text-xs">
             `;
 
-            selectedFileData.forEach(file => {
+            selectedFileData.forEach((file, index) => {
                 trackingSheetContent += `
-                    <div class="file-info">
-                        <div class="file-number">File Number: ${file.file_number || 'N/A'}</div>
-                        <div class="details">
-                            <div class="detail-row"><strong>Title:</strong> ${file.file_title || 'Untitled'}</div>
-                            <div class="detail-row"><strong>Land Use:</strong> ${file.land_use_type || 'N/A'}</div>
-                            <div class="detail-row"><strong>District:</strong> ${file.district || 'N/A'}</div>
-                            <div class="detail-row"><strong>Plot Number:</strong> ${file.plot_number || 'N/A'}</div>
-                            <div class="detail-row"><strong>Indexed Date:</strong> ${formatDate(file.created_at)}</div>
+                    <div class="max-w-full mx-auto bg-white border border-black" ${index > 0 ? 'style="page-break-before: always;"' : ''}>
+                        <!-- Header -->
+                        <div class="p-2 border-b border-black">
+                            <!-- Two logos side by side -->
+                            <div class="flex justify-center items-center gap-8 mb-3">
+                                <div class="w-15 h-15 bg-gray-200 rounded-full flex items-center justify-center">
+                                    <span class="text-xs">LOGO</span>
+                                </div>
+                                <div class="w-15 h-15 bg-gray-200 rounded-full flex items-center justify-center">
+                                    <span class="text-xs">LOGO</span>
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <h1 class="text-sm font-bold">KANO LAND STATE REGISTRY</h1>
+                                    <h2 class="text-xs">FILE TRACKING SHEET</h2>
+                                </div>
+                                <div class="text-right text-xs">
+                                    <p class="font-bold">Tracking ID: TRK-${new Date().getFullYear()}-${String(index + 1).padStart(3, '0')}</p>
+                                    <p>Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</p>
+                                </div>
+                            </div>
                         </div>
-                        <table class="tracking-table">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Action</th>
-                                    <th>Officer</th>
-                                    <th>Remarks</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-                                <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-                                <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-                                <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-                                <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-                            </tbody>
-                        </table>
+
+                        <div class="p-3">
+                            <!-- File Details -->
+                            <div class="grid grid-cols-12 gap-4 mb-4">
+                                <div class="col-span-8">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-8 h-10 bg-gray-200 border border-gray-400 flex items-center justify-center">
+                                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm0 2h12v10H4V5z"/>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-xs font-bold mb-1">File Details</h3>
+                                            <p class="text-xs font-semibold mb-2">${file.file_title || 'Untitled'}</p>
+                                            
+                                            <!-- Status buttons -->
+                                            <div class="flex gap-2 mb-3">
+                                                <span class="bg-blue-600 text-white px-2 py-1 text-xs rounded">Status: Ready for Tracking</span>
+                                                <span class="bg-gray-500 text-white px-2 py-1 text-xs rounded">Priority: Normal</span>
+                                            </div>
+
+                                            <h4 class="text-xs font-bold mb-1">File Information</h4>
+                                            <div class="grid grid-cols-2 gap-x-8 text-xs">
+                                                <div>
+                                                    <p><span class="font-semibold">File Number:</span></p>
+                                                    <p><span class="font-semibold">Land Use:</span></p>
+                                                    <p><span class="font-semibold">District:</span></p>
+                                                    <p><span class="font-semibold">Plot Number:</span></p>
+                                                    <p><span class="font-semibold">Indexed Date:</span></p>
+                                                </div>
+                                                <div>
+                                                    <p>${file.file_number || 'N/A'}</p>
+                                                    <p>${file.land_use_type || 'N/A'}</p>
+                                                    <p>${file.district || 'N/A'}</p>
+                                                    <p>${file.plot_number || 'N/A'}</p>
+                                                    <p>${formatDate(file.created_at)}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- QR Code section -->
+                                <div class="col-span-4">
+                                    <h3 class="text-xs font-bold mb-1">QR Code</h3>
+                                    <div class="border border-gray-400 p-2 text-center">
+                                        <div class="w-20 h-20 mx-auto mb-2 border bg-gray-100 flex items-center justify-center">
+                                            <span class="text-xs">QR</span>
+                                        </div>
+                                        <p class="text-xs">Contains file details</p>
+                                        <p class="text-xs font-semibold">${file.file_number || 'N/A'}</p>
+                                        <p class="text-xs">📱 RFID: Pending</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Current Location -->
+                            <div class="mb-4">
+                                <h3 class="text-xs font-bold mb-1">Current Location</h3>
+                                <div class="grid grid-cols-4 gap-4 text-xs">
+                                    <div>
+                                        <p class="font-semibold">Pending Assignment</p>
+                                        <p>Last updated: ${new Date().toLocaleDateString()}</p>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold">Unassigned</p>
+                                        <p>Current handler</p>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold">${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</p>
+                                        <p>Sheet generated</p>
+                                    </div>
+                                    <div></div>
+                                </div>
+                            </div>
+
+                            <!-- Movement History -->
+                            <div class="mb-4">
+                                <h3 class="text-xs font-bold mb-2">Movement History</h3>
+                                <table class="w-full border-collapse border border-black text-xs">
+                                    <thead>
+                                        <tr class="bg-gray-100">
+                                            <th class="border border-black p-1 text-left font-bold">Date & Time</th>
+                                            <th class="border border-black p-1 text-left font-bold">Location</th>
+                                            <th class="border border-black p-1 text-left font-bold">Handler</th>
+                                            <th class="border border-black p-1 text-left font-bold">Action</th>
+                                            <th class="border border-black p-1 text-left font-bold">Method</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="border border-black p-1">${formatDate(file.created_at)}</td>
+                                            <td class="border border-black p-1">File Indexing</td>
+                                            <td class="border border-black p-1">System</td>
+                                            <td class="border border-black p-1">File indexed and tracking sheet generated</td>
+                                            <td class="border border-black p-1">System</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="border border-black p-1">&nbsp;</td>
+                                            <td class="border border-black p-1">&nbsp;</td>
+                                            <td class="border border-black p-1">&nbsp;</td>
+                                            <td class="border border-black p-1">&nbsp;</td>
+                                            <td class="border border-black p-1">&nbsp;</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="border border-black p-1">&nbsp;</td>
+                                            <td class="border border-black p-1">&nbsp;</td>
+                                            <td class="border border-black p-1">&nbsp;</td>
+                                            <td class="border border-black p-1">&nbsp;</td>
+                                            <td class="border border-black p-1">&nbsp;</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Signature section -->
+                            <div class="grid grid-cols-2 gap-8 mb-4">
+                                <div>
+                                    <h3 class="text-xs font-bold mb-2">Signature</h3>
+                                    <div class="h-16 border-b border-black mb-1"></div>
+                                    <p class="text-xs">Authorized Signature</p>
+                                </div>
+                                <div>
+                                    <h3 class="text-xs font-bold mb-2">Notes</h3>
+                                    <div class="h-16 mb-1"></div>
+                                    <p class="text-xs text-center">File ready for physical tracking</p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-8">
+                                <div>
+                                    <div class="border-b border-black mb-1"></div>
+                                    <p class="text-xs">Date:</p>
+                                </div>
+                                <div></div>
+                            </div>
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="border-t border-black p-2 text-xs">
+                            <div class="flex justify-between">
+                                <div>
+                                    <p class="font-bold">KANO STATE LAND REGISTRY</p>
+                                    <p>File Tracking System</p>
+                                </div>
+                                <div class="text-right">
+                                    <p>This tracking sheet should accompany the file at all times.</p>
+                                    <p>For inquiries, contact File Management Office at ext.2145.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 `;
             });
@@ -1088,87 +1349,15 @@
             actionsMenu.classList.add('hidden');
         }
 
-        // Print tracking sheet
+        // Print tracking sheet function
         function printTrackingSheet() {
             if (selectedFiles.size === 0) {
-                alert('Please select at least one file to print tracking sheet.');
+                alert('Please select at least one file to print tracking sheets.');
                 return;
             }
 
-            const selectedFileData = Array.from(selectedFiles).map(fileId => {
-                return indexedFiles.find(f => f.id === fileId);
-            }).filter(Boolean);
-
-            // Create simple tracking sheet content
-            let trackingSheetContent = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>File Tracking Sheet</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; margin: 20px; }
-                        .header { text-align: center; margin-bottom: 30px; }
-                        .file-info { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; page-break-inside: avoid; }
-                        .file-number { font-weight: bold; font-size: 18px; }
-                        .details { margin-top: 10px; }
-                        .detail-row { margin: 5px 0; }
-                        .tracking-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-                        .tracking-table th, .tracking-table td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-                        .tracking-table th { background-color: #f5f5f5; }
-                        @media print { body { margin: 0; } }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <h1>File Tracking Sheet</h1>
-                        <p>Generated on: ${new Date().toLocaleDateString()}</p>
-                    </div>
-            `;
-
-            selectedFileData.forEach(file => {
-                trackingSheetContent += `
-                    <div class="file-info">
-                        <div class="file-number">File Number: ${file.file_number || 'N/A'}</div>
-                        <div class="details">
-                            <div class="detail-row"><strong>Title:</strong> ${file.file_title || 'Untitled'}</div>
-                            <div class="detail-row"><strong>Land Use:</strong> ${file.land_use_type || 'N/A'}</div>
-                            <div class="detail-row"><strong>District:</strong> ${file.district || 'N/A'}</div>
-                            <div class="detail-row"><strong>Plot Number:</strong> ${file.plot_number || 'N/A'}</div>
-                            <div class="detail-row"><strong>Indexed Date:</strong> ${formatDate(file.created_at)}</div>
-                        </div>
-                        <table class="tracking-table">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Action</th>
-                                    <th>Officer</th>
-                                    <th>Remarks</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-                                <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-                                <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-                                <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-                                <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-            });
-
-            trackingSheetContent += `
-                </body>
-                </html>
-            `;
-
-            // Open in new window and print
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(trackingSheetContent);
-            printWindow.document.close();
-            printWindow.focus();
-            printWindow.print();
-
+            // Generate the tracking sheet and trigger print
+            generateTrackingSheet();
             actionsMenu.classList.add('hidden');
         }
 
@@ -1261,11 +1450,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 // Call the existing function if available
-                if (typeof printTrackingSheet === 'function') {
-                    printTrackingSheet();
+                if (typeof generateTrackingSheet === 'function') {
+                    generateTrackingSheet();
                 } else {
-                    console.log('printTrackingSheet function not found');
-                    alert('Printing tracking sheets for ' + selectedCheckboxes.length + ' selected files...');
+                    console.log('generateTrackingSheet function not found');
+                    alert('Generating tracking sheets for ' + selectedCheckboxes.length + ' selected files...');
                 }
             });
         }

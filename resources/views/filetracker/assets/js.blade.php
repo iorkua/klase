@@ -408,6 +408,18 @@
       });
     });
 
+    // Helper function to format date strings
+    function formatDateString(dateString) {
+      if (!dateString) return 'Not Set';
+      
+      // Handle different date formats
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Invalid Date';
+      
+      // Return formatted date as YYYY-MM-DD
+      return date.toISOString().split('T')[0];
+    }
+
     function updateSidebarDetails(tracking) {
       // Update ID
       const idText = 'TRK-' + String(tracking.id).padStart(6, '0');
@@ -417,14 +429,20 @@
       const title = tracking.file_indexing?.file_title || 'File Title Not Available';
       $('.file-details h2').nextAll('div').find('h3').text(title);
 
-      // Update status badge
+      // Update status badge with proper formatting
       const statusMap = {
         'in_process': { text: 'In Process', cls: 'badge-default' },
         'pending': { text: 'Pending', cls: 'badge-warning' },
         'on_hold': { text: 'On Hold', cls: 'badge-destructive' },
-        'completed': { text: 'Completed', cls: 'badge-outline' }
+        'completed': { text: 'Completed', cls: 'badge-outline' },
+        'active': { text: 'Active', cls: 'badge-default' },
+        'checked_out': { text: 'Checked Out', cls: 'badge-warning' },
+        'overdue': { text: 'Overdue', cls: 'badge-destructive' },
+        'returned': { text: 'Returned', cls: 'badge-outline' },
+        'lost': { text: 'Lost', cls: 'badge-destructive' },
+        'archived': { text: 'Archived', cls: 'badge-outline' }
       };
-      const statusInfo = statusMap[tracking.status] || { text: tracking.status, cls: 'badge-secondary' };
+      const statusInfo = statusMap[tracking.status] || { text: tracking.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), cls: 'badge-secondary' };
       const $badge = $('.file-details .px-6.py-4.border-b .badge');
       $badge.removeClass().addClass('badge ' + statusInfo.cls).text(statusInfo.text);
 
@@ -454,12 +472,13 @@
       $('.file-details').find('p.text-sm.font-medium:contains("Current Location")').parent().find('p.text-sm').last().text(tracking.current_location || 'Not Set');
       $('.file-details').find('p.text-sm.font-medium:contains("Current Handler")').parent().find('p.text-sm').last().text(tracking.current_handler || 'Not Assigned');
 
-      // Update dates
-      const dateReceived = tracking.date_received || null;
-      const dueDate = tracking.due_date || null;
-      $('.file-details').find('p.text-sm.font-medium:contains("Date Received")').parent().find('p.text-sm').last().text(dateReceived || 'Not Set');
+      // Update dates with proper formatting
+      const dateReceived = formatDateString(tracking.date_received);
+      const dueDate = formatDateString(tracking.due_date);
+      
+      $('.file-details').find('p.text-sm.font-medium:contains("Date Received")').parent().find('p.text-sm').last().text(dateReceived);
       const $dueWrap = $('.file-details').find('p.text-sm.font-medium:contains("Due Date")').parent();
-      if (dueDate) {
+      if (tracking.due_date) {
         $dueWrap.find('p.text-sm').first().text(dueDate);
       } else {
         $dueWrap.find('p.text-sm').first().text('Not Set');

@@ -31,12 +31,12 @@
         display: block;
     }
 </style>
-<div class="bg-green-50 border border-green-100 rounded-md p-4 mb-6 items-center">
-    <div class="flex items-center mb-2">
-      <i data-lucide="file" class="w-5 h-5 mr-2 text-green-600"></i>
-      <span class="font-medium">File Number Information</span>
+<div class="bg-green-50 border border-green-100 rounded-md p-2 mb-3 items-center w-1/2">
+    <div class="flex items-center mb-1">
+      <i data-lucide="file" class="w-4 h-4 mr-1 text-green-600"></i>
+      <span class="font-medium text-sm">File Number Information</span>
     </div>
-    <p class="text-sm text-gray-600 mb-4">Select file number type and enter the details</p>
+    <p class="text-xs text-gray-600 mb-2">Select file number type and enter the details</p>
     
     <!-- Add hidden input to track active tab -->
     <input type="hidden" id="activeFileTab" name="activeFileTab" value="mlsFNo">
@@ -46,36 +46,36 @@
     <input type="hidden" id="kangisFileNo" name="kangisFileNo" value="">
     <input type="hidden" id="NewKANGISFileno" name="NewKANGISFileno" value="">
     
-    <div class="bg-white p-2 rounded-md mb-4 flex space-x-2">
-      <button type="button" class="tablinks active px-4 py-2 rounded-md hover:bg-gray-100" onclick="openFileTab(event, 'mlsFNoTab')">MLS</button>
-      <button type="button" class="tablinks px-4 py-2 rounded-md hover:bg-gray-100" onclick="openFileTab(event, 'kangisFileNoTab')">KANGIS</button>
-      <button type="button" class="tablinks px-4 py-2 rounded-md hover:bg-gray-100" onclick="openFileTab(event, 'NewKANGISFilenoTab')">New KANGIS</button>
+    <div class="bg-white p-1 rounded-md mb-2 flex space-x-4">
+      <button type="button" class="tablinks active px-2 py-1 rounded-md hover:bg-gray-100 text-xs" onclick="openFileTab(event, 'mlsFNoTab')">MLS</button>
+      <button type="button" class="tablinks px-2 py-1 rounded-md hover:bg-gray-100 text-xs" onclick="openFileTab(event, 'kangisFileNoTab')">KANGIS</button>
+      <button type="button" class="tablinks px-2 py-1 rounded-md hover:bg-gray-100 text-xs" onclick="openFileTab(event, 'NewKANGISFilenoTab')">New KANGIS</button>
     </div>
     
   
    <div id="mlsFNoTab" class="tabcontent active">
     <p class="text-sm text-gray-600 mb-2">MLS File Number</p>
     
-    <!-- Radio buttons for file type selection -->
-    <div class="mb-4">
-      <label class="block text-sm mb-2">File Type</label>
-      <div class="flex space-x-4">
-        <label class="flex items-center">
-          <input type="radio" name="mlsFileType" value="regular" id="mlsRegularFile" class="mr-2" checked>
-          <span class="text-sm">Regular File</span>
-        </label>
-        <label class="flex items-center">
-          <input type="radio" name="mlsFileType" value="temporary" id="mlsTemporaryFile" class="mr-2">
-          <span class="text-sm">Temporary File</span>
-        </label>
-        <label class="flex items-center">
-          <input type="radio" name="mlsFileType" value="extension" id="mlsExtensionFile" class="mr-2">
-          <span class="text-sm">Extension</span>
-        </label>
+    <!-- File type selection dropdown -->
+    <div class="mb-2">
+      <label class="block text-sm mb-1 text-gray-700">Type</label>
+      <div class="relative">
+        <select class="w-full p-2 text-sm border border-gray-300 rounded appearance-none pr-8 bg-white focus:ring-1 focus:ring-blue-400 focus:border-blue-400" id="mlsFileType" name="mlsFileType">
+          <option value="regular">Regular</option>
+          <option value="temporary">Temporary</option>
+          <option value="extension">Extension</option>
+          <option value="miscellaneous">Miscellaneous</option>
+          <option value="sltr">SLTR</option>
+          <option value="sit">SIT</option>
+        </select>
+        <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+          <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
+        </div>
       </div>
     </div>
 
-    <div class="grid grid-cols-3 gap-4 mb-4">
+    <!-- Conditional sections based on file type -->
+    <div id="mlsRegularSection" class="grid grid-cols-3 gap-4 mb-4">
       <div>
         <label class="block text-sm mb-1">File Prefix</label>
         <div class="relative">
@@ -100,12 +100,42 @@
       </div>
     </div>
 
+    <!-- Middle Prefix Section (for miscellaneous files) -->
+    <div id="mlsMiddlePrefixSection" class="hidden mb-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm mb-1">Middle Prefix</label>
+          <input type="text" class="w-full p-2 border border-gray-300 rounded-md" id="mlsMiddlePrefix" name="mlsMiddlePrefix" placeholder="e.g. KN" value="KN">
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Serial No</label>
+          <input type="text" class="w-full p-2 border border-gray-300 rounded-md" id="mlsMiscSerial" name="mlsMiscSerial" placeholder="Enter custom serial (e.g., 001, ABC123)">
+        </div>
+      </div>
+    </div>
+
+    <!-- Special Serial Section (for SLTR and SIT files) -->
+    <div id="mlsSpecialSerialSection" class="hidden mb-4">
+      <div class="grid grid-cols-1 gap-4">
+        <div>
+          <label class="block text-sm mb-1">Serial No</label>
+          <input type="text" class="w-full p-2 border border-gray-300 rounded-md" id="mlsSpecialSerial" name="mlsSpecialSerial" placeholder="Enter serial number">
+        </div>
+      </div>
+    </div>
+
     <!-- Enhanced Full File Number Display -->
     <div class="mb-3">
-      <label class="block text-sm mb-1">Full File Number</label>
-      <div class="bg-blue-50 border-2 border-blue-200 rounded-md p-3">
-        <div id="mlsPreviewFileNumber" class="text-lg font-semibold text-blue-800">
-          {{ isset($result) && $result->mlsFNo ? $result->mlsFNo : 'Enter details above to see preview' }}
+      <label class="block text-xs mb-1 text-gray-700 font-medium">Generated File Number</label>
+      <div class="relative w-1/2">
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-2 flex items-center justify-between">
+          <div id="mlsPreviewFileNumber" class="text-sm font-bold text-blue-900 tracking-wide">
+            Enter details above to see preview
+          </div>
+          <div class="flex items-center space-x-1">
+            <i data-lucide="file-text" class="w-4 h-4 text-blue-600"></i>
+            <span class="text-xs text-blue-600 font-medium">MLS</span>
+          </div>
         </div>
       </div>
     </div>
@@ -311,51 +341,97 @@
         const previewEl = document.getElementById('mlsPreviewFileNumber');
         const dbFieldEl = document.getElementById('mlsFNo');
         
-        // Get file type from radio buttons
-        const fileTypeRadios = document.querySelectorAll('input[name="mlsFileType"]');
-        let fileType = 'regular';
-        for (const radio of fileTypeRadios) {
-            if (radio.checked) {
-                fileType = radio.value;
-                break;
-            }
-        }
+        // Get file type from dropdown select instead of radio buttons
+        const fileTypeSelect = document.getElementById('mlsFileType');
+        const fileType = fileTypeSelect.value;
 
-        const prefix = prefixEl.value;
-        const year = yearEl.value.trim();
-        const serial = serialEl.value.trim();
+        // Show/hide sections based on file type
+        const regularSection = document.getElementById('mlsRegularSection');
+        const middlePrefixSection = document.getElementById('mlsMiddlePrefixSection');
+        const specialSerialSection = document.getElementById('mlsSpecialSerialSection');
+
+        // Hide all sections first
+        regularSection.classList.add('hidden');
+        middlePrefixSection.classList.add('hidden');
+        specialSerialSection.classList.add('hidden');
 
         let formatted = '';
         let displayText = '';
 
-        if (prefix && year && serial) {
-            // Base format: PREFIX-YEAR-SERIAL
-            formatted = `${prefix}-${year}-${serial}`;
+        if (fileType === 'regular' || fileType === 'temporary' || fileType === 'extension') {
+            regularSection.classList.remove('hidden');
             
-            // Add suffix based on file type
-            if (fileType === 'temporary') {
-                formatted += ' (T)';
-            } else if (fileType === 'extension') {
-                formatted += ' AND EXTENSION';
-            }
-            
-            displayText = formatted;
-        } else if (prefix || year || serial) {
-            // Show partial preview
-            const parts = [];
-            if (prefix) parts.push(prefix);
-            if (year) parts.push(year);
-            if (serial) parts.push(serial);
-            
-            displayText = parts.join('-');
-            if (parts.length > 0) {
+            const prefix = prefixEl.value;
+            const year = yearEl.value.trim();
+            const serial = serialEl.value.trim();
+
+            if (prefix && year && serial) {
+                // Base format: PREFIX-YEAR-SERIAL
+                formatted = `${prefix}-${year}-${serial.padStart(4, '0')}`;
+                
+                // Add suffix based on file type
                 if (fileType === 'temporary') {
-                    displayText += ' (T)';
+                    formatted += '(T)';
                 } else if (fileType === 'extension') {
-                    displayText += ' AND EXTENSION';
+                    formatted += ' AND EXTENSION';
+                }
+                
+                displayText = formatted;
+            } else if (prefix || year || serial) {
+                // Show partial preview
+                const parts = [];
+                if (prefix) parts.push(prefix);
+                if (year) parts.push(year);
+                if (serial) parts.push(serial.padStart(4, '0'));
+                
+                displayText = parts.join('-');
+                if (parts.length > 0) {
+                    if (fileType === 'temporary') {
+                        displayText += '(T)';
+                    } else if (fileType === 'extension') {
+                        displayText += ' AND EXTENSION';
+                    }
                 }
             }
-        } else {
+        } else if (fileType === 'miscellaneous') {
+            middlePrefixSection.classList.remove('hidden');
+            
+            const middlePrefix = document.getElementById('mlsMiddlePrefix').value.trim();
+            const miscSerial = document.getElementById('mlsMiscSerial').value.trim();
+            
+            if (middlePrefix && miscSerial) {
+                formatted = `MISC-${middlePrefix}-${miscSerial}`;
+                displayText = formatted;
+            } else if (middlePrefix || miscSerial) {
+                const parts = ['MISC'];
+                if (middlePrefix) parts.push(middlePrefix);
+                if (miscSerial) parts.push(miscSerial);
+                displayText = parts.join('-');
+            }
+        } else if (fileType === 'sltr' || fileType === 'sit') {
+            specialSerialSection.classList.remove('hidden');
+            
+            const specialSerial = document.getElementById('mlsSpecialSerial').value.trim();
+            const fileTypeUpper = fileType.toUpperCase();
+            
+            // Update placeholder based on type
+            const specialSerialEl = document.getElementById('mlsSpecialSerial');
+            if (fileType === 'sltr') {
+                specialSerialEl.placeholder = 'Enter SLTR serial (e.g., 001, 2024-001)';
+            } else if (fileType === 'sit') {
+                specialSerialEl.placeholder = 'Enter SIT serial (e.g., 001, 2024-001)';
+            }
+            
+            if (specialSerial) {
+                formatted = `${fileTypeUpper}-${specialSerial}`;
+                displayText = formatted;
+            } else {
+                displayText = `${fileTypeUpper}-`;
+            }
+        }
+
+        // Default message if nothing is entered
+        if (!displayText) {
             displayText = 'Enter details above to see preview';
         }
 
@@ -363,7 +439,7 @@
         previewEl.textContent = displayText;
         
         // Update database field only with complete format
-        if (prefix && year && serial) {
+        if (formatted) {
             dbFieldEl.value = formatted;
         } else {
             dbFieldEl.value = '';
@@ -446,11 +522,13 @@
         document.getElementById('mlsFileYear').addEventListener('input', updateMlsFileNumberPreview);
         document.getElementById('mlsFileSerial').addEventListener('input', updateMlsFileNumberPreview);
         
-        // Add event listeners for radio buttons
-        const mlsFileTypeRadios = document.querySelectorAll('input[name="mlsFileType"]');
-        mlsFileTypeRadios.forEach(radio => {
-            radio.addEventListener('change', updateMlsFileNumberPreview);
-        });
+        // Add event listeners for new file type fields
+        document.getElementById('mlsMiddlePrefix').addEventListener('input', updateMlsFileNumberPreview);
+        document.getElementById('mlsMiscSerial').addEventListener('input', updateMlsFileNumberPreview);
+        document.getElementById('mlsSpecialSerial').addEventListener('input', updateMlsFileNumberPreview);
+        
+        // Add event listener for file type dropdown (changed from radio buttons)
+        document.getElementById('mlsFileType').addEventListener('change', updateMlsFileNumberPreview);
 
         document.getElementById('kangisFileNoPrefix').addEventListener('change', updateKangisFileNumberPreview);
         document.getElementById('kangisFileNumber').addEventListener('input', updateKangisFileNumberPreview);

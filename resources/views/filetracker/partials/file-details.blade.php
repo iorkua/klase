@@ -51,7 +51,11 @@
               'returned' => ['badge-outline', 'Returned'],
               'lost' => ['badge-destructive', 'Lost'],
               'archived' => ['badge-outline', 'Archived'],
-              default => ['badge-secondary', ucfirst($selectedFile->status)]
+              'in_process' => ['badge-default', 'In Process'],
+              'pending' => ['badge-warning', 'Pending'],
+              'on_hold' => ['badge-destructive', 'On Hold'],
+              'completed' => ['badge-outline', 'Completed'],
+              default => ['badge-secondary', ucfirst(str_replace('_', ' ', $selectedFile->status))]
             };
           @endphp
           <span class="badge {{ $statusBadge[0] }}">{{ $statusBadge[1] }}</span>
@@ -112,7 +116,18 @@
           <div>
             <p class="text-sm font-medium">QR Code</p>
             <div class="mt-1 flex justify-center">
-              <div id="qr-code-{{ $selectedFile->id }}" class="h-24 w-24 bg-gray-200 flex items-center justify-center">
+              @php
+                $qrData = 'TRK-' . str_pad($selectedFile->id, 6, '0', STR_PAD_LEFT) . '|' . 
+                         ($selectedFile->fileIndexing->file_number ?? 'N/A') . '|' . 
+                         ($selectedFile->current_location ?? 'Not Set') . '|' . 
+                         ($selectedFile->rfid_tag ?? 'No RFID');
+                $qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=96x96&data=' . urlencode($qrData);
+              @endphp
+              <img src="{{ $qrApiUrl }}" 
+                   alt="QR Code for {{ $selectedFile->fileIndexing->file_number ?? 'N/A' }}" 
+                   class="h-24 w-24 border border-gray-300 rounded"
+                   onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+              <div class="h-24 w-24 bg-gray-200 flex items-center justify-center border border-gray-300 rounded" style="display:none;">
                 <span class="text-xs text-gray-500">QR Code</span>
               </div>
             </div>

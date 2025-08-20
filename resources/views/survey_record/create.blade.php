@@ -25,9 +25,7 @@
                     </h3>
                     
                     <!-- Selection Grid - 2x2 layout -->
-                    <div class="border border-gray-200 rounded-lg p-4 bg-gray-50 mb-4">
-                        <div  >
-                        
+                     
                             <!-- Primary Survey Selection (only for unit surveys) -->
                             @if(request()->query('is') == 'secondary')
                             <div>

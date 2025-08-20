@@ -164,32 +164,20 @@
 
                             <!-- File Options -->
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-3">
+                                <label for="fileOption" class="block text-sm font-medium text-gray-700 mb-2">
                                     <i data-lucide="settings" class="w-4 h-4 inline mr-1"></i>
                                     File Options
                                 </label>
-                                <div class="space-y-2">
-                                    <label class="flex items-center cursor-pointer p-2 rounded hover:bg-gray-50">
-                                        <input type="radio" name="file_option" value="normal" class="mr-3 text-green-600" onchange="updateCaptureForm('normal')" checked>
-                                        <span class="text-sm">Normal File</span>
-                                    </label>
-                                    <label class="flex items-center cursor-pointer p-2 rounded hover:bg-gray-50">
-                                        <input type="radio" name="file_option" value="temporary" class="mr-3 text-green-600" onchange="updateCaptureForm('temporary')">
-                                        <span class="text-sm">Temporary File</span>
-                                    </label>
-                                    <label class="flex items-center cursor-pointer p-2 rounded hover:bg-gray-50">
-                                        <input type="radio" name="file_option" value="extension" class="mr-3 text-green-600" onchange="updateCaptureForm('extension')">
-                                        <span class="text-sm">Extension</span>
-                                    </label>
-                                    <label class="flex items-center cursor-pointer p-2 rounded hover:bg-gray-50">
-                                        <input type="radio" name="file_option" value="miscellaneous" class="mr-3 text-green-600" onchange="updateCaptureForm('miscellaneous')">
-                                        <span class="text-sm">Miscellaneous</span>
-                                    </label>
-                                    <label class="flex items-center cursor-pointer p-2 rounded hover:bg-gray-50">
-                                        <input type="radio" name="file_option" value="sltr" class="mr-3 text-green-600" onchange="updateCaptureForm('sltr')">
-                                        <span class="text-sm">SLTR</span>
-                                    </label>
-                                </div>
+                                <select id="fileOption" name="file_option" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                        onchange="updateCaptureForm(this.value)" required>
+                                    <option value="normal" selected>Normal File</option>
+                                    <option value="temporary">Temporary File</option>
+                                    <option value="extension">Extension</option>
+                                    <option value="miscellaneous">Miscellaneous</option>
+                                    <option value="sltr">SLTR</option>
+                                    <option value="sit">SIT</option>
+                                </select>
                             </div>
                         </div>
 
@@ -590,8 +578,8 @@
             document.getElementById('captureForm').reset();
             document.getElementById('year').value = new Date().getFullYear();
             
-            // Set default file type
-            document.querySelector('input[name="file_option"][value="normal"]').checked = true;
+            // Set default file type to normal in the select dropdown
+            document.getElementById('fileOption').value = 'normal';
             updateCaptureForm('normal');
 
             // Load existing file numbers for extension dropdown
@@ -609,6 +597,7 @@
             const middlePrefixSection = document.getElementById('middlePrefixSection');
             const yearSection = document.getElementById('yearSection');
             const extensionFileSection = document.getElementById('extensionFileSection');
+            const serialNoField = document.getElementById('serialNo');
             
             // Hide all sections first
             prefixSection.classList.add('hidden');
@@ -616,22 +605,51 @@
             yearSection.classList.add('hidden');
             extensionFileSection.classList.add('hidden');
             
+            // Reset serial number field properties
+            serialNoField.type = 'text';
+            serialNoField.removeAttribute('min');
+            serialNoField.removeAttribute('max');
+            serialNoField.removeAttribute('step');
+            
             if (type === 'normal' || type === 'temporary') {
                 prefixSection.classList.remove('hidden');
                 yearSection.classList.remove('hidden');
+                // For normal files, keep serial as number for auto-padding
+                serialNoField.type = 'number';
+                serialNoField.setAttribute('min', '1');
+                serialNoField.setAttribute('max', '9999');
+                serialNoField.placeholder = 'Enter serial number (1-9999)';
             } else if (type === 'extension') {
                 extensionFileSection.classList.remove('hidden');
-            } else if (type === 'miscellaneous') {
-                middlePrefixSection.classList.remove('hidden');
-            } else if (type === 'sltr') {
-                // SLTR only needs serial number, no other sections
+                serialNoField.placeholder = 'Not required for extensions';
+                serialNoField.value = '';
+                serialNoField.disabled = true;
+            } else if (type === 'miscellaneous' || type === 'sltr' || type === 'sit') {
+                if (type === 'miscellaneous') {
+                    middlePrefixSection.classList.remove('hidden');
+                }
+                // Make serial number plain text and editable for these types
+                serialNoField.type = 'text';
+                serialNoField.disabled = false;
+                if (type === 'miscellaneous') {
+                    serialNoField.placeholder = 'Enter custom serial (e.g., 001, ABC123)';
+                } else if (type === 'sltr') {
+                    serialNoField.placeholder = 'Enter SLTR serial (e.g., 001, 2024-001)';
+                } else if (type === 'sit') {
+                    serialNoField.placeholder = 'Enter SIT serial (e.g., 001, 2024-001)';
+                }
+            }
+            
+            // Re-enable serial field if it was disabled
+            if (type !== 'extension') {
+                serialNoField.disabled = false;
             }
             
             updateCapturePreview();
         }
 
         function updateCapturePreview() {
-            const fileOption = document.querySelector('input[name="file_option"]:checked')?.value;
+            const fileOption = document.getElementById('fileOption').value; // Fixed: get value from select instead of radio
             const prefix = document.getElementById('prefix').value;
             const middlePrefix = document.getElementById('middlePrefix').value;
             const year = document.getElementById('year').value;
@@ -647,6 +665,8 @@
                 previewText = `MISC-${middlePrefix}-${serialNo}`;
             } else if (fileOption === 'sltr' && serialNo) {
                 previewText = `SLTR-${serialNo}`;
+            } else if (fileOption === 'sit' && serialNo) {
+                previewText = `SIT-${serialNo}`;
             } else if ((fileOption === 'normal' || fileOption === 'temporary') && prefix && year && serialNo) {
                 const paddedSerial = serialNo.toString().padStart(4, '0');
                 previewText = `${prefix}-${year}-${paddedSerial}`;
@@ -971,11 +991,9 @@
             document.getElementById('middlePrefix').addEventListener('input', updateCapturePreview);
             document.getElementById('existingFileNo').addEventListener('change', updateCapturePreview);
             
-            // Add event listeners for file option radio buttons
-            document.querySelectorAll('input[name="file_option"]').forEach(radio => {
-                radio.addEventListener('change', function() {
-                    updateCaptureForm(this.value);
-                });
+            // Add event listener for file option select dropdown (Fixed: removed radio button listeners)
+            document.getElementById('fileOption').addEventListener('change', function() {
+                updateCaptureForm(this.value);
             });
         });
     </script>
