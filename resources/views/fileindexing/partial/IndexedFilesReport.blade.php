@@ -697,9 +697,9 @@
             }
         }
 
-        // Check if file can be selected for tracking (i.e., doesn't have tracking info)
+        // Check if file can be selected for tracking (i.e., has tracking info)
         function canSelectForTracking(file) {
-            return !fileTrackingStatus[file.id];
+            return fileTrackingStatus[file.id];
         }
 
         // Format date for display
@@ -729,7 +729,7 @@
                 // Check if file can be selected for tracking
                 const canSelect = canSelectForTracking(file);
                 const checkboxDisabled = !canSelect;
-                const checkboxTitle = canSelect ? 'Select for tracking sheet generation' : 'File is already being tracked';
+                const checkboxTitle = canSelect ? 'Select for tracking sheet generation' : 'File is not being tracked yet';
                 
                 row.innerHTML = `
                     <td class="TableCell">
@@ -759,7 +759,7 @@
                             <button class="Button Button-variant-outline Button-size-sm view-btn" data-id="${file.id}">
                                 View
                             </button>
-                            ${!canSelect ? `
+                            ${canSelect ? `
                                 <a href="{{ route('filetracker.index') }}?selected=${fileTrackingStatus[file.id] && fileTrackingStatus[file.id].id ? fileTrackingStatus[file.id].id : ''}" 
                                    class="Button Button-variant-blue Button-size-sm"
                                    title="View in File Tracker">
@@ -900,7 +900,7 @@
                     <div class="detail-label">Tracking Status:</div>
                     <div class="detail-value">
                         <span class="Badge Badge-variant-outline">Not being tracked</span>
-                        <br><small class="text-gray-500">This file can be selected for tracking sheet generation</small>
+                        <br><small class="text-gray-500">This file cannot be selected for tracking sheet generation (no tracking record exists)</small>
                     </div>
                 </div>
                 `}
@@ -1044,9 +1044,11 @@
             const isChecked = event.target.checked;
             
             if (isChecked) {
-                // Select all visible files
+                // Select all visible files that can be selected (have tracking records)
                 filteredAndSortedIndexedFiles.forEach(file => {
-                    selectedFiles.add(file.id);
+                    if (canSelectForTracking(file)) {
+                        selectedFiles.add(file.id);
+                    }
                 });
             } else {
                 // Deselect all files
@@ -1064,13 +1066,14 @@
 
         // Update select all checkbox state
         function updateSelectAllCheckbox() {
-            const visibleFileIds = filteredAndSortedIndexedFiles.map(f => f.id);
-            const selectedVisibleFiles = visibleFileIds.filter(id => selectedFiles.has(id));
+            const visibleSelectableFiles = filteredAndSortedIndexedFiles.filter(file => canSelectForTracking(file));
+            const visibleSelectableFileIds = visibleSelectableFiles.map(f => f.id);
+            const selectedVisibleFiles = visibleSelectableFileIds.filter(id => selectedFiles.has(id));
             
             if (selectedVisibleFiles.length === 0) {
                 selectAllCheckbox.checked = false;
                 selectAllCheckbox.indeterminate = false;
-            } else if (selectedVisibleFiles.length === visibleFileIds.length) {
+            } else if (selectedVisibleFiles.length === visibleSelectableFileIds.length && visibleSelectableFileIds.length > 0) {
                 selectAllCheckbox.checked = true;
                 selectAllCheckbox.indeterminate = false;
             } else {
