@@ -5,32 +5,8 @@
 @endsection
 
 @section('content')
+<link rel="stylesheet" href="{{ asset('css/print-tracking-sheet.css') }}">
 <style>
-@media print {
-    .no-print { display: none !important; }
-    .tracking-sheet { 
-        page-break-after: always; 
-        page-break-inside: avoid;
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        min-height: calc(100vh - 2cm);
-    }
-    .tracking-sheet:last-child { 
-        page-break-after: avoid; 
-    }
-    body { 
-        margin: 0; 
-        padding: 0; 
-        -webkit-print-color-adjust: exact;
-        color-adjust: exact;
-    }
-    .max-w-6xl { max-width: none; }
-    .p-6, .mb-6 { padding: 0; margin: 0; }
-    .shadow-md { box-shadow: none; }
-    .rounded-lg { border-radius: 0; }
-}
-
 @media screen {
     .tracking-sheet { 
         margin-bottom: 2rem; 
