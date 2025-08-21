@@ -1,21 +1,35 @@
 <div x-data="{ tab: 'mls',
-                      mlsPrefix: '', mlsYear: '', mlsNumber: '', mlsType: 'regular',
+                      mlsPrefix: '', mlsYear: '', mlsSerial: '', mlsType: 'regular',
+                      mlsMiddlePrefix: 'KN', mlsMiscSerial: '', mlsSpecialSerial: '',
                       kangisPrefix: '', kangisNumber: '',
                       newkangisPrefix: '', newkangisNumber: '',
                       mlsPreview() { 
-                        const parts = [];
-                        if (this.mlsPrefix) parts.push(this.mlsPrefix);
-                        if (this.mlsYear) parts.push(this.mlsYear);
-                        if (this.mlsNumber) parts.push(this.mlsNumber);
-                        
-                        let baseFileNo = parts.length > 0 ? parts.join('-') : '';
-                        
-                        if (baseFileNo && this.mlsType === 'temporary') {
-                          return baseFileNo + ' (T)';
-                        } else if (baseFileNo && this.mlsType === 'extension') {
-                          return baseFileNo + ' AND EXTENSION';
+                        if (this.mlsType === 'regular' || this.mlsType === 'temporary' || this.mlsType === 'extension') {
+                          const parts = [];
+                          if (this.mlsPrefix) parts.push(this.mlsPrefix);
+                          if (this.mlsYear) parts.push(this.mlsYear);
+                          if (this.mlsSerial) parts.push(this.mlsSerial.padStart(4, '0'));
+                          
+                          let baseFileNo = parts.length === 3 ? parts.join('-') : '';
+                          
+                          if (baseFileNo && this.mlsType === 'temporary') {
+                            return baseFileNo + '(T)';
+                          } else if (baseFileNo && this.mlsType === 'extension') {
+                            return baseFileNo + ' AND EXTENSION';
+                          }
+                          return baseFileNo;
+                        } else if (this.mlsType === 'miscellaneous') {
+                          if (this.mlsMiddlePrefix && this.mlsMiscSerial) {
+                            return `MISC-${this.mlsMiddlePrefix}-${this.mlsMiscSerial}`;
+                          }
+                          return '';
+                        } else if (this.mlsType === 'sltr' || this.mlsType === 'sit') {
+                          if (this.mlsSpecialSerial) {
+                            return `${this.mlsType.toUpperCase()}-${this.mlsSpecialSerial}`;
+                          }
+                          return '';
                         }
-                        return baseFileNo;
+                        return '';
                       },
                       kangisPreview() {
                         if (this.kangisPrefix && this.kangisNumber) {
@@ -61,54 +75,91 @@
 
   <!-- MLS Tab Content -->
   <div x-show="tab === 'mls'" class="tab-content-panel">
-    <p class="text-sm text-gray-600 mb-3">MLS File Number</p>
+    <p class="text-sm text-gray-600 mb-2">MLS File Number</p>
     
-    <!-- Radio buttons for file type -->
-    <div class="mb-4">
-      <label class="block text-sm font-medium text-gray-700 mb-2">File Type</label>
-      <div class="flex space-x-6">
-        <label class="flex items-center">
-          <input type="radio" name="mlsFileType" x-model="mlsType" value="regular" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
-          <span class="ml-2 text-sm text-gray-700">Regular File</span>
-        </label>
-        <label class="flex items-center">
-          <input type="radio" name="mlsFileType" x-model="mlsType" value="temporary" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
-          <span class="ml-2 text-sm text-gray-700">Temporary File</span>
-        </label>
-        <label class="flex items-center">
-          <input type="radio" name="mlsFileType" x-model="mlsType" value="extension" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
-          <span class="ml-2 text-sm text-gray-700">Extension</span>
-        </label>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-3 gap-3">
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">File Prefix</label>
-        <select x-model="mlsPrefix" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-          <option value="">Select prefix</option>
-          <option>COM</option>
-          <option>RES</option>
-          <option>CON-COM</option>
-          <option>CON-RES</option>
-          <option>CON-AG</option>
-          <option>CON-IND</option>
+    <!-- File type selection dropdown -->
+    <div class="mb-2">
+      <label class="block text-sm mb-1 text-gray-700">Type</label>
+      <div class="relative">
+        <select x-model="mlsType" class="w-full p-2 text-sm border border-gray-300 rounded appearance-none pr-8 bg-white focus:ring-1 focus:ring-blue-400 focus:border-blue-400">
+          <option value="regular">Regular</option>
+          <option value="temporary">Temporary</option>
+          <option value="extension">Extension</option>
+          <option value="miscellaneous">Miscellaneous</option>
+          <option value="sltr">SLTR</option>
+          <option value="sit">SIT</option>
         </select>
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Year</label>
-        <input type="text" x-model="mlsYear" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. 2024" maxlength="4">
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Serial No</label>
-        <input type="text" x-model="mlsNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. 572">
+        <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+          <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
+        </div>
       </div>
     </div>
 
-    <!-- Full FileNo - Displayed prominently below -->
-    <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-      <label class="block text-lg font-semibold text-gray-800 mb-2">Full File Number</label>
-      <div class="text-lg font-semibold text-blue-700 p-3 bg-white border-2 border-blue-300 rounded-md min-h-[50px] flex items-center" x-text="mlsPreview() || 'Enter file details above'"></div>
+    <!-- Conditional sections based on file type -->
+    <div x-show="mlsType === 'regular' || mlsType === 'temporary' || mlsType === 'extension'" class="grid grid-cols-3 gap-4 mb-4">
+      <div>
+        <label class="block text-sm mb-1">File Prefix</label>
+        <div class="relative">
+          <select x-model="mlsPrefix" class="w-full p-2 border border-gray-300 rounded-md appearance-none pr-8">
+            <option value="">Select prefix</option>
+            <option>COM</option>
+            <option>RES</option>
+            <option>CON-COM</option>
+            <option>CON-RES</option>
+            <option>CON-AG</option>
+            <option>CON-IND</option>
+          </select>
+          <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
+          </div>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm mb-1">Year</label>
+        <input type="text" x-model="mlsYear" class="w-full p-2 border border-gray-300 rounded-md" placeholder="e.g. 2024" maxlength="4" :value="new Date().getFullYear()">
+      </div>
+      <div>
+        <label class="block text-sm mb-1">Serial No</label>
+        <input type="text" x-model="mlsSerial" class="w-full p-2 border border-gray-300 rounded-md" placeholder="e.g. 572">
+      </div>
+    </div>
+
+    <!-- Middle Prefix Section (for miscellaneous files) -->
+    <div x-show="mlsType === 'miscellaneous'" class="mb-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm mb-1">Middle Prefix</label>
+          <input type="text" x-model="mlsMiddlePrefix" class="w-full p-2 border border-gray-300 rounded-md" placeholder="e.g. KN">
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Serial No</label>
+          <input type="text" x-model="mlsMiscSerial" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Enter custom serial (e.g., 001, ABC123)">
+        </div>
+      </div>
+    </div>
+
+    <!-- Special Serial Section (for SLTR and SIT files) -->
+    <div x-show="mlsType === 'sltr' || mlsType === 'sit'" class="mb-4">
+      <div class="grid grid-cols-1 gap-4">
+        <div>
+          <label class="block text-sm mb-1">Serial No</label>
+          <input type="text" x-model="mlsSpecialSerial" class="w-full p-2 border border-gray-300 rounded-md" :placeholder="mlsType === 'sltr' ? 'Enter SLTR serial (e.g., 001, 2024-001)' : 'Enter SIT serial (e.g., 001, 2024-001)'">
+        </div>
+      </div>
+    </div>
+
+    <!-- Enhanced Full File Number Display -->
+    <div class="mb-3">
+      <label class="block text-xs mb-1 text-gray-700 font-medium">Generated File Number</label>
+      <div class="relative w-1/2">
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-2 flex items-center justify-between">
+          <div class="text-sm font-bold text-blue-900 tracking-wide" x-text="mlsPreview() || 'Enter details above to see preview'"></div>
+          <div class="flex items-center space-x-1">
+            <i data-lucide="file-text" class="w-4 h-4 text-blue-600"></i>
+            <span class="text-xs text-blue-600 font-medium">MLS</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

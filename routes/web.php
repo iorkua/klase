@@ -38,7 +38,7 @@ use App\Http\Controllers\FileIndexingController;
 use App\Http\Controllers\FileScanningController;
 use App\Http\Controllers\ScannerController;
 use App\Http\Controllers\LandingController;
- 
+
 use App\Http\Controllers\GisController;
 use App\Http\Controllers\ProgrammeController;
 use App\Http\Controllers\InstrumentRegistrationController;
@@ -804,4 +804,57 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'propertycard'], func
     Route::get('/ai', [App\Http\Controllers\PropertyCardAiController::class, 'index'])->name('propertycard.ai');
 });
 
- 
+// File Indexing routes - Dynamic API endpoints
+Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'fileindexing'], function () {
+    Route::get('/', [App\Http\Controllers\FileIndexController::class, 'index'])->name('fileindexing.index');
+    Route::get('/create', [App\Http\Controllers\FileIndexController::class, 'create'])->name('fileindexing.create');
+    Route::post('/store', [App\Http\Controllers\FileIndexController::class, 'store'])->name('fileindexing.store');
+    
+    // API endpoints for dynamic data (specific routes first)
+    Route::get('/api/pending-files', [App\Http\Controllers\FileIndexController::class, 'getPendingFiles'])->name('fileindexing.api.pending-files');
+    Route::get('/api/indexed-files', [App\Http\Controllers\FileIndexController::class, 'getIndexedFiles'])->name('fileindexing.api.indexed-files');
+    Route::get('/search-applications', [App\Http\Controllers\FileIndexController::class, 'searchApplications'])->name('fileindexing.search-applications');
+    Route::get('/check-file-status', [App\Http\Controllers\FileIndexController::class, 'checkFileStatus'])->name('fileindexing.check-file-status');
+    Route::get('/list', [App\Http\Controllers\FileIndexController::class, 'getFileIndexingList'])->name('fileindexing.list');
+    
+    // Tracking sheet generation routes (specific routes before parameterized routes)
+    Route::get('/batch-tracking-sheet', [App\Http\Controllers\FileIndexController::class, 'generateBatchTrackingSheet'])->name('fileindexing.batch-tracking-sheet');
+    Route::get('/tracking-sheet/{id}', [App\Http\Controllers\FileIndexController::class, 'generateTrackingSheet'])->name('fileindexing.tracking-sheet');
+    Route::get('/print-tracking-sheet/{id}', [App\Http\Controllers\FileIndexController::class, 'printTrackingSheet'])->name('fileindexing.print-tracking-sheet');
+
+    // Smart Batch Tracking Interface
+    Route::get('/batch-tracking-interface', [App\Http\Controllers\FileIndexController::class, 'batchTrackingInterface'])->name('fileindexing.batch-tracking-interface');
+    Route::post('/bulk-movement-update', [App\Http\Controllers\FileIndexController::class, 'bulkMovementUpdate'])->name('fileindexing.bulk-movement-update');
+    Route::get('/movement-history', [App\Http\Controllers\FileIndexController::class, 'getMovementHistory'])->name('fileindexing.movement-history');
+    Route::get('/export-movement-history', [App\Http\Controllers\FileIndexController::class, 'exportMovementHistory'])->name('fileindexing.export-movement-history');
+    Route::post('/{id}/update-tracking', [App\Http\Controllers\FileIndexController::class, 'updateTrackingLocation'])->name('fileindexing.update-tracking');
+    
+    // Parameterized routes (must come last)
+    Route::get('/{id}', [App\Http\Controllers\FileIndexController::class, 'show'])->name('fileindexing.show');
+    Route::get('/{id}/edit', [App\Http\Controllers\FileIndexController::class, 'edit'])->name('fileindexing.edit');
+    Route::put('/{id}', [App\Http\Controllers\FileIndexController::class, 'update'])->name('fileindexing.update');
+    Route::delete('/{id}', [App\Http\Controllers\FileIndexController::class, 'destroy'])->name('fileindexing.destroy');
+});
+
+// File Tracker Integration
+Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'filetracker'], function () {
+    Route::get('/', [App\Http\Controllers\FileTrackerController::class, 'index'])->name('filetracker.index');
+    Route::get('/create', [App\Http\Controllers\FileTrackerController::class, 'trackingForm'])->name('filetracker.create');
+    Route::post('/store', [App\Http\Controllers\FileTrackerController::class, 'store'])->name('filetracker.store');
+    Route::post('/store-batch', [App\Http\Controllers\FileTrackerController::class, 'storeBatch'])->name('filetracker.store-batch');
+    Route::get('/get-indexed-files', [App\Http\Controllers\FileTrackerController::class, 'getIndexedFiles'])->name('filetracker.get-indexed-files');
+});
+
+// Scanning Integration
+Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'scanning'], function () {
+    Route::get('/', [App\Http\Controllers\ScanningController::class, 'index'])->name('scanning.index');
+    Route::post('/upload', [App\Http\Controllers\ScanningController::class, 'upload'])->name('scanning.upload');
+    Route::get('/list', [App\Http\Controllers\ScanningController::class, 'list'])->name('scanning.list');
+});
+
+// Page Typing Integration
+Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'pagetyping'], function () {
+    Route::get('/', [App\Http\Controllers\PageTypingController::class, 'index'])->name('pagetyping.index');
+    Route::post('/save', [App\Http\Controllers\PageTypingController::class, 'save'])->name('pagetyping.save');
+});
+

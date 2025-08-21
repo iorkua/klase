@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Arr;
 use App\Models\FileIndexing;
 use App\Models\ApplicationMother;
+use App\Models\IndexedFileTracker;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -707,7 +708,7 @@ class FileIndexController extends Controller
     }
 
     /**
-     * Get file indexing list for other modules (AJAX)
+     * Get file indexing list for other modules (AJAX endpoint)
      */
     public function checkFileStatus(Request $request)
     {
@@ -855,6 +856,782 @@ class FileIndexController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error loading file indexing list'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get pending files (applications without file indexing) - API endpoint
+     */
+    public function getPendingFiles(Request $request)
+    {
+        try {
+            $search = $request->get('search', '');
+            
+            // Get mother applications without file indexing
+            $motherApplications = DB::connection('sqlsrv')
+                ->table('mother_applications')
+                ->whereNotExists(function ($query) {
+                    $query->select(DB::raw(1))
+                        ->from('file_indexings')
+                        ->whereRaw('file_indexings.main_application_id = mother_applications.id');
+                })
+                ->where(function ($query) use ($search) {
+                    if ($search) {
+                        $query->where('fileno', 'like', "%{$search}%")
+                            ->orWhere('np_fileno', 'like', "%{$search}%")
+                            ->orWhere('first_name', 'like', "%{$search}%")
+                            ->orWhere('surname', 'like', "%{$search}%")
+                            ->orWhere('corporate_name', 'like', "%{$search}%");
+                    }
+                })
+                ->select(
+                    'id',
+                    'fileno',
+                    'np_fileno',
+                    'first_name',
+                    'middle_name',
+                    'surname',
+                    'applicant_title',
+                    'corporate_name',
+                    'applicant_type',
+                    'land_use',
+                    'property_plot_no',
+                    'property_district',
+                    'property_lga',
+                    'created_at',
+                    DB::raw("'mother' as source_table")
+                )
+                ->orderBy('created_at', 'desc')
+                ->limit(50)
+                ->get();
+
+            // Get sub applications without file indexing
+            $subApplications = DB::connection('sqlsrv')
+                ->table('subapplications')
+                ->leftJoin('mother_applications', 'subapplications.main_application_id', '=', 'mother_applications.id')
+                ->whereNotExists(function ($query) {
+                    $query->select(DB::raw(1))
+                        ->from('file_indexings')
+                        ->whereRaw('file_indexings.subapplication_id = subapplications.id');
+                })
+                ->where(function ($query) use ($search) {
+                    if ($search) {
+                        $query->where('subapplications.fileno', 'like', "%{$search}%")
+                            ->orWhere('subapplications.first_name', 'like', "%{$search}%")
+                            ->orWhere('subapplications.surname', 'like', "%{$search}%")
+                            ->orWhere('subapplications.corporate_name', 'like', "%{$search}%");
+                    }
+                })
+                ->select(
+                    'subapplications.id',
+                    'subapplications.fileno',
+                    DB::raw('NULL as np_fileno'),
+                    'subapplications.first_name',
+                    'subapplications.middle_name',
+                    'subapplications.surname',
+                    'subapplications.applicant_title',
+                    'subapplications.corporate_name',
+                    'subapplications.applicant_type',
+                    'mother_applications.land_use',
+                    'subapplications.unit_number',
+                    'mother_applications.property_district',
+                    'mother_applications.property_lga',
+                    'subapplications.created_at',
+                    DB::raw("'sub' as source_table")
+                )
+                ->orderBy('subapplications.created_at', 'desc')
+                ->limit(50)
+                ->get();
+
+            // Combine and format results
+            $allApplications = collect($motherApplications)->merge($subApplications);
+
+            $pendingFiles = $allApplications->map(function ($app) {
+                return [
+                    'id' => $app->source_table . '-' . $app->id, // Prefix with table to avoid conflicts
+                    'application_id' => $app->id,
+                    'source_table' => $app->source_table,
+                    'fileNumber' => $app->fileno ?? $app->np_fileno ?? "APP-{$app->id}",
+                    'name' => $this->getApplicantNameFromRecord($app),
+                    'type' => $app->source_table === 'mother' ? 'Primary Application' : 'Unit Application',
+                    'source' => 'Application',
+                    'date' => $app->created_at ? date('Y-m-d', strtotime($app->created_at)) : date('Y-m-d'),
+                    'landUseType' => $app->land_use ?? 'Residential',
+                    'district' => $app->property_district ?? 'Unknown',
+                    'lga' => $app->property_lga ?? 'Kano Municipal',
+                    'hasCofo' => false,
+                ];
+            })->sortByDesc('date')->values();
+
+            return response()->json([
+                'success' => true,
+                'pending_files' => $pendingFiles
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error getting pending files', [
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading pending files'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get indexed files - API endpoint
+     */
+    public function getIndexedFiles(Request $request)
+    {
+        try {
+            $search = $request->get('search', '');
+            
+            $query = FileIndexing::on('sqlsrv')
+                ->with(['mainApplication', 'scannings', 'pagetypings']);
+
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('file_number', 'like', "%{$search}%")
+                        ->orWhere('file_title', 'like', "%{$search}%")
+                        ->orWhere('plot_number', 'like', "%{$search}%")
+                        ->orWhere('district', 'like', "%{$search}%");
+                });
+            }
+
+            $fileIndexings = $query->orderBy('created_at', 'desc')
+                ->limit(100)
+                ->get();
+
+            $indexedFiles = $fileIndexings->map(function ($fi) {
+                $scannedCount = $fi->scannings->count();
+                $typedCount = $fi->pagetypings->count();
+                
+                $source = 'Indexed';
+                if ($typedCount > 0) {
+                    $source = 'Indexed & Typed';
+                } elseif ($scannedCount > 0) {
+                    $source = 'Indexed & Scanned';
+                }
+
+                return [
+                    'id' => $fi->id,
+                    'fileNumber' => $fi->file_number,
+                    'name' => $fi->file_title,
+                    'type' => $this->getDocumentType($fi),
+                    'source' => $source,
+                    'date' => $fi->created_at->format('Y-m-d'),
+                    'landUseType' => $fi->land_use_type ?? 'Residential',
+                    'district' => $fi->district ?? 'Unknown',
+                    'lga' => $fi->lga ?? 'Kano Municipal',
+                    'hasCofo' => (bool) $fi->has_cofo,
+                    'plot_number' => $fi->plot_number,
+                    'scanning_count' => $scannedCount,
+                    'page_typing_count' => $typedCount,
+                    'is_merged' => (bool) $fi->is_merged,
+                    'has_transaction' => (bool) $fi->has_transaction,
+                    'is_problematic' => (bool) $fi->is_problematic,
+                    'is_co_owned_plot' => (bool) $fi->is_co_owned_plot,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'indexed_files' => $indexedFiles
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error getting indexed files', [
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading indexed files'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get document type based on file indexing data
+     */
+    private function getDocumentType($fileIndexing)
+    {
+        if ($fileIndexing->has_cofo) {
+            return 'Certificate of Occupancy';
+        } elseif ($fileIndexing->land_use_type === 'Commercial') {
+            return 'Commercial Document';
+        } elseif ($fileIndexing->land_use_type === 'Industrial') {
+            return 'Industrial Document';
+        } else {
+            return 'Property Document';
+        }
+    }
+
+    /**
+     * Generate tracking sheet for a single file
+     */
+    public function generateTrackingSheet($id)
+    {
+        try {
+            $fileIndexing = FileIndexing::on('sqlsrv')
+                ->with(['mainApplication', 'scannings', 'pagetypings'])
+                ->findOrFail($id);
+
+            // Get or create tracking record
+            $tracker = $this->getOrCreateTracker($fileIndexing);
+
+            $PageTitle = 'File Tracking Sheet';
+            $PageDescription = 'Generate tracking sheet for file indexing record';
+
+            return view('fileindexing.tracking-sheet', compact('PageTitle', 'PageDescription', 'fileIndexing', 'tracker'));
+        } catch (Exception $e) {
+            Log::error('Error generating tracking sheet', [
+                'file_indexing_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+
+            return redirect()->route('fileindexing.index')
+                ->with('error', 'Error generating tracking sheet: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Print tracking sheet for a single file
+     */
+    public function printTrackingSheet($id)
+    {
+        try {
+            $fileIndexing = FileIndexing::on('sqlsrv')
+                ->with(['mainApplication', 'scannings', 'pagetypings'])
+                ->findOrFail($id);
+
+            // Get or create tracking record
+            $tracker = $this->getOrCreateTracker($fileIndexing);
+            
+            // Update print count and timestamp
+            $tracker->incrementPrintCount();
+
+            $PageTitle = 'Print Tracking Sheet';
+            $PageDescription = 'Print tracking sheet for file indexing record';
+
+            return view('fileindexing.print-tracking-sheet', compact('PageTitle', 'PageDescription', 'fileIndexing', 'tracker'));
+        } catch (Exception $e) {
+            Log::error('Error printing tracking sheet', [
+                'file_indexing_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+
+            return redirect()->route('fileindexing.index')
+                ->with('error', 'Error printing tracking sheet: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Generate batch tracking sheets for multiple files
+     */
+    public function generateBatchTrackingSheet(Request $request)
+    {
+        try {
+            $fileIds = $request->get('files', '');
+            
+            if (empty($fileIds)) {
+                return redirect()->route('fileindexing.index')
+                    ->with('error', 'No files selected for batch tracking sheet generation');
+            }
+
+            $fileIdsArray = explode(',', $fileIds);
+            
+            $fileIndexings = FileIndexing::on('sqlsrv')
+                ->with(['mainApplication', 'scannings', 'pagetypings'])
+                ->whereIn('id', $fileIdsArray)
+                ->get();
+
+            if ($fileIndexings->isEmpty()) {
+                return redirect()->route('fileindexing.index')
+                    ->with('error', 'No valid files found for tracking sheet generation');
+            }
+
+            // Create or get trackers for all files
+            $trackersData = [];
+            foreach ($fileIndexings as $fileIndexing) {
+                $tracker = $this->getOrCreateTracker($fileIndexing);
+                $tracker->incrementPrintCount(); // Count batch print
+                $trackersData[$fileIndexing->id] = $tracker;
+            }
+
+            $PageTitle = 'Batch Tracking Sheets';
+            $PageDescription = 'Generate tracking sheets for multiple file indexing records';
+
+            return view('fileindexing.batch-tracking-sheet', compact('PageTitle', 'PageDescription', 'fileIndexings', 'trackersData'));
+        } catch (Exception $e) {
+            Log::error('Error generating batch tracking sheets', [
+                'file_ids' => $request->get('files', ''),
+                'error' => $e->getMessage()
+            ]);
+
+            return redirect()->route('fileindexing.index')
+                ->with('error', 'Error generating batch tracking sheets: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get or create tracking record for file indexing
+     */
+    private function getOrCreateTracker($fileIndexing)
+    {
+        $tracker = IndexedFileTracker::on('sqlsrv')
+            ->where('file_indexing_id', $fileIndexing->id)
+            ->first();
+
+        if (!$tracker) {
+            // Create new tracking record
+            $tracker = IndexedFileTracker::on('sqlsrv')->create([
+                'file_indexing_id' => $fileIndexing->id,
+                'tracking_id' => $this->generateUniqueTrackingId($fileIndexing->id),
+                'current_location' => 'File Indexing Department',
+                'current_handler' => Auth::user()->name ?? 'System User',
+                'current_department' => 'File Indexing Department',
+                'status' => 'Active',
+                'priority' => 'Normal',
+                'sheet_generated_at' => now(),
+                'movement_history' => $this->createInitialMovementHistory($fileIndexing),
+            ]);
+
+            Log::info('Created new tracking record', [
+                'file_indexing_id' => $fileIndexing->id,
+                'tracking_id' => $tracker->tracking_id,
+                'created_by' => Auth::id()
+            ]);
+        }
+
+        return $tracker;
+    }
+
+    /**
+     * Generate unique tracking ID
+     */
+    private function generateUniqueTrackingId($fileIndexingId)
+    {
+        $year = date('Y');
+        $sequence = str_pad($fileIndexingId, 3, '0', STR_PAD_LEFT);
+        $baseId = "TRK-{$year}-{$sequence}";
+        
+        // Check if ID already exists and add suffix if needed
+        $counter = 1;
+        $trackingId = $baseId;
+        
+        while (IndexedFileTracker::on('sqlsrv')->where('tracking_id', $trackingId)->exists()) {
+            $trackingId = $baseId . '-' . $counter;
+            $counter++;
+        }
+        
+        return $trackingId;
+    }
+
+    /**
+     * Create initial movement history for new tracking record
+     */
+    private function createInitialMovementHistory($fileIndexing)
+    {
+        $history = [];
+        
+        // Add file indexing entry
+        $history[] = [
+            'date' => $fileIndexing->created_at->format('Y-m-d'),
+            'time' => $fileIndexing->created_at->format('g:i A'),
+            'location' => 'File Indexing System',
+            'handler' => 'System User',
+            'action' => 'File indexed and registered',
+            'method' => 'Digital',
+            'notes' => 'File information captured in EDMS',
+            'timestamp' => $fileIndexing->created_at->toISOString(),
+        ];
+
+        // Add scanning entries if exist
+        if ($fileIndexing->scannings && $fileIndexing->scannings->count() > 0) {
+            $latestScanning = $fileIndexing->scannings->sortBy('created_at')->last();
+            $history[] = [
+                'date' => $latestScanning->created_at->format('Y-m-d'),
+                'time' => $latestScanning->created_at->format('g:i A'),
+                'location' => 'Scanning Department',
+                'handler' => 'Scanner Operator',
+                'action' => 'Document scanning completed',
+                'method' => 'Digital Scan',
+                'notes' => $fileIndexing->scannings->count() . ' documents scanned',
+                'timestamp' => $latestScanning->created_at->toISOString(),
+            ];
+        }
+
+        // Add page typing entries if exist
+        if ($fileIndexing->pagetypings && $fileIndexing->pagetypings->count() > 0) {
+            $latestPageTyping = $fileIndexing->pagetypings->sortBy('created_at')->last();
+            $history[] = [
+                'date' => $latestPageTyping->created_at->format('Y-m-d'),
+                'time' => $latestPageTyping->created_at->format('g:i A'),
+                'location' => 'Page Typing Department',
+                'handler' => 'Data Entry Operator',
+                'action' => 'Page typing completed',
+                'method' => 'Manual Input',
+                'notes' => $fileIndexing->pagetypings->count() . ' pages typed',
+                'timestamp' => $latestPageTyping->created_at->toISOString(),
+            ];
+        }
+
+        // Sort by timestamp (newest first)
+        usort($history, function($a, $b) {
+            return strtotime($b['timestamp']) - strtotime($a['timestamp']);
+        });
+
+        return $history;
+    }
+
+    /**
+     * Update file tracking location (AJAX endpoint)
+     */
+    public function updateTrackingLocation(Request $request, $id)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'location' => 'required|string|max:255',
+                'handler' => 'required|string|max:255',
+                'action' => 'required|string|max:255',
+                'method' => 'nullable|string|max:50',
+                'notes' => 'nullable|string|max:500',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $fileIndexing = FileIndexing::on('sqlsrv')->findOrFail($id);
+            $tracker = $this->getOrCreateTracker($fileIndexing);
+
+            // Add movement record
+            $tracker->addMovementRecord(
+                $request->location,
+                $request->handler,
+                $request->action,
+                $request->method ?? 'Manual',
+                $request->notes ?? ''
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tracking location updated successfully',
+                'tracker' => [
+                    'current_location' => $tracker->current_location,
+                    'current_handler' => $tracker->current_handler,
+                    'last_location_update' => $tracker->last_location_update->format('M d, Y g:i A'),
+                ]
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error updating tracking location', [
+                'file_indexing_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating tracking location: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Show smart batch tracking interface
+     */
+    public function batchTrackingInterface(Request $request)
+    {
+        try {
+            $fileIds = $request->get('files', '');
+            
+            if (empty($fileIds)) {
+                return redirect()->route('fileindexing.index')
+                    ->with('error', 'No files selected for batch tracking operations');
+            }
+
+            $fileIdsArray = explode(',', $fileIds);
+            
+            $selectedFiles = FileIndexing::on('sqlsrv')
+                ->with(['mainApplication', 'scannings', 'pagetypings'])
+                ->whereIn('id', $fileIdsArray)
+                ->get()
+                ->map(function ($fi) {
+                    return [
+                        'id' => $fi->id,
+                        'file_number' => $fi->file_number,
+                        'file_title' => $fi->file_title,
+                        'plot_number' => $fi->plot_number,
+                        'district' => $fi->district,
+                        'land_use_type' => $fi->land_use_type,
+                        'created_at' => $fi->created_at,
+                        'updated_at' => $fi->updated_at,
+                        'scanning_count' => $fi->scannings->count(),
+                        'page_typing_count' => $fi->pagetypings->count(),
+                    ];
+                });
+
+            if ($selectedFiles->isEmpty()) {
+                return redirect()->route('fileindexing.index')
+                    ->with('error', 'No valid files found for batch tracking operations');
+            }
+
+            $PageTitle = 'Smart Batch Tracking Interface';
+            $PageDescription = 'Manage batch tracking operations and movement history';
+
+            return view('fileindexing.batch-tracking-interface', compact(
+                'PageTitle', 
+                'PageDescription', 
+                'selectedFiles'
+            ));
+
+        } catch (Exception $e) {
+            Log::error('Error loading batch tracking interface', [
+                'file_ids' => $request->get('files', ''),
+                'error' => $e->getMessage()
+            ]);
+
+            return redirect()->route('fileindexing.index')
+                ->with('error', 'Error loading batch tracking interface: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Process bulk movement update (AJAX endpoint)
+     */
+    public function bulkMovementUpdate(Request $request)
+    {
+        try {
+            // ...existing code...
+            
+            $files = $request->input('files', []);
+            $location = $request->input('location');
+            $handler = $request->input('handler');
+            $status = $request->input('status');
+            $priority = $request->input('priority');
+            $reason = $request->input('reason');
+            $notes = $request->input('notes');
+
+            if (empty($files) || !$location || !$handler || !$status || !$priority) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Missing required fields: location, handler, status, and priority are required'
+                ]);
+            }
+
+            $updated = 0;
+            $errors = [];
+
+            foreach ($files as $fileId) {
+                try {
+                    $file = FileIndex::find($fileId);
+                    if (!$file) {
+                        $errors[] = "File ID {$fileId} not found";
+                        continue;
+                    }
+
+                    // Update file location and tracking info
+                    $file->current_location = $location;
+                    $file->handler = $handler;
+                    $file->status = $status;
+                    $file->priority = $priority;
+                    $file->movement_reason = $reason;
+                    $file->last_movement_date = now();
+                    $file->save();
+
+                    // Create movement log entry
+                    FileMovementLog::create([
+                        'file_index_id' => $file->id,
+                        'file_number' => $file->file_number,
+                        'previous_location' => $file->getOriginal('current_location') ?? 'Unknown',
+                        'new_location' => $location,
+                        'handler' => $handler,
+                        'status' => $status,
+                        'priority' => $priority,
+                        'reason' => $reason,
+                        'notes' => $notes,
+                        'moved_by' => Auth::id(),
+                        'moved_at' => now()
+                    ]);
+
+                    $updated++;
+                } catch (Exception $e) {
+                    $errors[] = "Error updating file {$fileId}: " . $e->getMessage();
+                }
+            }
+
+            if ($updated > 0) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Successfully updated {$updated} file(s)" . 
+                                ($errors ? ". Errors: " . implode(', ', $errors) : '')
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No files were updated. Errors: ' . implode(', ', $errors)
+                ]);
+            }
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get movement history for files (AJAX endpoint)
+     */
+    public function getMovementHistory(Request $request)
+    {
+        try {
+            $fileIds = $request->get('files', []);
+            
+            if (empty($fileIds)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No file IDs provided'
+                ], 422);
+            }
+
+            if (is_string($fileIds)) {
+                $fileIds = explode(',', $fileIds);
+            }
+
+            $trackers = IndexedFileTracker::on('sqlsrv')
+                ->with('fileIndexing')
+                ->whereIn('file_indexing_id', $fileIds)
+                ->get();
+
+            $movementHistory = [];
+
+            foreach ($trackers as $tracker) {
+                $fileIndexing = $tracker->fileIndexing;
+                $history = $tracker->movement_history ?? [];
+
+                foreach ($history as $movement) {
+                    $movementHistory[] = [
+                        'file_id' => $fileIndexing->id,
+                        'file_number' => $fileIndexing->file_number,
+                        'file_title' => $fileIndexing->file_title,
+                        'tracking_id' => $tracker->tracking_id,
+                        'date' => $movement['date'] ?? '',
+                        'time' => $movement['time'] ?? '',
+                        'location' => $movement['location'] ?? '',
+                        'handler' => $movement['handler'] ?? '',
+                        'action' => $movement['action'] ?? '',
+                        'method' => $movement['method'] ?? '',
+                        'notes' => $movement['notes'] ?? '',
+                        'timestamp' => $movement['timestamp'] ?? '',
+                        'current_location' => $tracker->current_location,
+                        'current_handler' => $tracker->current_handler,
+                        'status' => $tracker->status,
+                        'priority' => $tracker->priority,
+                    ];
+                }
+            }
+
+            // Sort by timestamp (newest first)
+            usort($movementHistory, function($a, $b) {
+                return strtotime($b['timestamp']) - strtotime($a['timestamp']);
+            });
+
+            return response()->json([
+                'success' => true,
+                'movement_history' => $movementHistory
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error getting movement history', [
+                'file_ids' => $fileIds,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading movement history: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Export movement history (AJAX endpoint)
+     */
+    public function exportMovementHistory(Request $request)
+    {
+        try {
+            $fileIds = $request->get('files', []);
+            $format = $request->get('format', 'csv'); // csv, excel, pdf
+            
+            if (empty($fileIds)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No file IDs provided'
+                ], 422);
+            }
+
+            if (is_string($fileIds)) {
+                $fileIds = explode(',', $fileIds);
+            }
+
+            // Get movement history data
+            $historyResponse = $this->getMovementHistory($request);
+            $historyData = json_decode($historyResponse->getContent(), true);
+
+            if (!$historyData['success']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error loading movement history for export'
+                ], 500);
+            }
+
+            $movements = $historyData['movement_history'];
+
+            // For now, return CSV format
+            $csvData = "File Number,File Title,Tracking ID,Date,Time,Location,Handler,Action,Method,Notes,Current Location,Status,Priority\n";
+            
+            foreach ($movements as $movement) {
+                $csvData .= implode(',', [
+                    '"' . ($movement['file_number'] ?? '') . '"',
+                    '"' . ($movement['file_title'] ?? '') . '"',
+                    '"' . ($movement['tracking_id'] ?? '') . '"',
+                    '"' . ($movement['date'] ?? '') . '"',
+                    '"' . ($movement['time'] ?? '') . '"',
+                    '"' . ($movement['location'] ?? '') . '"',
+                    '"' . ($movement['handler'] ?? '') . '"',
+                    '"' . ($movement['action'] ?? '') . '"',
+                    '"' . ($movement['method'] ?? '') . '"',
+                    '"' . ($movement['notes'] ?? '') . '"',
+                    '"' . ($movement['current_location'] ?? '') . '"',
+                    '"' . ($movement['status'] ?? '') . '"',
+                    '"' . ($movement['priority'] ?? '') . '"',
+                ]) . "\n";
+            }
+
+            $filename = 'movement_history_' . date('Y-m-d_H-i-s') . '.csv';
+
+            return response($csvData)
+                ->header('Content-Type', 'text/csv')
+                ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+
+        } catch (Exception $e) {
+            Log::error('Error exporting movement history', [
+                'file_ids' => $fileIds,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error exporting movement history: ' . $e->getMessage()
             ], 500);
         }
     }

@@ -1,1353 +1,982 @@
-<!-- Dynamic File Indexing JavaScript -->
+<!-- JavaScript -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Lucide icons
-    lucide.createIcons();
-    
-    // Dynamic data from database
-    let pendingFiles = [];
-    let recentIndexedFiles = @json($recentIndexes ?? []);
-    let availableApplications = [];
-    
-    // State variables
-    let selectedFiles = [];
-    let indexingProgress = 0;
-    let currentStage = "extract";
-    
-    // DOM Elements
-    const tabs = document.querySelectorAll('.tab');
-    const tabContents = document.querySelectorAll('.tab-content');
-    const pendingFilesList = document.getElementById('pending-files-list');
-    const selectedFilesCount = document.getElementById('selected-files-count');
-    const beginIndexingBtn = document.getElementById('begin-indexing-btn');
-    const newFileIndexBtn = document.getElementById('new-file-index-btn');
-    const newFileDialogOverlay = document.getElementById('new-file-dialog-overlay');
-    const confirmSaveResultsBtn = document.getElementById('confirm-save-results-btn');
-    
-    // DOM Elements for AI processing
-    const startAiIndexingBtn = document.getElementById('start-ai-indexing-btn');
-    const aiProcessingView = document.getElementById('ai-processing-view');
-    const progressBar = document.getElementById('progress-bar');
-    const progressPercentage = document.getElementById('progress-percentage');
-    const pipelineProgressBar = document.getElementById('pipeline-progress-bar');
-    const pipelineProgressLine = document.getElementById('pipeline-progress-line');
-    const pipelinePercentage = document.getElementById('pipeline-percentage');
-    const currentStageInfo = document.getElementById('current-stage-info');
-    const aiInsightsContainer = document.getElementById('ai-insights-container');
-    const processingFilesCount = document.getElementById('processing-files-count');
-    const selectedFilesAiCount = document.getElementById('selected-files-ai-count');
-    
-    // DOM Elements for AI Mode Switch
-    const aiModeSwitch = document.getElementById('ai-mode-switch');
-    const aiModeLabel = document.getElementById('ai-mode-label');
-    
-    // DOM Elements for New File Dialog
-    const closeDialogBtn = document.getElementById('close-dialog-btn');
-    const cancelBtn = document.getElementById('cancel-btn');
-    const createFileBtn = document.getElementById('create-file-btn');
+  // Initialize Lucide icons
+  lucide.createIcons();
+  
+  // State variables
+  let selectedFiles = []; // Initialize empty - no pre-selected files
+  let selectedIndexedFiles = []; // Track selected indexed files
+  let pendingFiles = []; // Will be loaded from API
+  let indexedFiles = []; // Will be loaded from API
+  let indexingProgress = 0; // Set to 0% initially
+  let currentStage = "extract"; // Current stage in the AI pipeline
+  
+  // DOM Elements
+  const tabs = document.querySelectorAll('.tab');
+  const tabContents = document.querySelectorAll('.tab-content');
+  const pendingFilesList = document.getElementById('pending-files-list');
+  const selectedFilesCount = document.getElementById('selected-files-count');
+  const beginIndexingBtn = document.getElementById('begin-indexing-btn');
+  const newFileIndexBtn = document.getElementById('new-file-index-btn');
+  const newFileDialogOverlay = document.getElementById('new-file-dialog-overlay');
+  const confirmSaveResultsBtn = document.getElementById('confirm-save-results-btn');
+  
+  // DOM Elements for AI processing
+  const startAiIndexingBtn = document.getElementById('start-ai-indexing-btn');
+  const aiProcessingView = document.getElementById('ai-processing-view');
+  const progressBar = document.getElementById('progress-bar');
+  const progressPercentage = document.getElementById('progress-percentage');
+  const pipelineProgressBar = document.getElementById('pipeline-progress-bar');
+  const pipelineProgressLine = document.getElementById('pipeline-progress-line');
+  const pipelinePercentage = document.getElementById('pipeline-percentage');
+  const currentStageInfo = document.getElementById('current-stage-info');
+  const aiInsightsContainer = document.getElementById('ai-insights-container');
+  
+  // DOM Elements for New File Dialog
+  const closeDialogBtn = document.getElementById('close-dialog-btn');
+  const cancelBtn = document.getElementById('cancel-btn');
+  const createFileBtn = document.getElementById('create-file-btn');
+  const fileNumberTypeRadios = document.querySelectorAll('input[name="file-number-type"]');
 
-    // Function to format applicant name based on applicant type
-    function formatApplicantName(app) {
-        if (!app) {
-            console.log('formatApplicantName: No app data provided');
-            return 'Unknown Applicant';
-        }
-        
-        console.log('formatApplicantName: Processing app:', {
-            id: app.id,
-            applicant_type: app.applicant_type,
-            applicant_name: app.applicant_name,
-            corporate_name: app.corporate_name,
-            first_name: app.first_name,
-            surname: app.surname,
-            multiple_owners_names: app.multiple_owners_names,
-            // Log all available fields to see what we're working with
-            allFields: Object.keys(app)
-        });
-        
-        // If applicant_name is already provided, use it
-        if (app.applicant_name && app.applicant_name.trim()) {
-            console.log('Using existing applicant_name:', app.applicant_name);
-            return app.applicant_name;
-        }
-        
-        // Format name based on applicant type
-        switch (app.applicant_type) {
-            case 'corporate':
-                if (app.corporate_name && app.corporate_name.trim()) {
-                    const corporateName = app.rc_number ? `${app.corporate_name} (RC: ${app.rc_number})` : app.corporate_name;
-                    console.log('Corporate name formatted:', corporateName);
-                    return corporateName;
-                }
-                break;
-                
-            case 'individual':
-                const nameParts = [];
-                if (app.applicant_title && app.applicant_title.trim()) nameParts.push(app.applicant_title);
-                if (app.first_name && app.first_name.trim()) nameParts.push(app.first_name);
-                if (app.middle_name && app.middle_name.trim()) nameParts.push(app.middle_name);
-                if (app.surname && app.surname.trim()) nameParts.push(app.surname);
-                
-                if (nameParts.length > 0) {
-                    const individualName = nameParts.join(' ');
-                    console.log('Individual name formatted:', individualName);
-                    return individualName;
-                }
-                break;
-                
-            case 'multiple':
-                if (app.multiple_owners_names && app.multiple_owners_names.trim()) {
-                    console.log('Multiple owners name formatted:', app.multiple_owners_names);
-                    return app.multiple_owners_names;
-                }
-                console.log('Multiple owners type but no multiple_owners_names field');
-                break;
-        }
-        
-        // Enhanced fallback: try all possible name fields
-        console.log('Trying fallback name construction...');
-        
-        // Try multiple owners names first (regardless of applicant_type)
-        if (app.multiple_owners_names && app.multiple_owners_names.trim()) {
-            console.log('Fallback: Using multiple_owners_names:', app.multiple_owners_names);
-            return app.multiple_owners_names;
-        }
-        
-        // Try corporate name
-        if (app.corporate_name && app.corporate_name.trim()) {
-            const corporateName = app.rc_number ? `${app.corporate_name} (RC: ${app.rc_number})` : app.corporate_name;
-            console.log('Fallback: Using corporate_name:', corporateName);
-            return corporateName;
-        }
-        
-        // Try individual name parts
-        const fallbackParts = [];
-        if (app.applicant_title && app.applicant_title.trim()) fallbackParts.push(app.applicant_title);
-        if (app.first_name && app.first_name.trim()) fallbackParts.push(app.first_name);
-        if (app.middle_name && app.middle_name.trim()) fallbackParts.push(app.middle_name);
-        if (app.surname && app.surname.trim()) fallbackParts.push(app.surname);
-        
-        if (fallbackParts.length > 0) {
-            const individualName = fallbackParts.join(' ');
-            console.log('Fallback: Using individual name parts:', individualName);
-            return individualName;
-        }
-        
-        // Try any other name-like fields that might exist
-        const possibleNameFields = [
-            'name', 'full_name', 'owner_name', 'applicant', 'client_name', 'owner', 'owners'
-        ];
-        
-        for (const field of possibleNameFields) {
-            if (app[field] && typeof app[field] === 'string' && app[field].trim()) {
-                console.log(`Fallback: Using ${field}:`, app[field]);
-                return app[field];
-            }
-        }
-        
-        console.log('No name found, returning Unknown Applicant for app:', app);
-        return 'Unknown Applicant';
-    }
-
-    // Function to toggle file selection
-    function toggleFileSelection(fileId) {
-        console.log('Toggling file selection for:', fileId);
-        if (selectedFiles.includes(fileId)) {
-            selectedFiles = selectedFiles.filter(id => id !== fileId);
-        } else {
-            selectedFiles.push(fileId);
-        }
-        
-        console.log('Selected files:', selectedFiles);
-        renderPendingFiles();
-        updateSelectedFilesCount();
-        updateAiIndexingButton();
-        updateNewFileIndexButton();
-        updateDigitalIndexTab();
+  // Function to toggle file selection
+  function toggleFileSelection(fileId) {
+    if (selectedFiles.includes(fileId)) {
+      selectedFiles = selectedFiles.filter(id => id !== fileId);
+    } else {
+      selectedFiles.push(fileId);
     }
     
-    // Function to toggle select all files
-    function toggleSelectAll() {
-        if (selectedFiles.length === pendingFiles.length) {
-            selectedFiles = [];
-        } else {
-            selectedFiles = pendingFiles.map(file => file.id);
-        }
-        
-        renderPendingFiles();
-        updateSelectedFilesCount();
-        updateAiIndexingButton();
-        updateNewFileIndexButton();
-        updateDigitalIndexTab();
+    renderPendingFiles();
+    updateSelectedFilesCount();
+  }
+  
+  // Function to toggle select all
+  function toggleSelectAll() {
+    if (selectedFiles.length === pendingFiles.length) {
+      // If all files are already selected, deselect all
+      selectedFiles = [];
+    } else {
+      // Otherwise, select all files
+      selectedFiles = pendingFiles.map(file => file.id);
     }
     
-    // Switch between tabs
-    function switchTab(tabName) {
-        tabs.forEach(t => {
-            if (t.getAttribute('data-tab') === tabName) {
-                t.classList.add('active');
-            } else {
-                t.classList.remove('active');
-            }
-        });
-
-        tabContents.forEach(content => {
-            if (content.id === `${tabName}-tab`) {
-                content.classList.remove('hidden');
-                content.classList.add('active');
-            } else {
-                content.classList.add('hidden');
-                content.classList.remove('active');
-            }
-        });
-
-        // Update New File Index button state based on current tab
-        updateNewFileIndexButtonForTab(tabName);
-    }
+    renderPendingFiles();
+    updateSelectedFilesCount();
+  }
+  
+  // Function to start AI indexing
+  function startAiIndexing() {
+    console.log("Starting AI indexing process...");
     
-    function renderPendingFiles() {
-        if (!pendingFilesList) return;
-        
-        pendingFilesList.innerHTML = '';
-        
-        if (pendingFiles.length === 0) {
-            pendingFilesList.innerHTML = `
-                <div class="p-8 text-center text-gray-500">
-                    <i data-lucide="inbox" class="h-12 w-12 mx-auto mb-4 text-gray-300"></i>
-                    <p class="text-lg font-medium mb-2">No pending files</p>
-                    <p class="text-sm">All applications have been indexed or there are no applications available.</p>
-                </div>
-            `;
-            lucide.createIcons();
-            return;
-        }
-        
-        pendingFiles.forEach(file => {
-            const isSelected = selectedFiles.includes(file.id);
-            const fileItem = document.createElement('div');
-            fileItem.className = 'p-4 border-b last:border-b-0';
-            
-            fileItem.innerHTML = `
-                <div class="flex items-center">
-                    <input type="checkbox" ${isSelected ? 'checked' : ''} data-id="${file.id}" class="mr-4 file-checkbox">
-                    <div class="file-icon">
-                        <i data-lucide="file-text" class="h-6 w-6"></i>
-                    </div>
-                    <div class="file-details ml-4">
-                        <div class="file-number">${file.fileNumber}</div>
-                        <div class="file-name">${file.name}</div>
-                        <div class="file-tags">
-                            <span class="file-tag">${file.source}</span>
-                            <span class="file-tag">${file.landUseType}</span>
-                            <span class="file-tag">${file.district}</span>
-                            <span class="file-tag">${file.date}</span>
-                        </div>
-                    </div>
-                    <div class="ml-auto">
-                        <span class="badge badge-yellow">
-                            <i data-lucide="clock" class="h-3 w-3 mr-1"></i>
-                            Pending Digital Index
-                        </span>
-                    </div>
-                </div>
-            `;
-            
-            // Add event listener to checkbox
-            const checkbox = fileItem.querySelector('.file-checkbox');
-            checkbox.addEventListener('change', () => toggleFileSelection(file.id));
-            
-            pendingFilesList.appendChild(fileItem);
-        });
-        
-        // Initialize Lucide icons for the new rows
-        lucide.createIcons();
-        
-        // Update selected files count
-        updateSelectedFilesCount();
+    // Hide the initial view and show the processing view
+    const initialView = document.querySelector('#indexing-tab .card .p-6 .card');
+    if (initialView) {
+      initialView.parentElement.classList.add('hidden');
     }
-
-    function updateCounters() {
-        const pendingCountEl = document.getElementById('pending-files-count');
-        const indexedCountEl = document.getElementById('indexed-files-count');
+    aiProcessingView.classList.remove('hidden');
+    
+    // Start the indexing simulation
+    simulateIndexingProcess();
+  }
+  
+  // Function to simulate the indexing process
+  function simulateIndexingProcess() {
+    console.log("Starting AI indexing simulation");
+    
+    let progress = 0;
+    const stages = ['init', 'analyze', 'extract', 'categorize', 'validate', 'complete'];
+    let currentStageIndex = 0;
+    
+    // Stage descriptions
+    const stageDescriptions = {
+      init: "Setting up AI processing environment and preparing documents for analysis...",
+      analyze: "Analyzing document structure and identifying key sections...",
+      extract: "Extracting key information and metadata using form templates...",
+      categorize: "Categorizing extracted information and applying relevant tags...",
+      validate: "Validating extracted data against known patterns and rules...",
+      complete: "Finalizing results and preparing data for submission to KLAES..."
+    };
+    
+    // Stage icons
+    const stageIcons = {
+      init: "loader",
+      analyze: "search",
+      extract: "layers",
+      categorize: "tag",
+      validate: "check-circle",
+      complete: "check-square"
+    };
+    
+    // Update progress every 500ms
+    const interval = setInterval(() => {
+      progress += 2;
+      
+      // Update progress bar and percentage
+      progressBar.style.width = `${progress}%`;
+      progressPercentage.textContent = `${progress}%`;
+      pipelineProgressBar.style.width = `${progress}%`;
+      pipelineProgressLine.style.width = `${progress}%`;
+      pipelinePercentage.textContent = `${progress}% Complete`;
+      
+      // Update stage if needed
+      const stageThresholds = [0, 20, 40, 60, 80, 95];
+      if (progress >= stageThresholds[currentStageIndex + 1] && currentStageIndex < stages.length - 1) {
+        // Mark current stage as completed
+        document.getElementById(`stage-${stages[currentStageIndex]}`).classList.remove('active');
+        document.getElementById(`stage-${stages[currentStageIndex]}`).classList.add('completed');
         
-        if (pendingCountEl) pendingCountEl.textContent = pendingFiles.length;
-        if (indexedCountEl) indexedCountEl.textContent = recentIndexedFiles.length;
-    }
-
-    function updateSelectedFilesCount() {
-        if (selectedFilesCount) {
-            selectedFilesCount.textContent = `${selectedFiles.length} of ${pendingFiles.length} selected`;
-        }
-    }
-
-    function updateAiIndexingButton() {
-        if (selectedFilesAiCount) {
-            selectedFilesAiCount.textContent = selectedFiles.length;
-        }
+        // Move to next stage
+        currentStageIndex++;
         
-        if (startAiIndexingBtn) {
-            startAiIndexingBtn.disabled = selectedFiles.length === 0;
-        }
-    }
-
-    function updateNewFileIndexButton() {
-        if (newFileIndexBtn) {
-            // Disable the "New File Index" button when files are selected
-            if (selectedFiles.length > 0) {
-                newFileIndexBtn.disabled = true;
-                newFileIndexBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                newFileIndexBtn.title = 'Cannot create new file index while files are selected for AI indexing';
-            } else {
-                newFileIndexBtn.disabled = false;
-                newFileIndexBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                newFileIndexBtn.title = '';
-            }
-        }
-    }
-
-    function updateDigitalIndexTab() {
-        const digitalIndexTab = document.querySelector('[data-tab="indexing"]');
+        // Mark new stage as active
+        document.getElementById(`stage-${stages[currentStageIndex]}`).classList.remove('pending');
+        document.getElementById(`stage-${stages[currentStageIndex]}`).classList.add('active');
         
-        if (digitalIndexTab) {
-            if (selectedFiles.length === 0) {
-                // Disable the Digital Index (AI) tab when no files are selected
-                digitalIndexTab.classList.add('opacity-50', 'cursor-not-allowed');
-                digitalIndexTab.style.pointerEvents = 'none';
-                digitalIndexTab.title = 'Select files from the File Index tab first to enable AI processing';
-            } else {
-                // Enable the Digital Index (AI) tab when files are selected
-                digitalIndexTab.classList.remove('opacity-50', 'cursor-not-allowed');
-                digitalIndexTab.style.pointerEvents = 'auto';
-                digitalIndexTab.title = '';
-            }
-        }
-    }
-
-    function updateNewFileIndexButtonForTab(tabName) {
-        if (newFileIndexBtn) {
-            if (tabName === 'indexed') {
-                // Disable the "New File Index" button when on Indexed Files tab
-                newFileIndexBtn.disabled = true;
-                newFileIndexBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                newFileIndexBtn.title = 'Cannot create new file index while viewing indexed files';
-            } else if (selectedFiles.length === 0) {
-                // Enable the button if not on indexed tab and no files are selected
-                newFileIndexBtn.disabled = false;
-                newFileIndexBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                newFileIndexBtn.title = '';
-            }
-            // If files are selected, the updateNewFileIndexButton() function will handle the state
-        }
-    }
-
-    // Functions for New File Index Dialog
-    function showNewFileDialog() {
-        console.log('Opening New File Index Dialog');
-        if (newFileDialogOverlay) {
-            newFileDialogOverlay.classList.remove('hidden');
-            loadAvailableApplications();
-            lucide.createIcons();
-        }
-    }
-
-    function closeNewFileDialog() {
-        console.log('Closing New File Index Dialog');
-        if (newFileDialogOverlay) {
-            newFileDialogOverlay.classList.add('hidden');
-        }
-        const form = document.getElementById('new-file-form');
-        if (form) {
-            form.reset();
-        }
-    }
-
-    function createNewFile() {
-        console.log('Creating new file index');
-        
-        // Get form data
-        const fileTitle = document.getElementById('file-title').value;
-        const landUseSelect = document.getElementById('landUse');
-        const landUseType = landUseSelect ? landUseSelect.value : 'RESIDENTIAL';
-        const plotNumber = document.querySelector('input[placeholder*="PL-"]')?.value || '';
-        const districtSelect = document.querySelector('select[name="district"]');
-        const district = districtSelect ? districtSelect.value : '';
-        const lgaInput = document.querySelector('input[name="lga"]');
-        const lga = lgaInput ? lgaInput.value : 'Kano Municipal';
-        
-        if (!fileTitle.trim()) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Missing Information',
-                text: 'Please enter a file title',
-                confirmButtonColor: '#3085d6'
-            });
-            return;
-        }
-
-        // Get file number and application ID
-        let fileNumber = '';
-        let mainApplicationId = null;
-        let subApplicationId = null;
-        let sourceTable = null;
-        let fileNumberType = 'manual';
-        
-        // Check if smart file number selector is being used
-        const smartFilenoInput = document.getElementById('fileno');
-        const smartFilenoSelect = document.getElementById('fileno-select');
-        
-        console.log('Smart fileno input value:', smartFilenoInput?.value);
-        console.log('Smart fileno select value:', smartFilenoSelect?.value);
-        
-        if (smartFilenoInput && smartFilenoInput.value) {
-            // Using smart selector
-            fileNumber = smartFilenoInput.value;
-            fileNumberType = 'application';
-            
-            // Get the selected option to extract data attributes
-            const selectedOption = smartFilenoSelect.options[smartFilenoSelect.selectedIndex];
-            if (selectedOption && selectedOption.dataset) {
-                sourceTable = selectedOption.dataset.sourceTable;
-                const applicationId = selectedOption.dataset.applicationId;
-                
-                console.log('Selected option data:', {
-                    sourceTable: sourceTable,
-                    applicationId: applicationId
-                });
-                
-                if (sourceTable === 'mother') {
-                    mainApplicationId = applicationId;
-                } else if (sourceTable === 'sub') {
-                    subApplicationId = applicationId;
-                }
-            }
-        } else {
-            // Check manual file number entry
-            console.log('Checking manual file number entry...');
-            
-            // Check for manual file number inputs
-            const activeFileTab = document.querySelector('input[name="activeFileTab"]')?.value;
-            console.log('Active file tab:', activeFileTab);
-            
-            if (activeFileTab === 'mls') {
-                const mlsFileNo = document.querySelector('input[name="mlsFNo"]')?.value;
-                if (mlsFileNo) {
-                    fileNumber = mlsFileNo;
-                    console.log('Using MLS file number:', fileNumber);
-                }
-            } else if (activeFileTab === 'kangis') {
-                const kangisFileNo = document.querySelector('input[name="kangisFileNo"]')?.value;
-                if (kangisFileNo) {
-                    fileNumber = kangisFileNo;
-                    console.log('Using KANGIS file number:', fileNumber);
-                }
-            } else if (activeFileTab === 'newkangis') {
-                const newKangisFileNo = document.querySelector('input[name="NewKANGISFileno"]')?.value;
-                if (newKangisFileNo) {
-                    fileNumber = newKangisFileNo;
-                    console.log('Using New KANGIS file number:', fileNumber);
-                }
-            }
-            
-            // If no manual file number found, generate one
-            if (!fileNumber) {
-                fileNumber = 'MANUAL-' + Date.now();
-                console.log('Generated manual file number:', fileNumber);
-            }
-        }
-
-        if (!fileNumber) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Missing Information',
-                text: 'Please select or enter a file number',
-                confirmButtonColor: '#3085d6'
-            });
-            return;
-        }
-
-        console.log('Final form data preparation:', {
-            fileNumber: fileNumber,
-            fileNumberType: fileNumberType,
-            mainApplicationId: mainApplicationId,
-            subApplicationId: subApplicationId,
-            sourceTable: sourceTable
-        });
-
-        // Prepare form data
-        const formData = {
-            file_number_type: fileNumberType,
-            main_application_id: mainApplicationId,
-            subapplication_id: subApplicationId,
-            source_table: sourceTable,
-            file_number: fileNumber,
-            file_title: fileTitle,
-            land_use_type: landUseType,
-            plot_number: plotNumber,
-            district: district,
-            lga: lga,
-            has_cofo: document.getElementById('has-cofo')?.checked || false,
-            is_merged: document.getElementById('merged-plot')?.checked || false,
-            has_transaction: document.getElementById('has-transaction')?.checked || false,
-            is_problematic: false,
-            is_co_owned_plot: document.getElementById('co-owned-plot')?.checked || false,
-            _token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-        };
-
-        console.log('Sending form data:', formData);
-
-        // Show loading state
-        const createBtn = document.getElementById('create-file-btn');
-        const originalText = createBtn.textContent;
-        createBtn.textContent = 'Creating...';
-        createBtn.disabled = true;
-
-        // Send AJAX request
-        fetch('{{ route("fileindexing.store") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': formData._token
-            },
-            body: JSON.stringify(formData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Server response:', data);
-            if (data.success) {
-                closeNewFileDialog();
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success!',
-                    text: data.message,
-                    confirmButtonColor: '#10b981'
-                }).then(() => {
-                    if (data.redirect) {
-                        window.location.href = data.redirect;
-                    } else {
-                        window.location.reload();
-                    }
-                });
-            } else {
-                console.error('Server error:', data);
-                if (data.errors) {
-                    console.error('Validation errors:', data.errors);
-                    let errorMessage = 'Validation failed:\n';
-                    Object.keys(data.errors).forEach(field => {
-                        errorMessage += `${field}: ${data.errors[field].join(', ')}\n`;
-                    });
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Validation Error',
-                        text: errorMessage,
-                        confirmButtonColor: '#ef4444'
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: data.message || 'Error creating file index',
-                        confirmButtonColor: '#ef4444'
-                    });
-                }
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Network Error',
-                text: 'Error creating file index. Please try again.',
-                confirmButtonColor: '#ef4444'
-            });
-        })
-        .finally(() => {
-            createBtn.textContent = originalText;
-            createBtn.disabled = false;
-        });
-    }
-
-    // Load available applications for file number selection
-    function loadAvailableApplications(search = '') {
-        fetch(`{{ route("fileindexing.search-applications") }}?search=${encodeURIComponent(search)}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                availableApplications = data.applications;
-                populateApplicationDropdown();
-            }
-        })
-        .catch(error => {
-            console.error('Error loading applications:', error);
-        });
-    }
-
-    // Populate application dropdown
-    function populateApplicationDropdown() {
-        const dropdown = document.getElementById('application-dropdown');
-        if (!dropdown) return;
-
-        dropdown.innerHTML = '<option value="">Select an application...</option>';
-        
-        availableApplications.forEach(app => {
-            const option = document.createElement('option');
-            option.value = app.id;
-            option.textContent = `${app.file_number} - ${formatApplicantName(app)}`;
-            option.dataset.fileNumber = app.file_number;
-            option.dataset.landUse = app.land_use;
-            option.dataset.plotNumber = app.plot_number;
-            option.dataset.district = app.district;
-            option.dataset.lga = app.lga;
-            dropdown.appendChild(option);
-        });
-    }
-
-    // Load pending files (applications without file indexing)
-    function loadPendingFiles() {
-        fetch('{{ route("fileindexing.search-applications") }}')
-        .then(response => response.json())
-        .then(data => {
-            console.log('Raw data from server:', data);
-            if (data.success) {
-                pendingFiles = data.applications.map(app => {
-                    console.log('Processing application:', app);
-                    const formattedName = formatApplicantName(app);
-                    console.log('Formatted name result:', formattedName);
-                    
-                    return {
-                        id: app.id,
-                        fileNumber: app.file_number,
-                        name: formattedName,
-                        type: app.application_type || 'Application',
-                        source: app.source_table === 'mother' ? 'Primary' : 'Unit',
-                        source_table: app.source_table,
-                        date: app.created_at || new Date().toISOString().split('T')[0],
-                        landUseType: app.land_use || 'Residential',
-                        district: app.district || '',
-                        hasCofo: false,
-                        applicant_type: app.applicant_type,
-                        // Store ALL original fields for debugging and reference
-                        ...app
-                    };
-                });
-                
-                console.log('Final pendingFiles array:', pendingFiles);
-                
-                renderPendingFiles();
-                updateCounters();
-                updateSelectedFilesCount();
-                updateAiIndexingButton();
-                updateNewFileIndexButton();
-            }
-        })
-        .catch(error => {
-            console.error('Error loading pending files:', error);
-        });
-    }
-
-    // AI Processing functions
-    function startAiIndexing() {
-        console.log('Starting AI indexing process for selected files');
-        
-        if (selectedFiles.length === 0) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'No Files Selected',
-                text: 'Please select files to index',
-                confirmButtonColor: '#3085d6'
-            });
-            return;
-        }
-        
-        const indexingTab = document.getElementById('indexing-tab');
-        const aiProcessingView = document.getElementById('ai-processing-view');
-        
-        if (indexingTab && aiProcessingView) {
-            indexingTab.style.display = 'none';
-            aiProcessingView.classList.remove('hidden');
-        }
-
-        if (processingFilesCount) {
-            processingFilesCount.textContent = selectedFiles.length;
-        }
-
-        // Show AI insights immediately after 3 seconds
-        setTimeout(() => {
-            console.log('Showing AI insights after 3 seconds...');
-            showAiInsights();
-        }, 3000);
-
-        simulateAiProcessing();
-    }
-
-    function simulateAiProcessing() {
-        let progress = 0;
-        const stages = ['init', 'analyze', 'extract', 'categorize', 'validate', 'complete'];
-        let currentStageIndex = 0;
-
-        const interval = setInterval(() => {
-            progress += Math.random() * 10 + 5; // Slower progress
-            if (progress > 100) progress = 100;
-
-            console.log('AI Processing progress:', Math.round(progress) + '%');
-
-            // Update progress bars
-            if (progressBar) progressBar.style.width = progress + '%';
-            if (progressPercentage) progressPercentage.textContent = Math.round(progress) + '%';
-            if (pipelineProgressBar) pipelineProgressBar.style.width = progress + '%';
-            if (pipelineProgressLine) pipelineProgressLine.style.width = progress + '%';
-            if (pipelinePercentage) pipelinePercentage.textContent = Math.round(progress) + '% Complete';
-
-            // Update pipeline stages
-            const stageProgress = progress / 100 * stages.length;
-            const newStageIndex = Math.floor(stageProgress);
-            
-            if (newStageIndex > currentStageIndex && newStageIndex < stages.length) {
-                // Mark previous stage as complete
-                const prevStage = document.getElementById(`stage-${stages[currentStageIndex]}`);
-                const prevLabel = prevStage?.nextElementSibling;
-                if (prevStage) {
-                    prevStage.classList.remove('active');
-                    prevStage.classList.add('complete');
-                }
-                if (prevLabel) {
-                    prevLabel.classList.remove('active');
-                    prevLabel.classList.add('complete');
-                }
-
-                // Mark current stage as active
-                currentStageIndex = newStageIndex;
-                const currentStage = document.getElementById(`stage-${stages[currentStageIndex]}`);
-                const currentLabel = currentStage?.nextElementSibling;
-                if (currentStage) {
-                    currentStage.classList.remove('pending');
-                    currentStage.classList.add('active');
-                }
-                if (currentLabel) {
-                    currentLabel.classList.remove('pending');
-                    currentLabel.classList.add('active');
-                }
-
-                updateStageInfo(stages[currentStageIndex]);
-            }
-
-            if (progress >= 100) {
-                clearInterval(interval);
-                completeAiProcessing();
-            }
-        }, 800);
-    }
-
-    function updateStageInfo(stage) {
-        const stageInfos = {
-            'init': {
-                title: 'Initialization',
-                description: 'Setting up AI processing environment and connecting to application databases...'
-            },
-            'analyze': {
-                title: 'Application Analysis',
-                description: 'Analyzing application data from mother_applications, subapplications, and cofo tables...'
-            },
-            'extract': {
-                title: 'Information Extraction',
-                description: 'Extracting applicant details, property information, and application metadata...'
-            },
-            'categorize': {
-                title: 'Content Categorization',
-                description: 'Categorizing application types and classifying extracted information...'
-            },
-            'validate': {
-                title: 'Data Validation',
-                description: 'Validating extracted data against existing records and checking for consistency...'
-            },
-            'complete': {
-                title: 'Processing Complete',
-                description: 'AI indexing completed successfully. Review and confirm results.'
-            }
-        };
-
-        const info = stageInfos[stage];
-        if (info && currentStageInfo) {
-            currentStageInfo.innerHTML = `
-                <div class="p-2 bg-green-100 rounded-full">
-                    <i data-lucide="loader" class="h-5 w-5 text-green-500"></i>
-                </div>
-                <div>
-                    <p class="text-sm font-medium mb-1">Current Stage: ${info.title}</p>
-                    <p class="text-xs text-gray-600">${info.description}</p>
-                </div>
-            `;
-            lucide.createIcons();
-        }
-    }
-
-    function showAiInsights() {
-        console.log('Showing AI insights...');
-        
-        if (!aiInsightsContainer) {
-            console.log('AI insights container not found');
-            return;
-        }
-
-        // Get the applications to process (selected files)
-        const applicationsToProcess = pendingFiles.filter(file => selectedFiles.includes(file.id));
-
-        console.log('Applications to process:', applicationsToProcess);
-
-        if (applicationsToProcess.length === 0) {
-            console.log('No applications to process');
-            return;
-        }
-
-        let insightsHtml = `
-            <div class="flex items-center mb-2">
-                <i data-lucide="zap" class="h-4 w-4 text-green-500 mr-2"></i>
-                <h4 class="font-medium">Real-time AI Insights</h4>
-            </div>
+        // Update current stage info
+        currentStageInfo.innerHTML = `
+          <div class="p-2 bg-green-100 rounded-full">
+            <i data-lucide="${stageIcons[stages[currentStageIndex]]}" class="h-5 w-5 text-green-500"></i>
+          </div>
+          <div>
+            <p class="text-sm font-medium mb-1">Current Stage: ${stages[currentStageIndex].charAt(0).toUpperCase() + stages[currentStageIndex].slice(1)}</p>
+            <p class="text-xs text-gray-600">${stageDescriptions[stages[currentStageIndex]]}</p>
+          </div>
         `;
-
-        // Generate insights for each application (show first 2 applications)
-        applicationsToProcess.slice(0, 2).forEach((app, index) => {
-            const confidence = 88 + Math.floor(Math.random() * 10); // Random confidence between 88-97%
-            const plotNumber = `PL-${Math.floor(Math.random() * 9000) + 1000}`;
-            const ownerConfidence = confidence - 1;
-            const plotConfidence = confidence - 4;
-            const landUseConfidence = confidence - 3;
-            const textQuality = confidence + 5;
-            
-            // Determine document type based on app type or use default
-            const documentType = app.type || (index === 0 ? 'Certificate of Occupancy' : 'Site Plan');
-            
-            insightsHtml += `
-                <!-- ${index === 0 ? 'First' : 'Second'} file insights -->
-                <div class="insight-card">
-                    <div class="insight-header">
-                        <div>
-                            <h4 class="text-blue-600 font-medium">${app.fileNumber}</h4>
-                            <p class="text-gray-600">${app.name}</p>
-                        </div>
-                        <div class="flex flex-col items-end">
-                            <span class="insight-confidence">${confidence}% Confidence</span>
-                            <span class="text-xs text-gray-500">AI Analysis</span>
-                        </div>
-                    </div>
-                    
-                    <div class="insight-analysis">
-                        <div>
-                            <h5 class="font-medium mb-2">Document Analysis:</h5>
-                            <div class="space-y-2">
-                                <div class="insight-field">
-                                    <span class="insight-field-label">Document Type:</span>
-                                    <span class="insight-field-value">${documentType}</span>
-                                </div>
-                                
-                                <div class="insight-field">
-                                    <span class="insight-field-label">Owner:</span>
-                                    <span class="insight-field-value">
-                                        ${app.name}
-                                        <span class="insight-confidence-pill">${ownerConfidence}%</span>
-                                    </span>
-                                </div>
-                                
-                                <div class="insight-field">
-                                    <span class="insight-field-label">Plot Number:</span>
-                                    <span class="insight-field-value">
-                                        ${plotNumber}
-                                        <span class="insight-confidence-pill">${plotConfidence}%</span>
-                                    </span>
-                                </div>
-                                
-                                <div class="insight-field">
-                                    <span class="insight-field-label">Land Use:</span>
-                                    <span class="insight-field-value">
-                                        ${app.landUseType}
-                                        <span class="insight-confidence-pill">${landUseConfidence}%</span>
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            <h5 class="font-medium mt-4 mb-2">AI Findings:</h5>
-                            <div class="space-y-2">
-                                <div class="insight-field">
-                                    <span class="insight-field-label">Text Quality:</span>
-                                    <span class="insight-field-value">
-                                        <span class="insight-confidence-pill">${textQuality}%</span>
-                                    </span>
-                                </div>
-                                
-                                <div class="insight-field">
-                                    <span class="insight-field-label">Document Structure:</span>
-                                    <span class="insight-field-value">Complete sections</span>
-                                </div>
-                                
-                                <div class="insight-field">
-                                    <span class="insight-field-label">Signature:</span>
-                                    <span class="insight-field-value">${index === 0 ? 'Not detected' : 'Detected'}</span>
-                                </div>
-                                
-                                <div class="insight-field">
-                                    <span class="insight-field-label">Stamp:</span>
-                                    <span class="insight-field-value">Official stamp detected</span>
-                                </div>
-                                
-                                <div class="insight-field">
-                                    <span class="insight-field-label">GIS Verification:</span>
-                                    <span class="insight-field-value">Matched with parcel data</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <h5 class="font-medium mb-2">Suggested Keywords:</h5>
-                            <div class="insight-keywords">
-                                <span class="insight-keyword">${app.landUseType}</span>
-                                <span class="insight-keyword">${app.district || 'Kano'}</span>
-                                <span class="insight-keyword">${documentType}</span>
-                                <span class="insight-keyword">Land Document</span>
-                                <span class="insight-keyword">Property</span>
-                                <span class="insight-keyword">Kano State</span>
-                                <span class="insight-keyword">${app.landUseType === 'Residential' ? 'Housing' : 'Business'}</span>
-                            </div>
-                            
-                            ${index === 0 ? `
-                            <div class="insight-issues">
-                                <h6 class="insight-issues-title">Potential Issues:</h6>
-                                <ul class="insight-issues-list">
-                                    <li>Plot boundaries not specified</li>
-                                    <li>Ownership information unclear</li>
-                                    <li>Parcel data needs updating</li>
-                                </ul>
-                            </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-
-        if (applicationsToProcess.length > 2) {
-            insightsHtml += `
-                <div class="text-center text-gray-500 text-sm">
-                    ... and ${applicationsToProcess.length - 2} more applications
-                </div>
-            `;
-        }
-
-        console.log('Setting AI insights HTML');
-        aiInsightsContainer.innerHTML = insightsHtml;
         
         // Initialize Lucide icons for the new content
         lucide.createIcons();
+        
+        // Log progress
+        console.log(`AI Integration - Stage ${currentStageIndex + 1}/${stages.length}: ${stages[currentStageIndex]}`);
+      }
+      
+      // Show AI insights at 50% progress
+      if (progress === 50) {
+        showAiInsights();
+      }
+      
+      // Complete the process
+      if (progress >= 100) {
+        clearInterval(interval);
+        completeIndexingProcess();
+      }
+    }, 200);
+  }
+  
+  // Function to show AI insights
+  function showAiInsights() {
+    console.log("Generating AI insights");
+    
+    aiInsightsContainer.innerHTML = `
+      <div class="flex items-center mb-2">
+        <i data-lucide="zap" class="h-4 w-4 text-green-500 mr-2"></i>
+        <h4 class="font-medium">Real-time AI Insights</h4>
+      </div>
+      
+      <!-- First file insights -->
+      <div class="insight-card">
+        <div class="insight-header">
+          <div>
+            <h4 class="text-blue-600 font-medium">KNML 09846</h4>
+            <p class="text-gray-600">Alhaji Ibrahim Dantata</p>
+          </div>
+          <div class="flex flex-col items-end">
+            <span class="insight-confidence">92% Confidence</span>
+            <span class="text-xs text-gray-500">AI Analysis</span>
+          </div>
+        </div>
+        
+        <div class="insight-analysis">
+          <div>
+            <h5 class="font-medium mb-2">Document Analysis:</h5>
+            <div class="space-y-2">
+              <div class="insight-field">
+                <span class="insight-field-label">Document Type:</span>
+                <span class="insight-field-value">Certificate of Occupancy</span>
+              </div>
+              
+              <div class="insight-field">
+                <span class="insight-field-label">Owner:</span>
+                <span class="insight-field-value">
+                  Alhaji Ibrahim Dantata
+                  <span class="insight-confidence-pill">91%</span>
+                </span>
+              </div>
+              
+              <div class="insight-field">
+                <span class="insight-field-label">Plot Number:</span>
+                <span class="insight-field-value">
+                  PL-4532
+                  <span class="insight-confidence-pill">88%</span>
+                </span>
+              </div>
+              
+              <div class="insight-field">
+                <span class="insight-field-label">Land Use:</span>
+                <span class="insight-field-value">
+                  Residential
+                  <span class="insight-confidence-pill">87%</span>
+                </span>
+              </div>
+            </div>
+            
+            <h5 class="font-medium mt-4 mb-2">AI Findings:</h5>
+            <div class="space-y-2">
+              <div class="insight-field">
+                <span class="insight-field-label">Text Quality:</span>
+                <span class="insight-field-value">
+                  <span class="insight-confidence-pill">93%</span>
+                </span>
+              </div>
+              
+              <div class="insight-field">
+                <span class="insight-field-label">Document Structure:</span>
+                <span class="insight-field-value">Complete sections</span>
+              </div>
+              
+              <div class="insight-field">
+                <span class="insight-field-label">Signature:</span>
+                <span class="insight-field-value">Not detected</span>
+              </div>
+              
+              <div class="insight-field">
+                <span class="insight-field-label">Stamp:</span>
+                <span class="insight-field-value">Official stamp detected</span>
+              </div>
+              
+              <div class="insight-field">
+                <span class="insight-field-label">GIS Verification:</span>
+                <span class="insight-field-value">Matched with parcel data</span>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <h5 class="font-medium mb-2">Suggested Keywords:</h5>
+            <div class="insight-keywords">
+              <span class="insight-keyword">Residential</span>
+              <span class="insight-keyword">Nasarawa</span>
+              <span class="insight-keyword">Certificate of Occupancy</span>
+              <span class="insight-keyword">Land Document</span>
+              <span class="insight-keyword">Property</span>
+              <span class="insight-keyword">Kano State</span>
+              <span class="insight-keyword">Housing</span>
+            </div>
+            
+            <div class="insight-issues">
+              <h6 class="insight-issues-title">Potential Issues:</h6>
+              <ul class="insight-issues-list">
+                <li>Plot boundaries not specified</li>
+                <li>Ownership information unclear</li>
+                <li>Parcel data needs updating</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Second file insights -->
+      <div class="insight-card">
+        <div class="insight-header">
+          <div>
+            <h4 class="text-blue-600 font-medium">KNGP 00338</h4>
+            <p class="text-gray-600">Hajiya Amina Yusuf</p>
+          </div>
+          <div class="flex flex-col items-end">
+            <span class="insight-confidence">93% Confidence</span>
+            <span class="text-xs text-gray-500">AI Analysis</span>
+          </div>
+        </div>
+        
+        <div class="insight-analysis">
+          <div>
+            <h5 class="font-medium mb-2">Document Analysis:</h5>
+            <div class="space-y-2">
+              <div class="insight-field">
+                <span class="insight-field-label">Document Type:</span>
+                <span class="insight-field-value">Site Plan</span>
+              </div>
+              
+              <div class="insight-field">
+                <span class="insight-field-label">Owner:</span>
+                <span class="insight-field-value">
+                  Hajiya Amina Yusuf
+                  <span class="insight-confidence-pill">93%</span>
+                </span>
+              </div>
+              
+              <div class="insight-field">
+                <span class="insight-field-label">Plot Number:</span>
+                <span class="insight-field-value">
+                  PL-1278
+                  <span class="insight-confidence-pill">88%</span>
+                </span>
+              </div>
+              
+              <div class="insight-field">
+                <span class="insight-field-label">Form Status:</span>
+                <span class="insight-field-value">
+                  Ready for submission
+                  <span class="insight-confidence-pill">95%</span>
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <h5 class="font-medium mb-2">Suggested Keywords:</h5>
+            <div class="insight-keywords">
+              <span class="insight-keyword">Commercial</span>
+              <span class="insight-keyword">Fagge</span>
+              <span class="insight-keyword">Site Plan</span>
+              <span class="insight-keyword">Land Document</span>
+              <span class="insight-keyword">Property</span>
+              <span class="insight-keyword">Kano State</span>
+              <span class="insight-keyword">Business</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Initialize Lucide icons for the new content
+    lucide.createIcons();
+  }
+  
+  // Function to complete the indexing process
+  function completeIndexingProcess() {
+    console.log("Completing indexing process and preparing for submission");
+    
+    // Show the confirm and save button
+    confirmSaveResultsBtn.classList.remove('hidden');
+  }
+  
+  // Confirm and save results
+  function confirmAndSaveResults() {
+    console.log("Submitting indexed data to KLAES");
+    
+    alert("Files have been successfully indexed and submitted to KLAES!");
+    
+    // Move selected files from pending to indexed
+    selectedFiles.forEach(fileId => {
+      const fileIndex = pendingFiles.findIndex(file => file.id === fileId);
+      if (fileIndex !== -1) {
+        const file = pendingFiles[fileIndex];
+        // Update the source to indicate it's been indexed
+        file.source = "Indexed";
+        // Add to indexed files
+        indexedFiles.push(file);
+        // Remove from pending files
+        pendingFiles.splice(fileIndex, 1);
+      }
+    });
+    
+    // Clear selected files
+    selectedFiles = [];
+    
+    // Update counters
+    updateCounters();
+    
+    // Reset the AI indexing view for next time
+    const initialView = document.querySelector('#indexing-tab .card .p-6 .card');
+    if (initialView) {
+      initialView.parentElement.classList.remove('hidden');
+    }
+    aiProcessingView.classList.add('hidden');
+    progressBar.style.width = '0%';
+    progressPercentage.textContent = '0%';
+    pipelineProgressBar.style.width = '0%';
+    pipelineProgressLine.style.width = '0%';
+    pipelinePercentage.textContent = '0% Complete';
+    
+    // Reset pipeline stages
+    const stages = ['init', 'analyze', 'extract', 'categorize', 'validate', 'complete'];
+    stages.forEach((stage, index) => {
+      const element = document.getElementById(`stage-${stage}`);
+      if (element) {
+        element.classList.remove('active', 'completed');
+        element.classList.add(index === 0 ? 'active' : 'pending');
+      }
+    });
+    
+    // Clear AI insights
+    aiInsightsContainer.innerHTML = '';
+    
+    // Hide confirm button
+    confirmSaveResultsBtn.classList.add('hidden');
+    
+    // Render pending files to update the list
+    renderPendingFiles();
+    
+    // Render indexed files
+    renderIndexedFiles();
+    
+    // Switch to indexed tab
+    switchTab('indexed');
+  }
+  
+  // Render indexed files
+  function renderIndexedFiles() {
+    const indexedFilesList = document.getElementById('indexed-files-list');
+    indexedFilesList.innerHTML = '';
+    
+    if (indexedFiles.length === 0) {
+      indexedFilesList.innerHTML = `
+        <div class="p-8 text-center text-gray-500">
+          <i data-lucide="file-question" class="h-12 w-12 mx-auto mb-4 text-gray-400"></i>
+          <p>No indexed files yet. Start by indexing files from the File Index tab.</p>
+        </div>
+      `;
+      lucide.createIcons();
+      return;
+    }
+    
+    // Update "Select All" checkbox state
+    const selectAllCheckbox = document.getElementById('select-all-indexed-checkbox');
+    selectAllCheckbox.checked = selectedIndexedFiles.length === indexedFiles.length;
+    
+    indexedFiles.forEach(file => {
+      const isSelected = selectedIndexedFiles.includes(file.id);
+      const fileItem = document.createElement('div');
+      fileItem.className = 'p-4 border-b last:border-b-0';
+      
+      fileItem.innerHTML = `
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <input type="checkbox" 
+                   ${isSelected ? 'checked' : ''} 
+                   data-id="${file.id}" 
+                   onclick="toggleIndexedFileSelection('${file.id}')" 
+                   class="mr-4"
+                   title="Select for batch tracking operations">
+            <div class="file-icon">
+              <i data-lucide="file-check" class="h-6 w-6 text-green-500"></i>
+            </div>
+            <div class="file-details ml-4">
+              <div class="file-number">${file.fileNumber}</div>
+              <div class="file-name">${file.name}</div>
+              <div class="file-tags">
+                <span class="file-tag">${file.source}</span>
+                <span class="file-tag">${file.landUseType}</span>
+                <span class="file-tag">${file.district}</span>
+                <span class="file-tag">${file.date}</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center">
+            <span class="badge badge-green mr-3">
+              <i data-lucide="check" class="h-3 w-3 mr-1"></i>
+              Indexed
+            </span>
+            <div class="relative">
+              <button class="action-menu-btn p-1 rounded-md hover:bg-gray-100" 
+                      data-file-id="${file.id}" title="More Options">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01"></path>
+                </svg>
+              </button>
+              <div class="action-dropdown hidden absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10 border">
+                <div class="py-1">
+                  <button class="view-file-btn w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-file-id="${file.id}">
+                    <i data-lucide="eye" class="h-4 w-4 mr-2 inline"></i>
+                    View Details
+                  </button>
+                  <button class="generate-tracking-btn w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-file-id="${file.id}">
+                    <i data-lucide="file-text" class="h-4 w-4 mr-2 inline"></i>
+                    Generate Tracking Sheet
+                  </button>
+                  <button class="print-tracking-btn w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-file-id="${file.id}">
+                    <i data-lucide="printer" class="h-4 w-4 mr-2 inline"></i>
+                    Print Tracking Sheet
+                  </button>
+                  <button class="start-tracking-btn w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-file-id="${file.id}">
+                    <i data-lucide="play" class="h-4 w-4 mr-2 inline"></i>
+                    Start Tracking
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      indexedFilesList.appendChild(fileItem);
+    });
+    
+    // Initialize Lucide icons for the new rows
+    lucide.createIcons();
+    
+    // Update selected indexed files count
+    updateSelectedIndexedFilesCount();
+    
+    // Add event listeners for action menus
+    addActionMenuListeners();
+  }
+  
+  // Switch between tabs
+  function switchTab(tabName) {
+    // Update active tab
+    tabs.forEach(t => {
+      if (t.getAttribute('data-tab') === tabName) {
+        t.classList.add('active');
+      } else {
+        t.classList.remove('active');
+      }
+    });
+
+    // Enable/disable new file button based on active tab
+    const newFileBtn = document.getElementById('new-file-index-btn');
+    if (tabName === 'pending') {
+      newFileBtn.removeAttribute('disabled');
+      newFileBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    } else {
+      newFileBtn.setAttribute('disabled', 'true');
+      newFileBtn.classList.add('opacity-50', 'cursor-not-allowed');
     }
 
-    function completeAiProcessing() {
-        console.log('AI processing completed');
-        
-        // Show completion summary
-        showCompletionSummary();
-        
-        if (confirmSaveResultsBtn) {
-            confirmSaveResultsBtn.classList.remove('hidden');
-        }
-
-        updateStageInfo('complete');
+    // Update visible content
+    tabContents.forEach(content => {
+      content.classList.add('hidden');
+      content.classList.remove('active');
+    });
+    
+    const activeContent = document.getElementById(`${tabName}-tab`);
+    if (activeContent) {
+      activeContent.classList.remove('hidden');
+      activeContent.classList.add('active');
     }
-
-    function showCompletionSummary() {
-        const completionSummary = document.getElementById('ai-completion-summary');
-        const documentsCountEl = document.getElementById('summary-documents-count');
-        const confidenceEl = document.getElementById('summary-confidence');
-        const processingTimeEl = document.getElementById('summary-processing-time');
-        
-        if (completionSummary) {
-            // Calculate summary statistics
-            const documentsProcessed = selectedFiles.length;
-            const averageConfidence = Math.floor(88 + Math.random() * 10); // Random between 88-97%
-            const processingTime = Math.floor(8 + Math.random() * 8); // Random between 8-15 seconds
-            
-            // Update the summary values
-            if (documentsCountEl) documentsCountEl.textContent = documentsProcessed;
-            if (confidenceEl) confidenceEl.textContent = averageConfidence + '%';
-            if (processingTimeEl) processingTimeEl.textContent = processingTime + 's';
-            
-            // Show the completion summary
-            completionSummary.style.display = 'flex';
-            
-            // Initialize Lucide icons for the new content
-            lucide.createIcons();
-        }
+    
+    // If switching to indexed tab, render the indexed files
+    if (tabName === 'indexed') {
+      renderIndexedFiles();
     }
-
-    // Function to confirm and save AI indexing results
-    function confirmAndSaveResults() {
-        console.log('Confirming and saving AI indexing results');
+  }
+  
+  // Render pending files
+  function renderPendingFiles() {
+    pendingFilesList.innerHTML = '';
+    
+    // Update the "Select All" checkbox state
+    const selectAllCheckbox = document.getElementById('select-all-checkbox');
+    selectAllCheckbox.checked = pendingFiles.length > 0 && selectedFiles.length === pendingFiles.length;
+    
+    pendingFiles.forEach(file => {
+      const isSelected = selectedFiles.includes(file.id);
+      const fileItem = document.createElement('div');
+      fileItem.className = 'p-4 border-b last:border-b-0';
+      
+      fileItem.innerHTML = `
+        <div class="flex items-center">
+          <input type="checkbox" ${isSelected ? 'checked' : ''} data-id="${file.id}" onclick="toggleFileSelection('${file.id}')" class="mr-4">
+          <div class="file-icon">
+            <i data-lucide="file-text" class="h-6 w-6"></i>
+          </div>
+          <div class="file-details ml-4">
+            <div class="file-number">${file.fileNumber}</div>
+            <div class="file-name">${file.name}</div>
+            <div class="file-tags">
+              <span class="file-tag">${file.source}</span>
+              <span class="file-tag">${file.landUseType}</span>
+              <span class="file-tag">${file.district}</span>
+              <span class="file-tag">${file.date}</span>
+            </div>
+          </div>
+          <div class="ml-auto">
+            <span class="badge badge-yellow">
+              <i data-lucide="clock" class="h-3 w-3 mr-1"></i>
+              Pending Digital Index
+            </span>
+          </div>
+        </div>
+      `;
+      
+      pendingFilesList.appendChild(fileItem);
+    });
+    
+    // Initialize Lucide icons for the new rows
+    lucide.createIcons();
+    
+    // Update selected files count
+    updateSelectedFilesCount();
+  }
+  
+  // Update selected files count
+  function updateSelectedFilesCount() {
+    selectedFilesCount.textContent = `${selectedFiles.length} of ${pendingFiles.length} selected`;
+  }
+  
+  // Update counters
+  function updateCounters() {
+    document.getElementById('pending-files-count').textContent = pendingFiles.length;
+    document.getElementById('indexed-files-count').textContent = indexedFiles.length;
+  }
+  
+  // Show new file dialog
+  function showNewFileDialog() {
+    newFileDialogOverlay.classList.remove('hidden');
+    // Reset form fields
+    document.getElementById('new-file-form').reset();
+  }
+  
+  // Close new file dialog
+  function closeNewFileDialog() {
+    newFileDialogOverlay.classList.add('hidden');
+  }
+  
+  // Create new file
+  function createNewFile() {
+    // Get form values
+    const fileTitle = document.getElementById('file-title').value;
+    const fileNumberType = document.querySelector('input[name="file-number-type"]:checked').value;
+    
+    // Create a new file object
+    const newFile = {
+      id: `FILE-${Date.now()}`,
+      fileNumber: fileNumberType === 'mls' ? 'MLS-' + Date.now().toString().slice(-5) : 'KNGP-' + Date.now().toString().slice(-5),
+      name: fileTitle || 'New Property File',
+      type: 'Certificate of Occupancy',
+      source: 'Collated',
+      date: new Date().toISOString().split('T')[0],
+      landUseType: 'Residential',
+      district: 'Nasarawa',
+      hasCofo: document.getElementById('has-cofo').checked,
+    };
+    
+    // Add to pending files
+    pendingFiles.push(newFile);
+    
+    // Update counters
+    updateCounters();
+    
+    // Render pending files
+    renderPendingFiles();
+    
+    // Close dialog
+    closeNewFileDialog();
+    
+    // Show success message
+    alert('New file index created successfully!');
+  }
+  
+  // Function to toggle indexed file selection
+  function toggleIndexedFileSelection(fileId) {
+    if (selectedIndexedFiles.includes(fileId)) {
+      selectedIndexedFiles = selectedIndexedFiles.filter(id => id !== fileId);
+    } else {
+      selectedIndexedFiles.push(fileId);
+    }
+    
+    renderIndexedFiles();
+    updateSelectedIndexedFilesCount();
+    updateTrackingButton();
+  }
+  
+  // Function to toggle select all indexed files
+  function toggleSelectAllIndexed() {
+    const selectAllCheckbox = document.getElementById('select-all-indexed-checkbox');
+    
+    if (selectedIndexedFiles.length === indexedFiles.length) {
+      selectedIndexedFiles = [];
+      selectAllCheckbox.checked = false;
+    } else {
+      selectedIndexedFiles = indexedFiles.map(file => file.id);
+      selectAllCheckbox.checked = true;
+    }
+    
+    renderIndexedFiles();
+    updateSelectedIndexedFilesCount();
+    updateTrackingButton();
+  }
+  
+  // Function to update selected indexed files count
+  function updateSelectedIndexedFilesCount() {
+    const selectedCountElement = document.getElementById('selected-indexed-files-count');
+    selectedCountElement.textContent = `${selectedIndexedFiles.length} selected`;
+  }
+  
+  // Function to update tracking button behavior
+  function updateTrackingButton() {
+    const trackingBtn = document.getElementById('generate-tracking-sheets-btn');
+    const trackingBtnText = document.getElementById('tracking-btn-text');
+    
+    if (selectedIndexedFiles.length === 0) {
+      trackingBtnText.textContent = 'New File Index';
+      trackingBtn.onclick = () => showNewFileDialog();
+    } else if (selectedIndexedFiles.length === 1) {
+      trackingBtnText.textContent = 'Generate Tracking Sheet';
+      trackingBtn.onclick = () => generateSingleTrackingSheet();
+    } else {
+      trackingBtnText.textContent = 'Generate Batch Tracking Sheets';
+      trackingBtn.onclick = () => openSmartBatchInterface();
+    }
+  }
+  
+  // Function to check if file has tracking record (simplified)
+  function hasTrackingRecord(fileId) {
+    // All indexed files can now be selected for tracking operations
+    return true;
+  }
+  
+  // Function to generate single tracking sheet
+  function generateSingleTrackingSheet() {
+    const selectedFile = indexedFiles.find(file => file.id === selectedIndexedFiles[0]);
+    if (selectedFile) {
+      // Open tracking sheet in new tab using the blade template
+      const trackingUrl = `/fileindexing/tracking-sheet/${selectedFile.id}`;
+      window.open(trackingUrl, '_blank');
+    }
+  }
+  
+  // Function to open smart batch tracking interface
+  function openSmartBatchInterface() {
+    if (selectedIndexedFiles.length < 1) {
+      alert('Please select at least one file for batch tracking operations.');
+      return;
+    }
+    
+    // Open smart batch tracking interface with selected files
+    const fileIds = selectedIndexedFiles.join(',');
+    const batchInterfaceUrl = `/fileindexing/batch-tracking-interface?files=${fileIds}`;
+    window.open(batchInterfaceUrl, '_blank');
+  }
+  
+  // Function to generate batch tracking sheets (legacy function, now redirects to smart interface)
+  function generateBatchTrackingSheets() {
+    openSmartBatchInterface();
+  }
+  
+  // Function to print tracking sheet
+  function printTrackingSheet(fileId) {
+    const printUrl = `/fileindexing/print-tracking-sheet/${fileId}`;
+    window.open(printUrl, '_blank');
+  }
+  
+  // Function to add action menu event listeners
+  function addActionMenuListeners() {
+    // Handle action menu dropdown toggle
+    document.querySelectorAll('.action-menu-btn').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const dropdown = this.nextElementSibling;
         
-        const applicationsToIndex = pendingFiles.filter(file => selectedFiles.includes(file.id));
-        
-        if (applicationsToIndex.length === 0) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'No Applications Selected',
-                text: 'No applications selected for indexing',
-                confirmButtonColor: '#3085d6'
-            });
-            return;
-        }
-
-        // Show loading state
-        const originalText = confirmSaveResultsBtn.textContent;
-        confirmSaveResultsBtn.textContent = 'Saving...';
-        confirmSaveResultsBtn.disabled = true;
-
-        // Prepare the data for saving - create file indexes for selected applications
-        const promises = applicationsToIndex.map(app => {
-            const formData = {
-                file_number_type: 'application',
-                main_application_id: app.source_table === 'mother' ? app.id : null,
-                subapplication_id: app.source_table === 'sub' ? app.id : null,
-                source_table: app.source_table,
-                file_number: app.fileNumber,
-                file_title: app.name,
-                land_use_type: app.landUseType || 'Residential',
-                plot_number: '',
-                district: app.district || '',
-                lga: 'Kano Municipal',
-                has_cofo: app.hasCofo || false,
-                is_merged: false,
-                has_transaction: false,
-                is_problematic: false,
-                is_co_owned_plot: false,
-                _token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-            };
-
-            return fetch('{{ route("fileindexing.store") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': formData._token
-                },
-                body: JSON.stringify(formData)
-            });
+        // Close all other dropdowns
+        document.querySelectorAll('.action-dropdown').forEach(d => {
+          if (d !== dropdown) d.classList.add('hidden');
         });
-
-        // Execute all file creation requests
-        Promise.all(promises)
-        .then(responses => {
-            // Check if all requests were successful
-            const allSuccessful = responses.every(response => response && response.ok);
-            
-            if (allSuccessful) {
-                // Show success message
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success!',
-                    text: `${applicationsToIndex.length} applications indexed successfully!`,
-                    confirmButtonColor: '#10b981'
-                }).then(() => {
-                    // Update the UI
-                    updateIndexedFilesCount();
-                    
-                    // Switch to indexed files tab to show results
-                    switchTab('indexed');
-                    
-                    // Reload the page to refresh data
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
-                });
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Indexing Failed',
-                    text: 'Some applications could not be indexed. Please try again.',
-                    confirmButtonColor: '#ef4444'
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Error saving indexing results:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Network Error',
-                text: 'Error saving indexing results. Please try again.',
-                confirmButtonColor: '#ef4444'
-            });
-        })
-        .finally(() => {
-            confirmSaveResultsBtn.textContent = originalText;
-            confirmSaveResultsBtn.disabled = false;
-        });
-    }
-
-    // Function to update indexed files count
-    function updateIndexedFilesCount() {
-        const indexedCountEl = document.getElementById('indexed-files-count');
-        if (indexedCountEl) {
-            const currentCount = parseInt(indexedCountEl.textContent) || 0;
-            const newCount = selectedFiles.length;
-            indexedCountEl.textContent = currentCount + newCount;
+        
+        // Toggle current dropdown
+        dropdown.classList.toggle('hidden');
+      });
+    });
+    
+    // Handle view file details
+    document.querySelectorAll('.view-file-btn').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const fileId = this.dataset.fileId;
+        const file = indexedFiles.find(f => f.id === fileId);
+        if (file) {
+          alert(`File Details:\n\nFile Number: ${file.fileNumber}\nName: ${file.name}\nType: ${file.type}\nDistrict: ${file.district}\nLand Use: ${file.landUseType}\nDate: ${file.date}`);
         }
+        this.closest('.action-dropdown').classList.add('hidden');
+      });
+    });
+    
+    // Handle generate tracking sheet
+    document.querySelectorAll('.generate-tracking-btn').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const fileId = this.dataset.fileId;
+        generateSingleTrackingSheet(fileId);
+        this.closest('.action-dropdown').classList.add('hidden');
+      });
+    });
+    
+    // Handle print tracking sheet
+    document.querySelectorAll('.print-tracking-btn').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const fileId = this.dataset.fileId;
+        printTrackingSheet(fileId);
+        this.closest('.action-dropdown').classList.add('hidden');
+      });
+    });
+    
+    // Handle start tracking
+    document.querySelectorAll('.start-tracking-btn').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const fileId = this.dataset.fileId;
+        // Redirect to file tracker to start tracking for this file
+        window.location.href = `/filetracker/create?file_indexing_id=${fileId}`;
+        this.closest('.action-dropdown').classList.add('hidden');
+      });
+    });
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function() {
+      document.querySelectorAll('.action-dropdown').forEach(dropdown => {
+        dropdown.classList.add('hidden');
+      });
+    });
+  }
+  
+  // API Functions to load dynamic data
+  async function loadPendingFiles(search = '') {
+    try {
+      const response = await fetch(`/fileindexing/api/pending-files?search=${encodeURIComponent(search)}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        pendingFiles = data.pending_files;
+        renderPendingFiles();
+        updateCounters();
+      } else {
+        console.error('Error loading pending files:', data.message);
+        // Fallback to empty array if API fails
+        pendingFiles = [];
+        renderPendingFiles();
+        updateCounters();
+      }
+    } catch (error) {
+      console.error('Error loading pending files:', error);
+      // Fallback to empty array if API fails
+      pendingFiles = [];
+      renderPendingFiles();
+      updateCounters();
     }
-
-    // Initialize the page
-    console.log("Initializing Dynamic File Indexing Assistant");
-
+  }
+  
+  async function loadIndexedFiles(search = '') {
+    try {
+      const response = await fetch(`/fileindexing/api/indexed-files?search=${encodeURIComponent(search)}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        indexedFiles = data.indexed_files;
+        renderIndexedFiles();
+        updateCounters();
+      } else {
+        console.error('Error loading indexed files:', data.message);
+        // Fallback to empty array if API fails
+        indexedFiles = [];
+        renderIndexedFiles();
+        updateCounters();
+      }
+    } catch (error) {
+      console.error('Error loading indexed files:', error);
+      // Fallback to empty array if API fails
+      indexedFiles = [];
+      renderIndexedFiles();
+      updateCounters();
+    }
+  }
+  
+  // Search functionality
+  function setupSearchListeners() {
+    const searchPendingInput = document.getElementById('search-pending-files');
+    const searchIndexedInput = document.getElementById('search-indexed-files');
+    
+    if (searchPendingInput) {
+      let searchTimeout;
+      searchPendingInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          loadPendingFiles(this.value);
+        }, 300);
+      });
+    }
+    
+    if (searchIndexedInput) {
+      let searchTimeout;
+      searchIndexedInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          loadIndexedFiles(this.value);
+        }, 300);
+      });
+    }
+  }
+  
+  // Initialize the page when DOM is loaded
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log("Initializing File Indexing Assistant");
+    
     // Make sure File Index tab is active by default
     switchTab('pending');
-
-    // Initialize Digital Index tab state
-    updateDigitalIndexTab();
-
-    // Load pending files on page load
-    loadPendingFiles();
-
+    
+    // Render the pending files list
+    renderPendingFiles();
+    
+    // Render the indexed files list
+    renderIndexedFiles();
+    
+    // Update counters
+    updateCounters();
+    
     // Add event listeners
     tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            const tabName = tab.getAttribute('data-tab');
-            switchTab(tabName);
-        });
+      tab.addEventListener('click', () => {
+        const tabName = tab.getAttribute('data-tab');
+        switchTab(tabName);
+      });
     });
-
-    // Add dynamic click handler for the new file index button
-    if (newFileIndexBtn) {
-        newFileIndexBtn.addEventListener('click', function() {
-            const buttonText = this.textContent.trim();
-            
-            if (buttonText.includes('Generate Tracking Sheet') || buttonText.includes('Generate Batch Tracking Sheets')) {
-                // Button is in tracking sheet mode - generate tracking sheets
-                if (typeof generateTrackingSheet === 'function') {
-                    generateTrackingSheet();
-                } else {
-                    // Fallback: try to call the function from IndexedFilesReport
-                    const generateBtn = document.getElementById('generate-tracking-sheet');
-                    if (generateBtn) {
-                        generateBtn.click();
-                    } else {
-                        // If all else fails, show alert
-                        const selectedFiles = document.querySelectorAll('#indexed-tab .file-checkbox:checked');
-                        if (selectedFiles.length > 0) {
-                            alert(`Generating tracking sheets for ${selectedFiles.length} selected file(s)...`);
-                        } else {
-                            alert('Please select at least one file to generate tracking sheets.');
-                        }
-                    }
-                }
-            } else {
-                // Button is in normal mode - show new file dialog
-                showNewFileDialog();
-            }
-        });
-    }
-
-    const selectAllCheckbox = document.getElementById('select-all-checkbox');
-    if (selectAllCheckbox) {
-        selectAllCheckbox.addEventListener('click', toggleSelectAll);
-    }
-
-    if (beginIndexingBtn) {
-        beginIndexingBtn.addEventListener('click', () => {
-            console.log('Begin Indexing clicked. Selected files:', selectedFiles);
-            if (selectedFiles.length > 0) {
-                switchTab('indexing');
-            } else {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'No Files Selected',
-                    text: 'Please select at least one file to begin indexing.',
-                    confirmButtonColor: '#3085d6'
-                });
-            }
-        });
-    }
     
-    if (closeDialogBtn) {
-        closeDialogBtn.addEventListener('click', closeNewFileDialog);
-    }
-    if (cancelBtn) {
-        cancelBtn.addEventListener('click', closeNewFileDialog);
-    }
-    if (createFileBtn) {
-        createFileBtn.addEventListener('click', createNewFile);
-    }
-
-    if (startAiIndexingBtn) {
-        startAiIndexingBtn.addEventListener('click', startAiIndexing);
-    }
-
-    if (confirmSaveResultsBtn) {
-        confirmSaveResultsBtn.addEventListener('click', confirmAndSaveResults);
-    }
-
-    // AI Mode Switch functionality
-    if (aiModeSwitch && aiModeLabel) {
-        aiModeSwitch.addEventListener('change', function() {
-            if (this.checked) {
-                aiModeLabel.textContent = 'ON';
-                console.log('AI Mode enabled - Enhanced features activated');
-                // Enable enhanced AI features
-                document.body.classList.add('ai-mode-enabled');
-            } else {
-                aiModeLabel.textContent = 'OFF';
-                console.log('AI Mode disabled - Standard features only');
-                // Disable enhanced AI features
-                document.body.classList.remove('ai-mode-enabled');
-            }
-        });
-    }
-
-    // Helpers to lock/unlock inputs with Tailwind styles
-    function lockField(el) {
-        if (!el) return;
-        el.disabled = true;
-        el.readOnly = true;
-        el.classList.add('bg-gray-100', 'opacity-75', 'cursor-not-allowed');
-    }
-    function unlockField(el) {
-        if (!el) return;
-        el.disabled = false;
-        el.readOnly = false;
-        el.classList.remove('bg-gray-100', 'opacity-75', 'cursor-not-allowed');
-    }
-
-    // Embed indexed files data directly into JavaScript (no AJAX needed)
-    const indexedFilesLookup = {};
+    // Add event listener for select all checkbox
+    document.getElementById('select-all-checkbox').addEventListener('click', toggleSelectAll);
     
-    @php
-        try {
-            $indexedFilesData = DB::connection('sqlsrv')
-                ->table('file_indexings')
-                ->select('file_number', 'file_title', 'land_use_type', 'plot_number', 'district', 'lga', 'has_cofo', 'is_merged', 'has_transaction', 'is_problematic', 'is_co_owned_plot')
-                ->get()
-                ->keyBy('file_number');
-        } catch (\Exception $e) {
-            $indexedFilesData = collect();
+    // Add event listener for select all indexed files checkbox
+    document.getElementById('select-all-indexed-checkbox').addEventListener('click', toggleSelectAllIndexed);
+    
+    beginIndexingBtn.addEventListener('click', () => {
+      // Only switch tabs if files are selected
+      if (selectedFiles.length > 0) {
+        // Update the AI Indexing title to show the number of selected files
+        const titleElement = document.querySelector('#indexing-tab .card h3');
+        if (titleElement) {
+          titleElement.textContent = `AI Indexing: ${selectedFiles.length} Files`;
         }
-    @endphp
-    
-    @foreach($indexedFilesData as $fileNumber => $fileData)
-        indexedFilesLookup['{{ $fileNumber }}'] = {
-            file_number: '{{ $fileData->file_number }}',
-            file_title: '{{ addslashes($fileData->file_title ?? '') }}',
-            land_use_type: '{{ $fileData->land_use_type ?? '' }}',
-            plot_number: '{{ $fileData->plot_number ?? '' }}',
-            district: '{{ $fileData->district ?? '' }}',
-            lga: '{{ $fileData->lga ?? '' }}',
-            has_cofo: {{ $fileData->has_cofo ? 'true' : 'false' }},
-            is_merged: {{ $fileData->is_merged ? 'true' : 'false' }},
-            has_transaction: {{ $fileData->has_transaction ? 'true' : 'false' }},
-            is_problematic: {{ $fileData->is_problematic ? 'true' : 'false' }},
-            is_co_owned_plot: {{ $fileData->is_co_owned_plot ? 'true' : 'false' }}
-        };
-    @endforeach
-    
-    console.log('Indexed files loaded:', indexedFilesLookup);
-
-    // Auto-fill when fileno selected; if already indexed, populate and lock fields
-    document.addEventListener('ct-fileno-selected', function(e) {
-        console.log('ct-fileno-selected event received:', e.detail);
-        try {
-            const fileno = e.detail?.fileno || document.getElementById('fileno')?.value;
-            console.log('Checking fileno:', fileno);
-            if (!fileno) {
-                console.log('No fileno provided, skipping check');
-                return;
-            }
-            
-            // Check if file is already indexed (direct lookup, no AJAX)
-            const indexedFile = indexedFilesLookup[fileno];
-            console.log('Indexed file lookup result:', indexedFile);
-            
-            if (indexedFile) {
-                console.log('File already indexed, populating fields...');
-                const rec = indexedFile;
-                
-                // Fill fields
-                const setVal = (selector, val) => {
-                    const el = document.querySelector(selector);
-                    console.log(`Setting ${selector} to:`, val, 'Element found:', !!el);
-                    if (el && typeof val !== 'undefined' && val !== null) {
-                        el.value = val;
-                    }
-                    return el;
-                };
-                
-                const ft = setVal('#file-title', rec.file_title || '');
-                const pn = setVal('input[placeholder*="PL-"]', rec.plot_number || '');
-                
-                const landUseSelect = document.getElementById('landUse');
-                console.log('Land use select found:', !!landUseSelect, 'Setting to:', rec.land_use_type);
-                if (landUseSelect && rec.land_use_type) {
-                    landUseSelect.value = rec.land_use_type;
-                }
-                
-                const districtSelect = document.querySelector('select[name="district"]') || document.getElementById('district');
-                console.log('District select found:', !!districtSelect, 'Setting to:', rec.district);
-                if (districtSelect && rec.district) {
-                    districtSelect.value = rec.district;
-                }
-                
-                const lgaInput = document.querySelector('input[name="lga"]');
-                console.log('LGA input found:', !!lgaInput, 'Setting to:', rec.lga);
-                if (lgaInput && rec.lga) {
-                    lgaInput.value = rec.lga;
-                }
-                
-                // Checkboxes
-                const setCheck = (id, val) => {
-                    const el = document.getElementById(id);
-                    console.log(`Setting checkbox ${id} to:`, val, 'Element found:', !!el);
-                    if (el) { 
-                        el.checked = !!val; 
-                        lockField(el); 
-                    }
-                };
-                setCheck('has-cofo', rec.has_cofo);
-                setCheck('has-transaction', rec.has_transaction);
-                setCheck('co-owned-plot', rec.is_co_owned_plot);
-                setCheck('merged-plot', rec.is_merged);
-
-                // Lock and grey-out inputs
-                console.log('Locking fields...');
-                lockField(ft);
-                lockField(pn);
-                lockField(landUseSelect);
-                lockField(districtSelect);
-                lockField(lgaInput);
-
-                // Notify user
-                Swal.fire({
-                    icon: 'info',
-                    title: 'Already Indexed',
-                    text: 'This file is already indexed. Fields have been auto-filled and locked.',
-                    confirmButtonColor: '#3085d6'
-                });
-            } else {
-                console.log('File not indexed yet, fields remain editable');
-            }
-        } catch (err) {
-            console.error('Auto-fill check failed:', err);
+        
+        // Update the ready message
+        const messageElement = document.querySelector('#indexing-tab .card p.mb-6');
+        if (messageElement) {
+          messageElement.textContent = `Ready to begin AI-powered indexing for ${selectedFiles.length} selected files.`;
         }
+        
+        // Switch to the indexing tab
+        switchTab('indexing');
+      } else {
+        alert("Please select at least one file to begin indexing.");
+      }
     });
-
-    // Re-enable fields on clear
-    document.addEventListener('ct-fileno-cleared', function() {
-        console.log('ct-fileno-cleared event received, unlocking fields...');
-        const ids = ['#file-title'];
-        ids.forEach(sel => unlockField(document.querySelector(sel)));
-        unlockField(document.querySelector('input[placeholder*="PL-"]'));
-        unlockField(document.getElementById('landUse'));
-        unlockField(document.querySelector('select[name="district"]') || document.getElementById('district'));
-        unlockField(document.querySelector('input[name="lga"]'));
-        ['has-cofo','has-transaction','co-owned-plot','merged-plot'].forEach(id => unlockField(document.getElementById(id)));
+    
+    // New File Dialog event listeners
+    newFileIndexBtn.addEventListener('click', showNewFileDialog);
+    closeDialogBtn.addEventListener('click', closeNewFileDialog);
+    cancelBtn.addEventListener('click', closeNewFileDialog);
+    createFileBtn.addEventListener('click', createNewFile);
+    
+    // File number type radio buttons
+    fileNumberTypeRadios.forEach(radio => {
+      radio.addEventListener('change', function() {
+        document.querySelectorAll('.form-radio-item').forEach(item => {
+          if (item.contains(this)) {
+            item.classList.add('active');
+          } else {
+            item.classList.remove('active');
+          }
+        });
+      });
     });
-
-    // Make functions available globally
-    window.showNewFileDialog = showNewFileDialog;
-    window.closeNewFileDialog = closeNewFileDialog;
-    window.createNewFile = createNewFile;
-    window.confirmAndSaveResults = confirmAndSaveResults;
-    window.toggleFileSelection = toggleFileSelection;
-});
+    
+    startAiIndexingBtn.addEventListener('click', startAiIndexing);
+    confirmSaveResultsBtn.addEventListener('click', confirmAndSaveResults);
+    
+    // Setup search listeners
+    setupSearchListeners();
+    
+    // Load initial data
+    loadPendingFiles();
+    loadIndexedFiles();
+  });
 </script>
