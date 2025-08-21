@@ -6,7 +6,7 @@
     let currentInstrumentType = null;
     let tempFileCounter = 1;
 
-    // Complete instrument type definitions for all 18 types
+    // Complete instrument type definitions for updated types
     const instrumentTypes = {
         'power-of-attorney': {
             id: 'power-of-attorney',
@@ -57,91 +57,19 @@
             secondParty: 'Sub-Lessee',
             needsRootReg: true
         },
-        'deed-of-sub-under-lease': {
-            id: 'deed-of-sub-under-lease',
-            name: 'Deed of Sub-Under-Lease',
-            firstParty: 'Sub-Under-Lessor',
-            secondParty: 'Sub-Under-Lessee',
+        'deed-of-surrender-release': {
+            id: 'deed-of-surrender-release',
+            name: 'Deed of Surrender / Release',
+            firstParty: 'Surrenderer/Releasor',
+            secondParty: 'Surrenderee/Releasee',
             needsRootReg: true
         },
-        'deed-of-sub-division': {
-            id: 'deed-of-sub-division',
-            name: 'Deed of Sub-Division',
-            firstParty: 'Subdivider',
-            secondParty: 'Beneficiary',
+        'devolution-order': {
+            id: 'devolution-order',
+            name: 'Devolution Order',
+            firstParty: 'Deceased Owner',
+            secondParty: 'Heir/Beneficiary',
             needsRootReg: true
-        },
-        'deed-of-merger': {
-            id: 'deed-of-merger',
-            name: 'Deed of Merger',
-            firstParty: 'Merging Party',
-            secondParty: 'Receiving Party',
-            needsRootReg: true
-        },
-        'deed-of-surrender': {
-            id: 'deed-of-surrender',
-            name: 'Deed of Surrender',
-            firstParty: 'Surrenderer',
-            secondParty: 'Surrenderor',
-            needsRootReg: true
-        },
-        'deed-of-variation': {
-            id: 'deed-of-variation',
-            name: 'Deed of Variation',
-            firstParty: 'Party',
-            secondParty: 'Counterparty',
-            needsRootReg: true
-        },
-        'deed-of-assent': {
-            id: 'deed-of-assent',
-            name: 'Deed of Assent',
-            firstParty: 'Executor/Administrator',
-            secondParty: 'Beneficiary',
-            needsRootReg: true
-        },
-        'deed-of-release': {
-            id: 'deed-of-release',
-            name: 'Deed of Release',
-            firstParty: 'Releasor',
-            secondParty: 'Releasee',
-            needsRootReg: true
-        },
-        'right-of-occupancy': {
-            id: 'right-of-occupancy',
-            name: 'Right of Occupancy (R of O)',
-            firstParty: 'Holder',
-            secondParty: 'Authority',
-            needsRootReg: false
-        },
-        'certificate-of-occupancy': {
-            id: 'certificate-of-occupancy',
-            name: 'Certificate of Occupancy (C of O)',
-            firstParty: 'Holder',
-            secondParty: 'Authority',
-            needsRootReg: false
-        },
-        'sectional-titling-c-of-o': {
-            id: 'sectional-titling-c-of-o',
-            name: 'Sectional Titling Certificate of Occupancy',
-            firstParty: 'Grantor',
-            secondParty: 'Grantee',
-            needsRootReg: false,
-            autoSetGrantor: true
-        },
-        'sltr-c-of-o': {
-            id: 'sltr-c-of-o',
-            name: 'Systematic Land Titling and Registration (SLTR) Certificate of Occupancy',
-            firstParty: 'Holder',
-            secondParty: 'Authority',
-            needsRootReg: false
-        },
-        'st-assignment': {
-            id: 'st-assignment',
-            name: 'ST Assignment (Transfer of Title)',
-            firstParty: 'Grantor',
-            secondParty: 'Grantee',
-            needsRootReg: true,
-            autoSetGrantor: true
         }
     };
 
@@ -305,43 +233,7 @@
                     </div>
                 `;
                 break;
-            case 'deed-of-sub-under-lease':
-                fieldsContainer.innerHTML = `
-                    <div class="space-y-2">
-                        <label for="leaseTerm" class="label">Lease Term</label>
-                        <input id="leaseTerm" name="leaseTerm" class="input" placeholder="Enter lease term (e.g., 99 years)">
-                    </div>
-                    <div class="space-y-2">
-                        <label for="leaseAmount" class="label">Lease Amount</label>
-                        <input id="leaseAmount" name="leaseAmount" class="input" placeholder="Enter lease amount">
-                    </div>
-                `;
-                break;
-            case 'deed-of-sub-division':
-                fieldsContainer.innerHTML = `
-                    <div class="space-y-2">
-                        <label for="numberOfPlots" class="label">Number of Plots</label>
-                        <input id="numberOfPlots" name="numberOfPlots" type="number" class="input" placeholder="Enter number of plots">
-                    </div>
-                    <div class="space-y-2">
-                        <label for="originalPlotSize" class="label">Original Plot Size</label>
-                        <input id="originalPlotSize" name="originalPlotSize" class="input" placeholder="Enter original plot size">
-                    </div>
-                `;
-                break;
-            case 'deed-of-merger':
-                fieldsContainer.innerHTML = `
-                    <div class="space-y-2">
-                        <label for="mergingProperties" class="label">Merging Properties</label>
-                        <input id="mergingProperties" name="mergingProperties" class="input" placeholder="Enter merging properties">
-                    </div>
-                    <div class="space-y-2">
-                        <label for="resultingProperty" class="label">Resulting Property</label>
-                        <input id="resultingProperty" name="resultingProperty" class="input" placeholder="Enter resulting property">
-                    </div>
-                `;
-                break;
-            case 'deed-of-surrender':
+            case 'deed-of-surrender-release':
                 fieldsContainer.innerHTML = `
                     <div class="space-y-2">
                         <label for="surrenderReason" class="label">Reason for Surrender</label>
@@ -351,26 +243,6 @@
                         <label for="compensationAmount" class="label">Compensation Amount</label>
                         <input id="compensationAmount" name="compensationAmount" class="input" placeholder="Enter compensation amount (if any)">
                     </div>
-                `;
-                break;
-            case 'deed-of-assent':
-                fieldsContainer.innerHTML = `
-                    <div class="space-y-2">
-                        <label for="deceasedName" class="label">Deceased Name</label>
-                        <input id="deceasedName" name="deceasedName" class="input" placeholder="Enter deceased's full name">
-                    </div>
-                    <div class="space-y-2">
-                        <label for="dateOfDeath" class="label">Date of Death</label>
-                        <input id="dateOfDeath" name="dateOfDeath" type="date" class="input">
-                    </div>
-                    <div class="space-y-2">
-                        <label for="willReference" class="label">Will Reference</label>
-                        <input id="willReference" name="willReference" class="input" placeholder="Enter will reference number">
-                    </div>
-                `;
-                break;
-            case 'deed-of-release':
-                fieldsContainer.innerHTML = `
                     <div class="space-y-2">
                         <label for="bankName" class="label">Bank Name</label>
                         <input id="bankName" name="bankName" class="input" placeholder="Enter bank name">
@@ -389,75 +261,19 @@
                     </div>
                 `;
                 break;
-            case 'deed-of-variation':
+            case 'devolution-order':
                 fieldsContainer.innerHTML = `
                     <div class="space-y-2">
-                        <label for="variationDetails" class="label">Variation Details</label>
-                        <textarea id="variationDetails" name="variationDetails" class="textarea" placeholder="Describe the variation"></textarea>
-                    </div>
-                `;
-                break;
-            case 'right-of-occupancy':
-                fieldsContainer.innerHTML = `
-                    <div class="space-y-2">
-                        <label for="rOfONumber" class="label">R of O Number</label>
-                        <input id="rOfONumber" name="rOfONumber" class="input" placeholder="Enter Right of Occupancy number">
-                    </div>
-                `;
-                break;
-            case 'certificate-of-occupancy':
-                fieldsContainer.innerHTML = `
-                    <div class="space-y-2">
-                        <label for="cOfONumber" class="label">C of O Number</label>
-                        <input id="cOfONumber" name="cOfONumber" class="input" placeholder="Enter Certificate of Occupancy number">
-                    </div>
-                `;
-                break;
-            case 'sectional-titling-c-of-o':
-                fieldsContainer.innerHTML = `
-                    <div class="space-y-2">
-                        <label for="unitNumber" class="label">Unit Number</label>
-                        <input id="unitNumber" name="unitNumber" class="input" placeholder="Enter unit number">
+                        <label for="deceasedName" class="label">Deceased Name</label>
+                        <input id="deceasedName" name="deceasedName" class="input" placeholder="Enter deceased's full name">
                     </div>
                     <div class="space-y-2">
-                        <label for="sectionalCofONumber" class="label">Sectional C of O Number</label>
-                        <input id="sectionalCofONumber" name="sectionalCofONumber" class="input" placeholder="Enter Sectional C of O number">
-                    </div>
-                `;
-                break;
-            case 'sltr-c-of-o':
-                fieldsContainer.innerHTML = `
-                    <div class="space-y-2">
-                        <label for="sltrCofONumber" class="label">SLTR C of O Number</label>
-                        <input id="sltrCofONumber" name="sltrCofONumber" class="input" placeholder="Enter SLTR C of O number">
-                    </div>
-                `;
-                break;
-            case 'st-assignment':
-                fieldsContainer.innerHTML = `
-                    <div class="space-y-2">
-                        <label for="assignmentTerm" class="label">Assignment Term</label>
-                        <input id="assignmentTerm" name="assignmentTerm" class="input" placeholder="Enter assignment term">
+                        <label for="dateOfDeath" class="label">Date of Death</label>
+                        <input id="dateOfDeath" name="dateOfDeath" type="date" class="input">
                     </div>
                     <div class="space-y-2">
-                        <label for="cofoDate" class="label">CofO Date</label>
-                        <input id="cofoDate" name="cofoDate" type="date" class="input">
-                    </div>
-                    <div class="space-y-2">
-                        <label for="cofoRegParticulars" class="label">CofO Reg Particulars</label>
-                        <input id="cofoRegParticulars" name="cofoRegParticulars" class="input" placeholder="Enter CofO registration particulars">
-                    </div>
-                    <div class="space-y-2">
-                        <label for="cofoTerm" class="label">CofO Term</label>
-                        <input id="cofoTerm" name="cofoTerm" class="input" placeholder="Enter CofO term">
-                    </div>
-                    <div class="space-y-2">
-                        <label for="cofoTermStartDate" class="label">CofO Term Start Date</label>
-                        <input id="cofoTermStartDate" name="cofoTermStartDate" type="date" class="input">
-                    </div>
-                    <div class="space-y-2">
-                        <label for="stFileNo" class="label">ST File Number</label>
-                        <input id="stFileNo" name="stFileNo" class="input" placeholder="Enter ST file number">
+                        <label for="willReference" class="label">Will Reference</label>
+                        <input id="willReference" name="willReference" class="input" placeholder="Enter will reference number">
                     </div>
                 `;
                 break;

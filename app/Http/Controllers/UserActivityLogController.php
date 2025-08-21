@@ -109,9 +109,23 @@ class UserActivityLogController extends Controller
                             </button>';
                 
                 if (auth()->user()->can('delete logged history')) {
-                    $actions .= '<button onclick="logoutUser(' . $log->user_id . ')" class="text-orange-600 hover:text-orange-900" title="Logout User">
-                                    <i class="fas fa-sign-out-alt"></i>
-                                </button>';
+                    // Check if user is online - only show logout button for online users
+                    if ($log->is_online) {
+                        $actions .= '<button onclick="logoutUser(' . $log->user_id . ')" 
+                                        class="logout-user-btn text-orange-600 hover:text-orange-900 cursor-pointer" 
+                                        title="Logout User"
+                                        data-user-id="' . $log->user_id . '"
+                                        data-user-status="online">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                    </button>';
+                    } else {
+                        // Show disabled logout button for offline users
+                        $actions .= '<button class="logout-user-btn-disabled text-gray-400 cursor-not-allowed opacity-50" 
+                                        title="User is already offline"
+                                        disabled>
+                                        <i class="fas fa-sign-out-alt"></i>
+                                    </button>';
+                    }
                 }
                 $actions .= '</div>';
                 

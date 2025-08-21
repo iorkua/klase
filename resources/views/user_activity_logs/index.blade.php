@@ -395,6 +395,7 @@ $(document).ready(function() {
     initializeDataTable(); // Initialize DataTable since Activity Logs is the default tab
     startAutoRefresh();
     loadSettings();
+    setupOfflineDetection(); // Add offline detection
 });
 
 // Tab Management
@@ -604,6 +605,10 @@ function refreshOnlineUsers() {
     $.get('{{ route("user-activity-logs.online-users") }}', function(response) {
         if (response.success) {
             updateOnlineUsersGrid(response.data);
+            // Update offline status for newly created buttons
+            setTimeout(function() {
+                updateOfflineStatus();
+            }, 100);
         }
     });
 }
@@ -616,6 +621,11 @@ function updateOnlineUsersGrid(users) {
         users.forEach(function(user) {
             const deviceIcon = user.device_type === 'mobile' ? 'mobile-alt' : 
                               user.device_type === 'tablet' ? 'tablet-alt' : 'desktop';
+            
+            const isOffline = !navigator.onLine;
+            const logoutButtonClass = isOffline ? 
+                'logout-btn-offline bg-gray-300 text-gray-500 cursor-not-allowed' : 
+                'logout-btn-online bg-red-600 hover:bg-red-700 text-white cursor-pointer';
             
             const userHtml = `
                 <div class="bg-white shadow rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
@@ -640,6 +650,16 @@ function updateOnlineUsersGrid(users) {
                                 <span>${user.ip_address}</span>
                             </div>
                             <p class="text-xs text-gray-500 mt-1">Online since ${user.login_time}</p>
+                        </div>
+                        <div class="ml-3 flex-shrink-0">
+                            <button 
+                                onclick="${isOffline ? 'return false;' : `logoutUser('${user.user_id}')`}" 
+                                class="logout-user-btn px-3 py-1 text-xs font-medium rounded-md transition-colors duration-200 ${logoutButtonClass}"
+                                ${isOffline ? 'disabled title="Cannot logout user while offline"' : 'title="Logout user"'}
+                                data-user-id="${user.user_id}">
+                                <i class="fas fa-sign-out-alt mr-1"></i>
+                                Logout
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -832,6 +852,17 @@ function closeActivityModal() {
 function logoutUser(userId) {
     console.log('Logout user called with userId:', userId);
     
+    // Check if user is offline
+    if (!navigator.onLine) {
+        Swal.fire({
+            title: 'Offline',
+            text: 'Cannot logout user while you are offline. Please check your internet connection.',
+            icon: 'warning',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+    
     Swal.fire({
         title: 'Are you sure?',
         text: 'This will log out the user from all their active sessions.',
@@ -940,6 +971,201 @@ function bulkDelete() {
                 }
             });
         }
+    });
+}
+
+// Offline Detection Functions
+function setupOfflineDetection() {
+    // Initial status check
+    updateOfflineStatus();
+    
+    // Listen for online/offline events
+    window.addEventListener('online', function() {
+        updateOfflineStatus();
+        showNetworkStatusMessage('online');
+    });
+    
+    window.addEventListener('offline', function() {
+        updateOfflineStatus();
+        showNetworkStatusMessage('offline');
+    });
+}
+
+function updateOfflineStatus() {
+    const isOffline = !navigator.onLine;
+    
+    // Update main logout button in header
+    updateMainLogoutButton(isOffline);
+    
+    // Update logout buttons in online users grid
+    updateLogoutButtons(isOffline);
+    
+    // Update other action buttons that require internet
+    updateActionButtons(isOffline);
+}
+
+function updateMainLogoutButton(isOffline) {
+    const logoutForm = document.getElementById('autoLogoutForm');
+    const logoutButton = logoutForm ? logoutForm.querySelector('button[type="submit"]') : null;
+    
+    if (logoutButton) {
+        if (isOffline) {
+            logoutButton.disabled = true;
+            logoutButton.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-300', 'text-gray-500');
+            logoutButton.classList.remove('hover:bg-gray-100', 'text-gray-700');
+            logoutButton.setAttribute('title', 'Cannot logout while offline - Please check your internet connection');
+            // Prevent form submission when offline
+            logoutForm.addEventListener('submit', preventOfflineSubmit);
+            
+            // Add visual indicator for offline state
+            const icon = logoutButton.querySelector('svg');
+            if (icon) {
+                icon.classList.add('text-gray-400');
+                icon.classList.remove('text-gray-500');
+            }
+        } else {
+            logoutButton.disabled = false;
+            logoutButton.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-gray-300', 'text-gray-500');
+            logoutButton.classList.add('hover:bg-gray-100', 'text-gray-700');
+            logoutButton.setAttribute('title', 'Logout');
+            // Remove the offline submit prevention
+            logoutForm.removeEventListener('submit', preventOfflineSubmit);
+            
+            // Restore normal icon styling
+            const icon = logoutButton.querySelector('svg');
+            if (icon) {
+                icon.classList.remove('text-gray-400');
+                icon.classList.add('text-gray-500');
+            }
+        }
+    }
+}
+
+function preventOfflineSubmit(event) {
+    if (!navigator.onLine) {
+        event.preventDefault();
+        Swal.fire({
+            title: 'Offline',
+            text: 'Cannot logout while you are offline. Please check your internet connection.',
+            icon: 'warning',
+            confirmButtonText: 'OK'
+        });
+    }
+}
+
+function updateLogoutButtons(isOffline) {
+    // Update logout buttons in online users grid
+    const logoutButtons = document.querySelectorAll('.logout-user-btn');
+    
+    logoutButtons.forEach(function(button) {
+        if (isOffline) {
+            button.disabled = true;
+            button.classList.remove('logout-btn-online', 'text-orange-600', 'hover:text-orange-900', 'text-white', 'cursor-pointer');
+            button.classList.add('logout-btn-offline', 'text-gray-400', 'cursor-not-allowed', 'opacity-50');
+            button.setAttribute('title', 'Cannot logout user while offline');
+            button.onclick = function() { return false; };
+        } else {
+            const userStatus = button.getAttribute('data-user-status');
+            // Only enable if user is online and admin is online
+            if (userStatus === 'online') {
+                button.disabled = false;
+                button.classList.remove('logout-btn-offline', 'text-gray-400', 'cursor-not-allowed', 'opacity-50');
+                button.classList.add('logout-btn-online', 'text-orange-600', 'hover:text-orange-900', 'cursor-pointer');
+                button.setAttribute('title', 'Logout user');
+                const userId = button.getAttribute('data-user-id');
+                button.onclick = function() { logoutUser(userId); };
+            }
+        }
+    });
+    
+    // Also update logout buttons in DataTable (if table exists)
+    if (activityTable) {
+        // Redraw the table to update action buttons with offline status
+        setTimeout(function() {
+            updateDataTableLogoutButtons(isOffline);
+        }, 100);
+    }
+}
+
+function updateDataTableLogoutButtons(isOffline) {
+    // Update logout buttons in the DataTable
+    const tableLogoutButtons = document.querySelectorAll('#activity-logs-table .logout-user-btn');
+    
+    tableLogoutButtons.forEach(function(button) {
+        if (isOffline) {
+            button.disabled = true;
+            button.classList.remove('text-orange-600', 'hover:text-orange-900');
+            button.classList.add('text-gray-400', 'cursor-not-allowed', 'opacity-50');
+            button.setAttribute('title', 'Cannot logout user while offline');
+            button.onclick = function() { 
+                Swal.fire({
+                    title: 'Offline',
+                    text: 'Cannot logout user while you are offline. Please check your internet connection.',
+                    icon: 'warning',
+                    confirmButtonText: 'OK'
+                });
+                return false; 
+            };
+        } else {
+            const userStatus = button.getAttribute('data-user-status');
+            // Only enable if user is online
+            if (userStatus === 'online') {
+                button.disabled = false;
+                button.classList.remove('text-gray-400', 'cursor-not-allowed', 'opacity-50');
+                button.classList.add('text-orange-600', 'hover:text-orange-900');
+                button.setAttribute('title', 'Logout user');
+                const userId = button.getAttribute('data-user-id');
+                button.onclick = function() { logoutUser(userId); };
+            }
+        }
+    });
+}
+
+function updateActionButtons(isOffline) {
+    // Update other buttons that require network access
+    const networkButtons = [
+        '#bulk-delete-btn',
+        'button[onclick="exportLogs()"]',
+        'button[onclick="refreshData()"]',
+        'button[onclick="refreshOnlineUsers()"]',
+        'button[onclick="applyFilters()"]'
+    ];
+    
+    networkButtons.forEach(function(selector) {
+        const button = document.querySelector(selector);
+        if (button) {
+            if (isOffline) {
+                button.disabled = true;
+                button.classList.add('opacity-50', 'cursor-not-allowed');
+                const originalTitle = button.getAttribute('title') || '';
+                button.setAttribute('title', originalTitle + ' (Offline - feature disabled)');
+            } else {
+                button.disabled = false;
+                button.classList.remove('opacity-50', 'cursor-not-allowed');
+                const title = button.getAttribute('title') || '';
+                button.setAttribute('title', title.replace(' (Offline - feature disabled)', ''));
+            }
+        }
+    });
+}
+
+function showNetworkStatusMessage(status) {
+    const message = status === 'online' ? 
+        'Connection restored! All features are now available.' : 
+        'You are offline. Some features may be disabled.';
+    
+    const icon = status === 'online' ? 'success' : 'warning';
+    
+    // Show a brief toast notification
+    Swal.fire({
+        title: status === 'online' ? 'Back Online' : 'Offline',
+        text: message,
+        icon: icon,
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true
     });
 }
 
@@ -1072,7 +1298,7 @@ function saveSettings() {
     });
 }
 
-// Add CSS for tab styling
+// Add CSS for tab styling and offline states
 const style = document.createElement('style');
 style.textContent = `
     .tab-button.active {
@@ -1085,6 +1311,76 @@ style.textContent = `
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Offline button styling */
+    .logout-btn-offline {
+        background-color: #d1d5db !important;
+        color: #6b7280 !important;
+        cursor: not-allowed !important;
+        opacity: 0.6 !important;
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .logout-btn-offline:hover {
+        background-color: #d1d5db !important;
+        color: #6b7280 !important;
+        transform: none !important;
+    }
+    
+    /* Main logout button offline styling */
+    button[disabled].offline-logout {
+        background-color: #f3f4f6 !important;
+        color: #9ca3af !important;
+        border-color: #e5e7eb !important;
+        cursor: not-allowed !important;
+        opacity: 0.7 !important;
+    }
+    
+    button[disabled].offline-logout:hover {
+        background-color: #f3f4f6 !important;
+        color: #9ca3af !important;
+    }
+    
+    /* Offline indicator animation */
+    .offline-indicator {
+        animation: pulse-red 2s infinite;
+    }
+    
+    @keyframes pulse-red {
+        0%, 100% { 
+            background-color: #fca5a5; 
+            opacity: 1; 
+        }
+        50% { 
+            background-color: #ef4444; 
+            opacity: 0.7; 
+        }
+    }
+    
+    /* Network status indicator */
+    .network-status {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .network-status.offline {
+        background-color: #fef2f2;
+        color: #dc2626;
+        border: 1px solid #fecaca;
+    }
+    
+    .network-status.online {
+        background-color: #f0fdf4;
+        color: #16a34a;
+        border: 1px solid #bbf7d0;
     }
 `;
 document.head.appendChild(style);

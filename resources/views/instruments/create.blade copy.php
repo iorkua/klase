@@ -19,7 +19,7 @@
                 <h1 class="text-2xl font-bold mb-4">Instrument  Types</h1>
                 <p class="text-gray-600 mb-6">Select an instrument type to capture</p>
                 
-                <!-- Instrument Type Selection - Updated Types -->
+                <!-- Instrument Type Selection - All 18 Types -->
                 <div class="grid grid-cols-3 gap-3 mb-6">
                     <button class="instrument-type-btn p-2 border rounded-lg text-center bg-blue-50 border-blue-200 hover:bg-blue-100" data-type="power-of-attorney">
                         <h3 class="font-medium text-blue-800">Power of Attorney</h3>
@@ -49,14 +49,54 @@
                         <h3 class="font-medium text-pink-800">Deed of Sub-Lease</h3>
                         <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-pink-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">07</span>An agreement where a lessee (not the owner) leases part or all of the leased property to another party.</p>
                     </button>
-                    <button class="instrument-type-btn p-2 border rounded-lg text-center bg-lime-50 border-lime-200 hover:bg-lime-100" data-type="deed-of-surrender-release">
-                        <h3 class="font-medium text-lime-800">Deed of Surrender/Release</h3>
-                        <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-lime-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">08</span>A legal agreement in which a tenant voluntarily returns possession of property to the landlord, or a document that discharges a party from a previous claim or mortgage on a property.</p>
+                    <button class="instrument-type-btn p-2 border rounded-lg text-center bg-teal-50 border-teal-200 hover:bg-teal-100" data-type="deed-of-sub-under-lease">
+                        <h3 class="font-medium text-teal-800">Deed of Sub-Under Lease</h3>
+                        <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-teal-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">08</span>A document used when a sub-lessee further leases out the property to a third party, creating an additional layer of tenancy.</p>
                     </button>
-                    <button class="instrument-type-btn p-2 border rounded-lg text-center bg-slate-50 border-slate-200 hover:bg-slate-100" data-type="devolution-order">
-                        <h3 class="font-medium text-slate-800">Devolution Order</h3>
-                        <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-slate-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">09</span>A court-issued legal instrument used to transfer property ownership from a deceased person's estate to their rightful heirs or beneficiaries.</p>
+                    <button class="instrument-type-btn p-2 border rounded-lg text-center bg-orange-50 border-orange-200 hover:bg-orange-100" data-type="deed-of-sub-division">
+                        <h3 class="font-medium text-orange-800">Deed of Sub-Division</h3>
+                        <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-orange-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">09</span>A legal instrument used to divide a single parcel of land into multiple plots, each with its own separate title or interest.</p>
                     </button>
+                    <button class="instrument-type-btn p-2 border rounded-lg text-center bg-cyan-50 border-cyan-200 hover:bg-cyan-100" data-type="deed-of-merger">
+                        <h3 class="font-medium text-cyan-800">Deed of Merger</h3>
+                        <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-cyan-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">10</span>A document that combines multiple property interests or parcels into a single title or ownership.</p>
+                    </button>
+                    <button class="instrument-type-btn p-2 border rounded-lg text-center bg-lime-50 border-lime-200 hover:bg-lime-100" data-type="deed-of-surrender">
+                        <h3 class="font-medium text-lime-800">Deed of Surrender</h3>
+                        <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-lime-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">11</span>A legal agreement in which a tenant or lessee voluntarily returns possession of property to the landlord or lessor before the lease expires.</p>
+                    </button>
+                    <button class="instrument-type-btn p-2 border rounded-lg text-center bg-violet-50 border-violet-200 hover:bg-violet-100" data-type="deed-of-variation">
+                        <h3 class="font-medium text-violet-800">Deed of Variation</h3>
+                        <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-violet-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">12</span>A document used to modify the terms or conditions of an existing land-related agreement without invalidating it.</p>
+                    </button>
+                    <button class="instrument-type-btn p-2 border rounded-lg text-center bg-emerald-50 border-emerald-200 hover:bg-emerald-100" data-type="deed-of-assent">
+                        <h3 class="font-medium text-emerald-800">Deed of Assent</h3>
+                        <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-emerald-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">13</span>A probate instrument used by executors or administrators to formally transfer property from a deceased's estate to beneficiaries.</p>
+                    </button>
+                    <button class="instrument-type-btn p-2 border rounded-lg text-center bg-rose-50 border-rose-200 hover:bg-rose-100" data-type="deed-of-release">
+                        <h3 class="font-medium text-rose-800">Deed of Release</h3>
+                        <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-rose-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">14</span>A document that discharges or releases a party from a previous claim, interest, or mortgage on a property.</p>
+                    </button>
+                    {{-- <button class="instrument-type-btn p-2 border rounded-lg text-center bg-sky-50 border-sky-200 hover:bg-sky-100" data-type="right-of-occupancy">
+                        <h3 class="font-medium text-sky-800">Right of Occupancy (RofO)</h3>
+                        <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-sky-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">15</span>A statutory land tenure instrument granting an individual or entity the right to occupy and use land in accordance with the Land Use Act.</p>
+                    </button> --}}
+                    {{-- <button class="instrument-type-btn p-2 border rounded-lg text-center bg-amber-50 border-amber-200 hover:bg-amber-100" data-type="certificate-of-occupancy">
+                        <h3 class="font-medium text-amber-800">Certificate of Occupancy (CofO)</h3>
+                        <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-amber-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">16</span>An official government-issued certificate that legally proves the right to occupy and use a specific parcel of land.</p>
+                    </button> --}}
+                    {{-- <button class="instrument-type-btn p-2 border rounded-lg text-center bg-slate-50 border-slate-200 hover:bg-slate-100" data-type="sectional-titling-c-of-o">
+                        <h3 class="font-medium text-slate-800">Sectional Titling Certificate of Occupancy</h3>
+                        <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-slate-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">17</span>A specialized CofO issued for individual units within a multi-unit development, such as apartments or condominiums, under the Sectional Titling framework.</p>
+                    </button>
+                    <button class="instrument-type-btn p-2 border rounded-lg text-center bg-gray-50 border-gray-200 hover:bg-gray-100" data-type="sltr-c-of-o">
+                        <h3 class="font-medium text-gray-800">Systematic Land Titling and Registration (SLTR) Certificate of Occupancy</h3>
+                        <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-gray-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">18</span>A CofO issued under the SLTR scheme to formalize land rights, especially in informal or previously undocumented settlements.</p>
+                    </button> --}}
+                    {{-- <button class="instrument-type-btn p-2 border rounded-lg text-center bg-emerald-50 border-emerald-200 hover:bg-emerald-100" data-type="st-assignment">
+                        <h3 class="font-medium text-emerald-800">ST Assignment (Transfer of Title)</h3>
+                        <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-emerald-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">19</span>A specialized assignment document for sectional title properties that transfers ownership from Kano State Government to the new title holder.</p>
+                    </button> --}}
                 </div>
             </div>
         </div>

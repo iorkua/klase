@@ -89,9 +89,10 @@
         @include('admin.footer')
     </div>
 
-    <!-- Generate Modal -->
+    <!-- Generate Modal with Alpine.js -->
     <div id="generateModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
-        <div class="relative top-5 mx-auto p-6 border w-[800px] max-w-4xl shadow-xl rounded-lg bg-white">
+        <div class="relative top-5 mx-auto p-6 border w-[800px] max-w-4xl shadow-xl rounded-lg bg-white" 
+             x-data="fileNumberGenerator()" x-init="init()">
             <div class="mt-3">
                 <!-- Modal Header -->
                 <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
@@ -108,16 +109,21 @@
                 <form id="generateForm" onsubmit="submitForm(event)" class="space-y-6">
                     @csrf
                     
+                    <!-- Hidden field for the generated file number that backend expects -->
+                    <input type="hidden" name="generated_file_number" x-model="preview" id="generatedFileNumber">
+                    
                     <!-- Application Type Selection -->
                     <div class="bg-gray-50 p-4 rounded-lg">
                         <label class="block text-sm font-medium text-gray-700 mb-3">Application Type</label>
                         <div class="flex space-x-6">
                             <label class="flex items-center cursor-pointer">
-                                <input type="radio" name="application_type" value="new" class="mr-3 text-blue-600" onchange="updateApplicationType('new')" checked>
-                                <span class="text-sm font-medium">New Application</span>
+                                <input type="radio" name="application_type" value="new" class="mr-3 text-blue-600" 
+                                       x-model="applicationType" @change="updateApplicationType()" checked>
+                                <span class="text-sm font-medium">Direct Allocation</span>
                             </label>
                             <label class="flex items-center cursor-pointer">
-                                <input type="radio" name="application_type" value="conversion" class="mr-3 text-blue-600" onchange="updateApplicationType('conversion')">
+                                <input type="radio" name="application_type" value="conversion" class="mr-3 text-blue-600" 
+                                       x-model="applicationType" @change="updateApplicationType()">
                                 <span class="text-sm font-medium">Conversion</span>
                             </label>
                         </div>
@@ -133,7 +139,7 @@
                                     <i data-lucide="file-text" class="w-4 h-4 inline mr-1"></i>
                                     File Name
                                 </label>
-                                <input type="text" id="fileName" name="file_name" 
+                                <input type="text" id="fileName" name="file_name" x-model="fileName"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                        placeholder="Enter file name">
                             </div>
@@ -144,12 +150,11 @@
                                     <i data-lucide="map" class="w-4 h-4 inline mr-1"></i>
                                     Land Use
                                 </label>
-                                <select id="landUse" name="land_use" 
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        onchange="updatePreview()">
+                                <select id="landUse" name="land_use" x-model="landUse" @change="updatePreview()"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                     <option value="">Select Land Use</option>
                                     <!-- New Application Options -->
-                                    <optgroup id="newOptions" label="New Application">
+                                    <optgroup label="New Application" x-show="applicationType === 'new'">
                                         <option value="RES">RES - Residential</option>
                                         <option value="COM">COM - Commercial</option>
                                         <option value="IND">IND - Industrial</option>
@@ -157,7 +162,7 @@
                                         <option value="INS">INS - Institutional</option>
                                     </optgroup> 
                                     <!-- Conversion Options -->
-                                    <optgroup id="conversionOptions" label="Conversion" style="display: none;">
+                                    <optgroup label="Conversion" x-show="applicationType === 'conversion'">
                                         <option value="CON-RES">CON-RES - Conversion to Residential</option>
                                         <option value="CON-COM">CON-COM - Conversion to Commercial</option>
                                         <option value="CON-IND">CON-IND - Conversion to Industrial</option>
@@ -165,7 +170,7 @@
                                         <option value="CON-INS">CON-INS - Conversion to Institutional</option>
                                     </optgroup>
                                     <!-- RC Options -->
-                                    <optgroup label="RC Options">
+                                    <optgroup label="RC Options" x-show="applicationType === 'new'">
                                         <option value="RES-RC">RES-RC</option>
                                         <option value="COM-RC">COM-RC</option>
                                         <option value="AG-RC">AG-RC</option>
@@ -180,59 +185,57 @@
                                     <i data-lucide="settings" class="w-4 h-4 inline mr-1"></i>
                                     File Options
                                 </label>
-                                <select id="fileOption" name="file_option" 
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        onchange="updatePreview()">
-                                    <option value="normal" selected>Normal File</option>
+                                <select id="fileOption" name="file_option" x-model="fileOption" @change="updateFileOption()"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="normal">Normal File</option>
                                     <option value="temporary">Temporary File</option>
                                     <option value="extension">Extension</option>
                                     <option value="miscellaneous">Miscellaneous</option>
+                                    <option value="old_mls">Old MLS</option>
                                     <option value="sltr">SLTR</option>
-                                    <option value="sit">SIT</option>
+                                    <option value="sit" x-show="applicationType === 'new'">SIT</option>
                                 </select>
                             </div>
                         </div>
 
                         <!-- Right Column -->
                         <div class="space-y-4">
-                            <!-- Extension File Selection (shown only when Extension is selected) -->
-                            <div id="extensionFileSection" class="hidden">
+                            <!-- Extension File Selection -->
+                            <div x-show="fileOption === 'extension'">
                                 <label for="existingFileNo" class="block text-sm font-medium text-gray-700 mb-2">
                                     <i data-lucide="link" class="w-4 h-4 inline mr-1"></i>
                                     Select Existing MLS File Number
                                 </label>
-                                <select id="existingFileNo" name="existing_file_no" 
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        onchange="updatePreview()">
+                                <select id="existingFileNo" name="existing_file_no" x-model="existingFileNo" @change="updatePreview()"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                     <option value="">Select existing file number...</option>
                                     <!-- Options will be populated via AJAX -->
                                 </select>
                             </div>
 
                             <!-- Middle Prefix (for miscellaneous files) -->
-                            <div id="middlePrefixSection" class="hidden">
+                            <div x-show="fileOption === 'miscellaneous'">
                                 <label for="middlePrefix" class="block text-sm font-medium text-gray-700 mb-2">
                                     <i data-lucide="tag" class="w-4 h-4 inline mr-1"></i>
                                     Middle Prefix
                                 </label>
-                                <input type="text" id="middlePrefix" name="middle_prefix" 
+                                <input type="text" id="middlePrefix" name="middle_prefix" x-model="middlePrefix" @input="updatePreview()"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                       placeholder="e.g., KN" value="KN" onchange="updatePreview()">
+                                       placeholder="e.g., KN" value="KN">
                             </div>
 
                             <!-- Year and Serial Number Grid -->
                             <div class="grid grid-cols-2 gap-4">
                                 <!-- Year -->
-                                <div id="yearSection">
+                                <div x-show="showYearSection">
                                     <label for="year" class="block text-sm font-medium text-gray-700 mb-2">
                                         <i data-lucide="calendar" class="w-4 h-4 inline mr-1"></i>
                                         Year
                                     </label>
-                                    <input type="number" id="year" name="year" 
-                                           value="{{ date('Y') }}"
-                                           class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-600"
-                                           min="2020" max="2050" readonly>
-                                    <p class="text-xs text-gray-500 mt-1">Auto-filled</p>
+                                    <input type="number" id="year" name="year" x-model="year" @input="updatePreview()"
+                                           :class="yearFieldClass"
+                                           min="2020" max="2050" :readonly="!isYearEditable">
+                                    <p class="text-xs text-gray-500 mt-1" x-text="yearDescription"></p>
                                 </div>
 
                                 <!-- Serial Number -->
@@ -241,10 +244,16 @@
                                         <i data-lucide="hash" class="w-4 h-4 inline mr-1"></i>
                                         Serial No.
                                     </label>
-                                    <input type="number" id="serialNo" name="serial_no" 
-                                           class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-600"
-                                           readonly>
-                                    <p class="text-xs text-gray-500 mt-1">Auto-generated</p>
+                                    <input :type="serialFieldType" id="serialNo" name="serial_no" 
+                                           x-model="serialNo" @input="updatePreview()"
+                                           :class="serialFieldClass"
+                                           :placeholder="serialPlaceholder" 
+                                           :readonly="!isSerialEditable" 
+                                           :disabled="!isSerialEditable"
+                                           :min="serialFieldType === 'number' ? '1' : null"
+                                           :max="serialFieldType === 'number' ? '9999' : null"
+                                           required>
+                                    <p class="text-xs mt-1" :class="serialDescriptionClass" x-text="serialDescription"></p>
                                 </div>
                             </div>
 
@@ -254,8 +263,8 @@
                                     <i data-lucide="eye" class="w-4 h-4 inline mr-1"></i>
                                     Generated File Number Preview
                                 </label>
-                                <div id="mlsfPreview" class="w-full px-4 py-3 bg-white border border-blue-300 rounded-md text-lg font-mono text-center text-blue-800 font-bold shadow-sm">
-                                    -
+                                <div id="mlsfPreview" class="w-full px-4 py-3 bg-white border border-blue-300 rounded-md text-lg font-mono text-center font-bold shadow-sm"
+                                     :class="previewClass" x-text="preview">
                                 </div>
                             </div>
                         </div>
@@ -680,24 +689,6 @@
 
         function openGenerateModal() {
             document.getElementById('generateModal').classList.remove('hidden');
-            
-            // Reset form
-            document.getElementById('generateForm').reset();
-            document.getElementById('year').value = new Date().getFullYear();
-            document.getElementById('serialNo').value = nextSerialNo;
-            
-            // Reset to default state
-            isOverrideMode = false;
-            document.getElementById('year').readOnly = true;
-            document.getElementById('serialNo').readOnly = true;
-            document.getElementById('year').classList.add('bg-gray-100', 'text-gray-600');
-            document.getElementById('serialNo').classList.add('bg-gray-100', 'text-gray-600');
-            
-            // Set default application type
-            document.querySelector('input[name="application_type"][value="new"]').checked = true;
-            updateApplicationType('new');
-            
-            updatePreview();
         }
 
         function closeGenerateModal() {
@@ -734,65 +725,24 @@
             const middlePrefix = document.getElementById('middlePrefix') ? document.getElementById('middlePrefix').value : '';
             const preview = document.getElementById('mlsfPreview');
             const serialNoField = document.getElementById('serialNo');
+            const serialDescription = document.getElementById('serialNoDescription');
             
-            // Handle serial number field behavior based on file option
-            if (fileOption === 'miscellaneous' || fileOption === 'sltr' || fileOption === 'sit') {
-                // Clear serial number for these 3 file options and make editable
-                serialNoField.value = '';
-                serialNoField.type = 'text';
-                serialNoField.readOnly = false;
-                serialNoField.classList.remove('bg-gray-100', 'text-gray-600');
-                serialNoField.classList.add('bg-white', 'text-gray-900');
-                
-                // Update placeholder based on type
-                if (fileOption === 'miscellaneous') {
-                    serialNoField.placeholder = 'Enter custom serial (e.g., 001, ABC123)';
-                } else if (fileOption === 'sltr') {
-                    serialNoField.placeholder = 'Enter SLTR serial (e.g., 001, 2024-001)';
-                } else if (fileOption === 'sit') {
-                    serialNoField.placeholder = 'Enter SIT serial (e.g., 001, 2024-001)';
-                }
-            } else if (fileOption === 'extension') {
-                // Disable serial number for extensions
-                serialNoField.value = '';
-                serialNoField.readOnly = true;
-                serialNoField.classList.add('bg-gray-100', 'text-gray-600');
-                serialNoField.placeholder = 'Not required for extensions';
-            } else if (!isOverrideMode) {
-                // Reset to auto-generated for normal/temporary files
-                serialNoField.value = nextSerialNo;
-                serialNoField.type = 'number';
-                serialNoField.readOnly = true;
-                serialNoField.classList.add('bg-gray-100', 'text-gray-600');
-                serialNoField.classList.remove('bg-white', 'text-gray-900');
-                serialNoField.placeholder = 'Auto-generated';
-            }
+            // Use the same approach as capture_existing - call a form update function first
+            updateGenerateForm(fileOption);
             
+            // Preview generation logic - exact same as capture_existing
             let previewText = '-';
             
             if (fileOption === 'extension' && existingFileNo) {
                 previewText = existingFileNo + ' AND EXTENSION';
-            } else if (fileOption === 'miscellaneous') {
-                // Only show preview if user has entered both middle prefix and serial
-                if (middlePrefix && serialNo && serialNo.trim() !== '') {
-                    previewText = `MISC-${middlePrefix}-${serialNo}`;
-                } else {
-                    previewText = '-'; // No default preview for miscellaneous
-                }
-            } else if (fileOption === 'sltr') {
-                // Only show preview if user has entered a serial
-                if (serialNo && serialNo.trim() !== '') {
-                    previewText = `SLTR-${serialNo}`;
-                } else {
-                    previewText = '-'; // No default preview for SLTR
-                }
-            } else if (fileOption === 'sit') {
-                // Only show preview if user has entered a serial
-                if (serialNo && serialNo.trim() !== '') {
-                    previewText = `SIT-${serialNo}`;
-                } else {
-                    previewText = '-'; // No default preview for SIT
-                }
+            } else if (fileOption === 'miscellaneous' && middlePrefix && serialNo) {
+                previewText = `MISC-${middlePrefix}-${serialNo}`;
+            } else if (fileOption === 'old_mls' && serialNo) {
+                previewText = `KN ${serialNo}`;
+            } else if (fileOption === 'sltr' && serialNo) {
+                previewText = `SLTR-${serialNo}`;
+            } else if (fileOption === 'sit' && serialNo) {
+                previewText = `SIT-${year}-${serialNo}`;
             } else if ((fileOption === 'normal' || fileOption === 'temporary') && serialNo && year && landUse) {
                 const paddedSerial = serialNo.toString().padStart(4, '0');
                 previewText = `${landUse}-${year}-${paddedSerial}`;
@@ -811,27 +761,86 @@
                 preview.classList.remove('text-green-600');
                 preview.classList.add('text-gray-400');
             }
-            
-            // Show/hide sections based on file option
-            const extensionSection = document.getElementById('extensionFileSection');
+        }
+
+        // Add the dedicated form update function like capture_existing
+        function updateGenerateForm(type) {
             const middlePrefixSection = document.getElementById('middlePrefixSection');
             const yearSection = document.getElementById('yearSection');
+            const extensionFileSection = document.getElementById('extensionFileSection');
+            const serialNoField = document.getElementById('serialNo');
+            const serialDescription = document.getElementById('serialNoDescription');
             
-            if (fileOption === 'extension') {
-                extensionSection.classList.remove('hidden');
-            } else {
-                extensionSection.classList.add('hidden');
-            }
+            // Hide all sections first
+            middlePrefixSection.classList.add('hidden');
+            yearSection.classList.add('hidden');
+            extensionFileSection.classList.add('hidden');
             
-            if (fileOption === 'miscellaneous') {
-                middlePrefixSection.classList.remove('hidden');
-                yearSection.classList.add('hidden');
-            } else if (fileOption === 'sltr' || fileOption === 'sit') {
-                middlePrefixSection.classList.add('hidden');
-                yearSection.classList.add('hidden');
-            } else {
-                middlePrefixSection.classList.add('hidden');
+            // Reset serial number field properties and remove all restrictive attributes
+            serialNoField.type = 'text';
+            serialNoField.removeAttribute('min');
+            serialNoField.removeAttribute('max');
+            serialNoField.removeAttribute('step');
+            serialNoField.removeAttribute('maxlength');
+            serialNoField.removeAttribute('pattern');
+            
+            if (type === 'normal' || type === 'temporary') {
                 yearSection.classList.remove('hidden');
+                // For normal files, keep serial as number for auto-padding
+                serialNoField.type = 'number';
+                serialNoField.setAttribute('min', '1');
+                serialNoField.setAttribute('max', '9999');
+                serialNoField.placeholder = 'Auto-generated';
+                serialNoField.readOnly = true;
+                serialNoField.classList.add('bg-gray-100', 'text-gray-600');
+                serialNoField.classList.remove('bg-white', 'text-gray-900');
+                serialNoField.value = nextSerialNo;
+                
+                if (serialDescription) {
+                    serialDescription.textContent = 'Auto-generated';
+                    serialDescription.className = 'text-xs text-gray-500 mt-1';
+                }
+            } else if (type === 'extension') {
+                extensionFileSection.classList.remove('hidden');
+                yearSection.classList.remove('hidden');
+                serialNoField.placeholder = 'Not required for extensions';
+                serialNoField.value = '';
+                serialNoField.readOnly = true;
+                serialNoField.classList.add('bg-gray-100', 'text-gray-600');
+                serialNoField.classList.remove('bg-white', 'text-gray-900');
+                
+                if (serialDescription) {
+                    serialDescription.textContent = 'Not required for extensions';
+                    serialDescription.className = 'text-xs text-gray-500 mt-1';
+                }
+            } else if (type === 'miscellaneous' || type === 'sltr' || type === 'sit' || type === 'old_mls') {
+                if (type === 'miscellaneous') {
+                    middlePrefixSection.classList.remove('hidden');
+                }
+                // Make serial number plain text and editable for these types
+                serialNoField.type = 'text';
+                serialNoField.readOnly = false;
+                serialNoField.classList.remove('bg-gray-100', 'text-gray-600');
+                serialNoField.classList.add('bg-white', 'text-gray-900');
+                serialNoField.value = '';
+                
+                // Ensure no input restrictions by setting inputmode
+                serialNoField.setAttribute('inputmode', 'text');
+                
+                if (type === 'miscellaneous') {
+                    serialNoField.placeholder = 'Enter custom serial (e.g., 001, ABC123)';
+                } else if (type === 'sltr') {
+                    serialNoField.placeholder = 'Enter SLTR serial (e.g., 001, 2024-001)';
+                } else if (type === 'sit') {
+                    serialNoField.placeholder = 'Enter SIT serial (e.g., 001, 2024-001)';
+                } else if (type === 'old_mls') {
+                    serialNoField.placeholder = 'Enter Old MLS number (e.g., 5467, 34874857488758)';
+                }
+                
+                if (serialDescription) {
+                    serialDescription.textContent = 'Manual entry';
+                    serialDescription.className = 'text-xs text-blue-600 mt-1 font-medium';
+                }
             }
         }
 
@@ -1338,6 +1347,148 @@
             if (middlePrefixEl) {
                 middlePrefixEl.addEventListener('input', updatePreview);
             }
+        });
+
+        // Alpine.js component for file number generator
+        function fileNumberGenerator() {
+            return {
+                // Data properties
+                applicationType: 'new',
+                fileName: '',
+                landUse: '',
+                fileOption: 'normal',
+                existingFileNo: '',
+                middlePrefix: 'KN',
+                year: new Date().getFullYear(),
+                serialNo: '',
+                preview: '-',
+                
+                // Computed properties
+                get showYearSection() {
+                    return this.fileOption !== 'miscellaneous' && this.fileOption !== 'old_mls' && this.fileOption !== 'sltr';
+                },
+                
+                get isYearEditable() {
+                    return isOverrideMode;
+                },
+                
+                get isSerialEditable() {
+                    return this.fileOption === 'miscellaneous' || this.fileOption === 'sltr' || this.fileOption === 'sit' || this.fileOption === 'old_mls' || isOverrideMode;
+                },
+                
+                get serialFieldType() {
+                    return (this.fileOption === 'normal' || this.fileOption === 'temporary') && !isOverrideMode ? 'number' : 'text';
+                },
+                
+                get yearFieldClass() {
+                    return this.isYearEditable ? 'w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900' : 'w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-600';
+                },
+                
+                get serialFieldClass() {
+                    return this.isSerialEditable ? 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900' : 'w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-600';
+                },
+                
+                get serialPlaceholder() {
+                    if (this.fileOption === 'extension') {
+                        return 'Not required for extensions';
+                    } else if (this.fileOption === 'miscellaneous') {
+                        return 'Enter custom serial (e.g., 001, ABC123)';
+                    } else if (this.fileOption === 'sltr') {
+                        return 'Enter SLTR serial (e.g., 001, 2024-001)';
+                    } else if (this.fileOption === 'sit') {
+                        return 'Enter SIT serial (e.g., 001, 2024-001)';
+                    } else if (this.fileOption === 'old_mls') {
+                        return 'Enter Old MLS number (e.g., 5467, 34874857488758)';
+                    } else {
+                        return 'Auto-generated';
+                    }
+                },
+                
+                get serialDescription() {
+                    if (this.fileOption === 'extension') {
+                        return 'Not required for extensions';
+                    } else if (this.fileOption === 'miscellaneous' || this.fileOption === 'sltr' || this.fileOption === 'sit' || this.fileOption === 'old_mls') {
+                        return 'Manual entry ';
+                    } else {
+                        return 'Auto-generated';
+                    }
+                },
+                
+                get serialDescriptionClass() {
+                    if (this.fileOption === 'miscellaneous' || this.fileOption === 'sltr' || this.fileOption === 'sit' || this.fileOption === 'old_mls') {
+                        return 'text-blue-600 font-medium';
+                    } else {
+                        return 'text-gray-500';
+                    }
+                },
+                
+                get yearDescription() {
+                    return this.isYearEditable ? 'Editable' : 'Auto-filled';
+                },
+                
+                get previewClass() {
+                    return this.preview !== '-' ? 'text-green-600' : 'text-gray-400';
+                },
+                
+                // Methods
+                init() {
+                    this.serialNo = nextSerialNo;
+                    this.updatePreview();
+                },
+                
+                updateApplicationType() {
+                    this.landUse = '';
+                    // Reset file option to normal if SIT is selected but conversion type is chosen
+                    if (this.fileOption === 'sit' && this.applicationType === 'conversion') {
+                        this.fileOption = 'normal';
+                    }
+                    this.updatePreview();
+                },
+                
+                updateFileOption() {
+                    // Clear serial number when changing file option to special types
+                    if (this.fileOption === 'miscellaneous' || this.fileOption === 'sltr' || this.fileOption === 'sit' || this.fileOption === 'old_mls') {
+                        this.serialNo = '';
+                    } else if (this.fileOption === 'extension') {
+                        this.serialNo = '';
+                    } else {
+                        // Reset to auto-generated for normal/temporary
+                        this.serialNo = nextSerialNo;
+                    }
+                    
+                    this.updatePreview();
+                },
+                
+                updatePreview() {
+                    let previewText = '-';
+                    
+                    if (this.fileOption === 'extension' && this.existingFileNo) {
+                        previewText = this.existingFileNo + ' AND EXTENSION';
+                    } else if (this.fileOption === 'miscellaneous' && this.middlePrefix && this.serialNo) {
+                        previewText = `MISC-${this.middlePrefix}-${this.serialNo}`;
+                    } else if (this.fileOption === 'old_mls' && this.serialNo) {
+                        previewText = `KN ${this.serialNo}`;
+                    } else if (this.fileOption === 'sltr' && this.serialNo) {
+                        previewText = `SLTR-${this.serialNo}`;
+                    } else if (this.fileOption === 'sit' && this.serialNo) {
+                        previewText = `SIT-${this.year}-${this.serialNo}`;
+                    } else if ((this.fileOption === 'normal' || this.fileOption === 'temporary') && this.serialNo && this.year && this.landUse) {
+                        const paddedSerial = this.serialNo.toString().padStart(4, '0');
+                        previewText = `${this.landUse}-${this.year}-${paddedSerial}`;
+                        
+                        if (this.fileOption === 'temporary') {
+                            previewText += '(T)';
+                        }
+                    }
+                    
+                    this.preview = previewText;
+                }
+            }
+        }
+
+        // Add event listeners for form inputs
+        document.addEventListener('DOMContentLoaded', function() {
+            // ...existing code...
         });
     </script>
 @endsection

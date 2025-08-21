@@ -95,7 +95,7 @@
                 <!-- Modal Form -->
                 <form id="captureForm" onsubmit="submitCaptureForm(event)" class="space-y-6">
                     @csrf
-
+                    
                     <!-- Main Form Grid -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Left Column -->
@@ -175,6 +175,7 @@
                                     <option value="temporary">Temporary File</option>
                                     <option value="extension">Extension</option>
                                     <option value="miscellaneous">Miscellaneous</option>
+                                    <option value="old_mls">Old MLS</option>
                                     <option value="sltr">SLTR</option>
                                     <option value="sit">SIT</option>
                                 </select>
@@ -605,11 +606,13 @@
             yearSection.classList.add('hidden');
             extensionFileSection.classList.add('hidden');
             
-            // Reset serial number field properties
+            // Reset serial number field properties and remove all restrictive attributes
             serialNoField.type = 'text';
             serialNoField.removeAttribute('min');
             serialNoField.removeAttribute('max');
             serialNoField.removeAttribute('step');
+            serialNoField.removeAttribute('maxlength');
+            serialNoField.removeAttribute('pattern');
             
             if (type === 'normal' || type === 'temporary') {
                 prefixSection.classList.remove('hidden');
@@ -621,22 +624,30 @@
                 serialNoField.placeholder = 'Enter serial number (1-9999)';
             } else if (type === 'extension') {
                 extensionFileSection.classList.remove('hidden');
+                yearSection.classList.remove('hidden');
                 serialNoField.placeholder = 'Not required for extensions';
                 serialNoField.value = '';
                 serialNoField.disabled = true;
-            } else if (type === 'miscellaneous' || type === 'sltr' || type === 'sit') {
+            } else if (type === 'miscellaneous' || type === 'sit' || type === 'old_mls') {
                 if (type === 'miscellaneous') {
                     middlePrefixSection.classList.remove('hidden');
+                }
+                if (type === 'sit') {
+                    yearSection.classList.remove('hidden');
                 }
                 // Make serial number plain text and editable for these types
                 serialNoField.type = 'text';
                 serialNoField.disabled = false;
+                
+                // Ensure no input restrictions by setting inputmode
+                serialNoField.setAttribute('inputmode', 'text');
+                
                 if (type === 'miscellaneous') {
                     serialNoField.placeholder = 'Enter custom serial (e.g., 001, ABC123)';
-                } else if (type === 'sltr') {
-                    serialNoField.placeholder = 'Enter SLTR serial (e.g., 001, 2024-001)';
                 } else if (type === 'sit') {
-                    serialNoField.placeholder = 'Enter SIT serial (e.g., 001, 2024-001)';
+                    serialNoField.placeholder = 'Enter SIT serial (e.g., 001  )';
+                } else if (type === 'old_mls') {
+                    serialNoField.placeholder = 'Enter Old MLS number (e.g., 5467, 1234)';
                 }
             }
             
@@ -649,7 +660,7 @@
         }
 
         function updateCapturePreview() {
-            const fileOption = document.getElementById('fileOption').value; // Fixed: get value from select instead of radio
+            const fileOption = document.getElementById('fileOption').value;
             const prefix = document.getElementById('prefix').value;
             const middlePrefix = document.getElementById('middlePrefix').value;
             const year = document.getElementById('year').value;
@@ -663,10 +674,10 @@
                 previewText = existingFileNo + ' AND EXTENSION';
             } else if (fileOption === 'miscellaneous' && middlePrefix && serialNo) {
                 previewText = `MISC-${middlePrefix}-${serialNo}`;
-            } else if (fileOption === 'sltr' && serialNo) {
-                previewText = `SLTR-${serialNo}`;
+            } else if (fileOption === 'old_mls' && serialNo) {
+                previewText = `KN ${serialNo}`;
             } else if (fileOption === 'sit' && serialNo) {
-                previewText = `SIT-${serialNo}`;
+                previewText = `SIT-${year}-${serialNo}`;
             } else if ((fileOption === 'normal' || fileOption === 'temporary') && prefix && year && serialNo) {
                 const paddedSerial = serialNo.toString().padStart(4, '0');
                 previewText = `${prefix}-${year}-${paddedSerial}`;

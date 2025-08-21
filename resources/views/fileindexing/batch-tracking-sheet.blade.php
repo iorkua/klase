@@ -6,7 +6,7 @@
 
 @section('content')
 <link rel="stylesheet" href="{{ asset('css/print-tracking-sheet.css') }}">
-<style>
+<style> 
 @media screen {
     .tracking-sheet { 
         margin-bottom: 2rem; 
@@ -56,14 +56,20 @@
                 <!-- Header with tracking ID -->
                 <div class="p-2 border-b border-black">
                     <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <h1 class="text-sm font-bold">KANO STATE LAND REGISTRY</h1>
-                            <h2 class="text-xs">FILE TRACKING SHEET</h2>
+                        <div class="flex-1 flex justify-center items-center gap-4">
+                            <img src="{{ asset('assets/logo/logo1.jpg') }}" alt="Kano State Logo" class="w-12 h-12 object-contain">
+                            <div class="text-center">
+                                <h1 class="text-sm font-bold">KANO STATE LAND REGISTRY</h1>
+                                <h2 class="text-xs">FILE TRACKING SHEET</h2>
+                            </div>
+                            <img src="{{ asset('assets/logo/logo3.jpeg') }}" alt="Ministry Logo" class="w-12 h-12 object-contain">
                         </div>
-                        <div class="text-right text-xs">
-                            <p class="font-bold">Tracking ID: {{ $tracker->tracking_id }}</p>
-                            <p>Generated: {{ $tracker->sheet_generated_at->format('n/j/Y, g:i:s A') }}</p>
-                            <p class="text-xs text-gray-500 mt-1">Sheet {{ $index + 1 }} of {{ $fileIndexings->count() }}</p>
+                        <div class="text-right text-xs min-w-max ml-4">
+                            <div class="bg-gray-50 border border-gray-300 rounded p-2">
+                                <p class="font-bold text-blue-700">Tracking ID: {{ $tracker->tracking_id }}</p>
+                                <p class="text-gray-600">Generated: {{ $tracker->sheet_generated_at->format('n/j/Y, g:i:s A') }}</p>
+                                <p class="text-xs text-gray-500 mt-1 font-medium">Sheet {{ $index + 1 }} of {{ $fileIndexings->count() }}</p>
+                            </div>
                         </div>
                     </div>
                 </div>

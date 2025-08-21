@@ -3,7 +3,7 @@
     {{ __('File Indexing') }}
 @endsection
 
-
+ 
 @section('content')
   @include('fileindexing.css.style')
     <!-- Main Content -->

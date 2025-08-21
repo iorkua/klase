@@ -6,6 +6,10 @@
 @section('content')
 
 @php
+    use BaconQrCode\Renderer\ImageRenderer;
+    use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+    use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+    use BaconQrCode\Writer;
     // Get the fileno parameter from the URL
     $fileno = request()->get('fileno');
     $stmRef = request()->get('STM_Ref');
@@ -108,6 +112,16 @@
     
     // Override the $data variable
     $data = $displayData;
+    
+    // Generate QR code for verification
+    $qrCodeData = "STM_Ref: " . $data->STM_Ref . "\nVerification URL: " . url('/coroi?STM_Ref=' . $data->STM_Ref);
+    
+    $renderer = new ImageRenderer(
+        new RendererStyle(100), // Size
+        new SvgImageBackEnd()
+    );
+    $writer = new Writer($renderer);
+    $qrCodeSvg = $writer->writeString($qrCodeData);
 @endphp
     <style>
         .ck-editor__editable {
@@ -187,8 +201,8 @@
             }
             
             .logo-container img {
-                width: 18px !important;
-                height: 18px !important;
+                width: 30px !important;
+                height: 30px !important;
             }
             
             .title {
@@ -270,14 +284,14 @@
         }
         
         .logo-container {
-            width: 20px;
+            width: 35px;
             display: flex;
             justify-content: center;
         }
         
         .logo-container img {
-            width: 14px;
-            height: 14px;
+            width: 28px;
+            height: 28px;
             object-fit: contain;
         }
         
@@ -348,6 +362,37 @@
             height: 12px;
             object-fit: cover;
             border-radius: 50%;
+        }
+        
+        .registrar-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 4px;
+        }
+        
+        .registrar-text {
+            flex: 1;
+        }
+        
+        .qr-code-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 15px;
+            margin-right: 5px;
+        }
+        
+        .qr-code-container svg {
+            width: 50px;
+            height: 50px;
+        }
+        
+        @media print {
+            .qr-code-container svg {
+                width: 45px !important;
+                height: 45px !important;
+            }
         }
     </style>
     
@@ -428,7 +473,16 @@
                                     </div> -->
                                 @endif
                                 
-                                <p class="text-center mt-1">REGISTRAR OF DEEDS</p>
+                                <!-- Registrar section with QR code -->
+                                <div class="registrar-section">
+                                    <div class="registrar-text">
+                                        <p class="text-center">REGISTRAR OF DEEDS</p>
+                                    </div>
+                                    <div class="qr-code-container">
+                                        {!! $qrCodeSvg !!}
+                                    </div>
+                                </div>
+                                
                                 <div class="mt-1">
                                     <p>Signature: ________________________________</p>
                                     <p style="margin-top: 4px;">Date: ____________________________________</p>

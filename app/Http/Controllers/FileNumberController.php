@@ -254,15 +254,9 @@ class FileNumberController extends Controller
      */
     public function store(Request $request)
     {
+        // Only validate file name
         $validator = Validator::make($request->all(), [
-            'file_name' => 'required|string|max:255',
-            'application_type' => 'required|in:new,conversion',
-            'land_use' => 'required_unless:file_option,miscellaneous,sltr|string|max:20',
-            'year' => 'required_unless:file_option,miscellaneous,sltr|integer|min:2020|max:2050',
-            'serial_no' => 'required|integer|min:1',
-            'file_option' => 'required|in:normal,temporary,extension,miscellaneous,sltr',
-            'existing_file_no' => 'required_if:file_option,extension',
-            'middle_prefix' => 'required_if:file_option,miscellaneous|string|max:20'
+            'file_name' => 'required|string|max:255'
         ]);
 
         if ($validator->fails()) {
@@ -286,6 +280,9 @@ class FileNumberController extends Controller
             } elseif ($fileOption === 'sltr') {
                 // Format: SLTR-0203567
                 $mlsfNo = 'SLTR-' . $request->serial_no;
+            } elseif ($fileOption === 'sit') {
+                // Format: SIT-2025-0203567
+                $mlsfNo = 'SIT-' . $request->year . '-' . $request->serial_no;
             } else {
                 // Generate new file number
                 $serialNo = str_pad($request->serial_no, 4, '0', STR_PAD_LEFT);
@@ -296,19 +293,17 @@ class FileNumberController extends Controller
                 }
             }
 
-            // Check if file number already exists (only for non-extension files)
-            if ($fileOption !== 'extension') {
-                $exists = DB::connection('sqlsrv')
-                    ->table('fileNumber')
-                    ->where('mlsfNo', $mlsfNo)
-                    ->exists();
+            // Only validate for duplicates
+            $exists = DB::connection('sqlsrv')
+                ->table('fileNumber')
+                ->where('mlsfNo', $mlsfNo)
+                ->exists();
 
-                if ($exists) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'File number already exists: ' . $mlsfNo
-                    ], 409);
-                }
+            if ($exists) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File number already exists: ' . $mlsfNo
+                ], 409);
             }
 
             // Insert new record - only populate mlsfNo field, leave others null
@@ -321,7 +316,6 @@ class FileNumberController extends Controller
                     'FileName' => $request->file_name,
                     'type' => 'Generated',
                     'is_deleted' => 0,
-                    'location' => $request->land_use,
                     'created_by' => Auth::user()->name ?? Auth::user()->email ?? 'System',
                     'created_at' => now(),
                     'updated_at' => now()
@@ -353,14 +347,9 @@ class FileNumberController extends Controller
      */
     public function captureStore(Request $request)
     {
+        // Only validate file name and that we have a generated file number
         $validator = Validator::make($request->all(), [
-            'file_name' => 'required|string|max:255',
-            'file_option' => 'required|in:normal,temporary,extension,miscellaneous,sltr',
-            'prefix' => 'required_if:file_option,normal,temporary|string|max:20',
-            'middle_prefix' => 'required_if:file_option,miscellaneous|string|max:20',
-            'serial_no' => 'required|string|max:20',
-            'year' => 'required_if:file_option,normal,temporary|integer|min:1900|max:2050',
-            'existing_file_no' => 'required_if:file_option,extension'
+            'file_name' => 'required|string|max:255'
         ]);
 
         if ($validator->fails()) {
@@ -375,25 +364,28 @@ class FileNumberController extends Controller
             $fileOption = $request->file_option;
             $mlsfNo = '';
 
+            // Generate the complete file number based on file option
             if ($fileOption === 'extension') {
-                // For extensions, use the existing file number with "AND EXTENSION"
                 $mlsfNo = $request->existing_file_no . ' AND EXTENSION';
             } elseif ($fileOption === 'miscellaneous') {
-                // Format: MISC-KN-0203
                 $mlsfNo = 'MISC-' . $request->middle_prefix . '-' . $request->serial_no;
+            } elseif ($fileOption === 'old_mls') {
+                $mlsfNo = 'KN ' . $request->serial_no;
             } elseif ($fileOption === 'sltr') {
-                // Format: SLTR-0203567
                 $mlsfNo = 'SLTR-' . $request->serial_no;
+            } elseif ($fileOption === 'sit') {
+                $mlsfNo = 'SIT-' . $request->year . '-' . $request->serial_no;
             } else {
-                // Normal and temporary format with prefix, year, and serial
-                $mlsfNo = $request->prefix . '-' . $request->year . '-' . str_pad($request->serial_no, 4, '0', STR_PAD_LEFT);
+                // Normal and temporary format
+                $serialPadded = is_numeric($request->serial_no) ? str_pad($request->serial_no, 4, '0', STR_PAD_LEFT) : $request->serial_no;
+                $mlsfNo = $request->prefix . '-' . $request->year . '-' . $serialPadded;
                 
                 if ($fileOption === 'temporary') {
                     $mlsfNo .= '(T)';
                 }
             }
 
-            // Check if file number already exists
+            // Only validate for duplicates
             $exists = DB::connection('sqlsrv')
                 ->table('fileNumber')
                 ->where('mlsfNo', $mlsfNo)
@@ -406,7 +398,7 @@ class FileNumberController extends Controller
                 ], 409);
             }
 
-            // Insert new record
+            // Insert new record with only mlsfNo and file name
             $id = DB::connection('sqlsrv')
                 ->table('fileNumber')
                 ->insertGetId([
@@ -416,7 +408,6 @@ class FileNumberController extends Controller
                     'FileName' => $request->file_name,
                     'type' => 'Captured',
                     'is_deleted' => 0,
-                    'location' => $request->prefix ?? 'MISC',
                     'created_by' => Auth::user()->name ?? Auth::user()->email ?? 'System',
                     'created_at' => now(),
                     'updated_at' => now()
@@ -428,8 +419,6 @@ class FileNumberController extends Controller
                 'data' => [
                     'id' => $id,
                     'mlsfNo' => $mlsfNo,
-                    'kangisFileNo' => null,
-                    'NewKANGISFileNo' => null,
                     'FileName' => $request->file_name
                 ]
             ]);

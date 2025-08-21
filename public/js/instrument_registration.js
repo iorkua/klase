@@ -72,10 +72,12 @@ window.populateAvailablePropertiesTable = function() {
     return;
   }
   
-  // Get search input value
+  // Get search input and filter values
   const searchInput = document.getElementById('batchSearchInput')?.value?.toLowerCase() || '';
+  const filterValue = document.getElementById('batchStatusFilter')?.value || 'batch';
   
   console.log("Search input:", searchInput);
+  console.log("Filter value:", filterValue);
   console.log("cofoData length:", cofoData ? cofoData.length : 0);
   
   // Validate cofoData
@@ -90,8 +92,75 @@ window.populateAvailablePropertiesTable = function() {
     return;
   }
   
-  // Filter data by search input only (filter is already applied by the server)
-  let filteredData = [...cofoData]; // Make a copy
+  // CRITICAL: Filter to only show PENDING instruments - exclude ALL registered ones
+  let filteredData = cofoData.filter(item => {
+    // Multiple checks to ensure we only get pending instruments
+    const isPending = item.status === 'pending';
+    const isNotRegistered = item.status !== 'registered';
+    const hasNoRegDate = !item.reg_date;
+    const hasNoRegNumber = !item.Deeds_Serial_No && !item.particularsRegistrationNumber;
+    
+    // Log for debugging registered instruments that might slip through
+    if (!isPending) {
+      console.log("Excluding non-pending instrument:", {
+        id: item.id,
+        fileNo: item.fileNo,
+        status: item.status,
+        reg_date: item.reg_date,
+        Deeds_Serial_No: item.Deeds_Serial_No
+      });
+    }
+    
+    // Only include if it's pending AND not registered AND has no registration details
+    return isPending && isNotRegistered && hasNoRegDate && hasNoRegNumber;
+  });
+  
+  console.log("After pending-only filter:", filteredData.length, "instruments");
+  console.log("Sample pending instruments:", filteredData.slice(0, 3).map(item => ({
+    id: item.id,
+    fileNo: item.fileNo,
+    status: item.status,
+    instrumentType: item.instrumentType
+  })));
+  
+  // Apply instrument type filter based on dropdown selection
+  if (filterValue !== 'batch') {
+    filteredData = filteredData.filter(item => {
+      const instrumentType = (item.instrumentType || '').toLowerCase();
+      
+      switch (filterValue) {
+        case 'other':
+          // Other instruments - exclude the specific ST types
+          return !instrumentType.includes('st assignment') && 
+                 !instrumentType.includes('sectional titling') && 
+                 !instrumentType.includes('sltr') &&
+                 !instrumentType.includes('st fragmentation');
+        
+        case 'stAssignment':
+          // ST Assignment (Transfer of Title)
+          return instrumentType.includes('st assignment') || 
+                 instrumentType.includes('transfer of title');
+        
+        case 'regular':
+          // Regular CofO - general certificates that aren't ST or SLTR
+          return instrumentType.includes('cofo') || 
+                 instrumentType.includes('certificate of occupancy');
+        
+        case 'sectional':
+          // Sectional Titling CofO
+          return instrumentType.includes('sectional titling');
+        
+        case 'sltr':
+          // SLTR CofO
+          return instrumentType.includes('sltr');
+        
+        default:
+          return true;
+      }
+    });
+  }
+  
+  console.log("After instrument type filter:", filteredData.length, "instruments");
   
   // Apply search filter if there's a search term
   if (searchInput) {
@@ -99,23 +168,41 @@ window.populateAvailablePropertiesTable = function() {
       const fileNo = (item.fileNo || '').toLowerCase();
       const grantor = (item.grantor || '').toLowerCase();
       const grantee = (item.grantee || '').toLowerCase();
+      const instrumentType = (item.instrumentType || '').toLowerCase();
+      
       return fileNo.includes(searchInput) || 
              grantor.includes(searchInput) || 
-             grantee.includes(searchInput);
+             grantee.includes(searchInput) ||
+             instrumentType.includes(searchInput);
     });
   }
   
   // Debug: Print sample of filtered data
+  console.log("Final filtered data:", filteredData.length, "instruments");
   console.log("Sample data after filtering:", filteredData.slice(0, 2));
+  
   // Clear the table first
   table.innerHTML = '';
   
   // Check if we have data after filtering
   if (filteredData.length === 0) {
+    const filterName = {
+      'other': 'other pending instruments',
+      'stAssignment': 'pending ST Assignment instruments',
+      'regular': 'pending Regular CofO instruments', 
+      'sectional': 'pending Sectional Titling CofO instruments',
+      'sltr': 'pending SLTR CofO instruments',
+      'batch': 'pending instruments'
+    }[filterValue] || 'pending instruments';
+    
     table.innerHTML = `
       <tr>
         <td colspan="5" class="px-6 py-10 text-center text-gray-500">
-          No instruments found matching your criteria.
+          <div class="text-center">
+            <i class="fas fa-search text-gray-300 text-3xl mb-3"></i>
+            <p class="font-medium">No ${filterName} found</p>
+            <p class="text-sm text-gray-400 mt-1">Only pending instruments are available for batch registration</p>
+          </div>
         </td>
       </tr>
     `;
@@ -132,29 +219,27 @@ window.populateAvailablePropertiesTable = function() {
     
     const isAlreadySelected = selectedBatchProperties.some(prop => String(prop.id) === String(item.id));
     
-    // Check if this is an ST CofO instrument - disable checkbox if it is
-    const isSTCofo = item.instrumentType === 'Sectional Titling CofO';
-    const checkboxDisabled = isAlreadySelected || isSTCofo;
-    const checkboxClass = isSTCofo ? 'rounded available-property-checkbox cursor-not-allowed' : 'rounded available-property-checkbox';
-    
     const row = document.createElement('tr');
     row.className = 'hover:bg-gray-50';
+    
+    // Add a pending status indicator for visual confirmation
+    const statusBadge = `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+      <i class="fas fa-clock mr-1"></i> Pending
+    </span>`;
+    
     row.innerHTML = `
       <td class="px-6 py-4 whitespace-nowrap">
-        <input type="checkbox" class="${checkboxClass}" 
+        <input type="checkbox" class="rounded available-property-checkbox" 
           data-id="${item.id}" 
           data-instrument-type="${item.instrumentType || ''}"
-          ${checkboxDisabled ? 'disabled' : ''} 
-          ${isAlreadySelected ? 'checked' : ''}
-          ${isSTCofo ? 'title="ST CofO instruments cannot be registered directly. Please register the corresponding ST Assignment first."' : ''}>
+          data-status="${item.status || 'pending'}"
+          ${isAlreadySelected ? 'checked' : ''}>
       </td>
       <td class="px-6 py-4 whitespace-nowrap text-sm">${item.fileNo || 'N/A'}</td>
       <td class="px-6 py-4 whitespace-nowrap text-sm">${item.grantor || 'N/A'}</td>
       <td class="px-6 py-4 whitespace-nowrap text-sm">${item.grantee || 'N/A'}</td>
       <td class="px-6 py-4 whitespace-nowrap text-sm">
-        <span class="badge badge-${item.status || 'pending'}">
-          ${capitalizeFirstLetter(item.status || 'pending')}
-        </span>
+        ${statusBadge}
       </td>
     `;
     

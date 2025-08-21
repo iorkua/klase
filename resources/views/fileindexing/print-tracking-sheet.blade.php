@@ -3,38 +3,31 @@
 @section('page-title')
     {{ $PageTitle ?? 'Print Tracking Sheet' }}
 @endsection
-
+ 
 @section('content')
-<link rel="stylesheet" href="{{ asset('css/print-tracking-sheet.css') }}">
-
 <div class="flex-1 overflow-auto">
     <!-- Print-optimized tracking sheet -->
-    <div class="bg-white font-sans text-xs tracking-sheet" id="print-tracking-sheet">
+    <div class="bg-white font-sans text-xs" id="print-tracking-sheet">
         <div class="max-w-full mx-auto bg-white border border-black">
             <!-- Header with tracking ID -->
             <div class="p-2 border-b border-black">
                 <div class="flex justify-between items-start mb-2">
-                    <div class="flex items-center gap-4">
-                        <!-- Two logos side by side -->
-                        <div class="flex items-center gap-2">
-                            <div class="w-12 h-12 bg-gray-200 border border-gray-400 flex items-center justify-center">
-                                <span class="text-xs font-bold">LOGO 1</span>
-                            </div>
-                            <div class="w-12 h-12 bg-gray-200 border border-gray-400 flex items-center justify-center">
-                                <span class="text-xs font-bold">LOGO 2</span>
-                            </div>
-                        </div>
-                        <div>
+                    <div class="flex-1 flex justify-center items-center gap-4">
+                        <img src="{{ asset('assets/logo/logo1.jpg') }}" alt="Kano State Logo" class="w-12 h-12 object-contain">
+                        <div class="text-center">
                             <h1 class="text-sm font-bold">KANO STATE LAND REGISTRY</h1>
                             <h2 class="text-xs">FILE TRACKING SHEET</h2>
                         </div>
+                        <img src="{{ asset('assets/logo/logo3.jpeg') }}" alt="Ministry Logo" class="w-12 h-12 object-contain">
                     </div>
-                    <div class="text-right text-xs">
-                        <p class="font-bold">Tracking ID: {{ $tracker->tracking_id }}</p>
-                        <p>Generated: {{ $tracker->sheet_generated_at->format('n/j/Y, g:i:s A') }}</p>
-                        @if($tracker->total_prints > 0)
-                        <p>Prints: {{ $tracker->total_prints }}</p>
-                        @endif
+                    <div class="text-right text-xs min-w-max ml-4">
+                        <div class="bg-gray-50 border border-gray-300 rounded p-2">
+                            <p class="font-bold text-blue-700">Tracking ID: {{ $tracker->tracking_id }}</p>
+                            <p class="text-gray-600">Generated: {{ $tracker->sheet_generated_at->format('n/j/Y, g:i:s A') }}</p>
+                            @if($tracker->total_prints > 0)
+                            <p class="text-xs text-gray-500 mt-1 font-medium">Prints: {{ $tracker->total_prints }}</p>
+                            @endif
+                        </div>
                     </div>
                 </div>
             </div>
@@ -54,36 +47,9 @@
                                 <h3 class="text-xs font-bold mb-1">File Details</h3>
                                 <p class="text-xs font-semibold mb-2">{{ $fileIndexing->file_title }}</p>
                                 
-                                <!-- Status buttons with updated status system -->
+                                <!-- Status buttons -->
                                 <div class="flex gap-2 mb-3">
-                                    @php
-                                        $status = $tracker->status ?? 'Active';
-                                        $statusClass = match($status) {
-                                            'Active' => 'bg-green-600 text-white',
-                                            'Normal' => 'bg-blue-600 text-white', 
-                                            'Scanned' => 'bg-purple-600 text-white',
-                                            'Typed' => 'bg-indigo-600 text-white',
-                                            'Pending' => 'bg-yellow-600 text-white',
-                                            'Completed' => 'bg-green-700 text-white',
-                                            'In Progress' => 'bg-blue-500 text-white',
-                                            default => 'bg-gray-600 text-white'
-                                        };
-                                    @endphp
-                                    <span class="px-2 py-1 text-xs rounded {{ $statusClass }}">{{ $status }}</span>
-                                    
-                                    @if($tracker->priority ?? false)
-                                    @php
-                                        $priority = $tracker->priority;
-                                        $priorityClass = match($priority) {
-                                            'High' => 'bg-red-600 text-white',
-                                            'Medium' => 'bg-orange-600 text-white', 
-                                            'Low' => 'bg-green-600 text-white',
-                                            default => 'bg-gray-600 text-white'
-                                        };
-                                    @endphp
-                                    <span class="px-2 py-1 text-xs rounded {{ $priorityClass }}">{{ $priority }}</span>
-                                    @endif
-                                    
+                                    <span class="bg-blue-600 text-white px-2 py-1 text-xs rounded">Status: Indexed</span>
                                     @if($fileIndexing->scannings->count() > 0)
                                     <span class="bg-green-600 text-white px-2 py-1 text-xs rounded">Scanned</span>
                                     @endif
@@ -113,7 +79,7 @@
                         </div>
                     </div>
 
-                    <!-- QR Code section with real QR code -->
+                    <!-- QR Code section with real QR code API -->
                     <div class="col-span-4">
                         <h3 class="text-xs font-bold mb-1">QR Code</h3>
                         <div class="border border-gray-400 p-2 text-center">
@@ -124,7 +90,7 @@
                                     'file_title' => $fileIndexing->file_title,
                                     'plot_number' => $fileIndexing->plot_number,
                                     'district' => $fileIndexing->district,
-                                    'status' => $status,
+                                    'status' => 'Active',
                                     'url' => route('fileindexing.show', $fileIndexing->id)
                                 ]);
                                 $qrCodeUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=' . urlencode($qrData);
@@ -144,22 +110,18 @@
                     <h3 class="text-xs font-bold mb-1">Current Location</h3>
                     <div class="grid grid-cols-4 gap-4 text-xs">
                         <div>
-                            <p class="font-semibold">{{ $tracker->current_location ?? 'File Indexing System' }}</p>
-                            <p>Last updated: {{ ($tracker->last_location_update ?? $fileIndexing->created_at)->format('Y-m-d') }}</p>
+                            <p class="font-semibold">File Indexing Department</p>
+                            <p>Last updated: {{ $fileIndexing->updated_at->format('Y-m-d') }}</p>
                         </div>
                         <div>
-                            <p class="font-semibold">{{ $tracker->current_handler ?? 'System User' }}</p>
+                            <p class="font-semibold">System User</p>
                             <p>Current handler</p>
                         </div>
                         <div>
-                            <p class="font-semibold">{{ ($tracker->last_location_update ?? $fileIndexing->created_at)->format('Y-m-d g:i A') }}</p>
-                            <p>Last location update</p>
+                            <p class="font-semibold">{{ $fileIndexing->created_at->format('Y-m-d g:i A') }}</p>
+                            <p>Last system update</p>
                         </div>
-                        <div>
-                            @if(($tracker->total_prints ?? 0) > 0)
-                            <p class="text-xs">Prints: {{ $tracker->total_prints }}</p>
-                            @endif
-                        </div>
+                        <div></div>
                     </div>
                 </div>
 
@@ -177,25 +139,13 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @if(isset($tracker->movement_history) && count($tracker->movement_history) > 0)
-                                @foreach($tracker->movement_history as $movement)
-                                <tr>
-                                    <td class="border border-black p-1">{{ $movement['date'] }} {{ $movement['time'] }}</td>
-                                    <td class="border border-black p-1">{{ $movement['location'] }}</td>
-                                    <td class="border border-black p-1">{{ $movement['handler'] }}</td>
-                                    <td class="border border-black p-1">{{ $movement['action'] }}</td>
-                                    <td class="border border-black p-1">{{ $movement['method'] }}</td>
-                                </tr>
-                                @endforeach
-                            @else
-                                <tr>
-                                    <td class="border border-black p-1">{{ $fileIndexing->created_at->format('Y-m-d g:i A') }}</td>
-                                    <td class="border border-black p-1">File Indexing System</td>
-                                    <td class="border border-black p-1">System User</td>
-                                    <td class="border border-black p-1">File indexed and registered</td>
-                                    <td class="border border-black p-1">Digital</td>
-                                </tr>
-                            @endif
+                            <tr>
+                                <td class="border border-black p-1">{{ $fileIndexing->created_at->format('Y-m-d g:i A') }}</td>
+                                <td class="border border-black p-1">File Indexing System</td>
+                                <td class="border border-black p-1">System User</td>
+                                <td class="border border-black p-1">File indexed and registered</td>
+                                <td class="border border-black p-1">Digital</td>
+                            </tr>
                             @if($fileIndexing->scannings->count() > 0)
                             <tr>
                                 <td class="border border-black p-1">{{ $fileIndexing->scannings->first()->created_at->format('Y-m-d g:i A') }}</td>
@@ -215,7 +165,7 @@
                             </tr>
                             @endif
                             <!-- Empty rows for manual tracking -->
-                            @for ($i = 1; $i <= 6; $i++)
+                            @for ($i = 1; $i <= 10; $i++)
                             <tr>
                                 <td class="border border-black p-1 h-6"></td>
                                 <td class="border border-black p-1"></td>
@@ -317,13 +267,6 @@
     }
     thead tr {
         background-color: #f5f5f5 !important;
-    }
-}
-
-@media screen {
-    .tracking-sheet { 
-        margin-bottom: 2rem; 
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
 }
 </style>

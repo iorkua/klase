@@ -78,7 +78,8 @@
     });
     
     // Tab functionality (enhanced for indexed files and tracking files)
-    $('.tab-button').click(function() {
+    $('.tab-button').off('click').on('click', function(e) {
+      e.preventDefault();
       const tabId = $(this).data('tab');
       
       // Update active tab button
@@ -93,6 +94,9 @@
         loadIndexedFiles();
         // Enable header button functionality for indexed files
         updateHeaderButtonForIndexedTab();
+        
+        // Hide File Details sidebar for indexed files tab
+        $('.file-details').hide();
       } else {
         // Show tracking files tab content
         $('#indexed-files-content').hide();
@@ -101,6 +105,9 @@
         // Reset header button for other tabs
         $('#header-track-btn').prop('disabled', false);
         $('#header-track-text').text('Track New File');
+        
+        // Show File Details sidebar for other tabs
+        $('.file-details').show();
         
         // Apply status filtering for tracking files based on tab
         filterTrackingFilesByTab(tabId);
@@ -813,6 +820,11 @@
         alert('Please select a file first by clicking on it in the table.');
       }
     };
+
+    // Initialize the page - ensure indexed tab starts with hidden sidebar
+    if ($('.tab-button.active').data('tab') === 'indexed') {
+      $('.file-details').hide();
+    }
   });
 
   // Fix for table row clicks - add simple click handler
