@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use App\Models\DecommissionedFiles;
 
 class FileNumber extends Model
 {
@@ -20,25 +21,16 @@ class FileNumber extends Model
         'updated_by',
         'location',
         'is_deleted',
-        'SOURCE',
-        'commissioning_date',
-        'decommissioning_date',
-        'decommissioning_reason',
-        'is_decommissioned'
+        'SOURCE'
     ];
 
     protected $dates = [
         'created_at',
-        'updated_at',
-        'commissioning_date',
-        'decommissioning_date'
+        'updated_at'
     ];
 
     protected $casts = [
-        'is_deleted' => 'boolean',
-        'is_decommissioned' => 'boolean',
-        'commissioning_date' => 'datetime',
-        'decommissioning_date' => 'datetime'
+        'is_deleted' => 'boolean'
     ];
 
     /**
@@ -103,9 +95,19 @@ class FileNumber extends Model
      */
     public function scopeActive($query)
     {
-        return $query->where(function($q) {
-            $q->whereNull('is_decommissioned')->orWhere('is_decommissioned', 0);
-        });
+        // Get all decommissioned file IDs
+        $decommissionedIds = [];
+        $records = DecommissionedFiles::getAllRecords();
+        
+        foreach ($records as $record) {
+            $decommissionedIds[] = $record['file_number_id'];
+        }
+        
+        if (!empty($decommissionedIds)) {
+            return $query->whereNotIn('id', $decommissionedIds);
+        }
+        
+        return $query;
     }
 
     /**
@@ -113,7 +115,19 @@ class FileNumber extends Model
      */
     public function scopeDecommissioned($query)
     {
-        return $query->where('is_decommissioned', 1);
+        // Get all decommissioned file IDs
+        $decommissionedIds = [];
+        $records = DecommissionedFiles::getAllRecords();
+        
+        foreach ($records as $record) {
+            $decommissionedIds[] = $record['file_number_id'];
+        }
+        
+        if (!empty($decommissionedIds)) {
+            return $query->whereIn('id', $decommissionedIds);
+        }
+        
+        return $query->whereRaw('1 = 0'); // Return no results if no decommissioned files
     }
 
     /**
@@ -121,7 +135,7 @@ class FileNumber extends Model
      */
     public function isDecommissioned()
     {
-        return $this->is_decommissioned == 1;
+        return DecommissionedFiles::isFileDecommissioned($this->id);
     }
 
     /**
@@ -130,39 +144,24 @@ class FileNumber extends Model
     public function decommission($reason, $decommissioningDate = null, $commissioningDate = null)
     {
         $decommissioningDate = $decommissioningDate ?: now();
-        $decommissionedBy = auth()->user()->name ?? auth()->user()->email ?? 'System';
         
-        DB::beginTransaction();
+        // Ensure storage exists
+        DecommissionedFiles::ensureStorageExists();
         
-        try {
-            // Update the file number record
-            $this->update([
-                'commissioning_date' => $commissioningDate,
-                'decommissioning_date' => $decommissioningDate,
-                'decommissioning_reason' => $reason,
-                'is_decommissioned' => true
-            ]);
+        // Create record in decommissioned files log
+        DecommissionedFiles::create([
+            'file_number_id' => $this->id,
+            'file_no' => $this->id,
+            'mls_file_no' => $this->mlsfNo,
+            'kangis_file_no' => $this->kangisFileNo,
+            'new_kangis_file_no' => $this->NewKANGISFileNo,
+            'file_name' => $this->FileName,
+            'commissioning_date' => $commissioningDate ? $commissioningDate->toDateTimeString() : null,
+            'decommissioning_date' => $decommissioningDate->toDateTimeString(),
+            'decommissioning_reason' => $reason,
+            'decommissioned_by' => auth()->user()->name ?? auth()->user()->email ?? 'System'
+        ]);
 
-            // Create record in decommissioned files table
-            DecommissionedFiles::create([
-                'file_number_id' => $this->id,
-                'file_no' => $this->id,
-                'mls_file_no' => $this->mlsfNo,
-                'kangis_file_no' => $this->kangisFileNo,
-                'new_kangis_file_no' => $this->NewKANGISFileNo,
-                'file_name' => $this->FileName,
-                'commissioning_date' => $commissioningDate,
-                'decommissioning_date' => $decommissioningDate,
-                'decommissioning_reason' => $reason,
-                'decommissioned_by' => $decommissionedBy
-            ]);
-
-            DB::commit();
-            return true;
-            
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
+        return true;
     }
 }

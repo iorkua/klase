@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use App\Models\DecommissionedFiles;
 
 class FileNumber extends Model
 {
@@ -125,37 +126,93 @@ class FileNumber extends Model
     }
 
     /**
-     * Decommission this file
+     * Decommission this file using stored procedure
      */
     public function decommission($reason, $decommissioningDate = null, $commissioningDate = null)
     {
         $decommissioningDate = $decommissioningDate ?: now();
         $decommissionedBy = auth()->user()->name ?? auth()->user()->email ?? 'System';
         
+        try {
+            // Try to use stored procedure first
+            $result = DB::connection('sqlsrv')->select('EXEC sp_DecommissionFile ?, ?, ?, ?, ?', [
+                $this->id,
+                $reason,
+                $decommissioningDate->format('Y-m-d H:i:s'),
+                $commissioningDate ? $commissioningDate->format('Y-m-d H:i:s') : null,
+                $decommissionedBy
+            ]);
+            
+            // Check if the procedure returned success
+            if (isset($result[0]) && $result[0]->Status === 'SUCCESS') {
+                // Refresh the model to get updated data
+                $this->refresh();
+                return true;
+            } else {
+                throw new \Exception($result[0]->Message ?? 'Unknown error from stored procedure');
+            }
+            
+        } catch (\Exception $e) {
+            // Fallback to manual process if stored procedure fails
+            \Log::warning('Stored procedure failed, using manual decommissioning: ' . $e->getMessage());
+            
+            DB::beginTransaction();
+            
+            try {
+                // Update the file number record
+                $this->update([
+                    'commissioning_date' => $commissioningDate,
+                    'decommissioning_date' => $decommissioningDate,
+                    'decommissioning_reason' => $reason,
+                    'is_decommissioned' => true
+                ]);
+
+                // Create record in decommissioned files table
+                DecommissionedFiles::create([
+                    'file_number_id' => $this->id,
+                    'file_no' => $this->id,
+                    'mls_file_no' => $this->mlsfNo,
+                    'kangis_file_no' => $this->kangisFileNo,
+                    'new_kangis_file_no' => $this->NewKANGISFileNo,
+                    'file_name' => $this->FileName,
+                    'commissioning_date' => $commissioningDate,
+                    'decommissioning_date' => $decommissioningDate,
+                    'decommissioning_reason' => $reason,
+                    'decommissioned_by' => $decommissionedBy
+                ]);
+
+                DB::commit();
+                return true;
+                
+            } catch (\Exception $e2) {
+                DB::rollBack();
+                throw $e2;
+            }
+        }
+    }
+
+    /**
+     * Reactivate a decommissioned file (if needed)
+     */
+    public function reactivate()
+    {
+        if (!$this->isDecommissioned()) {
+            return false;
+        }
+
         DB::beginTransaction();
         
         try {
             // Update the file number record
             $this->update([
-                'commissioning_date' => $commissioningDate,
-                'decommissioning_date' => $decommissioningDate,
-                'decommissioning_reason' => $reason,
-                'is_decommissioned' => true
+                'commissioning_date' => null,
+                'decommissioning_date' => null,
+                'decommissioning_reason' => null,
+                'is_decommissioned' => false
             ]);
 
-            // Create record in decommissioned files table
-            DecommissionedFiles::create([
-                'file_number_id' => $this->id,
-                'file_no' => $this->id,
-                'mls_file_no' => $this->mlsfNo,
-                'kangis_file_no' => $this->kangisFileNo,
-                'new_kangis_file_no' => $this->NewKANGISFileNo,
-                'file_name' => $this->FileName,
-                'commissioning_date' => $commissioningDate,
-                'decommissioning_date' => $decommissioningDate,
-                'decommissioning_reason' => $reason,
-                'decommissioned_by' => $decommissionedBy
-            ]);
+            // Remove from decommissioned files table
+            DecommissionedFiles::where('file_number_id', $this->id)->delete();
 
             DB::commit();
             return true;

@@ -893,10 +893,11 @@
             // Get application data for the current file
             var landSize = '1,200'; // Default value
             var unitsCount = '12'; // Default value
+            var landUse = 'Residential'; // Default value
             
             // Try to get actual values from the current application
             if (currentApplication && currentApplication.fileId) {
-                // Fetch application details to get plot_size and NoOfUnits
+                // Fetch application details to get plot_size, NoOfUnits, and land_use
                 fetchApplicationDetails(currentApplication.fileId, currentApplication.fileType);
             }
             
@@ -927,27 +928,10 @@
                                 <form id="betterment-form" class="space-y-4">
                                     <div class="grid grid-cols-2 gap-4">
                                         <div class="space-y-2">
-                                            <label for="betterment-property-value" class="text-xs font-medium block">
-                                                Property Value (₦)
+                                            <label for="betterment-land-use" class="text-xs font-medium block">
+                                                Land Use
                                             </label>
-                                            <input id="betterment-property-value" name="property_value" type="text" value="0.00"
-                                                class="w-full p-2 border border-gray-300 rounded-md text-sm" required>
-                                        </div>
-                                        <div class="space-y-2">
-                                            <label for="betterment-rate" class="text-xs font-medium block">
-                                                Betterment Rate (%)
-                                            </label>
-                                            <input id="betterment-rate" name="betterment_rate" type="text" value="2.5"
-                                                class="w-full p-2 border border-gray-300 rounded-md text-sm" required>
-                                        </div>
-                                    </div>
-
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div class="space-y-2">
-                                            <label for="betterment-land-size" class="text-xs font-medium block">
-                                                Land Size (sqm)
-                                            </label>
-                                            <input id="betterment-land-size" name="land_size" type="text" value="${landSize}"
+                                            <input id="betterment-land-use" name="land_use" type="text" value="${landUse}"
                                                 class="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50" readonly>
                                         </div>
                                         <div class="space-y-2">
@@ -959,10 +943,27 @@
                                         </div>
                                     </div>
 
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div class="space-y-2">
+                                            <label for="betterment-land-size" class="text-xs font-medium block">
+                                                Total Land Size (m²)
+                                            </label>
+                                            <input id="betterment-land-size" name="land_size" type="text" value="${landSize}"
+                                                class="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50" readonly>
+                                        </div>
+                                        <div class="space-y-2">
+                                            <label for="betterment-area-per-unit" class="text-xs font-medium block">
+                                                Area per Unit (m²)
+                                            </label>
+                                            <input id="betterment-area-per-unit" name="area_per_unit" type="text" value="100"
+                                                class="w-full p-2 border border-gray-300 rounded-md text-sm bg-gray-50" readonly>
+                                        </div>
+                                    </div>
+
                                     <div class="bg-gray-50 p-3 rounded-md">
-                                        <h4 class="text-xs font-medium">Calculation Formula</h4>
-                                        <p class="text-xs text-gray-500">Betterment Fee = Property Value × Betterment Rate × Land Size Factor</p>
-                                        <p class="text-xs text-gray-400 mt-1">Land Size Factor is automatically calculated based on the property size.</p>
+                                        <h4 class="text-xs font-medium">New Calculation Formula</h4>
+                                        <p class="text-xs text-gray-500">Total Fee = Number of Units × (Base Fee + (Area per Unit - Threshold) × Rate)</p>
+                                        <p class="text-xs text-gray-400 mt-1">Rates vary by land use: Industrial/Commercial (₦35,000 base, ₦5/m²), Residential (₦15,000 base, ₦1/m²), etc.</p>
                                     </div>
 
                                     <div class="flex justify-between items-center">
@@ -1167,25 +1168,17 @@
             }
         });
 
-        // Betterment bill calculation
+        // Betterment bill calculation using new formula
         $(document).on('click', '#calculate-betterment-btn', function() {
-            var propertyValue = parseFloat($('#betterment-property-value').val().replace(/,/g, '')) || 0;
-            var bettermentRate = parseFloat($('#betterment-rate').val()) || 0;
-            
-            if (propertyValue === 0 || bettermentRate === 0) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Invalid Input',
-                    text: 'Please enter valid property value and betterment rate.',
-                    confirmButtonColor: '#3b82f6'
-                });
-                return;
-            }
+            var landUse = $('#betterment-land-use').val() || 'Residential';
+            var unitsCount = parseInt($('#betterment-units-count').val()) || 1;
+            var totalLandSize = parseFloat($('#betterment-land-size').val().replace(/,/g, '')) || 1200;
+            var areaPerUnit = parseFloat($('#betterment-area-per-unit').val()) || (totalLandSize / unitsCount);
             
             // Show loading
             Swal.fire({
                 title: 'Calculating...',
-                text: 'Please wait while we calculate the betterment charges.',
+                text: 'Please wait while we calculate the betterment charges using the new formula.',
                 allowOutsideClick: false,
                 didOpen: () => {
                     Swal.showLoading();
@@ -1194,36 +1187,101 @@
             
             // Simulate calculation delay
             setTimeout(() => {
-                // Simple calculation: Property Value × Betterment Rate / 100
-                var bettermentAmount = (propertyValue * bettermentRate) / 100;
+                // Get land use parameters
+                var landUseParams = getLandUseParameters(landUse);
+                var baseFee = landUseParams.baseFee;
+                var threshold = landUseParams.threshold;
+                var rate = landUseParams.rate;
+                
+                // Calculate using new formula
+                var bettermentAmount = 0;
+                
+                if (areaPerUnit <= threshold) {
+                    // If Area per Unit ≤ Threshold, then: Total Fee = Number of Units × Base Fee
+                    bettermentAmount = unitsCount * baseFee;
+                } else {
+                    // Total Fee = Number of Units × (Base Fee + (Area per Unit - Threshold) × Rate)
+                    bettermentAmount = unitsCount * (baseFee + ((areaPerUnit - threshold) * rate));
+                }
                 
                 $('#betterment-amount').text('₦' + bettermentAmount.toLocaleString('en-US', {minimumFractionDigits: 2}));
+                
+                // Store calculation details for bill generation
+                $('#betterment-form').data('calculation', {
+                    landUse: landUse,
+                    unitsCount: unitsCount,
+                    totalLandSize: totalLandSize,
+                    areaPerUnit: areaPerUnit,
+                    baseFee: baseFee,
+                    threshold: threshold,
+                    rate: rate,
+                    bettermentAmount: bettermentAmount
+                });
                 
                 Swal.fire({
                     icon: 'success',
                     title: 'Calculation Complete!',
-                    text: `Betterment charges calculated: ₦${bettermentAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}`,
+                    html: `
+                        <div class="text-left">
+                            <p><strong>Land Use:</strong> ${landUse}</p>
+                            <p><strong>Number of Units:</strong> ${unitsCount}</p>
+                            <p><strong>Area per Unit:</strong> ${areaPerUnit.toFixed(2)} m²</p>
+                            <p><strong>Base Fee:</strong> ₦${baseFee.toLocaleString()}</p>
+                            <p><strong>Threshold:</strong> ${threshold} m²</p>
+                            <p><strong>Rate:</strong> ₦${rate}/m²</p>
+                            <hr class="my-2">
+                            <p><strong>Total Betterment Charges:</strong> ₦${bettermentAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
+                        </div>
+                    `,
                     confirmButtonColor: '#10b981'
                 });
             }, 1500);
         });
-
-        // Generate betterment bill with saving functionality
-        $(document).on('click', '#generate-betterment-btn', function() {
-            var propertyValue = parseFloat($('#betterment-property-value').val().replace(/,/g, '')) || 0;
-            var bettermentRate = parseFloat($('#betterment-rate').val()) || 0;
+        
+        // Function to get land use parameters
+        function getLandUseParameters(landUse) {
+            var params = {
+                baseFee: 15000,
+                threshold: 100,
+                rate: 1
+            };
             
-            if (propertyValue === 0 || bettermentRate === 0) {
+            switch (landUse.toLowerCase()) {
+                case 'industrial':
+                    params = { baseFee: 35000, threshold: 100, rate: 5 };
+                    break;
+                case 'commercial':
+                    params = { baseFee: 35000, threshold: 100, rate: 5 };
+                    break;
+                case 'commercial (petrol station)':
+                    params = { baseFee: 50000, threshold: 100, rate: 5 };
+                    break;
+                case 'agricultural':
+                    params = { baseFee: 25000, threshold: 5000, rate: 1 };
+                    break;
+                case 'residential':
+                default:
+                    params = { baseFee: 15000, threshold: 100, rate: 1 };
+                    break;
+            }
+            
+            return params;
+        }
+
+        // Generate betterment bill with saving functionality using new formula
+        $(document).on('click', '#generate-betterment-btn', function() {
+            // Get calculation data from the form
+            var calculationData = $('#betterment-form').data('calculation');
+            
+            if (!calculationData || !calculationData.bettermentAmount) {
                 Swal.fire({
                     icon: 'warning',
                     title: 'Missing Calculation',
-                    text: 'Please calculate the betterment amount first.',
+                    text: 'Please calculate the betterment amount first using the new formula.',
                     confirmButtonColor: '#3b82f6'
                 });
                 return;
             }
-            
-            var bettermentAmount = (propertyValue * bettermentRate) / 100;
             
             // Show loading
             Swal.fire({
@@ -1238,11 +1296,14 @@
             // Save betterment bill data to localStorage
             var billData = {
                 application_id: currentApplication.fileId,
-                property_value: propertyValue,
-                betterment_rate: bettermentRate,
-                betterment_amount: bettermentAmount,
-                land_size: $('#betterment-land-size').val(),
-                units_count: $('#betterment-units-count').val(),
+                land_use: calculationData.landUse,
+                units_count: calculationData.unitsCount,
+                total_land_size: calculationData.totalLandSize,
+                area_per_unit: calculationData.areaPerUnit,
+                base_fee: calculationData.baseFee,
+                threshold: calculationData.threshold,
+                rate: calculationData.rate,
+                betterment_amount: calculationData.bettermentAmount,
                 bill_reference: `BB-${currentApplication.fileId}-${new Date().toISOString().slice(0,10).replace(/-/g,'')}`,
                 generated_date: new Date().toISOString().slice(0,10),
                 file_no: currentApplication.fileno,
@@ -1255,8 +1316,8 @@
             
             // Simulate generation delay
             setTimeout(() => {
-                // Update receipt tab with generated bill
-                var receiptHtml = getBettermentReceiptHtml(propertyValue, bettermentRate, bettermentAmount);
+                // Update receipt tab with generated bill using new data
+                var receiptHtml = getBettermentReceiptHtmlNew(calculationData);
                 
                 $('#betterment-receipt-container').html(receiptHtml);
                 $('.betterment-tab-button[data-tab="receipt"]').click();
@@ -1269,7 +1330,7 @@
                 Swal.fire({
                     icon: 'success',
                     title: 'Bill Generated & Saved Successfully!',
-                    text: `Betterment bill generated for ₦${bettermentAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}`,
+                    text: `Betterment bill generated for ₦${calculationData.bettermentAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}`,
                     confirmButtonColor: '#10b981'
                 });
             }, 2000);
@@ -1337,6 +1398,119 @@
                                 </tr>
                             </tbody>
                         </table>
+                        
+                        <!-- Footer Text -->
+                        <div class="print-footer">
+                            <p>You are hereby directed to settle this bill promptly in order to accelerate the processing of your application.</p>
+                            <p><strong>Note:</strong> Documentary Payments can be made at the Checkout-Point and KANGIS Cashier's Office.</p>
+                            <p>Thank you.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons (no-print) -->
+                    <div class="no-print mt-6 flex gap-2">
+                        <button onclick="printBettermentBill()" class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                            <i data-lucide="printer" class="w-4 h-4 mr-2"></i>
+                            Print Bill
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Function to generate betterment receipt HTML with new formula structure
+        function getBettermentReceiptHtmlNew(calculationData) {
+            return `
+                <div class="print-area">
+                    <!-- Header with logos -->
+                    <div class="print-header">
+                        <div class="print-logos">
+                            <div class="print-logo-left">
+                                <img src="/assets/logo/logo1.jpg" alt="Kano State Logo" class="print-logo">
+                            </div>
+                            <div class="print-title">
+                                <h1>KANO STATE MINISTRY OF LAND AND PHYSICAL PLANNING</h1>
+                                <h2>BETTERMENT CHARGES BILL</h2>
+                            </div>
+                            <div class="print-logo-right">
+                                <img src="/assets/logo/logo3.jpeg" alt="Ministry Logo" class="print-logo">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="print-content">
+                        <!-- Date and Reference -->
+                        <div class="print-date-ref">
+                            <p><strong>Date:</strong> ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                            <p><strong>Bill Reference:</strong> <span class="ref-highlight">BB-${currentApplication.fileId}-${new Date().toISOString().slice(0,10).replace(/-/g,'')}</span></p>
+                        </div>
+                        
+                        <!-- Introduction -->
+                        <div style="margin-bottom: 20px;">
+                            <p>Dear Sir/Madam,</p>
+                            <p>I am directed to inform you that the betterment charges for your primary application with the following particulars:</p>
+                        </div>
+                        
+                        <!-- Property Details -->
+                        <div style="margin-bottom: 20px;">
+                            <p><strong>File No:</strong> ${currentApplication.fileno}</p>
+                            <p><strong>Name of Applicant:</strong> ${currentApplication.owner}</p>
+                            <p><strong>Land Use:</strong> ${calculationData.landUse}</p>
+                            <p><strong>Number of Units:</strong> ${calculationData.unitsCount}</p>
+                        </div>
+                        
+                        <!-- Calculation Table -->
+                        <table class="print-table">
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th style="text-align: right;">Value</th>
+                                    <th style="text-align: right;">Amount (₦)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Base Fee (${calculationData.landUse})</td>
+                                    <td style="text-align: right;">₦${calculationData.baseFee.toLocaleString()}</td>
+                                    <td style="text-align: right;">-</td>
+                                </tr>
+                                <tr>
+                                    <td>Area per Unit</td>
+                                    <td style="text-align: right;">${calculationData.areaPerUnit.toFixed(2)} m²</td>
+                                    <td style="text-align: right;">-</td>
+                                </tr>
+                                <tr>
+                                    <td>Threshold</td>
+                                    <td style="text-align: right;">${calculationData.threshold} m²</td>
+                                    <td style="text-align: right;">-</td>
+                                </tr>
+                                <tr>
+                                    <td>Rate (per m² above threshold)</td>
+                                    <td style="text-align: right;">₦${calculationData.rate}/m²</td>
+                                    <td style="text-align: right;">-</td>
+                                </tr>
+                                <tr>
+                                    <td>Number of Units</td>
+                                    <td style="text-align: right;">${calculationData.unitsCount}</td>
+                                    <td style="text-align: right;">-</td>
+                                </tr>
+                                <tr class="total-row">
+                                    <td><strong>Total Betterment Charges</strong></td>
+                                    <td style="text-align: right;"><strong>-</strong></td>
+                                    <td style="text-align: right;"><strong>${calculationData.bettermentAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <!-- Formula Explanation -->
+                        <div style="margin: 20px 0;">
+                            <p><strong>Calculation Formula:</strong></p>
+                            <p style="font-style: italic;">Total Fee = Number of Units × (Base Fee + (Area per Unit - Threshold) × Rate)</p>
+                            ${calculationData.areaPerUnit <= calculationData.threshold ? 
+                                `<p style="color: #059669;"><strong>Note:</strong> Since Area per Unit (${calculationData.areaPerUnit.toFixed(2)} m²) ≤ Threshold (${calculationData.threshold} m²), only the base fee applies.</p>` :
+                                `<p style="color: #dc2626;"><strong>Note:</strong> Area per Unit (${calculationData.areaPerUnit.toFixed(2)} m²) exceeds Threshold (${calculationData.threshold} m²), additional charges apply.</p>`
+                            }
+                        </div>
                         
                         <!-- Footer Text -->
                         <div class="print-footer">

@@ -438,8 +438,6 @@
                                         
                                         <td class="px-6 py-5 whitespace-nowrap text-center">
                                             <div class="flex items-center justify-center space-x-3">
-                                                {!! Form::open(['method' => 'DELETE', 'route' => ['users.destroy', $user->id], 'class' => 'inline-block']) !!}
-                                                
                                                 <!-- Edit Button -->
                                                 <button type="button" class="action-btn inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-100 text-green-600 hover:bg-green-200 hover:text-green-700 transition-all duration-200 customModal" 
                                                         title="{{ __('Edit User') }}" data-size="lg" data-url="{{ route('users.edit', $user->id) }}" data-title="{{ __('Edit User') }}">
@@ -449,13 +447,15 @@
                                                 </button>
                                                 
                                                 <!-- Delete Button -->
-                                                <button type="button" class="action-btn inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 transition-all duration-200 confirm_dialog" 
-                                                        title="{{ __('Delete User') }}">
+                                                {!! Form::open(['method' => 'DELETE', 'route' => ['users.destroy', $user->id], 'style' => 'display: inline-block;']) !!}
+                                                <button type="submit" class="action-btn inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 transition-all duration-200 confirm_dialog" 
+                                                        title="{{ __('Delete User') }}"
+                                                        data-dialog-title="Delete User Confirmation"
+                                                        data-dialog-text="Are you sure you want to delete this user? This action cannot be undone.">
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                     </svg>
                                                 </button>
-                                                
                                                 {!! Form::close() !!}
                                             </div>
                                         </td>

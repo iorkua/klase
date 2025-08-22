@@ -129,58 +129,79 @@
 <script>
     // Function to open CofO Details modal
     function openCofoDetailsModal(applicationId, fileNo, npFileNo, applicantType, applicantData, propertyData) {
-        // Set the application id
-        document.getElementById('cofoApplicationId').value = applicationId;
-        
-        // Process applicant name based on type
-        let applicantName = '';
-        
-        if(applicantType === 'individual' && applicantData) {
-            const { applicant_title, first_name, middle_name, surname } = applicantData;
-            applicantName = [applicant_title, first_name, middle_name, surname].filter(Boolean).join(' ');
-        } 
-        else if(applicantType === 'corporate' && applicantData) {
-            applicantName = applicantData.corporate_name || '';
-        }
-        else if(applicantType === 'multiple' && applicantData) {
-            try {
-                if(typeof applicantData === 'string') {
-                    const namesArray = JSON.parse(applicantData);
-                    applicantName = Array.isArray(namesArray) ? namesArray.join(', ') : applicantData;
-                } else if(Array.isArray(applicantData)) {
-                    applicantName = applicantData.join(', ');
+        // Show SweetAlert confirmation dialog first
+        Swal.fire({
+            title: '📋 CofO Registration Status',
+            text: 'Is the CofO Registered?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#ef4444',
+            confirmButtonText: 'Yes',
+            cancelButtonText: 'No',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        }).then((result) => {
+            if (result.isConfirmed || result.isDismissed) {
+                const isRegistered = result.isConfirmed;
+                
+                // Set the application id
+                document.getElementById('cofoApplicationId').value = applicationId;
+                
+                // Process applicant name based on type
+                let applicantName = '';
+                
+                if(applicantType === 'individual' && applicantData) {
+                    const { applicant_title, first_name, middle_name, surname } = applicantData;
+                    applicantName = [applicant_title, first_name, middle_name, surname].filter(Boolean).join(' ');
+                } 
+                else if(applicantType === 'corporate' && applicantData) {
+                    applicantName = applicantData.corporate_name || '';
                 }
-            } catch(e) {
-                applicantName = applicantData.toString();
+                else if(applicantType === 'multiple' && applicantData) {
+                    try {
+                        if(typeof applicantData === 'string') {
+                            const namesArray = JSON.parse(applicantData);
+                            applicantName = Array.isArray(namesArray) ? namesArray.join(', ') : applicantData;
+                        } else if(Array.isArray(applicantData)) {
+                            applicantName = applicantData.join(', ');
+                        }
+                    } catch(e) {
+                        applicantName = applicantData.toString();
+                    }
+                }
+                
+                // Set grantee name
+                document.getElementById('cofoGrantee').value = applicantName;
+                
+                // Set land use
+                document.getElementById('cofoLandUse').value = propertyData.land_use || '';
+                
+                // Generate full property description based on available data
+                let propertyDescription = '';
+                // Format: Plot/House No, Streetname, District, LGA and State
+                const addressParts = [
+                    propertyData.property_house_no,
+                    propertyData.property_street_name,
+                    propertyData.property_district, 
+                    propertyData.property_lga,
+                    (propertyData.property_state || 'Kano') + ' State'
+                ].filter(Boolean);
+                
+                propertyDescription = addressParts.join(', ');
+                
+                // Set the property description
+                document.getElementById('cofoPropertyDescription').value = propertyDescription;
+                
+                // Apply field toggle based on registration status
+                toggleCofoFields(isRegistered);
+                
+                // Show the modal
+                document.getElementById('cofoDetailsModal').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
             }
-        }
-        
-        // Set grantee name
-        document.getElementById('cofoGrantee').value = applicantName;
-        
-        // Set land use
-        document.getElementById('cofoLandUse').value = propertyData.land_use || '';
-        
-        // Generate full property description based on available data
-        let propertyDescription = '';
-        // Format: Plot/House No, Streetname, District, LGA and State
-        const addressParts = [
-            propertyData.property_house_no,
-            propertyData.property_street_name,
-            propertyData.property_district, 
-            propertyData.property_lga,
-            (propertyData.property_state || 'Kano') + ' State'
-        ].filter(Boolean);
-        
-        propertyDescription = addressParts.join(', ');
-        
-        // Set the property description
-        document.getElementById('cofoPropertyDescription').value = propertyDescription;
-        
-        // Show the modal
-        document.getElementById('cofoDetailsModal').classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-        }
+        });
+    }
     // Function to close CofO Details modal
     function closeCofoDetailsModal() {
         document.getElementById('cofoDetailsModal').classList.add('hidden');
@@ -190,6 +211,72 @@
         document.getElementById('cofoRegNoPreview').value = '';
         // Reset transaction type to default
         document.getElementById('cofoTransactionType').value = 'Certificate of Occupancy';
+        // Reset radio buttons
+        const radioButtons = document.querySelectorAll('input[name="cofoRegistered"]');
+        radioButtons.forEach(radio => radio.checked = false);
+        // Reset field states to enabled
+        toggleCofoFields(true);
+    }
+    
+    // Function to toggle CofO fields based on registration status
+    function toggleCofoFields(isRegistered) {
+        const fieldsToToggle = [
+            'cofoSerialNo',
+            'cofoPageNo', 
+            'cofoVolumeNo',
+            'cofoTransactionDate',
+            'cofoTransactionTime',
+            'cofoRegNoPreview'
+        ];
+        
+        fieldsToToggle.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                if (isRegistered) {
+                    // Enable fields and remove grey styling
+                    field.disabled = false;
+                    field.classList.remove('bg-gray-200', 'text-gray-500', 'cursor-not-allowed');
+                    field.classList.add('focus:outline-none', 'focus:ring-2', 'focus:ring-blue-500');
+                    
+                    // Clear default values for editable fields
+                    if (fieldId !== 'cofoRegNoPreview') {
+                        field.value = '';
+                    }
+                } else {
+                    // Disable fields and add grey styling
+                    field.disabled = true;
+                    field.classList.add('bg-gray-200', 'text-gray-500', 'cursor-not-allowed');
+                    field.classList.remove('focus:outline-none', 'focus:ring-2', 'focus:ring-blue-500');
+                    
+                    // Set default values
+                    switch(fieldId) {
+                        case 'cofoSerialNo':
+                            field.value = '0';
+                            break;
+                        case 'cofoPageNo':
+                            field.value = '0';
+                            break;
+                        case 'cofoVolumeNo':
+                            field.value = '0';
+                            break;
+                        case 'cofoTransactionDate':
+                            field.value = '0000-00-00';
+                            break;
+                        case 'cofoTransactionTime':
+                            field.value = '0000';
+                            break;
+                        case 'cofoRegNoPreview':
+                            field.value = '0/0/0';
+                            break;
+                    }
+                }
+            }
+        });
+        
+        // Update registration preview if not registered
+        if (!isRegistered) {
+            document.getElementById('cofoRegNoPreview').value = '0/0/0';
+        }
     }
     
     // Function to update registration number preview

@@ -145,10 +145,7 @@
                             <label for="layout_name" class="block text-sm font-medium text-gray-700">Layout Name <span class="text-red-600">*</span></label>
                             <input id="layout_name" name="layout_name" type="text" value="{{ old('layout_name') }}" class="w-full p-2 border border-gray-300 rounded-md text-sm" required oninput="this.value = this.value.toUpperCase()">
                         </div>
-                        <div>
-                            <label for="district_name" class="block text-sm font-medium text-gray-700">District Name <span class="text-red-600">*</span></label>
-                            <input id="district_name" name="district_name" type="text" value="{{ old('district_name') }}" class="w-full p-2 border border-gray-300 rounded-md text-sm" required oninput="this.value = this.value.toUpperCase()">
-                        </div>
+                            @include('components.District4')
                         <div>
                             <label for="lga_name" class="block text-sm font-medium text-gray-700">LGA Name <span class="text-red-600">*</span></label>
                             <select id="lga_name" name="lga_name" class="w-full p-2 border border-gray-300 rounded-md text-sm" required>

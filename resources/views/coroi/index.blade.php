@@ -269,11 +269,35 @@
             border: 2px solid #d1d5db;
             padding: 10px;
             background: white;
+            background-image: url('{{ asset("storage/upload/images/cor_bg.jpeg") }}');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             font-size: 9px;
             line-height: 1.3;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            position: relative;
+        }
+        
+        /* Optional: Add a semi-transparent overlay to ensure text readability */
+        .certificate-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 1;
+            pointer-events: none;
+        }
+        
+        /* Ensure all content appears above the overlay */
+        .certificate-item > * {
+            position: relative;
+            z-index: 2;
         }
         
         .certificate-header {
@@ -522,4 +546,4 @@ System (KLAES)</p>
         <!-- Footer -->
         @include('admin.footer')
     </div>
-@endsection 
+@endsection

@@ -211,12 +211,19 @@
                 <tr class="cofo-row" data-status="{{ $app->status }}" data-id="{{ $app->id }}">
                 <td class="px-6 py-4 whitespace-nowrap">
                   @php
-                    $isDisabled = $app->status === 'registered' || $app->instrument_type === 'Sectional Titling CofO';
+                    $isDisabled = $app->status === 'registered';
+                    // For ST CofO, check if corresponding ST Assignment is registered
+                    if ($app->status === 'pending' && $app->instrument_type === 'Sectional Titling CofO') {
+                        // This should be dynamically determined based on whether ST Assignment is registered
+                        // For now, we'll let JavaScript handle this logic
+                        $isDisabled = false; // Let JavaScript determine the actual state
+                    }
                   @endphp
                   <input type="checkbox" class="rounded main-table-checkbox" 
                          data-id="{{ $app->id }}" 
                          data-status="{{ $app->status }}"
                          data-instrument-type="{{ $app->instrument_type }}"
+                         data-fileno="{{ $app->fileno }}"
                          {{ $isDisabled ? 'disabled' : '' }}
                          onchange="handleMainTableCheckboxChange()">
                 </td>
@@ -672,8 +679,8 @@ function populateDropdownContent(app) {
     const editHref = app.status === 'pending' ? `{{ url('instrument_registration') }}/${app.id}/edit` : '#';
     const editClick = app.status !== 'pending' ? 'onclick="return false;"' : '';
     
-    // Disable Register Instrument button for ST CofO or non-pending instruments
-    const canRegister = app.status === 'pending' && app.instrument_type !== 'Sectional Titling CofO';
+    // Check if ST Assignment is registered for ST CofO instruments
+    const canRegister = checkCanRegisterInstrument(app);
     const registerClass = canRegister ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-400 cursor-not-allowed';
     const registerIcon = canRegister ? 'text-green-500' : 'text-gray-300';
     const registerClick = canRegister ? `onclick="openSingleRegisterModalWithData('${app.id}'); return false;"` : 'onclick="showSTCofoRestrictionMessage(); return false;"';
@@ -769,6 +776,34 @@ function deleteInstrument(id) {
     });
 }
 
+// Function to check if an instrument can be registered
+function checkCanRegisterInstrument(app) {
+    // For non-pending instruments, they cannot be registered
+    if (app.status !== 'pending') {
+        return false;
+    }
+    
+    // For ST CofO, check if corresponding ST Assignment is registered
+    if (app.instrument_type === 'Sectional Titling CofO') {
+        try {
+            // Check if there's a registered ST Assignment for the same file number
+            const stAssignmentRegistered = serverCofoData.find(item => 
+                item.fileno === app.fileno && 
+                item.instrument_type === 'ST Assignment (Transfer of Title)' && 
+                item.status === 'registered'
+            );
+            
+            return !!stAssignmentRegistered;
+        } catch (error) {
+            console.error('Error checking ST Assignment registration:', error);
+            return false;
+        }
+    }
+    
+    // For all other instrument types, allow registration if pending
+    return true;
+}
+
 // Function to show ST CofO restriction message
 function showSTCofoRestrictionMessage() {
     Swal.fire({
@@ -813,6 +848,91 @@ document.addEventListener('keydown', function(e) {
         closeDropdown();
     }
 });
+
+// Function to update checkbox states based on ST Assignment registration status
+function updateCheckboxStates() {
+    console.log('updateCheckboxStates called');
+    const checkboxes = document.querySelectorAll('.main-table-checkbox');
+    console.log('Found checkboxes:', checkboxes.length);
+    
+    // Debug: Log all available ST Assignments
+    const stAssignments = serverCofoData.filter(item => 
+        item.instrument_type === 'ST Assignment (Transfer of Title)' && 
+        item.status === 'registered'
+    );
+    console.log('Available registered ST Assignments:', stAssignments.map(item => ({
+        fileno: item.fileno,
+        id: item.id,
+        status: item.status
+    })));
+    
+    let stCofoCount = 0;
+    let enabledCount = 0;
+    
+    checkboxes.forEach((checkbox, index) => {
+        const instrumentType = checkbox.getAttribute('data-instrument-type');
+        const status = checkbox.getAttribute('data-status');
+        const fileno = checkbox.getAttribute('data-fileno');
+        const id = checkbox.getAttribute('data-id');
+        
+        console.log(`Checkbox ${index}: ID=${id}, Type=${instrumentType}, Status=${status}, FileNo=${fileno}`);
+        
+        // Only process ST CofO instruments that are pending
+        if (status === 'pending' && instrumentType === 'Sectional Titling CofO') {
+            stCofoCount++;
+            console.log(`Processing ST CofO: ID=${id}, FileNo=${fileno}, Status=${status}`);
+            
+            // Check if there's a registered ST Assignment for the same file number
+            const stAssignmentRegistered = serverCofoData.find(item => {
+                const match = item.fileno === fileno && 
+                             item.instrument_type === 'ST Assignment (Transfer of Title)' && 
+                             item.status === 'registered';
+                
+                if (item.fileno === fileno) {
+                    console.log(`Found matching fileno ${fileno}: Type=${item.instrument_type}, Status=${item.status}, Match=${match}`);
+                }
+                
+                return match;
+            });
+            
+            console.log(`ST Assignment found for ${fileno}:`, !!stAssignmentRegistered);
+            if (stAssignmentRegistered) {
+                console.log('ST Assignment details:', {
+                    id: stAssignmentRegistered.id,
+                    fileno: stAssignmentRegistered.fileno,
+                    type: stAssignmentRegistered.instrument_type,
+                    status: stAssignmentRegistered.status
+                });
+            }
+            
+            // Enable/disable checkbox based on ST Assignment registration status
+            const shouldEnable = !!stAssignmentRegistered;
+            checkbox.disabled = !shouldEnable;
+            
+            if (shouldEnable) {
+                enabledCount++;
+                console.log(`✅ Enabled ST CofO checkbox for ${fileno}`);
+            } else {
+                console.log(`❌ Disabled ST CofO checkbox for ${fileno} - no registered ST Assignment found`);
+            }
+            
+            // If checkbox becomes disabled and was checked, uncheck it
+            if (checkbox.disabled && checkbox.checked) {
+                checkbox.checked = false;
+            }
+        }
+    });
+    
+    console.log(`ST CofO checkboxes processed: ${stCofoCount}, enabled: ${enabledCount}`);
+    
+    // Debug: Log all serverCofoData for inspection
+    console.log('All serverCofoData:', serverCofoData.map(item => ({
+        id: item.id,
+        fileno: item.fileno,
+        type: item.instrument_type,
+        status: item.status
+    })));
+}
 
 // Enhanced batch registration functionality - FINAL VERSION
 function handleMainTableCheckboxChange() {
@@ -966,7 +1086,21 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Populate table with page data
         pageData.forEach(app => {
-            const isDisabled = app.status === 'registered' || app.instrument_type === 'Sectional Titling CofO';
+            // Use the same logic as the checkCanRegisterInstrument function for checkboxes
+            let isDisabled = app.status === 'registered';
+            
+            // For ST CofO, check if corresponding ST Assignment is registered
+            if (app.status === 'pending' && app.instrument_type === 'Sectional Titling CofO') {
+                // Check if there's a registered ST Assignment for the same file number
+                const stAssignmentRegistered = serverCofoData.find(item => 
+                    item.fileno === app.fileno && 
+                    item.instrument_type === 'ST Assignment (Transfer of Title)' && 
+                    item.status === 'registered'
+                );
+                
+                // Disable checkbox if ST Assignment is not registered
+                isDisabled = !stAssignmentRegistered;
+            }
             
             // Format dates
             const capturedDate = app.captured_date ? 
@@ -1147,6 +1281,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize
     initializePagination();
+    
+    // Update checkbox states after page loads
+    setTimeout(() => {
+        updateCheckboxStates();
+    }, 100);
+});
+
+// Also call updateCheckboxStates when the page is fully loaded
+window.addEventListener('load', function() {
+    setTimeout(() => {
+        updateCheckboxStates();
+    }, 200);
 });
 </script>
 

@@ -88,10 +88,7 @@
                         <input type="text" id="layoutName" name="layoutName" class="w-full p-2 border border-gray-300 rounded-md text-sm">
                     </div>
                     
-                    <div class="space-y-2">
-                        <label for="districtName" class="block text-sm font-medium text-gray-700">District Name</label>
-                        <input type="text" id="districtName" name="districtName" class="w-full p-2 border border-gray-300 rounded-md text-sm">
-                    </div>
+                      @include('components.District2') 
                     
                      @include('components.lga')
                     

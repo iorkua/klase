@@ -115,7 +115,7 @@
                     @include('components.specifically')
                 </div>
             </div>
-            
+             
             <!-- Location Information Section -->
             <div class="bg-gray-50 p-4 rounded-lg">
                 <h3 class="text-lg font-semibold mb-4 text-gray-700">Location Information</h3>
@@ -125,11 +125,11 @@
                         <input type="text" id="layoutName" name="layoutName" class="w-full p-2 border border-gray-300 rounded-md text-sm" required>
                     </div>
                     
-                    <div class="space-y-2">
+                    <!-- <div class="space-y-2">
                         <label for="districtName" class="block text-sm font-medium text-gray-700">District Name <span class="text-red-600">*</span></label>
                         <input type="text" id="districtName" name="districtName" class="w-full p-2 border border-gray-300 rounded-md text-sm" required>
-                    </div>
-                    
+                    </div> -->
+                    @include('components.District2')
                     @include('components.lga')
         
                     <div class="space-y-2">

@@ -265,7 +265,7 @@ class UserController extends Controller
                     [
                         'name' => 'required',
                         'username' => 'required|unique:users,username,' . $id, // add username validation
-                        'email' => 'required|email|unique:users,email,' . $id,
+                        'email' => 'required|email|unique:users,email,' . $id, // Fix: exclude current user's email
                     ]
                 );
                 if ($validator->fails()) {
@@ -287,7 +287,7 @@ class UserController extends Controller
                         'first_name' => 'required',
                         'last_name' => 'required',
                         'email' => 'required|email|unique:users,email,' . $id,
-                        'department_id' => 'required|exists:departments,id',
+                        'department_id' => 'required',
                         'user_level' => 'required|string|in:Administrative,Technical,Finance,Lowest,Highest,High',
                         'user_role' => 'required|array',
                     ]

@@ -56,6 +56,7 @@ use App\Http\Controllers\StInstrumentRegistrationController;
 require __DIR__ . '/auth.php';
 require __DIR__ . '/recertification_routes.php';
 require __DIR__ . '/file_numbers.php';
+require __DIR__ . '/file_decommissioning.php';
 Route::get('/', [HomeController::class, 'index'])->middleware(
     [
         'XSS',
