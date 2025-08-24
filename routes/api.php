@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\FileIndexingController;
 use App\Http\Controllers\InstrumentController;
 use App\Http\Controllers\InstrumentTypeController;
@@ -75,6 +76,46 @@ Route::get('/sub-final-bill/show/{id}', [App\Http\Controllers\SubFinalBillContro
 
 // Route for fetching application details
 Route::get('/application-details/{fileId}/{fileType}', [App\Http\Controllers\ProgrammesController::class, 'getApplicationDetails']);
+
+// Route for fetching existing MLS file numbers for extensions
+Route::get('/get-existing-mls-files', function (Request $request) {
+    try {
+        // Query the fileNumber table to get existing MLS file numbers
+        $mlsFiles = DB::connection('sqlsrv')
+            ->table('dbo.fileNumber')
+            ->whereNotNull('mlsfNo')
+            ->where('mlsfNo', '!=', '')
+            ->select('id', 'mlsfNo')
+            ->orderBy('id', 'desc')
+            ->limit(500) // Limit to prevent overwhelming the dropdown
+            ->get();
+
+        if ($mlsFiles->count() > 0) {
+            return response()->json([
+                'success' => true,
+                'files' => $mlsFiles->map(function($file) {
+                    return [
+                        'id' => $file->id,
+                        'mlsFNo' => $file->mlsfNo,
+                        'file_number' => $file->mlsfNo
+                    ];
+                })
+            ]);
+        } else {
+            return response()->json([
+                'success' => true,
+                'files' => [],
+                'message' => 'No existing MLS file numbers found'
+            ]);
+        }
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error retrieving MLS file numbers',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+})->name('api.get-existing-mls-files');
 
 // Route for searching file numbers for property records
 Route::post('/search-file-numbers', [App\Http\Controllers\PropertyRecordController::class, 'searchFileNumbers']);

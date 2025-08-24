@@ -868,6 +868,7 @@ function updateCheckboxStates() {
     
     let stCofoCount = 0;
     let enabledCount = 0;
+    let stAssignmentCount = 0;
     
     checkboxes.forEach((checkbox, index) => {
         const instrumentType = checkbox.getAttribute('data-instrument-type');
@@ -877,8 +878,19 @@ function updateCheckboxStates() {
         
         console.log(`Checkbox ${index}: ID=${id}, Type=${instrumentType}, Status=${status}, FileNo=${fileno}`);
         
-        // Only process ST CofO instruments that are pending
-        if (status === 'pending' && instrumentType === 'Sectional Titling CofO') {
+        // Handle ST Assignment (Transfer of Title) - should be enabled when pending
+        if (status === 'pending' && instrumentType === 'ST Assignment (Transfer of Title)') {
+            stAssignmentCount++;
+            console.log(`Processing ST Assignment: ID=${id}, FileNo=${fileno}, Status=${status}`);
+            
+            // ST Assignment should always be enabled when pending (not registered yet)
+            checkbox.disabled = false;
+            enabledCount++;
+            console.log(`✅ Enabled ST Assignment checkbox for ${fileno}`);
+        }
+        
+        // Handle ST CofO (Sectional Titling CofO) - should be enabled only if corresponding ST Assignment is registered
+        else if (status === 'pending' && instrumentType === 'Sectional Titling CofO') {
             stCofoCount++;
             console.log(`Processing ST CofO: ID=${id}, FileNo=${fileno}, Status=${status}`);
             
@@ -921,8 +933,21 @@ function updateCheckboxStates() {
                 checkbox.checked = false;
             }
         }
+        
+        // For registered instruments, disable checkboxes (already registered)
+        else if (status === 'registered') {
+            checkbox.disabled = true;
+            console.log(`Disabled registered instrument checkbox for ${fileno}`);
+        }
+        
+        // For other pending instruments (not ST Assignment or ST CofO), enable them
+        else if (status === 'pending') {
+            checkbox.disabled = false;
+            console.log(`✅ Enabled other pending instrument checkbox for ${fileno}`);
+        }
     });
     
+    console.log(`ST Assignment checkboxes processed: ${stAssignmentCount}`);
     console.log(`ST CofO checkboxes processed: ${stCofoCount}, enabled: ${enabledCount}`);
     
     // Debug: Log all serverCofoData for inspection
@@ -1154,6 +1179,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                data-id="${app.id}" 
                                data-status="${app.status}"
                                data-instrument-type="${app.instrument_type}"
+                               data-fileno="${app.fileno}"
                                ${isDisabled ? 'disabled' : ''}
                                onchange="handleMainTableCheckboxChange()">
                     </td>
@@ -1192,6 +1218,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
+        
+        // Update checkbox states after rendering the table
+        setTimeout(() => {
+            updateCheckboxStates();
+        }, 50);
         
         // Update showing information
         const start = totalRecords === 0 ? 0 : startIndex + 1;

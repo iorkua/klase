@@ -181,8 +181,8 @@
                 <!-- Active Files Table -->
                 <div class="px-6 py-6">
                     <div class="mb-4">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Active Files Available for Decommissioning</h3>
-                        <p class="text-sm text-gray-600">Click the decommission button next to any file to begin the decommissioning process</p>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Active Files</h3>
+                        <p class="text-sm text-gray-600">Select files to decommission from the LANDS module</p>
                     </div>
 
                     <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
@@ -195,7 +195,7 @@
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">New Kangis File No</th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File Name</th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created Date</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                                     </tr>
                                 </thead>

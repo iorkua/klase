@@ -58,8 +58,8 @@
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KANGIS File No</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">New KANGIS File No</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File Name</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created Date</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Captured By</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capture Date</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
@@ -180,6 +180,17 @@
                                     <option value="sit">SIT</option>
                                 </select>
                             </div>
+
+                                <!-- Commissioned By -->
+                                <div>
+                                <label for="commissionedBy" class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i data-lucide="user-check" class="w-4 h-4 inline mr-1"></i>
+                                    Captured By     
+                                </label>
+                                <input type="text" id="commissionedBy" name="commissioned_by"  
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100"
+                                       placeholder="Auto-filled" disabled value="{{ Auth::user()->name }}">
+                            </div>
                         </div>
 
                         <!-- Right Column -->
@@ -199,26 +210,28 @@
                             </div>
 
                             <!-- Year (for normal files) -->
-                            <div id="yearSection">
-                                <label for="year" class="block text-sm font-medium text-gray-700 mb-2">
-                                    <i data-lucide="calendar" class="w-4 h-4 inline mr-1"></i>
-                                    Year
-                                </label>
-                                <input type="number" id="year" name="year" 
-                                       value="{{ date('Y') }}"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                       min="1900" max="2050" onchange="updateCapturePreview()">
-                            </div>
+                            <div id="yearSection" class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="year" class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i data-lucide="calendar" class="w-4 h-4 inline mr-1"></i>
+                                        Year
+                                    </label>
+                                    <input type="number" id="year" name="year" 
+                                           value="{{ date('Y') }}"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                           min="1900" max="2050" onchange="updateCapturePreview()">
+                                </div>
 
-                            <!-- Serial Number -->
-                            <div>
-                                <label for="serialNo" class="block text-sm font-medium text-gray-700 mb-2">
-                                    <i data-lucide="hash" class="w-4 h-4 inline mr-1"></i>
-                                    Serial Number
-                                </label>
-                                <input type="text" id="serialNo" name="serial_no" 
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                       placeholder="Enter serial number" onchange="updateCapturePreview()" required>
+                                <!-- Serial Number -->
+                                <div>
+                                    <label for="serialNo" class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i data-lucide="hash" class="w-4 h-4 inline mr-1"></i>
+                                        Serial Number
+                                    </label>
+                                    <input type="text" id="serialNo" name="serial_no" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                           placeholder="Enter serial number" onchange="updateCapturePreview()" required>
+                                </div>
                             </div>
 
                             <!-- Full File Number Preview -->
@@ -230,6 +243,17 @@
                                 <div id="capturePreview" class="w-full px-4 py-3 bg-white border border-green-300 rounded-md text-lg font-mono text-center text-green-800 font-bold shadow-sm">
                                     -
                                 </div>
+                            </div>
+
+                                 <!-- Commission Date -->
+                                 <div>
+                                <label for="commissionDate" class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i data-lucide="calendar-check" class="w-4 h-4 inline mr-1"></i>
+                                    Capture Date 
+                                </label>
+                                <input type="text" id="commissionDate" name="commission_date"                 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100"
+                                       placeholder="Auto-filled" disabled value="{{ date('Y-m-d') }}">
                             </div>
                         </div>
                     </div>
@@ -486,7 +510,7 @@
                     { 
                         data: 'created_by', 
                         name: 'created_by',
-                        title: 'Created By',
+                        title: 'Captured By',
                         defaultContent: 'System',
                         render: function(data, type, row) {
                             if (data && data.trim() !== '') {
@@ -498,7 +522,7 @@
                     { 
                         data: 'created_at', 
                         name: 'created_at',
-                        title: 'Created Date',
+                        title: 'Capture Date',
                         defaultContent: 'N/A',
                         render: function(data, type, row) {
                             if (data && data.trim() !== '') {

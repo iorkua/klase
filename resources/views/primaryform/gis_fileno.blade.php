@@ -56,76 +56,112 @@
    <div id="mlsFNoTab" class="tabcontent active">
     <p class="text-sm text-gray-600 mb-2">MLS File Number</p>
     
-    <!-- File type selection dropdown -->
+    <!-- File Options -->
     <div class="mb-2">
-      <label class="block text-sm mb-1 text-gray-700">Type</label>
-      <div class="relative">
-        <select class="w-full p-2 text-sm border border-gray-300 rounded appearance-none pr-8 bg-white focus:ring-1 focus:ring-blue-400 focus:border-blue-400" id="mlsFileType" name="mlsFileType">
-          <option value="regular">Regular</option>
-          <option value="temporary">Temporary</option>
-          <option value="extension">Extension</option>
-          <option value="miscellaneous">Miscellaneous</option>
-          <option value="sltr">SLTR</option>
-          <option value="sit">SIT</option>
+        <label for="mlsFileOption" class="block text-xs font-medium text-gray-700 mb-1">
+            <i data-lucide="settings" class="w-3 h-3 inline mr-1"></i>
+            File Options
+        </label>
+        <select id="mlsFileOption" name="mlsFileOption" 
+                class="w-full p-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                onchange="updateMlsForm(this.value)" required>
+            <option value="normal" selected>Normal File</option>
+            <option value="temporary">Temporary File</option>
+            <option value="extension">Extension</option>
+            <option value="miscellaneous">Miscellaneous</option>
+            <option value="old_mls">Old MLS</option>
+            <option value="sltr">SLTR</option>
+            <option value="sit">SIT</option>
         </select>
-        <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-          <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
-        </div>
-      </div>
     </div>
 
-    <!-- Conditional sections based on file type -->
-    <div id="mlsRegularSection" class="grid grid-cols-3 gap-4 mb-4">
-      <div>
-        <label class="block text-sm mb-1">File Prefix</label>
+    <div class="grid grid-cols-3 gap-2 mb-2">
+      <!-- Prefix Section (for normal files) -->
+      <div id="mlsPrefixSection">
+        <label class="block text-xs mb-1">File Prefix <span class="text-red-500">*</span></label>
         <div class="relative">
-          <select class="w-full p-2 border border-gray-300 rounded-md appearance-none pr-8" id="mlsFileNoPrefix" name="mlsFileNoPrefix">
-            <option>Select prefix</option>
-            @foreach (['COM', 'RES', 'CON-COM', 'CON-RES', 'CON-AG', 'CON-IND'] as $prefix)
-            <option value="{{ $prefix }}">{{ $prefix }}</option>
-        @endforeach
+          <select class="w-full p-2 text-sm border border-gray-300 rounded-md appearance-none pr-8" id="mlsFileNoPrefix" name="mlsFileNoPrefix" required>
+            <option value="">Select prefix</option>
+            <!-- Standard Options -->
+            <optgroup label="Standard">
+                <option value="RES">RES - Residential</option>
+                <option value="COM">COM - Commercial</option>
+                <option value="IND">IND - Industrial</option>
+                <option value="AGR">AGR - Agricultural</option>
+                <option value="INS">INS - Institutional</option>
+            </optgroup>
+            <!-- Conversion Options -->
+            <optgroup label="Conversion">
+                <option value="CON-RES">CON-RES - Conversion to Residential</option>
+                <option value="CON-COM">CON-COM - Conversion to Commercial</option>
+                <option value="CON-IND">CON-IND - Conversion to Industrial</option>
+                <option value="CON-AGR">CON-AGR - Conversion to Agricultural</option>
+                <option value="CON-INS">CON-INS - Conversion to Institutional</option>
+            </optgroup>
+            <!-- RC Options -->
+            <optgroup label="RC Options">
+                <option value="RES-RC">RES-RC</option>
+                <option value="COM-RC">COM-RC</option>
+                <option value="AG-RC">AG-RC</option>
+                <option value="IND-RC">IND-RC</option>
+                <option value="CON-RES-RC">CON-RES-RC</option>
+                <option value="CON-COM-RC">CON-COM-RC</option>
+                <option value="CON-AG-RC">CON-AG-RC</option>
+                <option value="CON-IND-RC">CON-IND-RC</option>
+            </optgroup>
           </select>
           <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
+            <i data-lucide="chevron-down" class="w-3 h-3 text-gray-400"></i>
           </div>
         </div>
       </div>
-      <div>
-        <label class="block text-sm mb-1">Year</label>
-        <input type="text" class="w-full p-2 border border-gray-300 rounded-md" id="mlsFileYear" name="mlsFileYear" placeholder="e.g. 2024" maxlength="4" value="{{ isset($result) ? (date('Y')) : date('Y') }}">
-      </div>
-      <div>
-        <label class="block text-sm mb-1">Serial No</label>
-        <input type="text" class="w-full p-2 border border-gray-300 rounded-md" id="mlsFileSerial" name="mlsFileSerial" placeholder="e.g. 572" value="{{ isset($result) ? ($result->mlsFileNumber ? explode('-', $result->mlsFileNumber)[1] ?? '' : '') : '' }}">
-      </div>
-    </div>
 
-    <!-- Middle Prefix Section (for miscellaneous files) -->
-    <div id="mlsMiddlePrefixSection" class="hidden mb-4">
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm mb-1">Middle Prefix</label>
-          <input type="text" class="w-full p-2 border border-gray-300 rounded-md" id="mlsMiddlePrefix" name="mlsMiddlePrefix" placeholder="e.g. KN" value="KN">
-        </div>
-        <div>
-          <label class="block text-sm mb-1">Serial No</label>
-          <input type="text" class="w-full p-2 border border-gray-300 rounded-md" id="mlsMiscSerial" name="mlsMiscSerial" placeholder="Enter custom serial (e.g., 001, ABC123)">
-        </div>
+      <!-- Middle Prefix (for miscellaneous files) -->
+      <div id="mlsMiddlePrefixSection" class="hidden">
+        <label for="mlsMiddlePrefix" class="block text-xs mb-1">
+            <i data-lucide="tag" class="w-3 h-3 inline mr-1"></i>
+            Middle Prefix
+        </label>
+        <input type="text" id="mlsMiddlePrefix" name="mlsMiddlePrefix" 
+               class="w-full p-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+               placeholder="e.g., KN" onchange="updateMlsFileNumberPreview()" value="KN">
       </div>
-    </div>
 
-    <!-- Special Serial Section (for SLTR and SIT files) -->
-    <div id="mlsSpecialSerialSection" class="hidden mb-4">
-      <div class="grid grid-cols-1 gap-4">
-        <div>
-          <label class="block text-sm mb-1">Serial No</label>
-          <input type="text" class="w-full p-2 border border-gray-300 rounded-md" id="mlsSpecialSerial" name="mlsSpecialSerial" placeholder="Enter serial number">
-        </div>
+      <!-- Extension File Selection (shown only when Extension is selected) -->
+      <div id="mlsExtensionFileSection" class="hidden col-span-2">
+        <label for="mlsExistingFileNo" class="block text-xs mb-1">
+            <i data-lucide="link" class="w-3 h-3 inline mr-1"></i>
+            Select Existing MLS File Number
+        </label>
+        <select id="mlsExistingFileNo" name="mlsExistingFileNo" 
+                class="w-full p-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                onchange="updateMlsFileNumberPreview()">
+            <option value="">Select existing file number...</option>
+            <!-- Options will be populated via AJAX -->
+        </select>
+      </div>
+
+      <!-- Year Field -->
+      <div id="mlsYearSection">
+        <label for="mlsYear" class="block text-xs mb-1">
+            <i data-lucide="calendar" class="w-3 h-3 inline mr-1"></i>
+            Year
+        </label>
+        <input type="number" id="mlsYear" name="mlsYear" 
+               value="{{ date('Y') }}"
+               class="w-full p-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+               min="1900" max="2050" onchange="updateMlsFileNumberPreview()">
+      </div>
+
+      <!-- Serial Number -->
+      <div>
+        <label class="block text-xs mb-1">Serial Number <span class="text-red-500">*</span></label>
+        <input type="text" class="w-full p-2 text-sm border border-gray-300 rounded-md" id="mlsFileSerial" name="mlsFileSerial" placeholder="e.g. 572" value="{{ isset($result) ? ($result->mlsFileNumber ? explode('-', $result->mlsFileNumber)[1] ?? '' : '') : '' }}" required>
       </div>
     </div>
 
     <!-- Enhanced Full File Number Display -->
-    <div class="mb-3">
+    <div class="mb-4">
       <label class="block text-xs mb-1 text-gray-700 font-medium">Generated File Number</label>
       <div class="relative w-1/2">
         <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-2 flex items-center justify-between">
@@ -201,79 +237,171 @@
 </div>
     
 <script>
-    function updateFileNumberPreview() {
-        const prefixEl = document.getElementById('fileNoPrefix');
-        const numberEl = document.getElementById('fileNumber');
-        const previewEl = document.getElementById('Previewflenumber');
-
-        const prefix = prefixEl.value;
-        let number = numberEl.value.trim();
-
-        // Set placeholder based on selected prefix
-        if (prefix) {
-            if (['KNML', 'MNKL', 'MLKN', 'KNGP'].includes(prefix)) {
-                numberEl.placeholder = "e.g. 00001";
-            } else if (prefix === "KN") {
-                numberEl.placeholder = "e.g. 0001";
-            } else if (['CON-COM', 'CON-RES', 'CON-AG', 'CON-IND', 'RES'].includes(prefix)) {
-                numberEl.placeholder = "e.g. 01";
+    // Function to load existing MLS file numbers for extension selection
+    function loadExistingMlsFileNumbers() {
+        const existingFileSelect = document.getElementById('mlsExistingFileNo');
+        if (!existingFileSelect) return;
+        
+        // Show loading state
+        existingFileSelect.innerHTML = '<option value="">Loading existing file numbers...</option>';
+        
+        // Make AJAX request to fetch existing MLS file numbers
+        fetch('/api/get-existing-mls-files', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Clear existing options
+            existingFileSelect.innerHTML = '<option value="">Select existing file number...</option>';
+            
+            if (data.success && data.files && data.files.length > 0) {
+                // Add existing file numbers as options
+                data.files.forEach(file => {
+                    const option = document.createElement('option');
+                    option.value = file.mlsFNo || file.file_number;
+                    option.textContent = file.mlsFNo || file.file_number;
+                    existingFileSelect.appendChild(option);
+                });
+                console.log(`Loaded ${data.files.length} existing MLS file numbers`);
             } else {
-                numberEl.placeholder = "Format example";
+                // No existing files found
+                existingFileSelect.innerHTML = '<option value="">No existing MLS files found</option>';
+                console.log('No existing MLS file numbers found');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading existing MLS file numbers:', error);
+            existingFileSelect.innerHTML = '<option value="">Error loading file numbers</option>';
+        });
+    }
+
+    // Update MLS form based on file option selection
+    function updateMlsForm(type) {
+        const prefixSection = document.getElementById('mlsPrefixSection');
+        const middlePrefixSection = document.getElementById('mlsMiddlePrefixSection');
+        const yearSection = document.getElementById('mlsYearSection');
+        const extensionFileSection = document.getElementById('mlsExtensionFileSection');
+        const serialNoField = document.getElementById('mlsFileSerial');
+        
+        // Hide all sections first
+        prefixSection.classList.add('hidden');
+        middlePrefixSection.classList.add('hidden');
+        yearSection.classList.add('hidden');
+        extensionFileSection.classList.add('hidden');
+        
+        // Reset serial number field properties
+        serialNoField.type = 'text';
+        serialNoField.removeAttribute('min');
+        serialNoField.removeAttribute('max');
+        serialNoField.removeAttribute('step');
+        serialNoField.removeAttribute('maxlength');
+        serialNoField.removeAttribute('pattern');
+        serialNoField.disabled = false; // Ensure it's enabled
+        
+        if (type === 'normal' || type === 'temporary') {
+            prefixSection.classList.remove('hidden');
+            yearSection.classList.remove('hidden');
+            serialNoField.type = 'number';
+            serialNoField.setAttribute('min', '1');
+            serialNoField.setAttribute('max', '9999');
+            serialNoField.placeholder = 'Enter serial number (1-9999)';
+        } else if (type === 'extension') {
+            extensionFileSection.classList.remove('hidden');
+            yearSection.classList.remove('hidden');
+            serialNoField.placeholder = 'Not required for extensions';
+            serialNoField.value = '';
+            serialNoField.disabled = true;
+            
+            // Load existing MLS file numbers when extension is selected
+            loadExistingMlsFileNumbers();
+        } else if (type === 'miscellaneous' || type === 'sit' || type === 'old_mls' || type === 'sltr') {
+            if (type === 'miscellaneous') {
+                middlePrefixSection.classList.remove('hidden');
+            }
+            if (type === 'sit') {
+                yearSection.classList.remove('hidden');
+            }
+            serialNoField.type = 'text';
+            serialNoField.disabled = false;
+            serialNoField.setAttribute('inputmode', 'text');
+            
+            if (type === 'miscellaneous') {
+                serialNoField.placeholder = 'Enter custom serial (e.g., 001, ABC123)';
+            } else if (type === 'sit') {
+                serialNoField.placeholder = 'Enter SIT serial (e.g., 001)';
+            } else if (type === 'old_mls') {
+                serialNoField.placeholder = 'Enter Old MLS number (e.g., 5467, 1234)';
+            } else if (type === 'sltr') {
+                serialNoField.placeholder = 'Enter SLTR number (e.g., 001, 1234)';
             }
         }
+        
+        updateMlsFileNumberPreview();
+    }
 
-        // Format the number based on the prefix
-        if (prefix && number) {
-            if (['KNML', 'MNKL', 'MLKN', 'KNGP'].includes(prefix)) {
-                // Ensure 5-digit format with leading zeros
-                number = number.padStart(5, '0');
-                numberEl.value = number;
-                previewEl.value = prefix + ' ' + number;
-            } else if (prefix === "KN") {
-                previewEl.value = prefix + number;
-            } else if (['CON-COM', 'CON-RES', 'CON-AG', 'CON-IND', 'RES'].includes(prefix)) {
-                previewEl.value = prefix + '-' + number;
-            } else {
-                previewEl.value = prefix + '/' + number;
+    // Enhanced MLS file number preview function
+    function updateMlsFileNumberPreview() {
+        const fileOption = document.getElementById('mlsFileOption').value;
+        const prefix = document.getElementById('mlsFileNoPrefix').value;
+        const middlePrefix = document.getElementById('mlsMiddlePrefix').value;
+        const year = document.getElementById('mlsYear').value;
+        const serialNo = document.getElementById('mlsFileSerial').value;
+        const existingFileNo = document.getElementById('mlsExistingFileNo').value;
+        const previewEl = document.getElementById('mlsPreviewFileNumber');
+        const dbFieldEl = document.getElementById('mlsFNo');
+        
+        let previewText = '';
+        
+        if (fileOption === 'extension' && existingFileNo) {
+            previewText = existingFileNo + ' AND EXTENSION';
+        } else if (fileOption === 'miscellaneous' && middlePrefix && serialNo) {
+            previewText = `MISC-${middlePrefix}-${serialNo}`;
+        } else if (fileOption === 'old_mls' && serialNo) {
+            previewText = `KN ${serialNo}`;
+        } else if (fileOption === 'sit' && year && serialNo) {
+            previewText = `SIT-${year}-${serialNo}`;
+        } else if (fileOption === 'sltr' && serialNo) {
+            previewText = `SLTR-${serialNo}`;
+        } else if ((fileOption === 'normal' || fileOption === 'temporary') && prefix && year && serialNo) {
+            const paddedSerial = serialNo.toString().padStart(4, '0');
+            previewText = `${prefix}-${year}-${paddedSerial}`;
+            
+            if (fileOption === 'temporary') {
+                previewText += '(T)';
             }
+        } else if (prefix && serialNo) {
+            previewText = prefix + '-' + serialNo;
         } else if (prefix) {
-            previewEl.value = prefix;
-        } else if (number) {
-            previewEl.value = number;
-        } else {
-            previewEl.value = '';
+            previewText = prefix;
+        } else if (serialNo) {
+            previewText = serialNo;
         }
 
-        // Validation based on prefix
-        let isValid = true;
-        if (prefix === "KN") {
-            isValid = /^\d+$/.test(number);
-        } else if (["KNML", "MNKL", "MLKN", "KNGP"].includes(prefix)) {
-            isValid = /^\d{5}$/.test(number);
-        } else if (['CON-COM', 'CON-RES', 'CON-AG', 'CON-IND', 'RES'].includes(prefix)) {
-            isValid = /^\d+$/.test(number);
-        }
-
-        if (prefix && number && isValid) {
-            prefixEl.style.color = 'red';
-            numberEl.style.color = 'red';
-            previewEl.style.color = 'red';
+        // Update preview display
+        if (previewText) {
+            previewEl.textContent = previewText;
+            dbFieldEl.value = previewText;
         } else {
-            prefixEl.style.color = '';
-            numberEl.style.color = '';
-            previewEl.style.color = '';
+            previewEl.textContent = 'Enter details above to see preview';
+            dbFieldEl.value = '';
         }
+        
+        updateMainFilenoField();
     }
 
     // Fixed tab switching function
     function openFileTab(evt, tabName) {
-        console.log("Opening tab:", tabName); // Debug logging
+        console.log("Opening tab:", tabName);
         
         // Hide all tab content
         var tabcontent = document.getElementsByClassName("tabcontent");
         for (var i = 0; i < tabcontent.length; i++) {
             tabcontent[i].classList.remove("active");
-            tabcontent[i].style.display = "none"; // Explicitly hide
+            tabcontent[i].style.display = "none";
         }
 
         // Remove active class from all tab buttons
@@ -286,37 +414,34 @@
         var currentTab = document.getElementById(tabName);
         if (currentTab) {
             currentTab.classList.add("active");
-            currentTab.style.display = "block"; // Explicitly show
+            currentTab.style.display = "block";
         } else {
             console.error("Tab not found:", tabName);
         }
         
         evt.currentTarget.classList.add("active");
         
-        // Set the active tab value based on the database field names, not tab IDs
+        // Set the active tab value
         if (tabName === "mlsFNoTab") {
             document.getElementById('activeFileTab').value = "mlsFNo";
-        updateMainFilenoField();
         } else if (tabName === "kangisFileNoTab") {
             document.getElementById('activeFileTab').value = "kangisFileNo";
-        updateMainFilenoField();
         } else if (tabName === "NewKANGISFilenoTab") {
             document.getElementById('activeFileTab').value = "NewKANGISFileno";
-        updateMainFilenoField();
         }
+        
+        updateMainFilenoField();
     }
-
 
     // Function to update the main fileno field based on active tab
     function updateMainFilenoField() {
         const activeTab = document.getElementById('activeFileTab').value;
         const mainFilenoField = document.getElementById('fileno');
         
-        if (!mainFilenoField) return; // Exit if main fileno field doesn't exist
+        if (!mainFilenoField) return;
         
         let fileNumber = '';
         
-        // Get the file number based on active tab
         if (activeTab === 'mlsFNo') {
             fileNumber = document.getElementById('mlsFNo').value;
         } else if (activeTab === 'kangisFileNo') {
@@ -325,127 +450,11 @@
             fileNumber = document.getElementById('NewKANGISFileno').value;
         }
         
-        // Update the main fileno field
         mainFilenoField.value = fileNumber;
         
-        // Trigger validation if the function exists
         if (typeof validateSurveyForm === 'function') {
             validateSurveyForm();
         }
-    }
-    // Enhanced MLS file number preview with new format and file types
-    function updateMlsFileNumberPreview() {
-        const prefixEl = document.getElementById('mlsFileNoPrefix');
-        const yearEl = document.getElementById('mlsFileYear');
-        const serialEl = document.getElementById('mlsFileSerial');
-        const previewEl = document.getElementById('mlsPreviewFileNumber');
-        const dbFieldEl = document.getElementById('mlsFNo');
-        
-        // Get file type from dropdown select instead of radio buttons
-        const fileTypeSelect = document.getElementById('mlsFileType');
-        const fileType = fileTypeSelect.value;
-
-        // Show/hide sections based on file type
-        const regularSection = document.getElementById('mlsRegularSection');
-        const middlePrefixSection = document.getElementById('mlsMiddlePrefixSection');
-        const specialSerialSection = document.getElementById('mlsSpecialSerialSection');
-
-        // Hide all sections first
-        regularSection.classList.add('hidden');
-        middlePrefixSection.classList.add('hidden');
-        specialSerialSection.classList.add('hidden');
-
-        let formatted = '';
-        let displayText = '';
-
-        if (fileType === 'regular' || fileType === 'temporary' || fileType === 'extension') {
-            regularSection.classList.remove('hidden');
-            
-            const prefix = prefixEl.value;
-            const year = yearEl.value.trim();
-            const serial = serialEl.value.trim();
-
-            if (prefix && year && serial) {
-                // Base format: PREFIX-YEAR-SERIAL
-                formatted = `${prefix}-${year}-${serial.padStart(4, '0')}`;
-                
-                // Add suffix based on file type
-                if (fileType === 'temporary') {
-                    formatted += '(T)';
-                } else if (fileType === 'extension') {
-                    formatted += ' AND EXTENSION';
-                }
-                
-                displayText = formatted;
-            } else if (prefix || year || serial) {
-                // Show partial preview
-                const parts = [];
-                if (prefix) parts.push(prefix);
-                if (year) parts.push(year);
-                if (serial) parts.push(serial.padStart(4, '0'));
-                
-                displayText = parts.join('-');
-                if (parts.length > 0) {
-                    if (fileType === 'temporary') {
-                        displayText += '(T)';
-                    } else if (fileType === 'extension') {
-                        displayText += ' AND EXTENSION';
-                    }
-                }
-            }
-        } else if (fileType === 'miscellaneous') {
-            middlePrefixSection.classList.remove('hidden');
-            
-            const middlePrefix = document.getElementById('mlsMiddlePrefix').value.trim();
-            const miscSerial = document.getElementById('mlsMiscSerial').value.trim();
-            
-            if (middlePrefix && miscSerial) {
-                formatted = `MISC-${middlePrefix}-${miscSerial}`;
-                displayText = formatted;
-            } else if (middlePrefix || miscSerial) {
-                const parts = ['MISC'];
-                if (middlePrefix) parts.push(middlePrefix);
-                if (miscSerial) parts.push(miscSerial);
-                displayText = parts.join('-');
-            }
-        } else if (fileType === 'sltr' || fileType === 'sit') {
-            specialSerialSection.classList.remove('hidden');
-            
-            const specialSerial = document.getElementById('mlsSpecialSerial').value.trim();
-            const fileTypeUpper = fileType.toUpperCase();
-            
-            // Update placeholder based on type
-            const specialSerialEl = document.getElementById('mlsSpecialSerial');
-            if (fileType === 'sltr') {
-                specialSerialEl.placeholder = 'Enter SLTR serial (e.g., 001, 2024-001)';
-            } else if (fileType === 'sit') {
-                specialSerialEl.placeholder = 'Enter SIT serial (e.g., 001, 2024-001)';
-            }
-            
-            if (specialSerial) {
-                formatted = `${fileTypeUpper}-${specialSerial}`;
-                displayText = formatted;
-            } else {
-                displayText = `${fileTypeUpper}-`;
-            }
-        }
-
-        // Default message if nothing is entered
-        if (!displayText) {
-            displayText = 'Enter details above to see preview';
-        }
-
-        // Update preview display
-        previewEl.textContent = displayText;
-        
-        // Update database field only with complete format
-        if (formatted) {
-            dbFieldEl.value = formatted;
-        } else {
-            dbFieldEl.value = '';
-        }
-        
-        updateMainFilenoField(); // Update main fileno field
     }
 
     // Format KANGIS file number preview
@@ -459,26 +468,23 @@
         let number = numberEl.value.trim();
 
         if (prefix && number) {
-            // Pad to 5 digits
             number = number.padStart(5, '0');
             numberEl.value = number;
             const formatted = prefix + ' ' + number;
             previewEl.value = formatted;
-            dbFieldEl.value = formatted; // Set the database field directly
-            updateMainFilenoField(); // Update main fileno field
+            dbFieldEl.value = formatted;
         } else if (prefix) {
             previewEl.value = prefix;
             dbFieldEl.value = prefix;
-            updateMainFilenoField();
         } else if (number) {
             previewEl.value = number;
             dbFieldEl.value = number;
-            updateMainFilenoField();
         } else {
             previewEl.value = '';
             dbFieldEl.value = '';
-            updateMainFilenoField();
         }
+        
+        updateMainFilenoField();
     }
 
     // Format New KANGIS file number preview
@@ -486,7 +492,7 @@
         const prefixEl = document.getElementById('newKangisFileNoPrefix');
         const numberEl = document.getElementById('newKangisFileNumber');
         const previewEl = document.getElementById('newKangisPreviewFileNumber');
-        const dbFieldEl = document.getElementById('NewKANGISFileno'); // Important: This must match DB column name
+        const dbFieldEl = document.getElementById('NewKANGISFileno');
 
         const prefix = prefixEl.value;
         let number = numberEl.value.trim();
@@ -494,24 +500,86 @@
         if (prefix && number) {
             const formatted = prefix + number;
             previewEl.value = formatted;
-            dbFieldEl.value = formatted; // Set the database field directly
-            updateMainFilenoField(); // Update main fileno field
+            dbFieldEl.value = formatted;
         } else if (prefix) {
             previewEl.value = prefix;
             dbFieldEl.value = prefix;
-            updateMainFilenoField();
         } else if (number) {
             previewEl.value = number;
             dbFieldEl.value = number;
-            updateMainFilenoField();
         } else {
             previewEl.value = '';
             dbFieldEl.value = '';
-            updateMainFilenoField();
         }
+        
+        updateMainFilenoField();
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        // CRITICAL FIX: Ensure File Options dropdown is never disabled
+        const fileOptionSelect = document.getElementById('mlsFileOption');
+        const yearField = document.getElementById('mlsYear');
+        
+        // Force enable these fields immediately
+        if (fileOptionSelect) {
+            fileOptionSelect.disabled = false;
+            fileOptionSelect.style.pointerEvents = 'auto';
+            fileOptionSelect.style.opacity = '1';
+            fileOptionSelect.style.backgroundColor = '';
+            fileOptionSelect.style.cursor = 'pointer';
+        }
+        
+        if (yearField) {
+            yearField.disabled = false;
+            yearField.readOnly = false;
+            yearField.style.pointerEvents = 'auto';
+            yearField.style.opacity = '1';
+            yearField.style.backgroundColor = '';
+            yearField.style.cursor = 'text';
+        }
+        
+        // Create a mutation observer to prevent external scripts from disabling these fields
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'disabled') {
+                    const target = mutation.target;
+                    if (target.id === 'mlsFileOption' || target.id === 'mlsYear') {
+                        // Re-enable if something tries to disable it
+                        target.disabled = false;
+                        target.style.pointerEvents = 'auto';
+                        target.style.opacity = '1';
+                        target.style.backgroundColor = '';
+                    }
+                }
+            });
+        });
+        
+        // Start observing both fields
+        if (fileOptionSelect) {
+            observer.observe(fileOptionSelect, { attributes: true, attributeFilter: ['disabled'] });
+        }
+        if (yearField) {
+            observer.observe(yearField, { attributes: true, attributeFilter: ['disabled'] });
+        }
+        
+        // Also set up interval checks as backup
+        setInterval(function() {
+            if (fileOptionSelect && fileOptionSelect.disabled) {
+                fileOptionSelect.disabled = false;
+                fileOptionSelect.style.pointerEvents = 'auto';
+                fileOptionSelect.style.opacity = '1';
+            }
+            if (yearField && (yearField.disabled || yearField.readOnly)) {
+                yearField.disabled = false;
+                yearField.readOnly = false;
+                yearField.style.pointerEvents = 'auto';
+                yearField.style.opacity = '1';
+            }
+        }, 500);
+        
+        // Initialize form with default values
+        updateMlsForm('normal');
+        
         // Initialize file number previews
         updateMlsFileNumberPreview();
         updateKangisFileNumberPreview();
@@ -519,28 +587,22 @@
 
         // Add event listeners for MLS file number preview updates
         document.getElementById('mlsFileNoPrefix').addEventListener('change', updateMlsFileNumberPreview);
-        document.getElementById('mlsFileYear').addEventListener('input', updateMlsFileNumberPreview);
+        document.getElementById('mlsYear').addEventListener('input', updateMlsFileNumberPreview);
         document.getElementById('mlsFileSerial').addEventListener('input', updateMlsFileNumberPreview);
-        
-        // Add event listeners for new file type fields
         document.getElementById('mlsMiddlePrefix').addEventListener('input', updateMlsFileNumberPreview);
-        document.getElementById('mlsMiscSerial').addEventListener('input', updateMlsFileNumberPreview);
-        document.getElementById('mlsSpecialSerial').addEventListener('input', updateMlsFileNumberPreview);
-        
-        // Add event listener for file type dropdown (changed from radio buttons)
-        document.getElementById('mlsFileType').addEventListener('change', updateMlsFileNumberPreview);
+        document.getElementById('mlsExistingFileNo').addEventListener('change', updateMlsFileNumberPreview);
 
+        // Add event listeners for KANGIS file number preview updates
         document.getElementById('kangisFileNoPrefix').addEventListener('change', updateKangisFileNumberPreview);
         document.getElementById('kangisFileNumber').addEventListener('input', updateKangisFileNumberPreview);
 
-        document.getElementById('newKangisFileNoPrefix').addEventListener('change',
-            updateNewKangisFileNumberPreview);
-        document.getElementById('newKangisFileNumber').addEventListener('input',
-            updateNewKangisFileNumberPreview);
+        // Add event listeners for New KANGIS file number preview updates
+        document.getElementById('newKangisFileNoPrefix').addEventListener('change', updateNewKangisFileNumberPreview);
+        document.getElementById('newKangisFileNumber').addEventListener('input', updateNewKangisFileNumberPreview);
             
-        // Make sure the active tab is properly displayed on page load
+        // Set up the default active tab
         var activeTabName = document.getElementById('activeFileTab').value;
-        var tabToShow = "mlsFNoTab"; // Default
+        var tabToShow = "mlsFNoTab";
         
         if (activeTabName === "kangisFileNo") {
             tabToShow = "kangisFileNoTab";
@@ -552,7 +614,6 @@
         var tabButtons = document.getElementsByClassName("tablinks");
         for (var i = 0; i < tabButtons.length; i++) {
             if (tabButtons[i].getAttribute("onclick").includes(tabToShow)) {
-                // Create a fake event object
                 var fakeEvent = { currentTarget: tabButtons[i] };
                 openFileTab(fakeEvent, tabToShow);
                 break;

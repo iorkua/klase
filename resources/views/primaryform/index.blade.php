@@ -11,7 +11,7 @@
 
 @section('content')
 <style>
-  
+   
     .step-circle {
       width: 2rem;
       height: 2rem;
@@ -269,7 +269,7 @@
                               </div>
                             </div>
                           </div>
-
+ 
                           @include('primaryform.fileno')
                             
                         </div>

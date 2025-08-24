@@ -202,7 +202,7 @@
                     <div class="error-message">Plot size is required</div>
                 </div>
                 
-                <div class="form-field">
+                <div class="form-field" >
                     <label for="coordinates" class="block text-sm font-medium text-gray-700 mb-1">
                         GPS Coordinates <span class="text-gray-400">(Optional)</span>
                     </label>
