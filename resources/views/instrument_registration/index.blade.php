@@ -580,7 +580,10 @@
 <script src="{{ asset('js/batch_fix.js') }}?v={{ time() }}"></script>
 
 <!-- Include the quick batch handler -->
-<script src="{{ asset('js/quick_batch_handler.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('js/quick_batch_handler.js') }}?v={{ time() }}"></script>`n`n<!-- Include the batch registration fix -->`n<script src="{{ asset('js/batch_registration_fix.js') }}?v={{ time() }}"></script>
+
+<!-- Include the batch registration fix -->
+<script src="{{ asset('js/batch_registration_fix.js') }}?v={{ time() }}"></script>
 
 @if(session('success'))
 <script>
@@ -900,7 +903,7 @@ function updateCheckboxStates() {
                              item.instrument_type === 'ST Assignment (Transfer of Title)' && 
                              item.status === 'registered';
                 
-                if (item.fileno === fileno) {
+                if (item.fileno === fileno && item.instrument_type === 'ST Assignment (Transfer of Title)') {
                     console.log(`Found matching fileno ${fileno}: Type=${item.instrument_type}, Status=${item.status}, Match=${match}`);
                 }
                 
@@ -921,6 +924,19 @@ function updateCheckboxStates() {
             const shouldEnable = !!stAssignmentRegistered;
             checkbox.disabled = !shouldEnable;
             
+            // Add visual indicator for disabled ST CofO checkboxes
+            const row = checkbox.closest('tr');
+            if (row) {
+                if (!shouldEnable) {
+                    row.classList.add('st-cofo-disabled');
+                    // Add a tooltip or visual indicator
+                    checkbox.title = 'This ST CofO cannot be registered until the corresponding ST Assignment is registered first';
+                } else {
+                    row.classList.remove('st-cofo-disabled');
+                    checkbox.title = '';
+                }
+            }
+            
             if (shouldEnable) {
                 enabledCount++;
                 console.log(`✅ Enabled ST CofO checkbox for ${fileno}`);
@@ -931,6 +947,8 @@ function updateCheckboxStates() {
             // If checkbox becomes disabled and was checked, uncheck it
             if (checkbox.disabled && checkbox.checked) {
                 checkbox.checked = false;
+                // Trigger change event to update batch registration state
+                handleMainTableCheckboxChange();
             }
         }
         
@@ -1328,3 +1346,4 @@ window.addEventListener('load', function() {
 </script>
 
 @endsection
+

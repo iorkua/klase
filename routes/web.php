@@ -859,3 +859,5 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'pagetyping'], functi
     Route::post('/save', [App\Http\Controllers\PageTypingController::class, 'save'])->name('pagetyping.save');
 });
 
+
+require __DIR__ . '/instrument_batch_fix.php';

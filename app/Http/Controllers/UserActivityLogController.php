@@ -208,6 +208,22 @@ class UserActivityLogController extends Controller
     public function logoutUser(Request $request, $userId)
     {
         try {
+            // Validate userId parameter
+            if (empty($userId) || $userId === 'undefined' || $userId === 'null' || !is_numeric($userId)) {
+                \Log::error('Invalid user ID provided for logout', [
+                    'user_id' => $userId,
+                    'admin_user' => auth()->id(),
+                    'request_data' => $request->all()
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid user ID provided'
+                ], 400);
+            }
+
+            // Convert to integer for safety
+            $userId = (int) $userId;
+
             // Log the request for debugging
             \Log::info('Logout user request', [
                 'user_id' => $userId,
@@ -288,7 +304,7 @@ class UserActivityLogController extends Controller
             ]);
         } catch (\Exception $e) {
             \Log::error('Error logging out user', [
-                'user_id' => $userId,
+                'user_id' => $userId ?? 'undefined',
                 'admin_user' => auth()->id(),
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -327,6 +343,7 @@ class UserActivityLogController extends Controller
             ->map(function ($log) {
                 return [
                     'id' => $log->id,
+                    'user_id' => $log->user_id, // Add the missing user_id field
                     'user_name' => $log->user ? $log->user->name : 'Unknown User',
                     'user_email' => $log->user ? $log->user->email : 'N/A',
                     'login_time' => $log->formatted_login_time,

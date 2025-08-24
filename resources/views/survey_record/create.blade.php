@@ -9,7 +9,7 @@
     @include('admin.header')
     <!-- Update Survey Form -->
     <div class="p-6">
-        <form id="update-survey-form" method="POST" action="{{ route('survey_record.store') }}" enctype="multipart/form-data">
+        <form id="update-survey-form" method="POST" action="{{ route('survey_record.store') }}" enctype="multipart/form-data" onsubmit="return validateFormSubmission(event)">
             @csrf
             <input type="hidden" name="application_id" id="application_id" value="">
             <input type="hidden" name="sub_application_id" id="sub_application_id" value="">
@@ -1065,6 +1065,37 @@ function formatFileSize(bytes) {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Form validation function
+function validateFormSubmission(event) {
+    // Ensure file numbers are populated before validation
+    if (typeof ensureFileNumbersPopulated === 'function') {
+        ensureFileNumbersPopulated();
+    }
+    
+    // Validate file numbers
+    if (typeof validateFileNumbers === 'function') {
+        const validation = validateFileNumbers();
+        if (!validation.isValid) {
+            event.preventDefault();
+            
+            // Show error message
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Validation Error',
+                    text: validation.message,
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            } else {
+                alert(validation.message);
+            }
+            return false;
+        }
+    }
+    
+    return true;
 }
 </script>
 @endsection

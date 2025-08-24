@@ -156,7 +156,7 @@
       <!-- Serial Number -->
       <div>
         <label class="block text-xs mb-1">Serial Number <span class="text-red-500">*</span></label>
-        <input type="text" class="w-full p-2 text-sm border border-gray-300 rounded-md" id="mlsFileSerial" name="mlsFileSerial" placeholder="e.g. 572" value="{{ isset($result) ? ($result->mlsFileNumber ? explode('-', $result->mlsFileNumber)[1] ?? '' : '') : '' }}" required>
+        <input type="text" class="w-full p-2 text-sm border border-gray-300 rounded-md" id="mlsFileSerial" name="mlsFileSerial" placeholder="e.g. 572" value="{{ isset($result) ? ($result->mlsFileNumber ? explode('-', $result->mlsFileNumber)[1] ?? '' : '') : '' }}">
       </div>
     </div>
 
@@ -293,6 +293,9 @@
         yearSection.classList.add('hidden');
         extensionFileSection.classList.add('hidden');
         
+        // Get the prefix field to manage its required attribute
+        const prefixField = document.getElementById('mlsFileNoPrefix');
+        
         // Reset serial number field properties
         serialNoField.type = 'text';
         serialNoField.removeAttribute('min');
@@ -301,6 +304,12 @@
         serialNoField.removeAttribute('maxlength');
         serialNoField.removeAttribute('pattern');
         serialNoField.disabled = false; // Ensure it's enabled
+        serialNoField.removeAttribute('required'); // Remove required first, then add back if needed
+        
+        // Reset prefix field required attribute
+        if (prefixField) {
+            prefixField.removeAttribute('required');
+        }
         
         if (type === 'normal' || type === 'temporary') {
             prefixSection.classList.remove('hidden');
@@ -308,13 +317,20 @@
             serialNoField.type = 'number';
             serialNoField.setAttribute('min', '1');
             serialNoField.setAttribute('max', '9999');
+            serialNoField.setAttribute('required', 'required'); // Add required for normal/temporary
             serialNoField.placeholder = 'Enter serial number (1-9999)';
+            // Add required to prefix field when it's visible and needed
+            if (prefixField) {
+                prefixField.setAttribute('required', 'required');
+            }
         } else if (type === 'extension') {
             extensionFileSection.classList.remove('hidden');
             yearSection.classList.remove('hidden');
             serialNoField.placeholder = 'Not required for extensions';
             serialNoField.value = '';
             serialNoField.disabled = true;
+            // Don't add required attribute for extensions since field is disabled
+            // Don't require prefix field for extensions
             
             // Load existing MLS file numbers when extension is selected
             loadExistingMlsFileNumbers();
@@ -328,6 +344,7 @@
             serialNoField.type = 'text';
             serialNoField.disabled = false;
             serialNoField.setAttribute('inputmode', 'text');
+            serialNoField.setAttribute('required', 'required'); // Add required for these types too
             
             if (type === 'miscellaneous') {
                 serialNoField.placeholder = 'Enter custom serial (e.g., 001, ABC123)';
@@ -338,6 +355,8 @@
             } else if (type === 'sltr') {
                 serialNoField.placeholder = 'Enter SLTR number (e.g., 001, 1234)';
             }
+            
+            // Don't require prefix field for these types since they don't use the standard prefix
         }
         
         updateMlsFileNumberPreview();
@@ -514,6 +533,40 @@
         
         updateMainFilenoField();
     }
+
+    // Function to validate that at least one file number is provided
+    function validateFileNumbers() {
+        const mlsFNo = document.getElementById('mlsFNo').value.trim();
+        const kangisFileNo = document.getElementById('kangisFileNo').value.trim();
+        const newKangisFileno = document.getElementById('NewKANGISFileno').value.trim();
+        
+        if (!mlsFNo && !kangisFileNo && !newKangisFileno) {
+            return {
+                isValid: false,
+                message: 'At least one file number (MLS, KANGIS, or New KANGIS) must be provided.'
+            };
+        }
+        
+        return {
+            isValid: true,
+            message: ''
+        };
+    }
+    
+    // Function to ensure file numbers are properly populated before form submission
+    function ensureFileNumbersPopulated() {
+        // Force update all file number previews to ensure hidden fields are populated
+        updateMlsFileNumberPreview();
+        updateKangisFileNumberPreview();
+        updateNewKangisFileNumberPreview();
+        
+        // Also update the main fileno field
+        updateMainFilenoField();
+    }
+    
+    // Make validation function globally accessible
+    window.validateFileNumbers = validateFileNumbers;
+    window.ensureFileNumbersPopulated = ensureFileNumbersPopulated;
 
     document.addEventListener('DOMContentLoaded', function() {
         // CRITICAL FIX: Ensure File Options dropdown is never disabled

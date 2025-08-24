@@ -305,7 +305,7 @@ window.openBatchRegisterModalImplementation = function() {
   // fetch batch data and populate table
   const baseUrl = window.location.origin;
   const filter = document.getElementById('batchStatusFilter').value;
-  fetch(`${baseUrl}/instrument_registration/get-batch-data?filter=${filter}`, {
+  fetch(`${baseUrl}/instrument_registration/get-batch-data-fixed?filter=${filter}`, {
     method: 'GET',
     credentials: 'same-origin'
   })
@@ -371,7 +371,7 @@ function fetchBatchDataForFilter(filter) {
   }
 
   const baseUrl = window.location.origin;
-  fetch(`${baseUrl}/instrument_registration/get-batch-data?filter=${filter}`, {
+  fetch(`${baseUrl}/instrument_registration/get-batch-data-fixed?filter=${filter}`, {
     method: 'GET',
     credentials: 'same-origin'
   })
@@ -1249,31 +1249,90 @@ function submitBatchRegistration() {
   console.log('selectedBatchProperties:', selectedBatchProperties);
   console.log('selectedBatchProperties.length:', selectedBatchProperties.length);
   
+  // Check if we have any selected properties
+  if (selectedBatchProperties.length === 0) {
+    console.error('No batch properties selected!');
+    
+    // Check if user has selected checkboxes but not added them to batch
+    const checkedCount = document.querySelectorAll('.available-property-checkbox:checked:not([disabled])').length;
+    if (checkedCount > 0) {
+      // Auto-add selected instruments to batch if they haven't been added yet
+      console.log('Auto-adding selected instruments to batch...');
+      addSelectedToBatch();
+      
+      // Wait a moment for the addition to complete, then proceed
+      setTimeout(() => {
+        if (selectedBatchProperties.length > 0) {
+          console.log('Auto-addition successful, proceeding with registration...');
+          submitBatchRegistration(); // Recursive call after auto-addition
+        } else {
+          Swal.fire({
+            title: 'Instruments Not Added to Batch',
+            html: `
+              <p>You have selected <strong>${checkedCount} instruments</strong> but they couldn't be automatically added to the batch.</p>
+              <p class="mt-2">Please click the <strong>"Add Selected Instruments"</strong> button first to add them to the batch for registration.</p>
+            `,
+            icon: 'warning',
+            confirmButtonText: 'OK, I understand',
+            confirmButtonColor: '#3085d6'
+          });
+        }
+      }, 500);
+      return;
+    } else {
+      Swal.fire('Error', 'No instruments selected for batch registration. Please select instruments first.', 'error');
+    }
+    return;
+  }
+  
   // Use fallbacks for missing data
   const deedsTime = document.getElementById('batchDeedsTime')?.value || new Date().toLocaleTimeString();
   const deedsDate = document.getElementById('batchDeedsDate')?.value || new Date().toISOString().split('T')[0];
   
-  // Process batch entries with proper fallbacks for missing data
-  const batchEntries = selectedBatchProperties.map(p => ({
-    application_id: p.id || 'N/A',
-    file_no: p.fileNo || 'N/A',
-    instrument_type: p.instrumentType || 'N/A',
-    grantor: p.grantor || 'N/A',
-    grantorAddress: p.grantorAddress || '',
-    grantee: p.grantee || 'N/A',
-    granteeAddress: p.granteeAddress || '',
-    duration: p.duration || 'N/A',
-    propertyDescription: p.plotDescription || p.propertyDescription || 'N/A',
-    lga: p.lga || 'N/A',
-    district: p.district || 'N/A',
-    plotNumber: p.plotNumber || 'N/A',
-    size: p.plotSize || p.size || 'N/A',
-    serial_no: (p.serialData && p.serialData.serial_no) || 1,
-    page_no: (p.serialData && p.serialData.page_no) || 1,
-    volume_no: (p.serialData && p.serialData.volume_no) || 1
-  }));
+  // Validate required fields
+  if (!deedsTime || !deedsDate) {
+    Swal.fire('Error', 'Please provide deeds date and time', 'error');
+    return;
+  }
   
-  console.log('batchEntries:', batchEntries);
+  // Process batch entries with proper fallbacks for missing data
+  const batchEntries = selectedBatchProperties.map((p, index) => {
+    // Ensure we have a valid application ID
+    let applicationId = p.id;
+    if (!applicationId) {
+      console.error('Property without ID found:', p);
+      return null;
+    }
+    
+    return {
+      application_id: applicationId,
+      file_no: p.fileNo || 'N/A',
+      instrument_type: p.instrumentType || 'N/A',
+      grantor: p.grantor || 'N/A',
+      grantorAddress: p.grantorAddress || '',
+      grantee: p.grantee || 'N/A',
+      granteeAddress: p.granteeAddress || '',
+      duration: p.duration || 'N/A',
+      propertyDescription: p.plotDescription || p.propertyDescription || 'N/A',
+      lga: p.lga || 'N/A',
+      district: p.district || 'N/A',
+      plotNumber: p.plotNumber || 'N/A',
+      size: p.plotSize || p.size || 'N/A',
+      serial_no: (p.serialData && p.serialData.serial_no) || (index + 1),
+      page_no: (p.serialData && p.serialData.page_no) || (index + 1),
+      volume_no: (p.serialData && p.serialData.volume_no) || 1,
+      deeds_time: deedsTime,
+      deeds_date: deedsDate
+    };
+  }).filter(entry => entry !== null); // Remove any null entries
+  
+  console.log('Final batchEntries to submit:', batchEntries);
+  console.log('Number of entries:', batchEntries.length);
+  
+  if (batchEntries.length === 0) {
+    Swal.fire('Error', 'No valid instruments to register. Please check your selection.', 'error');
+    return;
+  }
   
   // Show loading state
   Swal.fire({
@@ -1301,20 +1360,31 @@ function submitBatchRegistration() {
       deeds_date: deedsDate 
     })
   })
-  .then(r => r.json())
+  .then(response => {
+    console.log('Response status:', response.status);
+    if (!response.ok) {
+      return response.text().then(text => {
+        console.error('Error response:', text);
+        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+      });
+    }
+    return response.json();
+  })
   .then(res => {
+    console.log('Registration response:', res);
     Swal.close();
     if(res.success) {
-      Swal.fire('Success', res.message, 'success');
-      closeBatchRegisterModal();
-      window.location.reload();
+      Swal.fire('Success', res.message, 'success').then(() => {
+        closeBatchRegisterModal();
+        window.location.reload();
+      });
     } else {
-      Swal.fire('Error', res.error || res.message, 'error');
+      Swal.fire('Error', res.error || res.message || 'Unknown error occurred', 'error');
     }
   })
   .catch(e => {
     Swal.close();
-    console.error(e);
+    console.error('Batch registration error:', e);
     Swal.fire('Error', 'Batch request failed: ' + e.message, 'error');
   });
 }
@@ -1508,3 +1578,4 @@ function closeSingleRegisterModal() {
     modal.style.display = 'none';
   }
 }
+

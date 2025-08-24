@@ -720,7 +720,7 @@
 </div>
 
 <!-- View Buyer List Tab -->
-<div id="buyers-tab" class="tab-content" x-data="{ buyers: [{}] }">
+<div id="buyers-tab" class="tab-content" x-data="buyersData()">
     <div class="bg-white p-6">
        
         
@@ -753,7 +753,21 @@
             
             <form id="add-buyers-form" method="POST" action="{{ route('conveyance.update') }}" class="space-y-4">
                 @csrf
-                <input type="hidden" name="application_id" value="{{ $application->id }}" required>
+                <input type="hidden" name="application_id" value="{{ $application->id }}" id="application_id" required>
+                
+                <!-- Add Buyer Button (moved up) -->
+                <div class="flex justify-start mb-4">
+                    <button type="button" 
+                        @click.prevent="addBuyer()" 
+                        class="flex items-center px-3 py-2 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 {{ $isApproved ? 'opacity-50 cursor-not-allowed' : '' }}"
+                        {{ $isApproved ? 'disabled' : '' }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Add Buyer
+                    </button>
+                </div>
+                
                 <div>
                     <template x-for="(buyer, index) in buyers" :key="index">
                         <div class="flex items-start space-x-2 mb-4">
@@ -817,7 +831,7 @@
                                 </div>
                             </div>
                             <button type="button" 
-                                @click="buyers.splice(index, 1)" 
+                                @click="removeBuyer(index)" 
                                 x-show="buyers.length > 1" 
                                 class="bg-red-500 text-white p-1.5 rounded-md hover:bg-red-600 flex items-center justify-center mt-8 {{ $isApproved ? 'opacity-50 cursor-not-allowed' : '' }}"
                                 {{ $isApproved ? 'disabled' : '' }}>
@@ -829,15 +843,6 @@
                     </template>
                 </div>
                 
-                <button type="button" 
-                    @click="buyers.push({})" 
-                    class="flex items-center px-3 py-1.5 text-xs bg-blue-500 text-white rounded-md hover:bg-blue-600 mt-2 {{ $isApproved ? 'opacity-50 cursor-not-allowed' : '' }}"
-                    {{ $isApproved ? 'disabled' : '' }}>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Add Buyer
-                </button>
                 <div class="flex justify-end mt-4">
                     <button type="submit" 
                         class="flex items-center px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 {{ $isApproved ? 'opacity-50 cursor-not-allowed' : '' }}"
@@ -872,7 +877,31 @@
     </div>
 </div>
 
-<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script>
+    // Define Alpine.js data function for buyers
+    function buyersData() {
+        return {
+            // Initialize with a single empty buyer to show one form initially
+            buyers: [{}],
+            addBuyer() {
+                // Add exactly one buyer per click
+                this.buyers.push({});
+            },
+            removeBuyer(index) {
+                this.buyers.splice(index, 1);
+                if (this.buyers.length === 0) {
+                    // Always keep at least one form visible
+                    this.buyers.push({});
+                }
+            },
+            resetBuyers() {
+                // Reset to a single empty form after successful save
+                this.buyers = [{}];
+            }
+        }
+    }
+</script>
+
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
@@ -1139,6 +1168,11 @@
                             buyersForm.reset();
                             // Restore application_id after reset
                             buyersForm.querySelector('input[name="application_id"]').value = "{{ $application->id }}";
+                            // Reset Alpine.js buyers array
+                            const buyersTab = document.getElementById('buyers-tab');
+                            if (buyersTab && buyersTab._x_dataStack && buyersTab._x_dataStack[0]) {
+                                buyersTab._x_dataStack[0].resetBuyers();
+                            }
                             loadBuyersList();
                         });
                     } else {
@@ -1332,7 +1366,7 @@
                     }
                     
                     return {
-                        id: buyerId,
+                        buyer_id: buyerId,
                         buyer_title: title,
                         buyer_name: name,
                         unit_no: unit,
@@ -1352,6 +1386,9 @@
                             Swal.showLoading();
                         }
                     });
+                    
+                    // Add application_id to the buyer data
+                    buyerData.application_id = {{ $application->id }};
                     
                     // Send update request
                     fetch('{{ url("/conveyance/update-buyer") }}', {
@@ -1424,7 +1461,10 @@
                             'X-CSRF-TOKEN': '{{ csrf_token() }}',
                             'X-Requested-With': 'XMLHttpRequest'
                         },
-                        body: JSON.stringify({ id: buyerId })
+                        body: JSON.stringify({ 
+                            buyer_id: buyerId,
+                            application_id: {{ $application->id }}
+                        })
                     })
                     .then(response => response.json())
                     .then(data => {

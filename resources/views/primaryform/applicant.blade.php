@@ -28,15 +28,15 @@
                                         <option value="Master" {{ old('applicant_title') == 'Master' ? 'selected' : '' }}>Master</option>
                                         <option value="Capt" {{ old('applicant_title') == 'Capt' ? 'selected' : '' }}>Capt</option>
                                         <option value="Coln" {{ old('applicant_title') == 'Coln' ? 'selected' : '' }}>Coln</option>
-                                        <option value="Pastor" {{ old('applicant_title') == 'Pastor' ? 'selected' : '' }}>Pastor</option>
-                                        <option value="King" {{ old('applicant_title') == 'King' ? 'selected' : '' }}>King</option>
+                                        <option value="Pastor" {{ old('applicant_title') == 'HRH' ? 'selected' : '' }}>HRH</option>
+                                        <option value="King" {{ old('applicant_title') == 'Mallam' ? 'selected' : '' }}>Mallam</option>
                                         <option value="Prof" {{ old('applicant_title') == 'Prof' ? 'selected' : '' }}>Prof</option>
                                         <option value="Dr." {{ old('applicant_title') == 'Dr.' ? 'selected' : '' }}>Dr.</option>
                                         <option value="Alhaji" {{ old('applicant_title') == 'Alhaji' ? 'selected' : '' }}>Alhaji</option>
-                                        <option value="Alhaja" {{ old('applicant_title') == 'Alhaja' ? 'selected' : '' }}>Alhaja</option>
+                                        <option value="Hajia" {{ old('applicant_title') == 'Alhaja' ? 'selected' : '' }}>Hajia</option>
                                         <option value="High Chief" {{ old('applicant_title') == 'High Chief' ? 'selected' : '' }}>High Chief</option>
                                         <option value="Lady" {{ old('applicant_title') == 'Lady' ? 'selected' : '' }}>Lady</option>
-                                        <option value="Bishop" {{ old('applicant_title') == 'Bishop' ? 'selected' : '' }}>Bishop</option>
+                                     
                                         <option value="Senator" {{ old('applicant_title') == 'Senator' ? 'selected' : '' }}>Senator</option>
                                         <option value="Messr" {{ old('applicant_title') == 'Messr' ? 'selected' : '' }}>Messr</option>
                                         <option value="Honorable" {{ old('applicant_title') == 'Honorable' ? 'selected' : '' }}>Honorable</option>

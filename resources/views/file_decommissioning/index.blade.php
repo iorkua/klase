@@ -181,21 +181,22 @@
                 <!-- Active Files Table -->
                 <div class="px-6 py-6">
                     <div class="mb-4">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Active Files</h3>
-                        <p class="text-sm text-gray-600">Select files to decommission from the LANDS module</p>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Decommissioned Files</h3>
+                        <p class="text-sm text-gray-600">View and manage decommissioned files from the LANDS module</p>
                     </div>
 
                     <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
                         <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-300" id="activeFilesTable">
+                            <table class="min-w-full divide-y divide-gray-300" id="decommissionedFilesTable">
                                 <thead class="bg-gray-50">
                                     <tr>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">MLS File No</th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kangis File No</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">New Kangis File No</th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File Name</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commissioning Date</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Decommissioning Date</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Decommissioned By</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                                     </tr>
                                 </thead>
@@ -394,24 +395,25 @@
                 }
             });
 
-            // Initialize DataTable for active files
-            const activeFilesTable = $('#activeFilesTable').DataTable({
+            // Initialize DataTable for decommissioned files
+            const decommissionedFilesTable = $('#decommissionedFilesTable').DataTable({
                 processing: true,
                 serverSide: true,
                 ajax: {
-                    url: '{{ route("file-decommissioning.active-files-data") }}',
+                    url: '{{ route("file-decommissioning.decommissioned-files-data") }}',
                     type: 'GET'
                 },
                 columns: [
-                    { data: 'mlsfNo', name: 'mlsfNo' },
-                    { data: 'kangisFileNo', name: 'kangisFileNo' },
-                    { data: 'NewKANGISFileNo', name: 'NewKANGISFileNo' },
-                    { data: 'FileName', name: 'FileName' },
-                    { data: 'type', name: 'type' },
-                    { data: 'created_at', name: 'created_at' },
+                    { data: 'mls_file_no', name: 'mls_file_no' },
+                    { data: 'kangis_file_no', name: 'kangis_file_no' },
+                    { data: 'file_name', name: 'file_name' },
+                    { data: 'commissioning_date', name: 'commissioning_date' },
+                    { data: 'decommissioning_date', name: 'decommissioning_date' },
+                    { data: 'decommissioned_by', name: 'decommissioned_by' },
+                    { data: 'decommissioning_reason', name: 'decommissioning_reason' },
                     { data: 'action', name: 'action', orderable: false, searchable: false }
                 ],
-                order: [[5, 'desc']],
+                order: [[4, 'desc']], // Order by decommissioning_date desc
                 pageLength: 25,
                 responsive: true,
                 drawCallback: function() {
@@ -502,7 +504,7 @@
                             closeModal();
                             
                             // Refresh table and statistics
-                            activeFilesTable.ajax.reload();
+                            decommissionedFilesTable.ajax.reload();
                             loadStatistics();
                         } else {
                             Swal.fire({
@@ -629,6 +631,98 @@
                             icon: 'error',
                             title: 'Error!',
                             text: 'Error loading file details: ' + response.message,
+                            confirmButtonColor: '#ef4444'
+                        });
+                    }
+                },
+                error: function(xhr) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'Error loading file details',
+                        confirmButtonColor: '#ef4444'
+                    });
+                }
+            });
+        }
+
+        // Global function to view decommissioned file details
+        function viewDecommissionedFile(fileId) {
+            // Show loading
+            Swal.fire({
+                title: 'Loading...',
+                text: 'Loading file details...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            $.ajax({
+                url: `/file-decommissioning/decommissioned-file-details/${fileId}`,
+                type: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        const file = response.data;
+                        
+                        // Create detailed view HTML
+                        const detailsHtml = `
+                            <div class="text-left space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <strong class="text-blue-600">MLS File No:</strong><br>
+                                        <span class="text-gray-700">${file.mls_file_no}</span>
+                                    </div>
+                                    <div>
+                                        <strong class="text-blue-600">Kangis File No:</strong><br>
+                                        <span class="text-gray-700">${file.kangis_file_no}</span>
+                                    </div>
+                                    <div>
+                                        <strong class="text-blue-600">New Kangis File No:</strong><br>
+                                        <span class="text-gray-700">${file.new_kangis_file_no}</span>
+                                    </div>
+                                    <div>
+                                        <strong class="text-blue-600">File Name:</strong><br>
+                                        <span class="text-gray-700">${file.file_name}</span>
+                                    </div>
+                                    <div>
+                                        <strong class="text-blue-600">Commissioning Date:</strong><br>
+                                        <span class="text-gray-700">${file.commissioning_date}</span>
+                                    </div>
+                                    <div>
+                                        <strong class="text-blue-600">Decommissioning Date:</strong><br>
+                                        <span class="text-gray-700">${file.decommissioning_date}</span>
+                                    </div>
+                                    <div>
+                                        <strong class="text-blue-600">Decommissioned By:</strong><br>
+                                        <span class="text-gray-700">${file.decommissioned_by}</span>
+                                    </div>
+                                    <div>
+                                        <strong class="text-blue-600">Record Created:</strong><br>
+                                        <span class="text-gray-700">${file.created_at}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <strong class="text-blue-600">Decommissioning Reason:</strong><br>
+                                    <div class="bg-gray-50 p-3 rounded border mt-2">
+                                        <span class="text-gray-700">${file.decommissioning_reason}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        Swal.fire({
+                            title: 'Decommissioned File Details',
+                            html: detailsHtml,
+                            width: '800px',
+                            confirmButtonText: 'Close',
+                            confirmButtonColor: '#3b82f6'
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: response.message || 'Error loading file details',
                             confirmButtonColor: '#ef4444'
                         });
                     }

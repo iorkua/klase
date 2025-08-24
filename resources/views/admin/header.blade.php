@@ -90,9 +90,6 @@
   </div>
 </div>
 
-<!-- Include Alpine.js for dropdown functionality -->
-<script src="https://cdn.jsdelivr.net/npm/alpinejs@2.8.2/dist/alpine.min.js" defer></script>
-
 <!-- Tailwind CDN must come BEFORE our configuration -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script>

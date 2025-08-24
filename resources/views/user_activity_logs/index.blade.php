@@ -852,6 +852,18 @@ function closeActivityModal() {
 function logoutUser(userId) {
     console.log('Logout user called with userId:', userId);
     
+    // Validate userId before proceeding
+    if (!userId || userId === 'undefined' || userId === 'null' || userId === '' || isNaN(userId)) {
+        console.error('Invalid user ID provided:', userId);
+        Swal.fire({
+            title: 'Error',
+            text: 'Invalid user ID. Please refresh the page and try again.',
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+    
     // Check if user is offline
     if (!navigator.onLine) {
         Swal.fire({

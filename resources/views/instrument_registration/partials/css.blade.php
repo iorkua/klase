@@ -613,4 +613,69 @@
         width: 16px;
         height: 16px;
     }
+
+    /* ST CofO Disabled Row Styling */
+    .st-cofo-disabled {
+        background-color: #fef7f7 !important;
+        opacity: 0.7;
+        position: relative;
+    }
+    
+    .st-cofo-disabled::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background-color: #ef4444;
+        z-index: 1;
+    }
+    
+    .st-cofo-disabled td {
+        background-color: inherit !important;
+        color: #6b7280;
+    }
+    
+    .st-cofo-disabled input[type="checkbox"]:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .st-cofo-disabled .badge-sectional-titling {
+        background-color: #fecaca;
+        color: #991b1b;
+        border-color: #fee2e2;
+        opacity: 0.8;
+    }
+    
+    /* Tooltip for disabled ST CofO */
+    .st-cofo-disabled input[type="checkbox"][title] {
+        position: relative;
+    }
+    
+    /* Visual indicator for prerequisite requirement */
+    .st-cofo-disabled::after {
+        content: "⚠️ Requires ST Assignment to be registered first";
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 11px;
+        color: #dc2626;
+        background-color: #fee2e2;
+        padding: 2px 6px;
+        border-radius: 12px;
+        border: 1px solid #fecaca;
+        font-weight: 500;
+        z-index: 2;
+        white-space: nowrap;
+    }
+    
+    /* Hover effect for disabled rows */
+    .st-cofo-disabled:hover {
+        background-color: #fef2f2 !important;
+        transform: none;
+        box-shadow: 0 2px 4px rgba(239, 68, 68, 0.1);
+    }
   </style>

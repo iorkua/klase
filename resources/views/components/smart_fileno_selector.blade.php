@@ -166,6 +166,8 @@ function initializeSmartFilenoSelector() {
     if (manualMode) {
         manualMode.style.display = 'none';
         manualMode.classList.add('hidden');
+        // Remove required attributes from hidden fields on initialization
+        disableFileNumberInputsWhenHidden();
     }
     
     // Toggle between dropdown and manual modes
@@ -182,6 +184,9 @@ function initializeSmartFilenoSelector() {
                 </svg>
                 Enter Fileno manually
             `;
+            
+            // Disable file number inputs when manual mode is hidden to prevent form validation errors
+            disableFileNumberInputsWhenHidden();
         } else {
             // Switch to manual mode
             dropdownMode.classList.add('hidden');
@@ -452,6 +457,26 @@ function initializeSmartFilenoSelector() {
         mlsFileTypeRadios.forEach(radio => {
             radio.disabled = false;
         });
+    }
+    
+    // Function to disable file number inputs when manual mode is hidden
+    function disableFileNumberInputsWhenHidden() {
+        const manualMode = document.getElementById('manual-mode');
+        if (manualMode && manualMode.classList.contains('hidden')) {
+            // Remove required attributes from hidden fields to prevent form validation errors
+            const requiredFields = [
+                'mlsFileNoPrefix', 'mlsFileSerial', 'mlsFileOption',
+                'kangisFileNoPrefix', 'kangisFileNumber',
+                'newKangisFileNoPrefix', 'newKangisFileNumber'
+            ];
+            
+            requiredFields.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.removeAttribute('required');
+                }
+            });
+        }
     }
     
     // Function to reset manual entry form
