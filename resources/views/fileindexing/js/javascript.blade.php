@@ -7,7 +7,29 @@
   let selectedFiles = []; // Initialize empty - no pre-selected files
   let selectedIndexedFiles = []; // Track selected indexed files
   let pendingFiles = []; // Will be loaded from API
-  let indexedFiles = []; // Will be loaded from API
+  let indexedFiles = [
+    // Sample indexed files for testing
+    {
+      id: 'INDEXED-001',
+      fileNumber: 'KNGP-12345',
+      name: 'Alhaji Ibrahim Dantata Property',
+      type: 'Certificate of Occupancy',
+      source: 'Indexed',
+      date: '2024-01-15',
+      landUseType: 'Residential',
+      district: 'Nasarawa'
+    },
+    {
+      id: 'INDEXED-002',
+      fileNumber: 'KNGP-12346',
+      name: 'Hajiya Amina Yusuf Commercial Plot',
+      type: 'Site Plan',
+      source: 'Indexed',
+      date: '2024-01-16',
+      landUseType: 'Commercial',
+      district: 'Fagge'
+    }
+  ]; // Sample data for testing
   let indexingProgress = 0; // Set to 0% initially
   let currentStage = "extract"; // Current stage in the AI pipeline
   
@@ -50,14 +72,19 @@
     updateSelectedFilesCount();
   }
   
+  // Make function globally accessible
+  window.toggleFileSelection = toggleFileSelection;
+  
   // Function to toggle select all
   function toggleSelectAll() {
-    if (selectedFiles.length === pendingFiles.length) {
-      // If all files are already selected, deselect all
-      selectedFiles = [];
-    } else {
-      // Otherwise, select all files
+    const selectAllCheckbox = document.getElementById('select-all-checkbox');
+    
+    if (selectAllCheckbox.checked) {
+      // Select all files
       selectedFiles = pendingFiles.map(file => file.id);
+    } else {
+      // Deselect all files
+      selectedFiles = [];
     }
     
     renderPendingFiles();
@@ -433,7 +460,9 @@
     
     // Update "Select All" checkbox state
     const selectAllCheckbox = document.getElementById('select-all-indexed-checkbox');
-    selectAllCheckbox.checked = selectedIndexedFiles.length === indexedFiles.length;
+    if (selectAllCheckbox) {
+      selectAllCheckbox.checked = selectedIndexedFiles.length === indexedFiles.length && indexedFiles.length > 0;
+    }
     
     indexedFiles.forEach(file => {
       const isSelected = selectedIndexedFiles.includes(file.id);
@@ -446,8 +475,7 @@
             <input type="checkbox" 
                    ${isSelected ? 'checked' : ''} 
                    data-id="${file.id}" 
-                   onclick="toggleIndexedFileSelection('${file.id}')" 
-                   class="mr-4"
+                   class="indexed-file-checkbox mr-4"
                    title="Select for batch tracking operations">
             <div class="file-icon">
               <i data-lucide="file-check" class="h-6 w-6 text-green-500"></i>
@@ -506,6 +534,14 @@
     // Initialize Lucide icons for the new rows
     lucide.createIcons();
     
+    // Add event listeners for individual indexed file checkboxes
+    document.querySelectorAll('.indexed-file-checkbox').forEach(checkbox => {
+      checkbox.addEventListener('change', function() {
+        const fileId = this.getAttribute('data-id');
+        toggleIndexedFileSelection(fileId);
+      });
+    });
+    
     // Update selected indexed files count
     updateSelectedIndexedFilesCount();
     
@@ -558,7 +594,9 @@
     
     // Update the "Select All" checkbox state
     const selectAllCheckbox = document.getElementById('select-all-checkbox');
-    selectAllCheckbox.checked = pendingFiles.length > 0 && selectedFiles.length === pendingFiles.length;
+    if (selectAllCheckbox) {
+      selectAllCheckbox.checked = pendingFiles.length > 0 && selectedFiles.length === pendingFiles.length;
+    }
     
     pendingFiles.forEach(file => {
       const isSelected = selectedFiles.includes(file.id);
@@ -671,16 +709,19 @@
     updateTrackingButton();
   }
   
-  // Function to toggle select all indexed files
+  // Make function globally accessible
+  window.toggleIndexedFileSelection = toggleIndexedFileSelection;
+  
+  // Function to toggle select all indexed files - FIXED VERSION
   function toggleSelectAllIndexed() {
     const selectAllCheckbox = document.getElementById('select-all-indexed-checkbox');
     
-    if (selectedIndexedFiles.length === indexedFiles.length) {
-      selectedIndexedFiles = [];
-      selectAllCheckbox.checked = false;
-    } else {
+    if (selectAllCheckbox.checked) {
+      // Select all files
       selectedIndexedFiles = indexedFiles.map(file => file.id);
-      selectAllCheckbox.checked = true;
+    } else {
+      // Deselect all files
+      selectedIndexedFiles = [];
     }
     
     renderIndexedFiles();
@@ -691,7 +732,9 @@
   // Function to update selected indexed files count
   function updateSelectedIndexedFilesCount() {
     const selectedCountElement = document.getElementById('selected-indexed-files-count');
-    selectedCountElement.textContent = `${selectedIndexedFiles.length} selected`;
+    if (selectedCountElement) {
+      selectedCountElement.textContent = `${selectedIndexedFiles.length} selected`;
+    }
   }
   
   // Function to update tracking button behavior
@@ -699,15 +742,17 @@
     const trackingBtn = document.getElementById('generate-tracking-sheets-btn');
     const trackingBtnText = document.getElementById('tracking-btn-text');
     
-    if (selectedIndexedFiles.length === 0) {
-      trackingBtnText.textContent = 'New File Index';
-      trackingBtn.onclick = () => showNewFileDialog();
-    } else if (selectedIndexedFiles.length === 1) {
-      trackingBtnText.textContent = 'Generate Tracking Sheet';
-      trackingBtn.onclick = () => generateSingleTrackingSheet();
-    } else {
-      trackingBtnText.textContent = 'Generate Batch Tracking Sheets';
-      trackingBtn.onclick = () => openSmartBatchInterface();
+    if (trackingBtn && trackingBtnText) {
+      if (selectedIndexedFiles.length === 0) {
+        trackingBtnText.textContent = 'New File Index';
+        trackingBtn.onclick = () => showNewFileDialog();
+      } else if (selectedIndexedFiles.length === 1) {
+        trackingBtnText.textContent = 'Generate Tracking Sheet';
+        trackingBtn.onclick = () => generateSingleTrackingSheet();
+      } else {
+        trackingBtnText.textContent = 'Generate Batch Tracking Sheets';
+        trackingBtn.onclick = () => openSmartBatchInterface();
+      }
     }
   }
   
@@ -923,38 +968,54 @@
     });
     
     // Add event listener for select all checkbox
-    document.getElementById('select-all-checkbox').addEventListener('click', toggleSelectAll);
+    const selectAllCheckbox = document.getElementById('select-all-checkbox');
+    if (selectAllCheckbox) {
+      selectAllCheckbox.addEventListener('click', toggleSelectAll);
+    }
     
     // Add event listener for select all indexed files checkbox
-    document.getElementById('select-all-indexed-checkbox').addEventListener('click', toggleSelectAllIndexed);
+    const selectAllIndexedCheckbox = document.getElementById('select-all-indexed-checkbox');
+    if (selectAllIndexedCheckbox) {
+      selectAllIndexedCheckbox.addEventListener('click', toggleSelectAllIndexed);
+    }
     
-    beginIndexingBtn.addEventListener('click', () => {
-      // Only switch tabs if files are selected
-      if (selectedFiles.length > 0) {
-        // Update the AI Indexing title to show the number of selected files
-        const titleElement = document.querySelector('#indexing-tab .card h3');
-        if (titleElement) {
-          titleElement.textContent = `AI Indexing: ${selectedFiles.length} Files`;
+    if (beginIndexingBtn) {
+      beginIndexingBtn.addEventListener('click', () => {
+        // Only switch tabs if files are selected
+        if (selectedFiles.length > 0) {
+          // Update the AI Indexing title to show the number of selected files
+          const titleElement = document.querySelector('#indexing-tab .card h3');
+          if (titleElement) {
+            titleElement.textContent = `AI Indexing: ${selectedFiles.length} Files`;
+          }
+          
+          // Update the ready message
+          const messageElement = document.querySelector('#indexing-tab .card p.mb-6');
+          if (messageElement) {
+            messageElement.textContent = `Ready to begin AI-powered indexing for ${selectedFiles.length} selected files.`;
+          }
+          
+          // Switch to the indexing tab
+          switchTab('indexing');
+        } else {
+          alert("Please select at least one file to begin indexing.");
         }
-        
-        // Update the ready message
-        const messageElement = document.querySelector('#indexing-tab .card p.mb-6');
-        if (messageElement) {
-          messageElement.textContent = `Ready to begin AI-powered indexing for ${selectedFiles.length} selected files.`;
-        }
-        
-        // Switch to the indexing tab
-        switchTab('indexing');
-      } else {
-        alert("Please select at least one file to begin indexing.");
-      }
-    });
+      });
+    }
     
     // New File Dialog event listeners
-    newFileIndexBtn.addEventListener('click', showNewFileDialog);
-    closeDialogBtn.addEventListener('click', closeNewFileDialog);
-    cancelBtn.addEventListener('click', closeNewFileDialog);
-    createFileBtn.addEventListener('click', createNewFile);
+    if (newFileIndexBtn) {
+      newFileIndexBtn.addEventListener('click', showNewFileDialog);
+    }
+    if (closeDialogBtn) {
+      closeDialogBtn.addEventListener('click', closeNewFileDialog);
+    }
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', closeNewFileDialog);
+    }
+    if (createFileBtn) {
+      createFileBtn.addEventListener('click', createNewFile);
+    }
     
     // File number type radio buttons
     fileNumberTypeRadios.forEach(radio => {
@@ -969,8 +1030,12 @@
       });
     });
     
-    startAiIndexingBtn.addEventListener('click', startAiIndexing);
-    confirmSaveResultsBtn.addEventListener('click', confirmAndSaveResults);
+    if (startAiIndexingBtn) {
+      startAiIndexingBtn.addEventListener('click', startAiIndexing);
+    }
+    if (confirmSaveResultsBtn) {
+      confirmSaveResultsBtn.addEventListener('click', confirmAndSaveResults);
+    }
     
     // Setup search listeners
     setupSearchListeners();

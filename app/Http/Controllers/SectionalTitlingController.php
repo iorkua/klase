@@ -19,12 +19,12 @@ class  SectionalTitlingController extends Controller
         $PageTitle = 'Sectional Titling Module (STM)';
         $PageDescription = 'Process CofO for individually owned sections of multi-unit developments.';
         $Primary = DB::connection('sqlsrv')->table('dbo.mother_applications')
-                ->orderBy('created_at', 'desc')
+                ->orderBy('id', 'desc')
                 ->take(5)
                 ->get();
         
         $Secondary = DB::connection('sqlsrv')->table('dbo.subapplications')
-                ->orderBy('created_at', 'desc')
+                ->orderBy('id', 'desc')
                 ->take(5)
                 ->get();
 
@@ -50,7 +50,7 @@ class  SectionalTitlingController extends Controller
                     ($request->get('url') === 'recommendation' ? 'Review and process planning recommendation for sectional titles' : 'Process CofO for individually owned sections of multi-unit developments.');
         }
 
-        $PrimaryApplications = DB::connection('sqlsrv')->table('dbo.mother_applications')->get();
+        $PrimaryApplications = DB::connection('sqlsrv')->table('dbo.mother_applications')->orderBy('id')->get();
          
 
         return view('sectionaltitling.primary', compact('PrimaryApplications', 'PageTitle', 'PageDescription'));
@@ -105,8 +105,7 @@ class  SectionalTitlingController extends Controller
             'dbo.mother_applications.property_district',
             'dbo.mother_applications.property_lga',
              'dbo.mother_applications.np_fileno'
-            )
-            ->get();
+            )->orderBy('id', 'desc')->get();
          
 
         return view('sectionaltitling.secondary', compact('SecondaryApplications', 'PageTitle', 'PageDescription')); 
@@ -191,8 +190,9 @@ class  SectionalTitlingController extends Controller
         }
 
         $PrimaryApplications = DB::connection('sqlsrv')->table('dbo.mother_applications')
-            ->orderBy('created_at', 'desc')
+        ->orderBy('id', 'desc')
             ->get();
+       
 
         return view('sectionaltitling.mother', compact('PrimaryApplications', 'PageTitle', 'PageDescription'));
     }
@@ -393,3 +393,7 @@ class  SectionalTitlingController extends Controller
     }
   
 }
+
+
+// sort all  record by the latest created record first
+            

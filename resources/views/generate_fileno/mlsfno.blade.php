@@ -70,7 +70,7 @@
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KANGIS File No</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">New KANGIS File No</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File Name</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commission By</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created Date</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
@@ -197,6 +197,33 @@
                                 </select>
                             </div>
                         </div>
+
+
+                     <!-- add two disabled for commissiond by and commission date -->
+                      <div  >
+                            <!-- Commissioned By -->
+                            <div>
+                                <label for="commissionedBy" class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i data-lucide="user-check" class="w-4 h-4 inline mr-1"></i>
+                                    Commissioned By     
+                                </label>
+                                <input type="text" id="commissionedBy" name="commissioned_by"  
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100"
+                                       placeholder="Auto-filled" disabled value="{{ Auth::user()->name }}">
+
+                            </div>
+                            <!-- Commission Date -->
+                            <div>
+                                <label for="commissionDate" class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i data-lucide="calendar-check" class="w-4 h-4 inline mr-1"></i>
+                                    Commission Date 
+                                </label>
+
+                            <input type="text" id="commissionDate" name="commission_date"                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100"
+                                       placeholder="Auto-filled" disabled value="{{ date('Y-m-d') }}">
+                            </div>
+
+
 
                         <!-- Right Column -->
                         <div class="space-y-4">
@@ -595,7 +622,7 @@
                     { 
                         data: 'created_by', 
                         name: 'created_by',
-                        title: 'Created By',
+                        title: 'Commissioned By',
                         defaultContent: 'System',
                         render: function(data, type, row) {
                             if (data && data.trim() !== '') {
@@ -607,7 +634,7 @@
                     { 
                         data: 'created_at', 
                         name: 'created_at',
-                        title: 'Created Date',
+                        title: 'Commission Date',
                         defaultContent: 'N/A',
                         render: function(data, type, row) {
                             if (data && data.trim() !== '') {

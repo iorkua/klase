@@ -221,6 +221,7 @@
     // Function to toggle CofO fields based on registration status
     function toggleCofoFields(isRegistered) {
         const fieldsToToggle = [
+            'cofoCertificateDate',
             'cofoSerialNo',
             'cofoPageNo', 
             'cofoVolumeNo',
@@ -250,6 +251,9 @@
                     
                     // Set default values
                     switch(fieldId) {
+                        case 'cofoCertificateDate':
+                            field.value = '0000-00-00';
+                            break;
                         case 'cofoSerialNo':
                             field.value = '0';
                             break;

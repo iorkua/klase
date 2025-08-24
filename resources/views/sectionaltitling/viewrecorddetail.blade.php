@@ -120,8 +120,8 @@
     }
 
     $totalUnits = $application->NoOfUnits ?? 0;
-    $remainingUnits = $totalUnits - $allocatedUnits;
-    $progressPercentage = $totalUnits > 0 ? ($allocatedUnits / $totalUnits) * 100 : 0;
+    $remainingUnits = max(0, ($totalUnits - $allocatedUnits));
+    $progressPercentage = $totalUnits > 0 ? min(100, max(0, ($allocatedUnits / $totalUnits) * 100)) : 0;
 @endphp
 
 <!-- Units Countdown UI -->
@@ -296,7 +296,7 @@
                 <div
                     class="mb-2 border border-gray-300 rounded-lg overflow-hidden inline-block">
                     @if (isset($application->passport) && !empty($application->passport))
-                        <img src="{{ asset('storage/app/public/' . $application->passport) }}"
+                        <img src="{{ asset('storage/' . ltrim($application->passport, '/')) }}"
                             alt="Applicant Photo" class="w-36 h-36 object-cover">
                     @else
                         <div class="w-36 h-36 bg-gray-200 flex items-center justify-center">
@@ -321,7 +321,7 @@
                 <div class="flex items-center">
                     <div class="mr-4">
                         @if (isset($application->passport) && !empty($application->passport))
-                            <img src="{{ asset('storage/app/public/' . $application->passport) }}"
+                            <img src="{{ asset('storage/' . ltrim($application->passport, '/')) }}"
                                 alt="Primary Applicant"
                                 class="w-16 h-16 object-cover rounded-full border border-gray-300">
                         @else
@@ -352,7 +352,7 @@
                             <div class="flex items-center">
                                 <div class="mr-4">
                                     @if (isset($co_applicant->passport_photo) && !empty($co_applicant->passport_photo))
-                                        <img src="{{ asset('storage/' . $co_applicant->passport_photo) }}"
+                                        <img src="{{ asset('storage/' . ltrim($co_applicant->passport_photo, '/')) }}"
                                             alt="Co-Applicant"
                                             class="w-12 h-12 object-cover rounded-full border border-gray-300">
                                     @else
@@ -399,7 +399,7 @@
                                 <div class="flex items-center">
                                     <div class="mr-4">
                                         @if (isset($rep->passport_photo) && !empty($rep->passport_photo))
-                                            <img src="{{ asset('storage/' . $rep->passport_photo) }}"
+                                            <img src="{{ asset('storage/' . ltrim($rep->passport_photo, '/')) }}"
                                                 alt="Representative"
                                                 class="w-12 h-12 object-cover rounded-full border border-gray-300">
                                         @else
@@ -481,7 +481,7 @@
                             <div class="flex items-center">
                                 <div class="mr-4">
                                     @if (isset($ownerPassports[$key]) && !empty($ownerPassports[$key]))
-                                        <img src="{{ asset('storage/app/public/' . $ownerPassports[$key]) }}"
+                                        <img src="{{ asset('storage/' . ltrim($ownerPassports[$key], '/')) }}"
                                             alt="Owner Photo"
                                             class="w-16 h-16 object-cover rounded-full border border-gray-300">
                                     @else
@@ -577,21 +577,30 @@
     <!-- Financial Information -->
     <div class="mb-8">
         <h3 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Initial Bill</h3>
+        @php
+            // Sanitize possible currency strings like "10,000.00" into floats
+            $toFloat = function ($value) {
+                if (is_null($value)) return 0.0;
+                if (is_numeric($value)) return (float)$value;
+                return (float) preg_replace('/[^\d\.\-]/', '', (string) $value);
+            };
+            $appFee = $toFloat($application->application_fee ?? 0);
+            $procFee = $toFloat($application->processing_fee ?? 0);
+            $siteFee = $toFloat($application->site_plan_fee ?? 0);
+            $totalFees = $appFee + $procFee + $siteFee;
+        @endphp
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="bg-gray-50 p-4 rounded-lg">
                 <strong class="block font-medium text-gray-700 mb-1">Application Fee:</strong>
-                <span
-                    class="text-gray-900">₦{{ number_format($application->application_fee ?? 0, 2) }}</span>
+                <span class="text-gray-900">₦{{ number_format($appFee, 2) }}</span>
             </div>
             <div class="bg-gray-50 p-4 rounded-lg">
                 <strong class="block font-medium text-gray-700 mb-1">Processing Fee:</strong>
-                <span
-                    class="text-gray-900">₦{{ number_format($application->processing_fee ?? 0, 2) }}</span>
+                <span class="text-gray-900">₦{{ number_format($procFee, 2) }}</span>
             </div>
             <div class="bg-gray-50 p-4 rounded-lg">
                 <strong class="block font-medium text-gray-700 mb-1">Site Plan Fee:</strong>
-                <span
-                    class="text-gray-900">₦{{ number_format($application->site_plan_fee ?? 0, 2) }}</span>
+                <span class="text-gray-900">₦{{ number_format($siteFee, 2) }}</span>
             </div>
             <div class="bg-gray-50 p-4 rounded-lg">
                 <strong class="block font-medium text-gray-700 mb-1">Receipt Number:</strong>
@@ -599,16 +608,11 @@
             </div>
             <div class="bg-gray-50 p-4 rounded-lg">
                 <strong class="block font-medium text-gray-700 mb-1">Payment Date:</strong>
-                <span
-                    class="text-gray-900">{{ $application->payment_date ? date('d M Y', strtotime($application->payment_date)) : 'N/A' }}</span>
+                <span class="text-gray-900">{{ $application->payment_date ? date('d M Y', strtotime($application->payment_date)) : 'N/A' }}</span>
             </div>
             <div class="bg-gray-50 p-4 rounded-lg">
                 <strong class="block font-medium text-gray-700 mb-1">Total Fees:</strong>
-                <span
-                    class="text-gray-900 font-bold">₦{{ number_format(
-                        ($application->application_fee ?? 0) + ($application->processing_fee ?? 0) + ($application->site_plan_fee ?? 0),
-                        2,
-                    ) }}</span>
+                <span class="text-gray-900 font-bold">₦{{ number_format($totalFees, 2) }}</span>
             </div>
         </div>
     </div>
@@ -675,7 +679,7 @@
                                 @endphp
                                 
                                 @if(in_array($type, ['jpg', 'jpeg', 'png', 'gif']))
-                                    <img src="{{ asset('storage/app/public/' . $document['path']) }}" 
+                                    <img src="{{ asset('storage/' . ltrim($document['path'], '/')) }}" 
                                         alt="Document" 
                                         class="w-14 h-14 object-cover rounded">
                                 @else
@@ -694,7 +698,7 @@
                             </div>
                         </div>
                         <div class="mt-3 flex justify-end">
-                            <button onclick="viewDocument('{{ asset('storage/app/public/' . $document['path']) }}', '{{ $type }}')" 
+                            <button onclick="viewDocument('{{ asset('storage/' . ltrim($document['path'], '/')) }}', '{{ $type }}')" 
                                class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded">
                                 View Document
                             </button>
@@ -853,7 +857,7 @@
 
 <!-- Document Viewer Modal -->
 <div id="documentViewerModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 hidden flex items-center justify-center">
-    <div class="max-w-5xl w-full h-[34vh] bg-white rounded-lg shadow-xl overflow-hidden flex flex-col" style="max-height: 90vh;">
+    <div class="max-w-5xl w-full h-[80vh] bg-white rounded-lg shadow-xl overflow-hidden flex flex-col" style="max-height: 90vh;">
         <div class="bg-gray-100 p-4 border-b border-gray-200 flex justify-between items-center">
             <h3 class="text-lg font-semibold">Document Viewer</h3>
             <button onclick="closeDocumentViewer()" class="text-gray-600 hover:text-gray-800">

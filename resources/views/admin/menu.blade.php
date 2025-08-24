@@ -960,7 +960,7 @@
 <div class="py-1 px-3 mb-0.5 border-t border-slate-100">
   <div class="sidebar-module-header flex items-center justify-between py-2 px-3 mb-0.5 cursor-pointer hover:bg-slate-50 rounded-md" data-module="sectionalTitling">
     <div class="flex items-center gap-2">
-      <i data-lucide="building-2" class="h-5 w-5 "></i>
+      <i data-lucide="building-2" class="h-5 w-5 text-lime-400"></i>
       <span class="text-sm font-bold uppercase tracking-wider">Sectional Titling</span>
     </div>
     <i data-lucide="chevron-right" class="h-4 w-4 transition-transform duration-200" data-chevron="sectionalTitling"></i>
@@ -1036,7 +1036,7 @@
       <i data-lucide="check-circle" class="h-4 w-4 text-lime-500"></i>
       <span>Approvals (Other Departments)</span>
       </div>
-      <i data-lucide="chevron-right" class="h-4 w-4 transition-transform duration-200 text-lime-400" data-chevron="stApprovals"></i>
+      <i data-lucide="chevron-right" class="h-4 w-4 transition-transform duration-200 text-black" data-chevron="stApprovals"></i>
     </div>
     
     <div class="pl-4 mt-1 mb-1 space-y-0.5 hidden" data-content="stApprovals">
@@ -1082,7 +1082,7 @@
         <i data-lucide="award" class="h-4 w-4 text-lime-500"></i>
         <span>Certificate</span>
       </div>
-      <i data-lucide="chevron-right" class="h-4 w-4 transition-transform duration-200 text-lime-400" data-chevron="certificate"></i>
+      <i data-lucide="chevron-right" class="h-4 w-4 transition-transform duration-200 text-black" data-chevron="certificate"></i>
     </div>
     
     <div class="pl-4 mt-1 mb-1 space-y-0.5 hidden" data-content="certificate">
@@ -1107,7 +1107,7 @@
         <i data-lucide="database" class="h-4 w-4 text-lime-500"></i>
         <span>e-Registry</span>
       </div>
-      <i data-lucide="chevron-right" class="h-4 w-4 transition-transform duration-200 text-lime-400" data-chevron="eRegistry"></i>
+      <i data-lucide="chevron-right" class="h-4 w-4 transition-transform duration-200 text-black" data-chevron="eRegistry"></i>
     </div>
     
     <div class="pl-4 mt-1 mb-1 space-y-0.5 hidden" data-content="eRegistry">
@@ -1126,17 +1126,17 @@
         <i data-lucide="map" class="h-4 w-4 text-lime-500"></i>
         <span>GIS</span>
       </div>
-      <i data-lucide="chevron-right" class="h-4 w-4 transition-transform duration-200 text-lime-400" data-chevron="stGis"></i>
+      <i data-lucide="chevron-right" class="h-4 w-4 transition-transform duration-200 text-black" data-chevron="stGis"></i>
     </div>
     
     <div class="pl-4 mt-1 mb-1 space-y-0.5 hidden" data-content="stGis">
-      @if($hasRole('ST - GIS Attribution') || $hasRole('ST - Map'))
+   
       <a href="{{route('gis.index')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 text-black {{ request()->routeIs('gis.index') ? 'active' : '' }}">
         <i data-lucide="database" class="h-3.5 w-3.5 text-lime-500"></i>
         <span>Attribution</span>
       </a>
       
-      @endif
+      
     </div>
     @endif
     
@@ -1146,7 +1146,7 @@
         <i data-lucide="land-plot" class="h-4 w-4 text-lime-500"></i>
         <span>Survey</span>
       </div>
-      <i data-lucide="chevron-right" class="h-4 w-4 transition-transform duration-200 text-lime-400" data-chevron="stSurvey"></i>
+      <i data-lucide="chevron-right" class="h-4 w-4 transition-transform duration-200 text-black" data-chevron="stSurvey"></i>
     </div>
     
     <div class="pl-4 mt-1 mb-1 space-y-0.5 hidden" data-content="stSurvey">
