@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage; // added for profile image storage
 
 class UserController extends Controller
 {
@@ -104,7 +105,8 @@ class UserController extends Controller
                         'username' => 'required|unique:users', // add username validation
                         'email' => 'required|email|unique:users',
                         'password' => 'required|min:6',
-                        
+                        // profile image optional for super admin create form
+                        'profile' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                     ]
                 );
                 if ($validator->fails()) {
@@ -119,7 +121,8 @@ class UserController extends Controller
                 $user->email = $request->email;
                 $user->assign_role = isset($request->user_role) ? implode(',', $request->user_role) : null;
                 $user->password = \Hash::make($request->password);
-                $user->phone_number = $request->phone_number;
+                // allow either phone or phone_number
+                $user->phone_number = $request->input('phone_number', $request->input('phone'));
                 $user->department_id = $request->department_id; // Save department_id
                 $user->user_level = $request->user_level; // Save user_level
                 $user->type = 'owner';
@@ -127,6 +130,18 @@ class UserController extends Controller
                 $user->subscription = 1;
                 $user->parent_id = parentId();
                 $user->email_verified_at = now();
+                
+                // Handle optional profile image upload
+                if ($request->hasFile('profile')) {
+                    $file = $request->file('profile');
+                    $filename = uniqid('profile_') . '_' . time() . '.' . $file->getClientOriginalExtension();
+                    // store in public disk under upload/profile
+                    Storage::disk('public')->putFileAs('upload/profile', $file, $filename);
+                    $user->profile = $filename;
+                } else {
+                    $user->profile = 'avatar.png';
+                }
+
                 $user->save();
                 defaultTemplate($user->id);
 
@@ -162,6 +177,8 @@ class UserController extends Controller
                         'user_type' => 'required|string|in:Management,Operations,ALL,User,System',
                         'user_level' => 'required|string|in:Administrative,Technical,Finance,Lowest,High,Highest',
                         'user_role' => 'required|array',
+                        // profile image required for user create form
+                        'profile' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
                     ]
                 );
                 if ($validator->fails()) {
@@ -186,13 +203,25 @@ class UserController extends Controller
                 $user->last_name = $request->last_name;
                 $user->username = $request->username; // save username
                 $user->email = $request->email;
-                $user->phone_number = $request->phone_number;
+                // allow either phone or phone_number
+                $user->phone_number = $request->input('phone_number', $request->input('phone'));
                 $user->password = \Hash::make($request->password);
                 $user->department_id = $request->department_id;
                 $user->user_level = $request->user_level;
                 $user->type = $request->user_type; // Use the selected user type
                 $user->email_verified_at = now();
-                $user->profile = 'avatar.png';
+                
+                // Handle required profile image upload
+                if ($request->hasFile('profile')) {
+                    $file = $request->file('profile');
+                    $filename = uniqid('profile_') . '_' . time() . '.' . $file->getClientOriginalExtension();
+                    Storage::disk('public')->putFileAs('upload/profile', $file, $filename);
+                    $user->profile = $filename;
+                } else {
+                    // Fallback, though validation requires it
+                    $user->profile = 'avatar.png';
+                }
+                
                 $user->lang = 'english';
                 $user->parent_id = parentId();
                 $user->assign_role = isset($request->user_role) ? implode(',', $request->user_role) : null;

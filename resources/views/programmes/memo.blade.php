@@ -486,96 +486,98 @@
                     <p class="text-green-100 mt-1">Applications with completed memos</p>
                 </div>
                 <div class="memo-card-body">
-                    <table id="primaryGeneratedTable" class="min-w-full">
-                        <thead>
-                            <tr>
-                                <th>Memo No</th>
-                                <th>File No</th>
-                                <th>CofO No</th>
-                                <th>Owner</th>
-                                <th>LGA</th>
-                                <th>Land Use</th>
-                                <th>Term</th>
-                                <th>Commencement Date</th>
-                                <th>Residual Term</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @php $hasGenerated = false; @endphp
-                            @foreach($motherApplications as $application)
-                                @php
-                                    // Check if memo exists
-                                    $memoData = DB::connection('sqlsrv')->table('memos')
-                                        ->where('application_id', $application->id)
-                                        ->where('memo_type', 'primary')
-                                        ->first();
+                    <div class="overflow-x-auto">
+                        <table id="primaryGeneratedTable" class="min-w-full">
+                            <thead>
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Memo No</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File No</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CofO No</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">LGA</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Land Use</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Term</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commencement Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Residual Term</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                @php $hasGenerated = false; @endphp
+                                @foreach($motherApplications as $application)
+                                    @php
+                                        // Check if memo exists
+                                        $memoData = DB::connection('sqlsrv')->table('memos')
+                                            ->where('application_id', $application->id)
+                                            ->where('memo_type', 'primary')
+                                            ->first();
+                                            
+                                        if (!$memoData) continue;
+                                        $hasGenerated = true;
                                         
-                                    if (!$memoData) continue;
-                                    $hasGenerated = true;
+                                        // Calculate terms
+                                        $startDate = \Carbon\Carbon::parse($application->approval_date ?? now());
+                                        $totalYears = $memoData->term_years ?? 40;
+                                        $currentYear = now()->year;
+                                        $elapsedYears = $currentYear - $startDate->year;
+                                        $residualYears = $memoData->residual_years ?? max(0, $totalYears - $elapsedYears);
+                                        $commencementDate = $memoData->commencement_date ?? $application->approval_date ?? now();
+                                        $formattedCommencementDate = date('d M Y', strtotime($commencementDate));
+                                    @endphp
                                     
-                                    // Calculate terms
-                                    $startDate = \Carbon\Carbon::parse($application->approval_date ?? now());
-                                    $totalYears = $memoData->term_years ?? 40;
-                                    $currentYear = now()->year;
-                                    $elapsedYears = $currentYear - $startDate->year;
-                                    $residualYears = $memoData->residual_years ?? max(0, $totalYears - $elapsedYears);
-                                    $commencementDate = $memoData->commencement_date ?? $application->approval_date ?? now();
-                                    $formattedCommencementDate = date('d M Y', strtotime($commencementDate));
-                                @endphp
-                                
-                                <tr>
-                                    <td>{{ $memoData->memo_no ?? 'N/A' }}</td>
-                                    <td>{{ $application->fileno ?? 'N/A' }}</td>
-                                    <td>{{ $memoData->certificate_number ?? 'N/A' }}</td>
-                                    <td>
-                                        @if(!empty($application->multiple_owners_names) && json_decode($application->multiple_owners_names))
-                                            @php
-                                                $owners = json_decode($application->multiple_owners_names);
-                                                $firstOwner = isset($owners[0]) ? $owners[0] : 'N/A';
-                                                $allOwners = json_encode($owners);
-                                            @endphp
-                                            {{ $firstOwner }}
-                                            <span class="info-icon" onclick="showOwners({{ $allOwners }})">i</span>
-                                        @else
-                                            {{ $application->owner_name ?? 'N/A' }}
-                                        @endif
-                                    </td>
-                                    <td>{{ $application->property_lga ?? 'N/A' }}</td>
-                                    <td>{{ $application->land_use ?? 'N/A' }}</td>
-                                    <td>{{ $totalYears }} Years</td>
-                                    <td>{{ $formattedCommencementDate }}</td>
-                                    <td>{{ $residualYears }} Years</td>
-                                    <td>
-                                        <div class="action-dropdown">
-                                            <button type="button" class="action-toggle" onclick="toggleActionMenu(this)">
-                                                <i data-lucide="more-horizontal" class="w-5 h-5"></i>
-                                            </button>
-                                            <div class="action-menu">
-                                                <a href="{{ route('sectionaltitling.viewrecorddetail')}}?id={{$application->id}}" class="action-item">
-                                                    <i data-lucide="eye" class="w-4 h-4 text-blue-600"></i>
-                                                    <span>View Record</span>
-                                                </a>
-                                                <a href="{{ route('programmes.view_memo_primary', $application->id) }}" class="action-item">
-                                                    <i data-lucide="clipboard" class="w-4 h-4 text-amber-600"></i>
-                                                    <span>View Memo</span>
-                                                </a>
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $memoData->memo_no ?? 'N/A' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $application->fileno ?? 'N/A' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $memoData->certificate_number ?? 'N/A' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            @if(!empty($application->multiple_owners_names) && json_decode($application->multiple_owners_names))
+                                                @php
+                                                    $owners = json_decode($application->multiple_owners_names);
+                                                    $firstOwner = isset($owners[0]) ? $owners[0] : 'N/A';
+                                                    $allOwners = json_encode($owners);
+                                                @endphp
+                                                {{ $firstOwner }}
+                                                <span class="info-icon" onclick="showOwners({{ $allOwners }})">i</span>
+                                            @else
+                                                {{ $application->owner_name ?? 'N/A' }}
+                                            @endif
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $application->property_lga ?? 'N/A' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $application->land_use ?? 'N/A' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $totalYears }} Years</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $formattedCommencementDate }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $residualYears }} Years</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <div class="action-dropdown">
+                                                <button type="button" class="action-toggle" onclick="toggleActionMenu(this)">
+                                                    <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+                                                </button>
+                                                <div class="action-menu">
+                                                    <a href="{{ route('sectionaltitling.viewrecorddetail')}}?id={{$application->id}}" class="action-item">
+                                                        <i data-lucide="eye" class="w-4 h-4 text-blue-600"></i>
+                                                        <span>View Record</span>
+                                                    </a>
+                                                    <a href="{{ route('programmes.view_memo_primary', $application->id) }}" class="action-item">
+                                                        <i data-lucide="clipboard" class="w-4 h-4 text-amber-600"></i>
+                                                        <span>View Memo</span>
+                                                    </a>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                            
-                            @if(!$hasGenerated)
-                                <tr>
-                                    <td colspan="10" class="text-center py-8 text-gray-500">
-                                        <i data-lucide="clipboard-x" class="w-12 h-12 mx-auto mb-2 text-gray-300"></i>
-                                        <p>No generated memos found</p>
-                                    </td>
-                                </tr>
-                            @endif
-                        </tbody>
-                    </table>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                                
+                                @if(!$hasGenerated)
+                                    <tr>
+                                        <td colspan="10" class="text-center py-8 text-gray-500">
+                                            <i data-lucide="clipboard-x" class="w-12 h-12 mx-auto mb-2 text-gray-300"></i>
+                                            <p>No generated memos found</p>
+                                        </td>
+                                    </tr>
+                                @endif
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

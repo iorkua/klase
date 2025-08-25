@@ -68,6 +68,8 @@
  
 <!-- SweetAlert2 JS -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+<!-- jQuery (required by Select2) -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <!-- Select2 JS -->
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
  
@@ -114,6 +116,14 @@
                 $join->on('bl.unit_no', '=', 'sum.unit_no')
                      ->where('sum.application_id', '=', $motherApplication->id);
             })
+            ->where('bl.application_id', $motherApplication->id)
+            // Exclude buyers already used in subapplications for this main application
+            ->whereNotExists(function($q) use ($motherApplication) {
+                $q->select(DB::raw(1))
+                  ->from('subapplications as s')
+                  ->whereColumn('s.unit_number', 'bl.unit_no')
+                  ->where('s.main_application_id', $motherApplication->id);
+            })
             ->select(
                 'bl.application_id',
                 'bl.buyer_title',
@@ -122,12 +132,11 @@
                 'sum.measurement',
                 'sum.buyer_id'
             )
-            ->where('bl.application_id', $motherApplication->id)
             ->get();
     }
   @endphp
 
-    <!-- Primary Applications Table -->
+    <!-- sub Applications aka unit kaka secondary, yeah, thats fucking Table , this is not even a table-->
     <div class="bg-white rounded-md shadow-sm border border-gray-200 p-6">
         <div class="container py-4">
             <div class="modal-content">
@@ -173,7 +182,7 @@
                     </div>
             
                     <div class="mb-6">
-                      <div class="text-right text-sm text-gray-500">CODE: ST FORM - 1</div>
+                      <div class="text-right text-sm text-gray-500">CODE: ST FORM - 2</div>
                       <hr class="my-4">
                       @php
                         $mainApplicationId = request()->get('application_id');
@@ -465,18 +474,72 @@
                             <label class="block text-sm mb-1">District  <span class="text-red-500">*</span></label>
                             <input type="text" id="ownerDistrict" class="w-full p-2 border border-gray-300 rounded-md" placeholder="DISTRICT" name="address_district" style="text-transform:uppercase" oninput="this.value = this.value.toUpperCase()">
                           </div>
+
                           <div>
-                            <label class="block text-sm mb-1">LGA  <span class="text-red-500">*</span></label>
-                            <select id="ownerLga" name="address_lga" class="w-full p-2 border border-gray-300 rounded-md" style="text-transform:uppercase" disabled>
-                              <option value="">SELECT LGA</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label class="block text-sm mb-1">State  <span class="text-red-500">*</span></label>
+                            <label class="block text-sm mb-1">State <span class="text-red-500">*</span></label>
                             <select id="ownerState" name="address_state" class="w-full p-2 border border-gray-300 rounded-md" onchange="selectLGA(this)" style="text-transform:uppercase">
                               <option value="">SELECT STATE</option>
                             </select>
                           </div>
+
+                          <div>
+                            <label class="block text-sm mb-1">LGA <span class="text-red-500">*</span></label>
+                            <select id="ownerLga" name="address_lga" class="w-full p-2 border border-gray-300 rounded-md" style="text-transform:uppercase">
+                              <option value="">SELECT LGA</option>
+                            </select>
+                          </div>
+
+                          <script>
+                          // Fetch all States
+                          fetch('https://nga-states-lga.onrender.com/fetch')
+                            .then((res) => res.json())
+                            .then((data) => {
+                              var stateSelect = document.getElementById("ownerState");
+                              for (let index = 0; index < Object.keys(data).length; index++) {
+                                var option = document.createElement("option");
+                                option.text = data[index];
+                                option.value = data[index];
+                                stateSelect.add(option);
+                              } 
+                            })
+                            .catch(error => console.error('Error fetching states:', error));
+
+                          // Fetch Local Governments based on selected state
+                          function selectLGA(target) {
+                            var state = target.value;
+                            var lgaSelect = document.getElementById("ownerLga");
+                            
+                            // Clear existing options
+                            while (lgaSelect.options.length > 1) {
+                              lgaSelect.remove(1);
+                            }
+                            
+                            if (!state) {
+                              lgaSelect.disabled = true;
+                              return;
+                            }
+                            
+                            lgaSelect.disabled = true; // Disable during fetch
+                            
+                            fetch('https://nga-states-lga.onrender.com/?state=' + state)
+                              .then((res) => res.json())
+                              .then((data) => {
+                                lgaSelect.disabled = false;
+                                
+                                for (let index = 0; index < Object.keys(data).length; index++) {
+                                  var option = document.createElement("option");
+                                  option.text = data[index];
+                                  option.value = data[index];
+                                  lgaSelect.add(option);
+                                }
+                              })
+                              .catch(error => {
+                                console.error('Error fetching LGAs:', error);
+                                lgaSelect.disabled = false;
+                              });
+                          }
+                          </script>
+                          
                         </div>
                              <input type="hidden" name="address" id="contactAddressHidden">    
                         <div class="mb-4">
@@ -611,45 +674,45 @@
                       </div>
             
                         <div class="bg-gray-50 p-4 rounded-md mb-6">
-                        @php
+                          @php
                             $landUse = $motherApplication->land_use ?? 'Residential';
                             
                             // Set fees based on land use type for Unit applications
                             if ($landUse === 'Commercial' || $landUse === 'Industrial') {
-                                $applicationFee = '10000.00';
-                                $processingFee = '20000.00';
-                                $surveyFee = '100000.00';
+                              $applicationFee = '10000.00';
+                              $processingFee = '20000.00';
+                              $surveyFee = '100000.00';
                             } else {
-                                // Residential rates - default to Block of Flat rate
-                                $applicationFee = '10000.00';
-                                $processingFee = '20000.00';
-                                $surveyFee = '50000.00'; // Default to Block of Flat rate
+                              // Residential rates - default to Block of Flat rate
+                              $applicationFee = '10000.00';
+                              $processingFee = '20000.00';
+                              $surveyFee = '50000.00'; // Default to Block of Flat rate
                             }
                             
                             $totalFee = floatval($applicationFee) + floatval($processingFee) + floatval($surveyFee);
-                        @endphp
+                          @endphp
 
-                        <h3 class="font-medium text-center mb-4">INITIAL BILL</h3>
-                        
-                        <div class="grid grid-cols-3 gap-4 mb-4">
-                          <div>
-                          <label class="flex items-center text-sm mb-1">
-                            <i data-lucide="file-text" class="w-4 h-4 mr-1 text-green-600"></i>
-                            Application fee (â‚¦)
-                          </label>
-                          <input type="text" name="application_fee" class="w-full p-2 border border-gray-300 rounded-md fee-input bg-blue-50" placeholder="Enter application fee" value="{{ number_format($applicationFee, 2) }}" readonly>
+                          <h3 class="font-medium text-center mb-4">INITIAL BILL</h3>
+                          
+                          <div class="grid grid-cols-3 gap-4 mb-4">
+                            <div>
+                              <label class="flex items-center text-sm mb-1">
+                                <i data-lucide="file-text" class="w-4 h-4 mr-1 text-green-600"></i>
+                                Application fee (₦)
+                              </label>
+                              <input type="text" name="application_fee" class="w-full p-2 border border-gray-300 rounded-md fee-input bg-blue-50" placeholder="Enter application fee" value="{{ number_format($applicationFee, 2) }}" readonly>
                           </div>
                           <div>
                           <label class="flex items-center text-sm mb-1">
                             <i data-lucide="file-check" class="w-4 h-4 mr-1 text-green-600"></i>
-                            Processing fee (â‚¦)
+                            Processing fee (₦)
                           </label>
                           <input type="text" name="processing_fee" class="w-full p-2 border border-gray-300 rounded-md fee-input bg-blue-50" placeholder="Enter processing fee" value="{{ number_format($processingFee, 2) }}" readonly>
                           </div>
                           <div>
                           <label class="flex items-center text-sm mb-1">
                             <i data-lucide="map" class="w-4 h-4 mr-1 text-green-600"></i>
-                           Survey Fee (â‚¦)
+                           Survey Fee (₦)
                           </label>
                           @if($landUse === 'Residential')
                             <select name="site_plan_fee" class="w-full p-2 border border-gray-300 rounded-md fee-input bg-blue-50" onchange="updateSurveyFee(this)">
@@ -667,7 +730,7 @@
                           <i data-lucide="file-text" class="w-4 h-4 mr-1 text-green-600"></i>
                           <span>Total:</span>
                           </div>
-                          <span class="font-bold" id="total-amount">â‚¦{{ number_format($totalFee, 2) }}</span>
+                          <span class="font-bold" id="total-amount">N{{ number_format($totalFee, 2) }}</span>
                         </div>
                         
                         <div class="grid grid-cols-2 gap-4">
@@ -835,7 +898,6 @@ function validateStep1() {
       if (!document.getElementById('photoUpload')?.files[0]) errors.push('Please upload a passport photo');
     } else if (type === 'corporate') {
       if (!document.getElementById('corporateName')?.value?.trim()) errors.push('Please enter corporate body name');
-      if (!document.getElementById('rcNumber')?.value?.trim()) errors.push('Please enter RC number');
       if (!document.getElementById('subCorporateDocumentUpload')?.files[0]) errors.push('Please upload RC document');
     } else if (type === 'multiple') {
       const ownerRows = document.querySelectorAll('#ownersContainer > div');
@@ -934,5 +996,146 @@ function showValidationErrors(errors) {
 window.validateStep2 = validateStep2;
 window.validateStep3 = validateStep3;
 window.showValidationErrors = showValidationErrors;
+
+// Buyer selection: initialize and auto-fill
+document.addEventListener('DOMContentLoaded', function () {
+  const buyerSelectEl = document.getElementById('buyerSelect');
+  const clearBtn = document.getElementById('clearBuyerSelection');
+  const info = document.getElementById('selectedBuyerInfo');
+  const details = document.getElementById('selectedBuyerDetails');
+
+  function setTitleFields(title) {
+    const titleSelect = document.getElementById('applicantTitleSelect');
+    const hiddenTitle = document.getElementById('applicantTitle');
+    const otherWrap = document.getElementById('applicantTitleOtherWrapper');
+    const otherInput = document.getElementById('applicantTitleOther');
+
+    if (!hiddenTitle) return; // required for preview and submission
+
+    if (titleSelect) {
+      // Check if the title exists in the select options
+      const hasOption = Array.from(titleSelect.options).some(opt => opt.value === title);
+      if (title && hasOption) {
+        titleSelect.value = title;
+        if (otherWrap) otherWrap.classList.add('hidden');
+        if (otherInput) otherInput.value = '';
+        hiddenTitle.value = title;
+      } else if (title && !hasOption) {
+        titleSelect.value = 'Other';
+        if (otherWrap) otherWrap.classList.remove('hidden');
+        if (otherInput) otherInput.value = title;
+        hiddenTitle.value = title;
+      } else {
+        // empty title
+        titleSelect.value = '';
+        if (otherWrap) otherWrap.classList.add('hidden');
+        if (otherInput) otherInput.value = '';
+        hiddenTitle.value = '';
+      }
+      // Fire change to keep any listeners in sync
+      titleSelect.dispatchEvent(new Event('change'));
+    } else {
+      // Fallback: only hidden input exists
+      hiddenTitle.value = title || '';
+    }
+  }
+
+  function clearApplicantFields() {
+    setTitleFields('');
+    const firstNameEl = document.getElementById('applicantName') || document.querySelector('[name="first_name"]');
+    const middleNameEl = document.getElementById('applicantMiddleName') || document.querySelector('[name="middle_name"]');
+    const surnameEl = document.getElementById('applicantSurname') || document.querySelector('[name="surname"]');
+    if (firstNameEl) firstNameEl.value = '';
+    if (middleNameEl) middleNameEl.value = '';
+    if (surnameEl) surnameEl.value = '';
+    if (typeof updateApplicantNamePreview === 'function') updateApplicantNamePreview();
+  }
+
+  function applyBuyer(optionEl) {
+    if (!optionEl) {
+      if (info) info.style.display = 'none';
+      if (details) details.textContent = '';
+      if (clearBtn) clearBtn.style.display = 'none';
+      const unitNoInput = document.querySelector('input[name="unit_number"]');
+      const unitSizeInput = document.querySelector('input[name="unit_size"]');
+      if (unitNoInput) unitNoInput.value = '';
+      if (unitSizeInput) unitSizeInput.value = '';
+      clearApplicantFields();
+      return;
+    }
+
+    const title = optionEl.getAttribute('data-buyer-title') || '';
+    const name = optionEl.getAttribute('data-buyer-name') || '';
+    const unitNo = optionEl.getAttribute('data-unit-no') || '';
+    const measurement = optionEl.getAttribute('data-measurement') || '';
+
+    // Set applicant type to individual and show fields if functions exist
+    const individualRadio = document.querySelector('input[name="applicantType"][value="individual"]');
+    if (individualRadio) {
+      individualRadio.checked = true;
+      if (typeof setApplicantType === 'function') setApplicantType('individual');
+      if (typeof showIndividualFields === 'function') showIndividualFields();
+    }
+
+    // Set title (visible select + hidden input)
+    setTitleFields(title);
+
+    // Fill applicant name fields if present
+    const firstNameEl = document.getElementById('applicantName') || document.querySelector('[name="first_name"]');
+    const middleNameEl = document.getElementById('applicantMiddleName') || document.querySelector('[name="middle_name"]');
+    const surnameEl = document.getElementById('applicantSurname') || document.querySelector('[name="surname"]');
+    if (name) {
+      const parts = name.trim().split(/\s+/);
+      if (firstNameEl) firstNameEl.value = parts[0] || '';
+      if (surnameEl) surnameEl.value = parts.slice(1).join(' ') || '';
+      if (middleNameEl) middleNameEl.value = '';
+    }
+
+    // Trigger preview update if available
+    if (typeof updateApplicantNamePreview === 'function') updateApplicantNamePreview();
+
+    // Fill unit details
+    const unitNoInput = document.querySelector('input[name="unit_number"]');
+    if (unitNoInput) unitNoInput.value = unitNo;
+    const unitSizeInput = document.querySelector('input[name="unit_size"]');
+    if (unitSizeInput) unitSizeInput.value = measurement;
+
+    // Show selection info
+    if (details) details.textContent = `${title ? title + ' ' : ''}${name}`.trim() + (unitNo ? ` • Unit ${unitNo}` : '') + (measurement ? ` • ${measurement}` : '');
+    if (info) info.style.display = 'block';
+    if (clearBtn) clearBtn.style.display = 'inline-flex';
+  }
+
+  function onBuyerChange() {
+    if (!buyerSelectEl) return;
+    const optionEl = buyerSelectEl.options[buyerSelectEl.selectedIndex];
+    if (buyerSelectEl.value) applyBuyer(optionEl); else applyBuyer(null);
+  }
+
+  if (buyerSelectEl) {
+    // Vanilla change listener
+    buyerSelectEl.addEventListener('change', onBuyerChange);
+    // Enhance with Select2 if jQuery is available
+    if (window.jQuery && jQuery.fn && jQuery.fn.select2) {
+      jQuery(buyerSelectEl)
+        .select2({ placeholder: 'Type to search buyer name...', allowClear: true, width: '100%' })
+        .on('change', onBuyerChange);
+    }
+  }
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', function () {
+      if (buyerSelectEl) {
+        if (window.jQuery && jQuery.fn && jQuery.fn.select2) {
+          jQuery(buyerSelectEl).val(null).trigger('change');
+        } else {
+          buyerSelectEl.value = '';
+          buyerSelectEl.dispatchEvent(new Event('change'));
+        }
+      }
+    });
+  }
+});
 </script>
+
 @endsection

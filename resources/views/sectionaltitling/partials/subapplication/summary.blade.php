@@ -66,12 +66,7 @@
               </tr>
             </table>
             <table class="w-full text-sm">
-              <tr>
-                <td class="py-1 text-gray-600">Primary Application ID:</td>
-                <td class="py-1 font-medium" id="summary-primary-app-id">
-                  <span id="primaryAppIdDisplay">{{ $motherApplication->applicationID ?? 'N/A' }}</span>
-                </td>
-              </tr>
+            
               <tr>
                 <td class="py-1 text-gray-600">Land Use:</td>
                 <td class="py-1 font-medium" id="summary-land-use">

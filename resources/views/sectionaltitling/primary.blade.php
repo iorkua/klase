@@ -131,6 +131,10 @@
                                                 <i data-lucide="factory" class="w-4 h-4 text-red-500 mr-2"></i>
                                                 Industrial
                                             </a>
+                                            <a href="{{ route('primaryform.index') }}?landuse=Mixed" class="flex items-center px-4 py-2 hover:bg-gray-100">
+                                                <i data-lucide="layers" class="w-4 h-4 text-purple-500 mr-2"></i>
+                                                Mixed
+                                            </a>
                                         </div>
                                     </div>
                                 @endif

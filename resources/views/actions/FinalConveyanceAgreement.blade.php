@@ -38,7 +38,7 @@
                                 [Insert Property Address]
                             @endif
                         </li>
-                        <li class="mb-1">- Decommissioned Certificate of Occupancy (CofO) Number:
+                        <li class="mb-1">- With fregmented Certificate of Occupancy (CofO) Number:
                             @if (isset($application))
                                 {{ $application->fileno ?? '[No CofO Number Available]' }}
                             @else
@@ -46,11 +46,13 @@
                             @endif
                         </li>
                         <li class="mb-1">- Total Land Area:
+                            <strong>
                             @if (isset($application) && $application->plot_size)
-                                {{ $application->plot_size }} Square Meters
+                                {{ $application->plot_size }} sqm²
                             @else
                                 
                             @endif
+                            </strong>
                         </li>
                     </ul>
 

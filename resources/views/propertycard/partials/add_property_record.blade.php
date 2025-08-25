@@ -283,7 +283,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Left column - Title Type Section -->
                 <div class="form-section">
-                  
+                   
                   <!-- File Number -->
                   <div class="space-y-1" x-data="{ showManualEntry: false }" x-effect="(() => { const manual=$el.querySelector('#manual-fileno-container'); const smart=$el.querySelector('#smart-fileno-container'); if(manual){ manual.querySelectorAll('input, select, textarea').forEach(el=> el.disabled = !showManualEntry); } if(smart){ smart.querySelectorAll('input, select, textarea').forEach(el=> el.disabled = showManualEntry); } })()">
                     <div class="flex items-center justify-between mb-3">

@@ -790,7 +790,7 @@ class SecondaryFormController extends Controller
             }
 
             // Always redirect to EDMS workflow after successful submission
-            return redirect()->route('sectionaltitling.units', $subApplicationId)
+            return redirect()->route('sectionaltitling.units')
                 ->with('success', 'Unit application submitted successfully! EDMS workflow has been initialized.');
                 
         } catch (Exception $e) {

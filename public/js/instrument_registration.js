@@ -1029,6 +1029,12 @@ function processSelectedProperties(selectedCheckboxes) {
         nextSerialData.deeds_serial_no = `1/1/${nextSerialData.volume_no}`;
       }
     }
+
+    // Reflect the new next serial number in the UI
+    const nextSpan = document.getElementById('batchNextSerialNo');
+    if (nextSpan && nextSerialData && nextSerialData.deeds_serial_no) {
+      nextSpan.textContent = nextSerialData.deeds_serial_no;
+    }
     
     // Update the UI - Critical part that updates the selected properties table
     updateSelectedPropertiesTable();
@@ -1121,6 +1127,32 @@ function removePropertyFromBatch(index) {
     updateSelectedPropertiesTable();
     // Refresh available properties
     populateAvailablePropertiesTable();
+
+    // Recalculate next serial number display
+    if (selectedBatchProperties.length > 0) {
+      const last = selectedBatchProperties[selectedBatchProperties.length - 1].serialData;
+      if (last) {
+        nextSerialData = {
+          serial_no: last.serial_no + 1,
+          page_no: last.page_no + 1,
+          volume_no: last.volume_no,
+          deeds_serial_no: `${last.serial_no + 1}/${last.page_no + 1}/${last.volume_no}`
+        };
+        if (nextSerialData.page_no > 100) {
+          nextSerialData.volume_no++;
+          nextSerialData.page_no = 1;
+          nextSerialData.serial_no = 1;
+          nextSerialData.deeds_serial_no = `1/1/${nextSerialData.volume_no}`;
+        }
+        const span = document.getElementById('batchNextSerialNo');
+        if (span) span.textContent = nextSerialData.deeds_serial_no;
+      }
+    } else {
+      // No items left, refetch from server to reset the value
+      if (typeof fetchNextSerialNumber === 'function') {
+        fetchNextSerialNumber();
+      }
+    }
   } else {
     console.error("Invalid index for removal:", index);
   }
@@ -1143,6 +1175,10 @@ function clearSelectedProperties() {
       selectedBatchProperties = [];
       updateSelectedPropertiesTable();
       populateAvailablePropertiesTable();
+      // Reset next reg number from server
+      if (typeof fetchNextSerialNumber === 'function') {
+        fetchNextSerialNumber();
+      }
       Swal.fire('Cleared!', 'Your selected instruments have been cleared.', 'success');
     }
   });

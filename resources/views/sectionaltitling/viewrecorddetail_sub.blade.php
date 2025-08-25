@@ -707,15 +707,15 @@
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div>
                                     <p class="text-sm text-gray-600 font-medium">Application Fee:</p>
-                                    <p class="font-medium">₦{{ number_format($application->application_fee ?? 0, 2) }}</p>
+                                    <p class="font-medium">₦{{ number_format((float)($application->application_fee ?? 0), 2) }}</p>
                                 </div>
                                 <div>
                                     <p class="text-sm text-gray-600 font-medium">Processing Fee:</p>
-                                    <p class="font-medium">₦{{ number_format($application->processing_fee ?? 0, 2) }}</p>
+                                    <p class="font-medium">₦{{ number_format((float)($application->processing_fee ?? 0), 2) }}</p>
                                 </div>
                                 <div>
                                     <p class="text-sm text-gray-600 font-medium">Site Plan Fee:</p>
-                                    <p class="font-medium">₦{{ number_format($application->site_plan_fee ?? 0, 2) }}</p>
+                                    <p class="font-medium">₦{{ number_format((float)($application->site_plan_fee ?? 0), 2) }}</p>
                                 </div>
 
                                     
@@ -733,9 +733,9 @@
                             
                             <!-- Total Bill Calculation -->
                             @php
-                                $applicationFee = $application->application_fee ?? 0;
-                                $processingFee = $application->processing_fee ?? 0;
-                                $sitePlanFee = $application->site_plan_fee ?? 0;
+                                $applicationFee = (float)($application->application_fee ?? 0);
+                                $processingFee = (float)($application->processing_fee ?? 0);
+                                $sitePlanFee = (float)($application->site_plan_fee ?? 0);
                                 $totalBill = $applicationFee + $processingFee + $sitePlanFee;
                             @endphp
                             

@@ -622,14 +622,7 @@
     }
     
     .st-cofo-disabled::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 4px;
-        background-color: #ef4444;
-        z-index: 1;
+       
     }
     
     .st-cofo-disabled td {
@@ -656,20 +649,7 @@
     
     /* Visual indicator for prerequisite requirement */
     .st-cofo-disabled::after {
-        content: "⚠️ Requires ST Assignment to be registered first";
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 11px;
-        color: #dc2626;
-        background-color: #fee2e2;
-        padding: 2px 6px;
-        border-radius: 12px;
-        border: 1px solid #fecaca;
-        font-weight: 500;
-        z-index: 2;
-        white-space: nowrap;
+    
     }
     
     /* Hover effect for disabled rows */

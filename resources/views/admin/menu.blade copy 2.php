@@ -217,23 +217,10 @@
 
       <!-- Compensation/Resettlement Section -->
       @if($hasRole('Compensation/Resettlement'))
-      <div class="sidebar-submodule-header flex items-center justify-between py-1.5 px-3 cursor-pointer rounded-md" data-section="resettlement">
-        <div class="flex items-center gap-2">
-          <i data-lucide="home" class="h-4 w-4 text-purple-500"></i>
-          <span>Resettlement</span>
-        </div>
-        <i data-lucide="chevron-right" class="h-4 w-4 transition-transform duration-200" data-chevron="resettlement"></i>
-      </div>
-      <div class="pl-4 mt-1 mb-1 space-y-0.5 hidden" data-content="resettlement">
-        <a href="/programmes/resettlement/governors-list" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
-          <i data-lucide="list" class="h-3.5 w-3.5 text-purple-400"></i>
-          <span>Governors List</span>
-        </a>
-        <a href="/programmes/resettlement/commissioners-list" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
-          <i data-lucide="list-checks" class="h-3.5 w-3.5 text-purple-400"></i>
-          <span>Commissioners List</span>
-        </a>
-      </div>
+      <a href="/programmes/compensation-resettlement" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
+        <i data-lucide="home" class="h-4 w-4 text-purple-500"></i>
+        <span>Compensation/Resettlement</span>
+      </a>
       @endif
 
       <!-- Recertification Section --> 
@@ -356,8 +343,8 @@
 
     <!-- 3. Information Products -->
     @if(
-      $hasRole('Letter of Grant/RofO') || $hasRole('Occupancy Permit (OP)') || $hasRole('Site Plan/Parcel Plan') ||
-      $hasRole('Change of Purpose') || $hasRole('Certificate of Occupancy')
+      $hasRole('Letter of Administration/Grant/Offer Letter') || $hasRole('Occupancy Permit (OP)') || $hasRole('Site Plan/Parcel Plan') ||
+      $hasRole('Right of Occupancy') || $hasRole('Certificate of Occupancy')
     )
     <div class="py-1 px-3 mb-0.5 border-t border-slate-100">
       <div class="sidebar-module-header flex items-center justify-between py-2 px-3 mb-0.5 cursor-pointer hover:bg-slate-50 rounded-md" data-module="infoProducts">
@@ -369,7 +356,7 @@
       </div>
 
       <div class="pl-4 mt-1 space-y-0.5 hidden" data-content="infoProducts">
-        @if($hasRole('Letter of Grant/RofO'))
+        @if($hasRole('Letter of Administration/Grant/Letter of Grant/RofO'))
         <a href="/documents/letter-of-administration" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
           <i data-lucide="file-plus" class="h-4 w-4 text-indigo-500"></i>
           <span class="text-sm">Letter of Grant/RofO</span>
@@ -387,12 +374,12 @@
           <span>Site Plan/Parcel Plan</span>
         </a>
         @endif
-        @if($hasRole('Change of Purpose'))
-        <a href="/documents/change-of-purpose" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
-          <i data-lucide="repeat" class="h-4 w-4 text-indigo-500"></i>
-          <span>Change of Purpose</span>
+        <!-- @if($hasRole('Right of Occupancy'))
+        <a href="/documents/right-of-occupancy" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
+          <i data-lucide="file-check" class="h-4 w-4 text-indigo-500"></i>
+          <span>Right of Occupancy</span>
         </a>
-        @endif
+        @endif -->
         @if($hasRole('Certificate of Occupancy'))
         <a href="/documents/certificate-of-occupancy" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
           <i data-lucide="file-text" class="h-4 w-4 text-indigo-500"></i>
@@ -467,7 +454,7 @@
     <!-- 4. Deeds -->
     @if(
       $hasRole('Deeds - Property Records Assistant (Legacy Records)') || $hasRole('Deeds - Instrument Capture (New Records)') ||
-      $hasRole('Deeds - Instrument Registration (New Registration)') || $hasRole('Deeds - Instrument Registration Reports') || $hasRole('Encumbrance') || $hasRole('Caveat')
+      $hasRole('Deeds - Instrument Registration (New Registration)') || $hasRole('Deeds - Instrument Registration Reports')
     )
     <div class="py-1 px-3 mb-0.5 border-t border-slate-100">
       <div class="sidebar-module-header flex items-center justify-between py-2 px-3 mb-0.5 cursor-pointer hover:bg-slate-50 rounded-md" data-module="deeds">
@@ -502,24 +489,6 @@
         <i data-lucide="file-bar-chart" class="h-4 w-4 text-teal-500"></i>
         <span>Instrument Registration Reports</span>
       </a>
-      @endif
-
-      @if($hasRole('Encumbrance') || $hasRole('Caveat'))
-      <div class="sidebar-submodule-header flex items-center justify-between py-1.5 px-3 cursor-pointer rounded-md" data-section="encumbrance">
-        <div class="flex items-center gap-2">
-          <i data-lucide="shield" class="h-4 w-4 text-teal-500"></i>
-          <span>Encumbrance</span>
-        </div>
-        <i data-lucide="chevron-right" class="h-4 w-4 transition-transform duration-200" data-chevron="encumbrance"></i>
-      </div>
-      <div class="pl-4 mt-1 mb-1 space-y-0.5 hidden" data-content="encumbrance">
-        @if($hasRole('Caveat'))
-        <a href="/systems/caveat" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
-          <i data-lucide="shield-alert" class="h-3.5 w-3.5 text-teal-400"></i>
-          <span>Caveat</span>
-        </a>
-        @endif
-      </div>
       @endif
       </div>
     </div>
@@ -561,10 +530,6 @@
         <span>On-Premise - Pay-per-Search</span>
         </a>
         @endif
-        <a href="/legal-search/online" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
-          <i data-lucide="globe" class="h-3.5 w-3.5 text-cyan-400"></i>
-          <span>Online</span>
-        </a>
       </div>
       @endif
       @if($hasRole('Deeds - Legal Search Reports'))
@@ -632,6 +597,16 @@
 
   <div class="pl-4 mt-1 mb-1 space-y-0.5 hidden" data-content="edms">
     <!-- Indexing -->
+    @if($hasRole('EDMS - Indexing') || $hasRole('EDMS - File Indexing Assistant') || $hasRole('EDMS - Print File Labels'))
+    <div class="sidebar-submodule-header flex items-center justify-between py-1.5 px-3 cursor-pointer rounded-md" data-section="indexing">
+    <div class="flex items-center gap-2">
+      <i data-lucide="list" class="h-3.5 w-3.5 text-orange-400"></i>
+      <span>Indexing</span>
+    </div>
+    <i data-lucide="chevron-right" class="h-4 w-4 transition-transform duration-200" data-chevron="indexing"></i>
+    </div>
+
+    <div class="pl-4 mt-1 mb-1 space-y-0.5 hidden" data-content="indexing">
     @if($hasRole('EDMS - File Indexing Assistant'))
     <a href="{{route('fileindexing.index')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('fileindexing.index') ? 'active' : '' }}">
       <i data-lucide="file-search" class="h-3.5 w-3.5 text-orange-400"></i>
@@ -645,8 +620,20 @@
       <span>Print File Labels</span>
     </a>
     @endif
+    </div>
+    @endif
 
     <!-- Scanning -->
+    @if($hasRole('EDMS - Scanning') || $hasRole('EDMS - Upload') || $hasRole('EDMS - Download') || $hasRole('EDMS - Blind Scanning'))
+    <div class="sidebar-submodule-header flex items-center justify-between py-1.5 px-3 cursor-pointer rounded-md" data-section="scanning">
+    <div class="flex items-center gap-2">
+      <i data-lucide="scan" class="h-3.5 w-3.5 text-orange-400"></i>
+      <span>Scanning</span>
+    </div>
+    <i data-lucide="chevron-right" class="h-4 w-4 transition-transform duration-200" data-chevron="scanning"></i>
+    </div>
+
+    <div class="pl-4 mt-1 mb-1 space-y-0.5 hidden" data-content="scanning">
     @if($hasRole('EDMS - Blind Scanning'))
     <a href="#" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 ">
       <i data-lucide="eye-off" class="h-3.5 w-3.5 text-orange-400"></i>
@@ -666,6 +653,8 @@
       <i data-lucide="download" class="h-3.5 w-3.5 text-orange-400"></i>
       <span>Download</span>
     </a>
+    @endif
+    </div>
     @endif
 
     <!-- PageTyping -->
@@ -809,12 +798,12 @@
           <span>Records</span>
         </a>
         @endif
-        @if($hasRole('Survey - GIS'))
+        {{-- @if($hasRole('Survey - GIS'))
         <a href="/survey/gis" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
           <i data-lucide="map" class="h-4 w-4 text-pink-500"></i>
-          <span>GIS</span>
+          <span>GIS Reports</span>
         </a>
-        @endif
+        @endif --}}
         @if($hasRole('Survey - Approvals'))
         <a href="/survey/approvals" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
           <i data-lucide="check-circle" class="h-4 w-4 text-pink-500"></i>
@@ -827,6 +816,7 @@
           <span>E-Registry</span>
         </a>
         @endif
+
 
         @if($hasRole('Survey Reports'))
         <a href="{{ route('survey_plan_extraction.index') }}?url=survey" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200  {{ request()->routeIs('survey_plan_extraction.index') && request()->query('url') === 'survey' ? 'active' : '' }}">
@@ -866,12 +856,12 @@
           <span>Records</span>
         </a>
         @endif
-        @if($hasRole('Cad - GIS'))
+        {{-- @if($hasRole('Cad - GIS'))
         <a href="/cadastral/gis" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
           <i data-lucide="map" class="h-4 w-4 text-rose-500"></i>
-          <span>GIS</span>
+          <span>GIS Reports</span>
         </a>
-        @endif
+        @endif --}}
         @if($hasRole('Cad - Approvals'))
         <a href="/cadastral/approvals" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
           <i data-lucide="check-circle" class="h-4 w-4 text-rose-500"></i>
@@ -932,12 +922,6 @@
       <a href="#" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
         <i data-lucide="map" class="h-4 w-4 text-yellow-500"></i>
         <span>GIS</span>
-      </a>
-      @endif
-      @if($hasRole('GIS Reports'))
-      <a href="{{ route('survey_plan_extraction.index') }}?url=gis" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
-        <i data-lucide="sparkles" class="h-4 w-4 text-yellow-500"></i>
-        <span>Survey Plan Extraction</span>
       </a>
       @endif
       @if($hasRole('GIS - Approvals'))
@@ -1096,13 +1080,13 @@
     </div>
     
     <div class="pl-4 mt-1 mb-1 space-y-0.5 hidden" data-content="certificate">
-      @if($hasRole('ST - Certificate'))
+      @if($hasRole('ST - RofO'))
       <a href="{{route('programmes.rofo')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 text-black {{ request()->routeIs('programmes.rofo') ? 'active' : '' }}">
         <i data-lucide="folder" class="h-3.5 w-3.5 text-lime-500"></i>
         <span>RofO</span>
       </a>
       @endif
-      @if($hasRole('ST - Certificate'))
+      @if($hasRole('ST - CofO'))
       <a href="{{route('programmes.certificates')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 text-black {{ request()->routeIs('programmes.certificates') ? 'active' : '' }}">
         <i data-lucide="file-cog" class="h-3.5 w-3.5 text-lime-500"></i>
         <span>CofO</span>
@@ -1377,8 +1361,31 @@
     @endif
 
     <!-- 14. Systems -->
-    @if(false)
-    <!-- removed Systems section; Encumbrance/Caveat moved under Deeds per menu.md -->
+    @if($hasRole('Caveat') || $hasRole('Encumbrance'))
+    <div class="py-1 px-3 mb-0.5 border-t border-slate-100">
+      <div class="sidebar-module-header flex items-center justify-between py-2 px-3 mb-0.5 cursor-pointer hover:bg-slate-50 rounded-md" data-module="systems">
+      <div class="flex items-center gap-2"> 
+        <i data-lucide="shield" class="h-5 w-5 text-amber-600"></i>
+        <span class="text-sm font-bold uppercase tracking-wider">Systems</span>
+      </div>
+      <i data-lucide="chevron-right" class="h-4 w-4 transition-transform duration-200" data-chevron="systems"></i>
+      </div>
+
+      <div class="pl-4 mt-1 space-y-0.5 hidden" data-content="systems">
+        @if($hasRole('Caveat'))
+        <a href="/systems/caveat" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
+          <i data-lucide="shield-alert" class="h-4 w-4 text-amber-500"></i>
+          <span>Caveat</span>
+        </a>
+        @endif
+        @if($hasRole('Encumbrance'))
+        <a href="/systems/encumbrance" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
+          <i data-lucide="lock" class="h-4 w-4 text-amber-500"></i>
+          <span>Encumbrance</span>
+        </a>
+        @endif
+      </div>
+    </div>
     @endif
 
     <!-- 15. Legacy Systems -->

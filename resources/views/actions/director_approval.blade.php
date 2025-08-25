@@ -157,7 +157,7 @@
       }
     }
   </style>
-@include('sectionaltitling.partials.assets.css')
+ 
 @section('content')
     @php
     $statusClass = match(strtolower($application->application_status ?? '')) {
@@ -207,45 +207,8 @@
                       </button>
                     </div>
                     
-                    @php
-                      $is_view = (request()->query('url') === 'view') ? 'none' : 'no';
-                    @endphp
-                    <div class="py-2">
-                      <div class="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 class="text-sm font-medium">{{$application->land_use }} Property</h3>
-                        <p class="text-xs text-gray-500">
-                        Application ID: {{$application->applicationID}} | File No: {{$application->fileno }}  
-                        </p>
-                      </div>
-                      <div class="text-right">
-                        <h3 class="text-sm font-medium">
-                        @if ($application->applicant_type == 'individual')
-                          {{ $application->applicant_title }} {{ $application->first_name }}
-                          {{ $application->surname }}
-                        @elseif($application->applicant_type == 'corporate')
-                          {{ $application->rc_number }} {{ $application->corporate_name }}
-                        @elseif($application->applicant_type == 'multiple')
-                          @php
-                            $names = @json_decode($application->multiple_owners_names, true);
-                            if (is_array($names) && count($names) > 0) {
-                              echo implode(', ', $names);
-                            } else {
-                              echo $application->multiple_owners_names;
-                            }
-                          @endphp
-                        @endif
-                        </h3>
-                        <p class="text-xs text-gray-500">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                          {{$application->land_use }}
-                        </span>
-                        </p>
-                      </div>
-                      </div>
-                      <!-- Tabs Navigation -->
                    
-                    <div style="display:{{$is_view}}">
+                    <div  >
 
                       <div class="grid grid-cols-4 gap-2 mb-4">
                         <button class="tab-button active" data-tab="summary">
@@ -261,22 +224,12 @@
                           EDMS
                         </button>
                         <button 
-                          class="tab-button {{ (strtolower($application->application_status ?? '') === 'approved' || strtolower($application->planning_recommendation_status ?? '') !== 'approved') ? 'opacity-50 cursor-not-allowed bg-gray-100' : '' }}" 
-                          data-tab="initial"
-                          {{ (strtolower($application->application_status ?? '') === 'approved' || strtolower($application->planning_recommendation_status ?? '') !== 'approved') ? 'disabled' : '' }}>
+                          class="tab-button" 
+                          data-tab="approval"
+                          >
                           <i data-lucide="banknote" class="w-3.5 h-3.5 mr-1.5"></i>
                           APPROVAL
                         </button>
-
-                    
-                    
-                        {{-- <button class="tab-button {{ (strtolower($application->application_status ?? '') !== 'approved' || strtolower($application->planning_recommendation_status ?? '') !== 'approved') ? 'opacity-50 cursor-not-allowed bg-gray-100' : '' }}" 
-                        data-tab="final"
-                        {{ (strtolower($application->application_status ?? '') !== 'approved' || strtolower($application->planning_recommendation_status ?? '') !== 'approved') ? 'disabled' : '' }}>
-                        <i data-lucide="file-check" class="w-3.5 h-3.5 mr-1.5"></i>
-                        FINAL BILL
-                        </button> --}}
-
                       </div>
                   
                       <!-- Summary Tab -->
@@ -1102,23 +1055,27 @@
                           </div>
                         </div>
 
-                        <div id="initial-tab" class="tab-content">
-                          <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
-                            <div class="p-4 border-b">
+
+                      </div>
+                                          
+                <div id="approval-tab" class="tab-content">
+                  <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+
+                 
+                  <div class="p-4 border-b">
                               <h3 class="text-sm font-medium">Director's Approval</h3>
                               <p class="text-xs text-gray-500"></p>
                             </div>
                             <form id="directorApprovalForm">
-                              <input type="hidden" name="application_id" id="directorApprovalApplicationId" value="">
+                              <input type="hidden" name="application_id" id="directorApprovalApplicationId" value="{{ $application->id }}">
                               <!-- CSRF token for Laravel -->
                               <input type="hidden" name="_token" value="{{ csrf_token() }}">
                               <div class="p-4 space-y-4">
-                              <input type="hidden" id="application_id" value="{{$application->id}}">
-                              
                               <div class="mb-4">
                                 <label class="block text-sm font-medium text-gray-700">Decision</label>
                                 @php
                                   $isApproved = strtolower($application->application_status ?? '') === 'approved';
+                                  $isPlanningApproved = strtolower($application->planning_recommendation_status ?? '') === 'approved';
                                   $currentStatus = strtolower($application->application_status ?? 'pending');
                                 @endphp
                                 <div class="mt-2 flex items-center space-x-4">
@@ -1142,6 +1099,11 @@
                                   <span class="text-xs text-gray-400 ml-2">Already approved. Decision cannot be changed.</span>
                                 @endif
                               </div>
+                              @if(!$isPlanningApproved)
+                                <div class="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+                                  Approval action is disabled until Planning Recommendation is approved. You can review details here.
+                                </div>
+                              @endif
                               <div class="grid grid-cols-2 gap-4 mb-4">
                                       <label for="approval_date" class="block text-gray-700 mb-2">Approval/Decline Date</label>
                                
@@ -1152,7 +1114,7 @@
                                                         class="w-full p-2 border border-gray-300 rounded-md text-sm"
                                                         max="{{ now()->format('Y-m-d\TH:i') }}"
                                                     >
-                                                    <button type="button" onclick="document.getElementById('approval-date').value = '{{ now()->format('Y-m-d\TH:i') }}';"
+                                                    <button type="button" onclick="document.getElementById('approval_date').value = '{{ now()->format('Y-m-d\TH:i') }}';"
                                                         class="px-2 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300">
                                                         Use Current Date/Time
                                                     </button>
@@ -1176,8 +1138,8 @@
                                     <button 
                                       type="submit" 
                                       class="flex items-center px-3 py-1 text-xs rounded-md 
-                                      {{ $isApproved ? 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60' : 'bg-green-700 text-white hover:bg-gray-800' }}"
-                                      {{ $isApproved ? 'disabled' : '' }}>
+                                      {{ ($isApproved || !$isPlanningApproved) ? 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60' : 'bg-green-700 text-white hover:bg-gray-800' }}"
+                                      {{ ($isApproved || !$isPlanningApproved) ? 'disabled' : '' }}>
                                       <i data-lucide="send-horizontal" class="w-3.5 h-3.5 mr-1.5"></i>
                                       Submit
                                     </button>
@@ -1186,13 +1148,9 @@
                             </div>
   
                             </form>
-                          </div>
-                        </div>
-                      </div>
-                      <!-- Final Bill Tab -->
-                      <div id="final-tab" class="tab-content">
-                        @include('actions.final_bill')
-                     </div>
+                         
+                    </div>
+                   </div>
                     </div>
                   </div>
 
@@ -1201,250 +1159,265 @@
             </div>
 
             <script>
-            // Initialize Lucide icons
-            lucide.createIcons();
+            // Safe icon initializer to avoid breaking page if lucide is not loaded
+            function safeCreateIcons() {
+              if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                try { window.lucide.createIcons(); } catch (e) {}
+              }
+            }
 
-        // Document preview function
-        function previewDesign(fileUrl) {
-            // Create modal overlay
-            const previewModal = document.createElement('div');
-            previewModal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+            // Initialize Lucide icons safely
+            safeCreateIcons();
 
-            // Create content container
-            const contentContainer = document.createElement('div');
-            contentContainer.className = 'bg-white rounded-lg max-w-4xl max-h-[90vh] overflow-auto relative';
+            // Document preview function
+            function previewDesign(fileUrl) {
+              // Create modal overlay
+              const previewModal = document.createElement('div');
+              previewModal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
 
-            // Close button
-            const closeButton = document.createElement('button');
-            closeButton.className = 'absolute top-2 right-2 p-1 bg-white rounded-full shadow-sm hover:bg-gray-100';
-            closeButton.innerHTML = '<i data-lucide="x" class="w-5 h-5 text-gray-700"></i>';
-            closeButton.onclick = () => previewModal.remove();
+              // Create content container
+              const contentContainer = document.createElement('div');
+              contentContainer.className = 'bg-white rounded-lg max-w-4xl max-h-[90vh] overflow-auto relative';
 
-            // File preview (image)
-            const filePreview = document.createElement('img');
-            filePreview.src = fileUrl;
-            filePreview.className = 'w-full h-auto';
-            filePreview.style.maxHeight = '80vh';
+              // Close button
+              const closeButton = document.createElement('button');
+              closeButton.className = 'absolute top-2 right-2 p-1 bg-white rounded-full shadow-sm hover:bg-gray-100';
+              closeButton.innerHTML = '<i data-lucide="x" class="w-5 h-5 text-gray-700"></i>';
+              closeButton.onclick = () => previewModal.remove();
 
-            // Append elements
-            contentContainer.appendChild(closeButton);
-            contentContainer.appendChild(filePreview);
-            previewModal.appendChild(contentContainer);
-            document.body.appendChild(previewModal);
+              // File preview (image)
+              const filePreview = document.createElement('img');
+              filePreview.src = fileUrl;
+              filePreview.className = 'w-full h-auto';
+              filePreview.style.maxHeight = '80vh';
 
-            // Initialize Lucide icons for the new elements
-            lucide.createIcons();
-        }
+              // Append elements
+              contentContainer.appendChild(closeButton);
+              contentContainer.appendChild(filePreview);
+              previewModal.appendChild(contentContainer);
+              document.body.appendChild(previewModal);
 
-        // Tab switching functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const tabButtons = document.querySelectorAll('.tab-button');
-            const tabContents = document.querySelectorAll('.tab-content');
+              // Initialize Lucide icons for the new elements
+              safeCreateIcons();
+            }
 
-            tabButtons.forEach(button => {
+            // Tab switching functionality
+            document.addEventListener('DOMContentLoaded', function() {
+              const tabButtons = document.querySelectorAll('.tab-button');
+              const tabContents = document.querySelectorAll('.tab-content');
+
+              tabButtons.forEach(button => {
                 button.addEventListener('click', function() {
-                    const tabId = this.getAttribute('data-tab');
+                  const tabId = this.getAttribute('data-tab');
 
-                    // Deactivate all tabs
-                    tabButtons.forEach(btn => btn.classList.remove('active'));
-                    tabContents.forEach(content => content.classList.remove('active'));
+                  // Deactivate all tabs
+                  tabButtons.forEach(btn => btn.classList.remove('active'));
+                  tabContents.forEach(content => content.classList.remove('active'));
 
-                    // Activate selected tab
-                    this.classList.add('active');
-                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                  // Activate selected tab
+                  this.classList.add('active');
+                  document.getElementById(`${tabId}-tab`).classList.add('active');
                 });
+              });
+
+              // Close modal button (guard in case element does not exist)
+              const closeModalBtn = document.getElementById('closeModal');
+              if (closeModalBtn) {
+                closeModalBtn.addEventListener('click', function() {
+                  alert('Modal closed');
+                });
+              }
             });
 
-            // Close modal button
-            document.getElementById('closeModal').addEventListener('click', function() {
-                // In a real application, this would close the modal
-                alert('Modal closed');
-            });
-        });
+            document.addEventListener('DOMContentLoaded', function() {
+              const decisionRadios = document.querySelectorAll('input[name="decision"]');
+              const reasonForDeclineContainer = document.getElementById('reasonForDeclineContainer');
 
-        document.addEventListener('DOMContentLoaded', function() {
-            const decisionRadios = document.querySelectorAll('input[name="decision"]');
-            const reasonForDeclineContainer = document.getElementById('reasonForDeclineContainer');
-
-            decisionRadios.forEach(radio => {
+              decisionRadios.forEach(radio => {
                 radio.addEventListener('change', function() {
-                    if (this.value === 'decline') {
-                        reasonForDeclineContainer.classList.remove('hidden');
-                    } else {
-                        reasonForDeclineContainer.classList.add('hidden');
-                    }
+                  if (this.value === 'decline') {
+                    reasonForDeclineContainer.classList.remove('hidden');
+                  } else {
+                    reasonForDeclineContainer.classList.add('hidden');
+                  }
                 });
+              });
+              // Initialize visibility based on current selection
+              const checkedDecision = document.querySelector('input[name="decision"]:checked');
+              if (checkedDecision && checkedDecision.value === 'decline') {
+                reasonForDeclineContainer.classList.remove('hidden');
+              }
             });
-        });
 
-        // Enhanced document preview function
-        function previewDocument(fileUrl, documentTitle) {
-            // Create modal overlay
-            const previewModal = document.createElement('div');
-            previewModal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
-            previewModal.style.backdropFilter = 'blur(5px)';
+            // Enhanced document preview function
+            function previewDocument(fileUrl, documentTitle) {
+              // Create modal overlay
+              const previewModal = document.createElement('div');
+              previewModal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+              previewModal.style.backdropFilter = 'blur(5px)';
 
-            // Create content container
-            const contentContainer = document.createElement('div');
-            contentContainer.className = 'bg-white rounded-lg w-11/12 md:w-4/5 lg:w-3/4 xl:w-2/3 max-h-[90vh] flex flex-col';
+              // Create content container
+              const contentContainer = document.createElement('div');
+              contentContainer.className = 'bg-white rounded-lg w-11/12 md:w-4/5 lg:w-3/4 xl:w-2/3 max-h-[90vh] flex flex-col';
 
-            // Modal header
-            const modalHeader = document.createElement('div');
-            modalHeader.className = 'flex justify-between items-center p-4 border-b';
+              // Modal header
+              const modalHeader = document.createElement('div');
+              modalHeader.className = 'flex justify-between items-center p-4 border-b';
 
-            const modalTitle = document.createElement('h3');
-            modalTitle.className = 'text-lg font-medium';
-            modalTitle.textContent = documentTitle || 'Document Preview';
+              const modalTitle = document.createElement('h3');
+              modalTitle.className = 'text-lg font-medium';
+              modalTitle.textContent = documentTitle || 'Document Preview';
 
-            const closeButton = document.createElement('button');
-            closeButton.className = 'p-1 rounded-full hover:bg-gray-100 transition-colors';
-            closeButton.innerHTML = '<i data-lucide="x" class="w-5 h-5"></i>';
-            closeButton.onclick = () => previewModal.remove();
+              const closeButton = document.createElement('button');
+              closeButton.className = 'p-1 rounded-full hover:bg-gray-100 transition-colors';
+              closeButton.innerHTML = '<i data-lucide="x" class="w-5 h-5"></i>';
+              closeButton.onclick = () => previewModal.remove();
 
-            modalHeader.appendChild(modalTitle);
-            modalHeader.appendChild(closeButton);
+              modalHeader.appendChild(modalTitle);
+              modalHeader.appendChild(closeButton);
 
-            // Modal body - Document viewer
-            const modalBody = document.createElement('div');
-            modalBody.className = 'flex-1 overflow-hidden relative';
+              // Modal body - Document viewer
+              const modalBody = document.createElement('div');
+              modalBody.className = 'flex-1 overflow-hidden relative';
 
-            const documentViewer = document.createElement('div');
-            documentViewer.className = 'w-full h-full flex items-center justify-center bg-gray-100 overflow-auto';
-            documentViewer.style.minHeight = '50vh';
+              const documentViewer = document.createElement('div');
+              documentViewer.className = 'w-full h-full flex items-center justify-center bg-gray-100 overflow-auto';
+              documentViewer.style.minHeight = '50vh';
 
-            // Check file type
-            const fileExtension = fileUrl.split('.').pop().toLowerCase();
-            const isPdf = fileExtension === 'pdf';
+              // Check file type
+              const fileExtension = fileUrl.split('.').pop().toLowerCase();
+              const isPdf = fileExtension === 'pdf';
 
-            if (isPdf) {
+              if (isPdf) {
                 const embedElement = document.createElement('embed');
                 embedElement.src = fileUrl;
                 embedElement.type = 'application/pdf';
                 embedElement.className = 'w-full h-full';
                 documentViewer.appendChild(embedElement);
-            } else {
+              } else {
                 // Assume it's an image
                 const imageElement = document.createElement('img');
                 imageElement.src = fileUrl;
                 imageElement.className = 'max-w-full max-h-full object-contain';
                 imageElement.style.maxHeight = '70vh';
                 documentViewer.appendChild(imageElement);
+              }
+
+              modalBody.appendChild(documentViewer);
+
+              // Modal footer
+              const modalFooter = document.createElement('div');
+              modalFooter.className = 'p-4 border-t flex justify-between';
+
+              const downloadButton = document.createElement('a');
+              downloadButton.href = fileUrl;
+              downloadButton.download = documentTitle || 'document';
+              downloadButton.className = 'px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center';
+              downloadButton.innerHTML = '<i data-lucide="download" class="w-4 h-4 mr-2"></i> Download';
+
+              const closeTextButton = document.createElement('button');
+              closeTextButton.className = 'px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 flex items-center';
+              closeTextButton.innerHTML = '<i data-lucide="x" class="w-4 h-4 mr-2"></i> Close';
+              closeTextButton.onclick = () => previewModal.remove();
+
+              modalFooter.appendChild(downloadButton);
+              modalFooter.appendChild(closeTextButton);
+
+              // Assemble modal
+              contentContainer.appendChild(modalHeader);
+              contentContainer.appendChild(modalBody);
+              contentContainer.appendChild(modalFooter);
+              previewModal.appendChild(contentContainer);
+
+              // Add to document and initialize Lucide icons
+              document.body.appendChild(previewModal);
+              safeCreateIcons();
+
+              // Add keyboard event to close on Escape
+              document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && document.body.contains(previewModal)) {
+                  previewModal.remove();
+                }
+              });
             }
 
-            modalBody.appendChild(documentViewer);
-
-            // Modal footer
-            const modalFooter = document.createElement('div');
-            modalFooter.className = 'p-4 border-t flex justify-between';
-
-            const downloadButton = document.createElement('a');
-            downloadButton.href = fileUrl;
-            downloadButton.download = documentTitle || 'document';
-            downloadButton.className = 'px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center';
-            downloadButton.innerHTML = '<i data-lucide="download" class="w-4 h-4 mr-2"></i> Download';
-
-            const closeTextButton = document.createElement('button');
-            closeTextButton.className = 'px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 flex items-center';
-            closeTextButton.innerHTML = '<i data-lucide="x" class="w-4 h-4 mr-2"></i> Close';
-            closeTextButton.onclick = () => previewModal.remove();
-
-            modalFooter.appendChild(downloadButton);
-            modalFooter.appendChild(closeTextButton);
-
-            // Assemble modal
-            contentContainer.appendChild(modalHeader);
-            contentContainer.appendChild(modalBody);
-            contentContainer.appendChild(modalFooter);
-            previewModal.appendChild(contentContainer);
-
-            // Add to document and initialize Lucide icons
-            document.body.appendChild(previewModal);
-            lucide.createIcons();
-
-            // Add keyboard event to close on Escape
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && document.body.contains(previewModal)) {
-                    previewModal.remove();
-                }
-            });
-        }
-
-        // Function to preview scanned documents
-        function previewScannedDocument(fileUrl, documentTitle) {
-            previewDocument(fileUrl, documentTitle);
-        } 
+            // Function to preview scanned documents
+            function previewScannedDocument(fileUrl, documentTitle) {
+              previewDocument(fileUrl, documentTitle);
+            } 
 
 
             // Add form submission via AJAX
             const form = document.getElementById('directorApprovalForm');
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const applicationId = document.getElementById('application_id').value;
-            const decision = document.querySelector('input[name="decision"]:checked').value;
-            const approvalDate = document.getElementById('approval_date').value;
-            let comments = '';
-            
-            if (decision === 'decline') {
-                comments = document.getElementById('reasonForDecline').value;
-            }
-            
-            // Show preloader with SweetAlert
-            Swal.fire({
-                title: 'Processing...',
-                html: 'Submitting director\'s approval',
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                didOpen: () => {
-                    Swal.showLoading();
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Use the hidden input inside the form (avoids duplicate id issues)
+                const applicationId = document.getElementById('directorApprovalApplicationId').value;
+                const decision = document.querySelector('input[name="decision"]:checked').value;
+                const approvalDate = document.getElementById('approval_date').value;
+                let comments = '';
+                
+                if (decision === 'decline') {
+                    comments = document.getElementById('reasonForDecline').value;
                 }
-            });
-            
-            // AJAX request
-            fetch('{{ url('/director-approval/update') }}', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    application_id: applicationId,
-                    status: decision,
-                    approval_date: approvalDate,
-                    comments: comments
+                
+                // Show preloader with SweetAlert
+                Swal.fire({
+                    title: 'Processing...',
+                    html: 'Submitting director\'s approval',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
+                // AJAX request
+                fetch('{{ url('/director-approval/update') }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        application_id: applicationId,
+                        status: decision,
+                        approval_date: approvalDate,
+                        comments: comments
+                    })
                 })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Show success message
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Success!',
-                        text: 'Director\'s approval updated successfully!'
-                    }).then(() => {
-                        // Simply reload the page
-                        location.reload();
-                    });
-                } else {
-                    // Show error message
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show success message
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Director\'s approval updated successfully!'
+                        }).then(() => {
+                            // Simply reload the page
+                            location.reload();
+                        });
+                    } else {
+                        // Show error message
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: data.message || 'Failed to update approval'
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
-                        text: data.message || 'Failed to update approval'
+                        text: 'An error occurred while updating director\'s approval.'
                     });
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'An error occurred while updating director\'s approval.'
                 });
             });
-        });
       </script>
         @endsection
 

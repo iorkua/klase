@@ -483,6 +483,8 @@ Route::get('/sectionaltitling/secondary', [\App\Http\Controllers\SectionalTitlin
 Route::get('/sectionaltitling/units', [\App\Http\Controllers\SectionalTitlingController::class, 'Units'])->name('sectionaltitling.units');
 Route::get('/sectionaltitling/buyer-list/{id}', [\App\Http\Controllers\SectionalTitlingController::class, 'getBuyerList'])->name('sectionaltitling.buyerList');
 Route::post('/sectionaltitling/save-cofo-details', [\App\Http\Controllers\SectionalTitlingController::class, 'saveCofoDetails'])->name('sectionaltitling.save-cofo-details');
+// Soft delete sub-application
+Route::delete('/sectionaltitling/sub/{id}', [\App\Http\Controllers\SectionalTitlingController::class, 'deleteSubapplication'])->name('sectionaltitling.sub.delete');
 Route::get('/map', [\App\Http\Controllers\SectionalTitlingController::class, 'Map'])->name('map.index');
  
 // Payment filtering route

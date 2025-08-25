@@ -65,6 +65,7 @@
           <option value="temporary">Temporary</option>
           <option value="extension">Extension</option>
           <option value="miscellaneous">Miscellaneous</option>
+          <option value="old_mls">Old MLS</option>
           <option value="sltr">SLTR</option>
           <option value="sit">SIT</option>
         </select>
@@ -80,10 +81,31 @@
         <label class="block text-sm mb-1">File Prefix</label>
         <div class="relative">
           <select class="w-full p-2 border border-gray-300 rounded-md appearance-none pr-8" id="mlsFileNoPrefix" name="mlsFileNoPrefix">
-            <option>Select prefix</option>
-            @foreach (['COM', 'RES', 'CON-COM', 'CON-RES', 'CON-AG', 'CON-IND'] as $prefix)
-            <option value="{{ $prefix }}">{{ $prefix }}</option>
-        @endforeach
+            <option value="">Select prefix</option>
+            <optgroup label="Standard">
+                <option value="RES">RES - Residential</option>
+                <option value="COM">COM - Commercial</option>
+                <option value="IND">IND - Industrial</option>
+                <option value="AGR">AGR - Agricultural</option>
+                <option value="INS">INS - Institutional</option>
+            </optgroup>
+            <optgroup label="Conversion">
+                <option value="CON-RES">CON-RES - Conversion to Residential</option>
+                <option value="CON-COM">CON-COM - Conversion to Commercial</option>
+                <option value="CON-IND">CON-IND - Conversion to Industrial</option>
+                <option value="CON-AGR">CON-AGR - Conversion to Agricultural</option>
+                <option value="CON-INS">CON-INS - Conversion to Institutional</option>
+            </optgroup>
+            <optgroup label="RC Options">
+                <option value="RES-RC">RES-RC</option>
+                <option value="COM-RC">COM-RC</option>
+                <option value="AG-RC">AG-RC</option>
+                <option value="IND-RC">IND-RC</option>
+                <option value="CON-RES-RC">CON-RES-RC</option>
+                <option value="CON-COM-RC">CON-COM-RC</option>
+                <option value="CON-AG-RC">CON-AG-RC</option>
+                <option value="CON-IND-RC">CON-IND-RC</option>
+            </optgroup>
           </select>
           <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
             <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
@@ -98,6 +120,15 @@
         <label class="block text-sm mb-1">Serial No</label>
         <input type="text" class="w-full p-2 border border-gray-300 rounded-md" id="mlsFileSerial" name="mlsFileSerial" placeholder="e.g. 572" value="{{ isset($result) ? ($result->mlsFileNumber ? explode('-', $result->mlsFileNumber)[1] ?? '' : '') : '' }}">
       </div>
+    </div>
+
+    <!-- Extension: Existing file selector -->
+    <div id="mlsExtensionFileSection" class="hidden mb-4">
+      <label class="block text-sm mb-1">Select Existing MLS File Number</label>
+      <select id="mlsExistingFileNo" name="mlsExistingFileNo" class="w-full p-2 border border-gray-300 rounded-md">
+        <option value="">Select existing file number...</option>
+      </select>
+      <p class="text-xs text-gray-500 mt-1">Serial not required for extensions.</p>
     </div>
 
     <!-- Middle Prefix Section (for miscellaneous files) -->
@@ -116,7 +147,11 @@
 
     <!-- Special Serial Section (for SLTR and SIT files) -->
     <div id="mlsSpecialSerialSection" class="hidden mb-4">
-      <div class="grid grid-cols-1 gap-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div id="mlsSitYearContainer" class="hidden">
+          <label class="block text-sm mb-1">Year (SIT)</label>
+          <input type="text" class="w-full p-2 border border-gray-300 rounded-md" id="mlsSitYear" name="mlsSitYear" placeholder="e.g. 2025" maxlength="4" value="{{ date('Y') }}">
+        </div>
         <div>
           <label class="block text-sm mb-1">Serial No</label>
           <input type="text" class="w-full p-2 border border-gray-300 rounded-md" id="mlsSpecialSerial" name="mlsSpecialSerial" placeholder="Enter serial number">
@@ -294,16 +329,20 @@
         const regularSection = document.getElementById('mlsRegularSection');
         const middlePrefixSection = document.getElementById('mlsMiddlePrefixSection');
         const specialSerialSection = document.getElementById('mlsSpecialSerialSection');
+        const extensionFileSection = document.getElementById('mlsExtensionFileSection');
+        const sitYearContainer = document.getElementById('mlsSitYearContainer');
 
         // Hide all sections first
         regularSection.classList.add('hidden');
         middlePrefixSection.classList.add('hidden');
         specialSerialSection.classList.add('hidden');
+        extensionFileSection.classList.add('hidden');
+        if (sitYearContainer) sitYearContainer.classList.add('hidden');
 
         let formatted = '';
         let displayText = '';
 
-        if (fileType === 'regular' || fileType === 'temporary' || fileType === 'extension') {
+        if (fileType === 'regular' || fileType === 'temporary') {
             regularSection.classList.remove('hidden');
             
             const prefix = prefixEl.value;
@@ -311,32 +350,31 @@
             const serial = serialEl.value.trim();
 
             if (prefix && year && serial) {
-                // Base format: PREFIX-YEAR-SERIAL
                 formatted = `${prefix}-${year}-${serial.padStart(4, '0')}`;
-                
-                // Add suffix based on file type
                 if (fileType === 'temporary') {
                     formatted += '(T)';
-                } else if (fileType === 'extension') {
-                    formatted += ' AND EXTENSION';
                 }
-                
                 displayText = formatted;
             } else if (prefix || year || serial) {
-                // Show partial preview
                 const parts = [];
                 if (prefix) parts.push(prefix);
                 if (year) parts.push(year);
                 if (serial) parts.push(serial.padStart(4, '0'));
-                
                 displayText = parts.join('-');
-                if (parts.length > 0) {
-                    if (fileType === 'temporary') {
-                        displayText += '(T)';
-                    } else if (fileType === 'extension') {
-                        displayText += ' AND EXTENSION';
-                    }
+                if (parts.length > 0 && fileType === 'temporary') {
+                    displayText += '(T)';
                 }
+            }
+        } else if (fileType === 'extension') {
+            extensionFileSection.classList.remove('hidden');
+            // Load existing MLS files on demand
+            loadExistingMlsFileNumbers();
+            const existing = document.getElementById('mlsExistingFileNo').value.trim();
+            if (existing) {
+                formatted = existing + ' AND EXTENSION';
+                displayText = formatted;
+            } else {
+                displayText = 'Select an existing MLS file number';
             }
         } else if (fileType === 'miscellaneous') {
             middlePrefixSection.classList.remove('hidden');
@@ -353,44 +391,79 @@
                 if (miscSerial) parts.push(miscSerial);
                 displayText = parts.join('-');
             }
-        } else if (fileType === 'sltr' || fileType === 'sit') {
+        } else if (fileType === 'sltr' || fileType === 'sit' || fileType === 'old_mls') {
             specialSerialSection.classList.remove('hidden');
-            
-            const specialSerial = document.getElementById('mlsSpecialSerial').value.trim();
-            const fileTypeUpper = fileType.toUpperCase();
-            
-            // Update placeholder based on type
             const specialSerialEl = document.getElementById('mlsSpecialSerial');
+            const specialSerial = specialSerialEl.value.trim();
             if (fileType === 'sltr') {
-                specialSerialEl.placeholder = 'Enter SLTR serial (e.g., 001, 2024-001)';
+                specialSerialEl.placeholder = 'Enter SLTR serial (e.g., 001)';
+                if (specialSerial) {
+                    formatted = `SLTR-${specialSerial}`;
+                    displayText = formatted;
+                } else {
+                    displayText = 'SLTR-';
+                }
             } else if (fileType === 'sit') {
-                specialSerialEl.placeholder = 'Enter SIT serial (e.g., 001, 2024-001)';
-            }
-            
-            if (specialSerial) {
-                formatted = `${fileTypeUpper}-${specialSerial}`;
-                displayText = formatted;
-            } else {
-                displayText = `${fileTypeUpper}-`;
+                specialSerialEl.placeholder = 'Enter SIT serial (e.g., 001)';
+                if (sitYearContainer) sitYearContainer.classList.remove('hidden');
+                const sitYearEl = document.getElementById('mlsSitYear');
+                const year = sitYearEl ? sitYearEl.value.trim() : '';
+                if (year && specialSerial) {
+                    formatted = `SIT-${year}-${specialSerial}`;
+                    displayText = formatted;
+                } else {
+                    displayText = 'SIT-';
+                }
+            } else if (fileType === 'old_mls') {
+                specialSerialEl.placeholder = 'Enter Old MLS number (e.g., 5467)';
+                if (specialSerial) {
+                    formatted = `KN ${specialSerial}`;
+                    displayText = formatted;
+                } else {
+                    displayText = 'KN ';
+                }
             }
         }
 
-        // Default message if nothing is entered
         if (!displayText) {
             displayText = 'Enter details above to see preview';
         }
 
-        // Update preview display
         previewEl.textContent = displayText;
+        dbFieldEl.value = formatted ? formatted : '';
         
-        // Update database field only with complete format
-        if (formatted) {
-            dbFieldEl.value = formatted;
-        } else {
-            dbFieldEl.value = '';
-        }
-        
-        updateMainFilenoField(); // Update main fileno field
+        updateMainFilenoField();
+    }
+
+    // Load existing MLS file numbers for extension selection
+    function loadExistingMlsFileNumbers() {
+        const select = document.getElementById('mlsExistingFileNo');
+        if (!select || select.dataset.loaded === '1') return;
+        select.innerHTML = '<option value="">Loading existing file numbers...</option>';
+        fetch('/api/get-existing-mls-files', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            }
+        }).then(r => r.json()).then(data => {
+            select.innerHTML = '<option value="">Select existing file number...</option>';
+            if (data?.success && Array.isArray(data.files) && data.files.length) {
+                data.files.forEach(f => {
+                    const val = f.mlsFNo || f.file_number;
+                    if (!val) return;
+                    const opt = document.createElement('option');
+                    opt.value = val;
+                    opt.textContent = val;
+                    select.appendChild(opt);
+                });
+                select.dataset.loaded = '1';
+            } else {
+                select.innerHTML = '<option value="">No existing MLS files found</option>';
+            }
+        }).catch(() => {
+            select.innerHTML = '<option value="">Error loading MLS files</option>';
+        });
     }
 
     // Format KANGIS file number preview
@@ -493,9 +566,17 @@
         document.getElementById('mlsMiddlePrefix').addEventListener('input', updateMlsFileNumberPreview);
         document.getElementById('mlsMiscSerial').addEventListener('input', updateMlsFileNumberPreview);
         document.getElementById('mlsSpecialSerial').addEventListener('input', updateMlsFileNumberPreview);
+        const sitYearEl = document.getElementById('mlsSitYear');
+        if (sitYearEl) sitYearEl.addEventListener('input', updateMlsFileNumberPreview);
         
         // Add event listener for file type dropdown (changed from radio buttons)
-        document.getElementById('mlsFileType').addEventListener('change', updateMlsFileNumberPreview);
+        document.getElementById('mlsFileType').addEventListener('change', function(){
+            updateMlsFileNumberPreview();
+            if (this.value === 'extension') { loadExistingMlsFileNumbers(); }
+        });
+
+        // Extension: update when existing file select changes
+        document.getElementById('mlsExistingFileNo').addEventListener('change', updateMlsFileNumberPreview);
 
         document.getElementById('kangisFileNoPrefix').addEventListener('change', updateKangisFileNumberPreview);
         document.getElementById('kangisFileNumber').addEventListener('input', updateKangisFileNumberPreview);

@@ -12,6 +12,17 @@
     <!-- Dashboard Content -->
     <div class="p-6">
       <!-- Stats Cards -->
+      <!-- <div class="mb-6">
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center space-x-3">
+          <div class="animate-spin">
+        <i data-lucide="refresh-cw" class="w-5 h-5 text-blue-600"></i>
+          </div>
+          <div>
+        <p class="text-blue-800 font-medium">Updating...</p>
+        <p class="text-blue-600 text-sm">Refreshing unit applications data</p>
+          </div>
+        </div>
+      </div> -->
       
      {{-- @include('sectionaltitling.partials.statistic.statistic_card') --}}
       <!-- SecondaryApplications Overview  -->

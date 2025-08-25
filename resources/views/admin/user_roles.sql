@@ -1,168 +1,138 @@
-- KLAES Land Admin System Database Inserts
-- Generated from KLAES Land Admin System User Roles_V02.docx
-
---====================================================
-- CLEAR EXISTING DATA (Delete in correct order for foreign keys)
---====================================================
 DELETE FROM user_roles;
 DELETE FROM user_types;
 DELETE FROM departments;
 
-- Reset identity columns if they exist
+-- Reset identity columns if they exist
 DBCC CHECKIDENT ('user_roles', RESEED, 0);
 DBCC CHECKIDENT ('user_types', RESEED, 0);
 DBCC CHECKIDENT ('departments', RESEED, 0);
+ -- DEPARTMENTS TABLE INSERTS
+ 
+-- USER TYPES
+INSERT INTO user_types ([name],[code],[description],[level_priority],[is_active],[created_at],[updated_at]) VALUES
+('ALL','ALL','Applicable to all user categories',0,1,GETDATE(),GETDATE()),
+('User','USER','End User access type',1,1,GETDATE(),GETDATE()),
+('Operations','OPERATIONS','Operational level access',2,1,GETDATE(),GETDATE()),
+('Management','MANAGEMENT','Management level access',3,1,GETDATE(),GETDATE()),
+('System','SYSTEM','System-level administrative access',4,1,GETDATE(),GETDATE());
 
---====================================================
--- - INSERT INTO user_types
---====================================================
-INSERT INTO user_types ([name], [code], [description], [level_priority], [is_active], [created_at], [updated_at])
-VALUES 
-    ('User', 'USER', 'Basic user with lowest access level', 1, 1, GETDATE(), GETDATE()),
-    ('Operations', 'OPS', 'Operational staff with high access level', 2, 1, GETDATE(), GETDATE()),
-    ('Management', 'MGT', 'Management level with highest access', 3, 1, GETDATE(), GETDATE()),
-    ('System', 'SYS', 'System administrator with highest privileges', 4, 1, GETDATE(), GETDATE());
+-- DEPARTMENTS
+INSERT INTO departments ([name],[code],[description],[parent_id],[is_active],[created_at],[updated_at]) VALUES
+('ALL','ALL','Applies across all departments',NULL,1,GETDATE(),GETDATE()),
+('CSU','CSU','Customer Service Unit',NULL,1,GETDATE(),GETDATE()),
+('Lands','LANDS','Lands related operations and management',NULL,1,GETDATE(),GETDATE()),
+('Survey','SURVEY','Survey operations and management',NULL,1,GETDATE(),GETDATE()),
+('GIS','GIS','Geospatial Information Systems',NULL,1,GETDATE(),GETDATE()),
+('KANGIS','KANGIS','Kano Geographic Information System',NULL,1,GETDATE(),GETDATE()),
+('Account/Finance','ACCOUNT/FINANCE','Billing, receipts, and financial records',NULL,1,GETDATE(),GETDATE()),
+('Deeds','DEEDS','Deeds records and registration',NULL,1,GETDATE(),GETDATE()),
+('Physical Planning','PHYSICAL PLANNING','Physical Planning operations and management',NULL,1,GETDATE(),GETDATE()),
+('Cadastral','CADASTRAL','Cadastral operations and management',NULL,1,GETDATE(),GETDATE()),
+('Sectional Titling','SECTIONAL TITLING','Sectional Titling processes',NULL,1,GETDATE(),GETDATE()),
+('SLTR','SLTR','Systematic Land Titling & Registration',NULL,1,GETDATE(),GETDATE()),
+('ICT','ICT','Information & Communication Technology',NULL,1,GETDATE(),GETDATE()),
+('GIS/Survey','GIS/SURVEY','Joint GIS/Survey functions',NULL,1,GETDATE(),GETDATE());
 
---====================================================
--- INSERT INTO departments
---====================================================
-INSERT INTO departments ([name], [code], [description], [parent_id], [is_active], [created_at], [updated_at])
-VALUES 
-    ('Customer Service Unit', 'CSU', 'Customer relationship management department', NULL, 1, GETDATE(), GETDATE()),
-    ('Lands', 'LANDS', 'Land administration and management department', NULL, 1, GETDATE(), GETDATE()),
-    ('Survey', 'SURVEY', 'Land surveying and mapping department', NULL, 1, GETDATE(), GETDATE()),
-    ('Geographic Information Systems', 'GIS', 'GIS and spatial data management department', NULL, 1, GETDATE(), GETDATE()),
-    ('Account/Finance', 'ACC', 'Accounting and financial management department', NULL, 1, GETDATE(), GETDATE()),
-    ('Deeds', 'DEEDS', 'Property deeds and registration department', NULL, 1, GETDATE(), GETDATE()),
-    ('Physical Planning', 'PP', 'Physical and urban planning department', NULL, 1, GETDATE(), GETDATE()),
-    ('Cadastral', 'CAD', 'Cadastral mapping and records department', NULL, 1, GETDATE(), GETDATE()),
-    ('Sectional Titling', 'ST', 'Sectional property titling department', NULL, 1, GETDATE(), GETDATE()),
-    ('SLTR', 'SLTR', 'Systematic Land Titling and Registration department', NULL, 1, GETDATE(), GETDATE()),
-    ('Information and Communication Technology', 'ICT', 'IT systems and administration department', NULL, 1, GETDATE(), GETDATE());
-
---====================================================
--- INSERT INTO user_roles
---====================================================
-INSERT INTO user_roles ([name], [guard_name], [description], [department_id], [level], [user_type], [is_active], [created_at], [updated_at])
-VALUES 
-    -- Dashboard (Universal Access)
-    ('Dashboard', 'web', 'Universal dashboard access for all users', NULL, 'Lowest', 'ALL', 1, GETDATE(), GETDATE()),
-    
-    -- Customer Relationship Management
-    ('Person', 'web', 'Manage individual person records', NULL, 'Lowest', 'ALL', 1, GETDATE(), GETDATE()),
-    ('Corporate', 'web', 'Manage corporate entity records', NULL, 'Lowest', 'ALL', 1, GETDATE(), GETDATE()),
-    ('Customer Manager', 'web', 'Customer relationship management', 1, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    
-    -- Programs
-    ('Allocation', 'web', 'Land allocation management', 2, 'Highest', 'Management', 1, GETDATE(), GETDATE()),
-    ('Compensation/Resettlement', 'web', 'Handle compensation and resettlement processes', 3, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Recertification', 'web', 'Property recertification processes', 4, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Conversion/Regularization', 'web', 'Land conversion and regularization', 2, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Land Property Enumeration', 'web', 'Enumerate and catalog land properties', 4, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Data Repository', 'web', 'Manage central data repository', 4, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Migrate Data', 'web', 'Handle data migration processes', 4, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    
-    -- Information Products
-    ('Letter of Administration/Grant/Offer Letter', 'web', 'Generate administrative letters and offers', 2, 'Highest', 'Management', 1, GETDATE(), GETDATE()),
-    ('Occupancy Permit (OP)', 'web', 'Issue occupancy permits', 4, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Site Plan/Parcel Plan', 'web', 'Create and manage site/parcel plans', 3, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Right of Occupancy', 'web', 'Manage right of occupancy documents', 2, 'Highest', 'Management', 1, GETDATE(), GETDATE()),
-    ('Certificate of Occupancy', 'web', 'Issue certificates of occupancy', 4, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    
-    -- Revenue Management
-    ('Billing', 'web', 'Handle billing processes', 5, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Generate Receipt', 'web', 'Generate payment receipts', 5, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Land Use Charge (LUC)', 'web', 'Manage land use charges', 2, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Bill Balance', 'web', 'Manage billing balances', 6, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    
-    -- Deeds
-    ('Deeds - Property Records Assistant (Legacy Records)', 'web', 'Access legacy property records', 6, 'Lowest', 'User', 1, GETDATE(), GETDATE()),
-    ('Deeds - Instrument Capture (New Records)', 'web', 'Capture new deed instruments', 6, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Deeds - Instrument Registration (New Registration)', 'web', 'Register new deed instruments', 6, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Deeds - Instrument Registration Reports', 'web', 'Generate deed registration reports', 6, 'Highest', 'Management', 1, GETDATE(), GETDATE()),
-    
-    -- Search
-    ('Deeds - Official (for filing purpose)', 'web', 'Official deed searches for filing', 6, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Deeds - On-Premise (Pay-Per-Search)', 'web', 'On-premise deed search services', 6, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Deeds - Legal Search Reports', 'web', 'Generate legal search reports', 6, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    
-    -- Lands
-    ('Lands - File Tracker/Tracking - RFID', 'web', 'Track land files using RFID system', 2, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Lands - File Digital Archive - Doc-WARE', 'web', 'Access digital archive system', NULL, 'ALL', 'ALL', 1, GETDATE(), GETDATE()),
-    ('EDMS', 'web', 'Electronic Document Management System', 2, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    
-    -- Physical Planning
-    ('PP - Regular Applications', 'web', 'Process regular planning applications', 7, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('PP - ST Applications', 'web', 'Process sectional title planning applications', 7, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('PP - SLTR Applications', 'web', 'Process SLTR planning applications', 7, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('PP Reports', 'web', 'Generate physical planning reports', 7, 'Highest', 'Management', 1, GETDATE(), GETDATE()),
-    
-    -- Survey
-    ('Survey - Records', 'web', 'Manage survey records', 3, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Survey - AI Digital Assistant', 'web', 'AI-powered survey assistance', 3, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Survey - GIS', 'web', 'Survey GIS operations', 3, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Survey - Approvals', 'web', 'Survey approval processes', 3, 'Highest', 'Management', 1, GETDATE(), GETDATE()),
-    ('Survey - E-Registry', 'web', 'Electronic survey registry', 3, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Survey Reports', 'web', 'Generate survey reports', 3, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    
-    -- Cadastral
-    ('Cad - Records', 'web', 'Manage cadastral records', 8, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Cad - AI Digital Assistant', 'web', 'AI-powered cadastral assistance', 8, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Cad - GIS', 'web', 'Cadastral GIS operations', 8, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Cad - Approvals', 'web', 'Cadastral approval processes', 8, 'Highest', 'Management', 1, GETDATE(), GETDATE()),
-    ('Cad - E-Registry', 'web', 'Electronic cadastral registry', 8, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Cadastral Reports', 'web', 'Generate cadastral reports', 8, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    
-    -- GIS
-    ('GIS - Records', 'web', 'Manage GIS records', 4, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('GIS - AI Digital Assistant', 'web', 'AI-powered GIS assistance', 4, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('GIS - GIS', 'web', 'Core GIS operations', 4, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('GIS - Approvals', 'web', 'GIS approval processes', 4, 'Highest', 'Management', 1, GETDATE(), GETDATE()),
-    ('GIS - e-Registry', 'web', 'Electronic GIS registry', 4, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('GIS Reports', 'web', 'Generate GIS reports', 4, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    
-    -- Sectional Titling
-    ('ST - Overview', 'web', 'Sectional titling overview access', 9, 'Lowest', 'ALL', 1, GETDATE(), GETDATE()),
-    ('ST - Applications', 'web', 'Process sectional titling applications', 9, 'Lowest', 'User', 1, GETDATE(), GETDATE()),
-    ('ST - Field Data Integration', 'web', 'Integrate field data for sectional titling', 9, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('ST - Bills & Payments', 'web', 'Handle sectional titling billing and payments', 9, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('ST - Approvals (Other Departments)', 'web', 'Inter-departmental approvals for sectional titling', 9, 'Lowest', 'ALL', 1, GETDATE(), GETDATE()),
-    ('ST - Director''s Approval', 'web', 'Director-level approvals for sectional titling', 9, 'Highest', 'Management', 1, GETDATE(), GETDATE()),
-    ('ST - Certificate', 'web', 'Issue sectional titling certificates', 9, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('ST - e-Registry', 'web', 'Electronic sectional titling registry', 9, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('ST - GIS', 'web', 'Sectional titling GIS operations', 9, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('ST - Survey', 'web', 'Sectional titling survey operations', 9, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('ST - Sectional Titling BaseMap', 'web', 'Access sectional titling base maps', 9, 'Lowest', 'ALL', 1, GETDATE(), GETDATE()),
-    ('ST - Reports', 'web', 'Generate sectional titling reports', 9, 'Lowest', 'ALL', 1, GETDATE(), GETDATE()),
-    
-    -- SLTR/First Registration
-    ('SLTR - Overview', 'web', 'SLTR process overview', 10, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('SLTR - Application', 'web', 'Process SLTR applications', 10, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('SLTR - Claimants', 'web', 'Manage SLTR claimants', 10, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('SLTR - Legacy Data', 'web', 'Handle SLTR legacy data', 10, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('SLTR - Field Data', 'web', 'Manage SLTR field data', 10, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('SLTR - Payments', 'web', 'Handle SLTR payments', 10, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('SLTR - Approvals', 'web', 'SLTR approval processes', 10, 'Highest', 'Management', 1, GETDATE(), GETDATE()),
-    ('SLTR - Planning Recommendation', 'web', 'Provide planning recommendations for SLTR', 10, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('SLTR - Director SLTR', 'web', 'Director-level SLTR operations', 10, 'Highest', 'Management', 1, GETDATE(), GETDATE()),
-    ('SLTR - Other Departments', 'web', 'Inter-departmental SLTR coordination', 10, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('SLTR - Memo', 'web', 'Create and manage SLTR memos', 10, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('SLTR - Certificate', 'web', 'Issue SLTR certificates', 10, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('SLTR - e-Registry', 'web', 'Electronic SLTR registry', 10, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('SLTR - GIS', 'web', 'SLTR GIS operations', 10, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('SLTR - Map', 'web', 'SLTR mapping operations', 10, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('SLTR - Survey', 'web', 'SLTR survey operations', 10, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('SLTR - Reports', 'web', 'Generate SLTR reports', 10, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    
-    -- Systems
-    ('Caveat', 'web', 'Manage property caveats', 6, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    ('Encumbrance', 'web', 'Manage property encumbrances', 6, 'High', 'Operations', 1, GETDATE(), GETDATE()),
-    
-    -- Legacy Systems
-    ('Legacy System', 'web', 'Access and manage legacy systems', 11, 'Highest', 'System', 1, GETDATE(), GETDATE()),
-    
-    -- System Admin
-    ('User Account', 'web', 'Manage user accounts', 11, 'High', 'System', 1, GETDATE(), GETDATE()),
-    ('Departments', 'web', 'Manage departments', 11, 'High', 'System', 1, GETDATE(), GETDATE()),
-    ('User Roles', 'web', 'Manage user roles and permissions', 11, 'High', 'System', 1, GETDATE(), GETDATE()),
-    ('System Settings', 'web', 'Configure system settings', 11, 'High', 'System', 1, GETDATE(), GETDATE());
+-- USER ROLES
+INSERT INTO user_roles ([name],[guard_name],[description],[department_id],[level],[user_type],[is_active],[created_at],[updated_at]) VALUES
+('Dashboard','web','Dashboard',(SELECT id FROM departments WHERE name='ALL'),'Lowest','ALL',1,GETDATE(),GETDATE()),
+('CRM - Person','web','CRM - Person',(SELECT id FROM departments WHERE name='ALL'),'Lowest','ALL',1,GETDATE(),GETDATE()),
+('CRM - Corporate','web','CRM - Corporate',(SELECT id FROM departments WHERE name='ALL'),'Lowest','ALL',1,GETDATE(),GETDATE()),
+('CRM - Customer Manager','web','CRM - Customer Manager',(SELECT id FROM departments WHERE name='CSU'),'High','Operations',1,GETDATE(),GETDATE()),
+('Create a File Tracker','web','Create a File Tracker',(SELECT id FROM departments WHERE name='ALL'),'Lowest','ALL',1,GETDATE(),GETDATE()),
+('File Tracker/Tracking - RFID','web','File Tracker/Tracking - RFID',(SELECT id FROM departments WHERE name='ALL'),'Lowest','ALL',1,GETDATE(),GETDATE()),
+('File Digital Library - Doc-WARE','web','File Digital Library - Doc-WARE',(SELECT id FROM departments WHERE name='ALL'),'Lowest','ALL',1,GETDATE(),GETDATE()),
+('Allocation','web','Allocation',(SELECT id FROM departments WHERE name='Lands'),'Highest','Management',1,GETDATE(),GETDATE()),
+('Compensation/Resettlement','web','Compensation/Resettlement',(SELECT id FROM departments WHERE name='Survey'),'High','Operations',1,GETDATE(),GETDATE()),
+('Recertification - Application','web','Recertification - Application',(SELECT id FROM departments WHERE name='KANGIS'),'Lowest','User',1,GETDATE(),GETDATE()),
+('Recertification - Bills & Payments','web','Recertification - Bills & Payments',(SELECT id FROM departments WHERE name='KANGIS'),'High','Operations',1,GETDATE(),GETDATE()),
+('Recertification - Migrate Data','web','Recertification - Migrate Data',(SELECT id FROM departments WHERE name='ICT'),'High','System',1,GETDATE(),GETDATE()),
+('Recertification - Verification Sheet','web','Recertification - Verification Sheet',(SELECT id FROM departments WHERE name='Lands'),'High','Operations',1,GETDATE(),GETDATE()),
+('GIS - Data Capture','web','GIS - Data Capture',(SELECT id FROM departments WHERE name='GIS'),'High','Operations',1,GETDATE(),GETDATE()),
+('Recertification - Vetting Sheet','web','Recertification - Vetting Sheet',(SELECT id FROM departments WHERE name='GIS'),'High','Operations',1,GETDATE(),GETDATE()),
+('Recertification - EDMS','web','Recertification - EDMS',(SELECT id FROM departments WHERE name='KANGIS'),'Lowest','User',1,GETDATE(),GETDATE()),
+('Recertification - Certification','web','Recertification - Certification',(SELECT id FROM departments WHERE name='KANGIS'),'High','Operations',1,GETDATE(),GETDATE()),
+('Recertification - DG''s List','web','Recertification - DG''s List',(SELECT id FROM departments WHERE name='KANGIS'),'High','Operations',1,GETDATE(),GETDATE()),
+('Recertification - Governors List','web','Recertification - Governors List',(SELECT id FROM departments WHERE name='KANGIS'),'High','Operations',1,GETDATE(),GETDATE()),
+('Conversion/Regularization','web','Conversion/Regularization',(SELECT id FROM departments WHERE name='Lands'),'High','Operations',1,GETDATE(),GETDATE()),
+('Land Property Enumeration - Data Repository','web','Land Property Enumeration - Data Repository',(SELECT id FROM departments WHERE name='GIS'),'High','Operations',1,GETDATE(),GETDATE()),
+('Land Property Enumeration - Migrate Data','web','Land Property Enumeration - Migrate Data',(SELECT id FROM departments WHERE name='GIS'),'High','Operations',1,GETDATE(),GETDATE()),
+('Letter of Administration/Grant/Offer Letter','web','Letter of Administration/Grant/Offer Letter',(SELECT id FROM departments WHERE name='Lands'),'Highest','Management',1,GETDATE(),GETDATE()),
+('Occupancy Permit (OP)','web','Occupancy Permit (OP)',(SELECT id FROM departments WHERE name='GIS/Survey'),'High','Operations',1,GETDATE(),GETDATE()),
+('Site Plan/Parcel Plan','web','Site Plan/Parcel Plan',(SELECT id FROM departments WHERE name='Survey'),'High','Operations',1,GETDATE(),GETDATE()),
+('Right of Occupancy','web','Right of Occupancy',(SELECT id FROM departments WHERE name='Lands'),'Highest','Management',1,GETDATE(),GETDATE()),
+('Certificate of Occupancy','web','Certificate of Occupancy',(SELECT id FROM departments WHERE name='GIS'),'High','Operations',1,GETDATE(),GETDATE()),
+('Billing','web','Billing',(SELECT id FROM departments WHERE name='Account/Finance'),'High','Operations',1,GETDATE(),GETDATE()),
+('Generate Receipt','web','Generate Receipt',(SELECT id FROM departments WHERE name='Account/Finance'),'High','Operations',1,GETDATE(),GETDATE()),
+('Land Use Charge (LUC)','web','Land Use Charge (LUC)',(SELECT id FROM departments WHERE name='Lands'),'High','Operations',1,GETDATE(),GETDATE()),
+('Bill Balance','web','Bill Balance',(SELECT id FROM departments WHERE name='Deeds'),'High','Operations',1,GETDATE(),GETDATE()),
+('Deeds - Property Records Assistant (Legacy Records)','web','Deeds - Property Records Assistant (Legacy Records)',(SELECT id FROM departments WHERE name='Deeds'),'Lowest','User',1,GETDATE(),GETDATE()),
+('Deeds - Instrument Capture (New Records)','web','Deeds - Instrument Capture (New Records)',(SELECT id FROM departments WHERE name='Deeds'),'High','Operations',1,GETDATE(),GETDATE()),
+('Deeds - Instrument Registration (New Registration)','web','Deeds - Instrument Registration (New Registration)',(SELECT id FROM departments WHERE name='Deeds'),'High','Operations',1,GETDATE(),GETDATE()),
+('Deeds - Instrument Registration Reports','web','Deeds - Instrument Registration Reports',(SELECT id FROM departments WHERE name='Deeds'),'Highest','Management',1,GETDATE(),GETDATE()),
+('Deeds - Encumbrance','web','Deeds - Encumbrance',(SELECT id FROM departments WHERE name='Deeds'),'High','Operations',1,GETDATE(),GETDATE()),
+('Deeds - Official (for filing purpose)','web','Deeds - Official (for filing purpose)',(SELECT id FROM departments WHERE name='Deeds'),'High','Operations',1,GETDATE(),GETDATE()),
+('Deeds - On-Premise (Pay-Per-Search)','web','Deeds - On-Premise (Pay-Per-Search)',(SELECT id FROM departments WHERE name='Deeds'),'High','Operations',1,GETDATE(),GETDATE()),
+('Deeds - Legal Search Reports','web','Deeds - Legal Search Reports',(SELECT id FROM departments WHERE name='Deeds'),'High','Operations',1,GETDATE(),GETDATE()),
+('Lands - Generate New FileNo (MLSFileNo)','web','Lands - Generate New FileNo (MLSFileNo)',(SELECT id FROM departments WHERE name='Lands'),'High','Operations',1,GETDATE(),GETDATE()),
+('Lands - Capture an Existing File','web','Lands - Capture an Existing File',(SELECT id FROM departments WHERE name='Lands'),'Lowest','User',1,GETDATE(),GETDATE()),
+('Lands - File Decommissioning','web','Lands - File Decommissioning',(SELECT id FROM departments WHERE name='Lands'),'High','Operations',1,GETDATE(),GETDATE()),
+('EDMS','web','EDMS',(SELECT id FROM departments WHERE name='Lands'),'Lowest','User',1,GETDATE(),GETDATE()),
+('PP - Regular Applications','web','PP - Regular Applications',(SELECT id FROM departments WHERE name='Physical Planning'),'High','Operations',1,GETDATE(),GETDATE()),
+('PP - ST Applications','web','PP - ST Applications',(SELECT id FROM departments WHERE name='Physical Planning'),'High','Operations',1,GETDATE(),GETDATE()),
+('PP - SLTR Applications','web','PP - SLTR Applications',(SELECT id FROM departments WHERE name='Physical Planning'),'High','Operations',1,GETDATE(),GETDATE()),
+('PP Reports','web','PP Reports',(SELECT id FROM departments WHERE name='Physical Planning'),'Highest','Management',1,GETDATE(),GETDATE()),
+('Survey - Records','web','Survey - Records',(SELECT id FROM departments WHERE name='Survey'),'High','Operations',1,GETDATE(),GETDATE()),
+('Survey - AI Digital Assistant','web','Survey - AI Digital Assistant',(SELECT id FROM departments WHERE name='Survey'),'High','Operations',1,GETDATE(),GETDATE()),
+('Survey - GIS','web','Survey - GIS',(SELECT id FROM departments WHERE name='Survey'),'High','Operations',1,GETDATE(),GETDATE()),
+('Survey - Approvals','web','Survey - Approvals',(SELECT id FROM departments WHERE name='Survey'),'Highest','Management',1,GETDATE(),GETDATE()),
+('Survey - E-Registry','web','Survey - E-Registry',(SELECT id FROM departments WHERE name='Survey'),'High','Operations',1,GETDATE(),GETDATE()),
+('Survey Reports','web','Survey Reports',(SELECT id FROM departments WHERE name='Survey'),'High','Operations',1,GETDATE(),GETDATE()),
+('Cad - Records','web','Cad - Records',(SELECT id FROM departments WHERE name='Cadastral'),'High','Operations',1,GETDATE(),GETDATE()),
+('Cad - AI Digital Assistant','web','Cad - AI Digital Assistant',(SELECT id FROM departments WHERE name='Cadastral'),'High','Operations',1,GETDATE(),GETDATE()),
+('Cad - GIS','web','Cad - GIS',(SELECT id FROM departments WHERE name='Cadastral'),'High','Operations',1,GETDATE(),GETDATE()),
+('Cad - Approvals','web','Cad - Approvals',(SELECT id FROM departments WHERE name='Cadastral'),'Highest','Management',1,GETDATE(),GETDATE()),
+('Cad - E-Registry','web','Cad - E-Registry',(SELECT id FROM departments WHERE name='Cadastral'),'High','Operations',1,GETDATE(),GETDATE()),
+('Cadastral Reports','web','Cadastral Reports',(SELECT id FROM departments WHERE name='Cadastral'),'High','Operations',1,GETDATE(),GETDATE()),
+('GIS - Records','web','GIS - Records',(SELECT id FROM departments WHERE name='GIS'),'High','Operations',1,GETDATE(),GETDATE()),
+('GIS - AI Digital Assistant','web','GIS - AI Digital Assistant',(SELECT id FROM departments WHERE name='GIS'),'High','Operations',1,GETDATE(),GETDATE()),
+('GIS - GIS','web','GIS - GIS',(SELECT id FROM departments WHERE name='GIS'),'High','Operations',1,GETDATE(),GETDATE()),
+('GIS - Approvals','web','GIS - Approvals',(SELECT id FROM departments WHERE name='GIS'),'Highest','Management',1,GETDATE(),GETDATE()),
+('GIS - e-Registry','web','GIS - e-Registry',(SELECT id FROM departments WHERE name='GIS'),'High','Operations',1,GETDATE(),GETDATE()),
+('GIS Reports','web','GIS Reports',(SELECT id FROM departments WHERE name='GIS'),'High','Operations',1,GETDATE(),GETDATE()),
+('ST - Overview','web','ST - Overview',(SELECT id FROM departments WHERE name='Sectional Titling'),'Lowest','ALL',1,GETDATE(),GETDATE()),
+('ST - Applications','web','ST - Applications',(SELECT id FROM departments WHERE name='Sectional Titling'),'Lowest','User',1,GETDATE(),GETDATE()),
+('ST - Field Data Integration','web','ST - Field Data Integration',(SELECT id FROM departments WHERE name='Sectional Titling'),'High','Operations',1,GETDATE(),GETDATE()),
+('ST - Bills & Payments','web','ST - Bills & Payments',(SELECT id FROM departments WHERE name='Sectional Titling'),'High','Operations',1,GETDATE(),GETDATE()),
+('ST - Approvals (Other Departments)','web','ST - Approvals (Other Departments)',(SELECT id FROM departments WHERE name='Sectional Titling'),'Lowest','ALL',1,GETDATE(),GETDATE()),
+('ST - ST Memo','web','ST - ST Memo',(SELECT id FROM departments WHERE name='Sectional Titling'),'High','Operations',1,GETDATE(),GETDATE()),
+('ST - Director''s Approval','web','ST - Director''s Approval',(SELECT id FROM departments WHERE name='Sectional Titling'),'Highest','Management',1,GETDATE(),GETDATE()),
+('ST - Certificate','web','ST - Certificate',(SELECT id FROM departments WHERE name='Sectional Titling'),'High','Operations',1,GETDATE(),GETDATE()),
+('ST - e-Registry','web','ST - e-Registry',(SELECT id FROM departments WHERE name='Sectional Titling'),'High','Operations',1,GETDATE(),GETDATE()),
+('ST - GIS','web','ST - GIS',(SELECT id FROM departments WHERE name='Sectional Titling'),'High','Operations',1,GETDATE(),GETDATE()),
+('ST - Survey','web','ST - Survey',(SELECT id FROM departments WHERE name='Sectional Titling'),'High','Operations',1,GETDATE(),GETDATE()),
+('ST - Sectional Titling BaseMap','web','ST - Sectional Titling BaseMap',(SELECT id FROM departments WHERE name='Sectional Titling'),'Lowest','ALL',1,GETDATE(),GETDATE()),
+('ST - Reports','web','ST - Reports',(SELECT id FROM departments WHERE name='Sectional Titling'),'Lowest','ALL',1,GETDATE(),GETDATE()),
+('SLTR - Overview','web','SLTR - Overview',(SELECT id FROM departments WHERE name='SLTR'),'High','Operations',1,GETDATE(),GETDATE()),
+('SLTR - Application','web','SLTR - Application',(SELECT id FROM departments WHERE name='SLTR'),'High','Operations',1,GETDATE(),GETDATE()),
+('SLTR - Claimants','web','SLTR - Claimants',(SELECT id FROM departments WHERE name='SLTR'),'High','Operations',1,GETDATE(),GETDATE()),
+('SLTR - Legacy Data','web','SLTR - Legacy Data',(SELECT id FROM departments WHERE name='SLTR'),'High','Operations',1,GETDATE(),GETDATE()),
+('SLTR - Field Data','web','SLTR - Field Data',(SELECT id FROM departments WHERE name='SLTR'),'High','Operations',1,GETDATE(),GETDATE()),
+('SLTR - Payments','web','SLTR - Payments',(SELECT id FROM departments WHERE name='SLTR'),'High','Operations',1,GETDATE(),GETDATE()),
+('SLTR - Approvals','web','SLTR - Approvals',(SELECT id FROM departments WHERE name='SLTR'),'Highest','Management',1,GETDATE(),GETDATE()),
+('SLTR - Planning Recommendation','web','SLTR - Planning Recommendation',(SELECT id FROM departments WHERE name='SLTR'),'High','Operations',1,GETDATE(),GETDATE()),
+('SLTR - Director SLTR','web','SLTR - Director SLTR',(SELECT id FROM departments WHERE name='SLTR'),'Highest','Management',1,GETDATE(),GETDATE()),
+('SLTR - Other Departments','web','SLTR - Other Departments',(SELECT id FROM departments WHERE name='SLTR'),'High','Operations',1,GETDATE(),GETDATE()),
+('SLTR - Memo','web','SLTR - Memo',(SELECT id FROM departments WHERE name='SLTR'),'High','Operations',1,GETDATE(),GETDATE()),
+('SLTR - Certificate','web','SLTR - Certificate',(SELECT id FROM departments WHERE name='SLTR'),'High','Operations',1,GETDATE(),GETDATE()),
+('SLTR - e-Registry','web','SLTR - e-Registry',(SELECT id FROM departments WHERE name='SLTR'),'High','Operations',1,GETDATE(),GETDATE()),
+('SLTR - GIS','web','SLTR - GIS',(SELECT id FROM departments WHERE name='SLTR'),'High','Operations',1,GETDATE(),GETDATE()),
+('SLTR - Map','web','SLTR - Map',(SELECT id FROM departments WHERE name='SLTR'),'High','Operations',1,GETDATE(),GETDATE()),
+('SLTR - Survey','web','SLTR - Survey',(SELECT id FROM departments WHERE name='SLTR'),'High','Operations',1,GETDATE(),GETDATE()),
+('SLTR - Reports','web','SLTR - Reports',(SELECT id FROM departments WHERE name='SLTR'),'High','Operations',1,GETDATE(),GETDATE()),
+('Legacy System','web','Legacy System',(SELECT id FROM departments WHERE name='ICT'),'Highest','System',1,GETDATE(),GETDATE()),
+('Activity Logs','web','Activity Logs',(SELECT id FROM departments WHERE name='ICT'),'High','System',1,GETDATE(),GETDATE()),
+('User Account','web','User Account',(SELECT id FROM departments WHERE name='ICT'),'High','System',1,GETDATE(),GETDATE()),
+('Departments','web','Departments',(SELECT id FROM departments WHERE name='ICT'),'High','System',1,GETDATE(),GETDATE()),
+('User Roles','web','User Roles',(SELECT id FROM departments WHERE name='ICT'),'High','System',1,GETDATE(),GETDATE()),
+('System Settings','web','System Settings',(SELECT id FROM departments WHERE name='ICT'),'High','System',1,GETDATE(),GETDATE());

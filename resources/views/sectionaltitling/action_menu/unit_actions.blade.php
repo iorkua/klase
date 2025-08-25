@@ -6,10 +6,22 @@
    <!-- Dropdown Menu -->
    <ul class="fixed action-menu z-50 bg-white border rounded-lg shadow-lg hidden w-56">
       <li> 
+         @php
+         $editDisabled = ($app->planning_recommendation_status === 'Approved' && 
+                  $app->application_status === 'Approved');
+         @endphp
+         
+         @if($editDisabled)
          <button type="button" class="block w-full text-left px-4 py-2 flex items-center space-x-2 cursor-not-allowed opacity-50" disabled>
-         <i data-lucide="edit" class="w-4 h-4 text-gray-400"></i>
-         <span class="text-gray-400">Edit Application</span>
+            <i data-lucide="edit" class="w-4 h-4 text-gray-400"></i>
+            <span class="text-gray-400">Edit Application</span>
          </button>
+         @else
+         <a href="{{ route('sectionaltitling.edit_sub', $app->id) }}" class="block w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
+            <i data-lucide="edit" class="w-4 h-4 text-blue-500"></i>
+            <span>Edit Application</span>
+         </a>
+         @endif
       </li>
       {{-- <li>
          <a href="{{ route('programmes.generate_memo', $app->id) }}"  class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
@@ -26,11 +38,22 @@
          
        
       <li>
-          <button type="button" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2 cursor-not-allowed opacity-50"
+         @php
+            $deleteDisabled = $editDisabled; // disallow delete when both approvals are Approved
+         @endphp
+         @if($deleteDisabled)
+          <button type="button" class="w-full text-left px-4 py-2 flex items-center space-x-2 cursor-not-allowed opacity-50"
             data-id="{{ $app->id }}" disabled>
           <i data-lucide="trash-2" class="w-4 h-4 text-gray-400"></i>
           <span class="text-gray-400">Delete Record</span>
           </button>
+         @else
+          <button type="button" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
+            data-id="{{ $app->id }}" onclick="deleteSubApplication({{ $app->id }})">
+          <i data-lucide="trash-2" class="w-4 h-4 text-red-500"></i>
+          <span>Delete Record</span>
+          </button>
+         @endif
       </li>
       {{-- Divider --}}
       <hr class="my-2 border-gray-200">
@@ -43,15 +66,15 @@
 
       <li>
          @if($edmsFile)
-         <a href="{{ url('edms/sub/' . $edmsFile->id) }}" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
-            <i data-lucide="folder-open" class="w-4 h-4 text-blue-500"></i>
-            <span>Create DMS Record</span>
-         </a>
-         @else
          <button type="button" class="w-full text-left px-4 py-2 flex items-center space-x-2 cursor-not-allowed opacity-50" disabled>
-            <i data-lucide="folder-open" class="w-4 h-4 text-gray-400"></i>
-            <span class="text-gray-400">Create DMS Record</span>
+         <i data-lucide="folder-open" class="w-4 h-4 text-gray-400"></i>
+         <span class="text-gray-400">Create DMS Record</span>
          </button>
+         @else
+         <a href="/edms/sub/{{ $app->id }}" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
+         <i data-lucide="folder-open" class="w-4 h-4 text-blue-500"></i>
+         <span>Create DMS Record</span>
+         </a>
          @endif
       </li>
       <hr class="my-2 border-gray-200">
@@ -158,6 +181,43 @@ $approvalsGiven = $app->application_status === 'approved' && $app->planning_reco
       });
    });
 
+   // Global delete handler (guarded to avoid redefinition on repeated includes)
+   if (typeof window.deleteSubApplication !== 'function') {
+      window.deleteSubApplication = function(id) {
+         const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+         const csrf = tokenMeta ? tokenMeta.getAttribute('content') : '';
 
+         if (!id) return;
+
+         // Simple confirmation using native confirm to avoid extra deps
+         if (!confirm('Are you sure you want to delete this sub-application? This can be undone by an admin.')) {
+            return;
+         }
+
+         fetch(`/sectionaltitling/sub/${id}`, {
+            method: 'DELETE',
+            headers: {
+               'Content-Type': 'application/json',
+               'X-Requested-With': 'XMLHttpRequest',
+               'X-CSRF-TOKEN': csrf
+            },
+            body: JSON.stringify({})
+         })
+         .then(async (res) => {
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+               throw new Error(data.message || 'Failed to delete');
+            }
+            return data;
+         })
+         .then(() => {
+            alert('Sub-application deleted successfully.');
+            window.location.reload();
+         })
+         .catch((err) => {
+            alert('Error: ' + err.message);
+         });
+      }
+   }
    
    </script>

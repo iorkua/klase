@@ -777,106 +777,140 @@
 
                 <!-- Not Generated RoFO Table -->
                 <div id="not-generated-table" class="table-wrapper slide-up">
-                    <table id="notGeneratedTable" class="modern-table">
-                        <thead>
-                            <tr>
-                                <th class="table-header">ST FileNo</th>
-                                <th class="table-header">Scheme No</th>
-                                <th class="table-header">Unit Owner</th>
-                                <th class="table-header">LGA</th>
-                                <th class="table-header">Unit/Section/Block</th>
-                                <th class="table-header">Land Use</th>
-                                <th class="table-header">ST Memo Status</th>
-                                <th class="table-header">Date Created</th>
-                                <th class="table-header">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($subapplications->filter(function($app) { return empty($app->rofo_no); }) as $unitApplication)
-                            <tr class="table-row" 
-                                data-land-use="{{ strtolower($unitApplication->land_use ?? '') }}" 
-                                data-date="{{ $unitApplication->created_at ? date('Y-m-d', strtotime($unitApplication->created_at)) : '' }}">
-                                <td class="table-cell font-medium">{{ $unitApplication->fileno ?? 'N/A' }}</td>
-                                <td class="table-cell">{{ $unitApplication->scheme_no ?? 'N/A' }}</td>
-                                <td class="table-cell">
-                                    @if(!empty($unitApplication->multiple_owners_names) && json_decode($unitApplication->multiple_owners_names))
-                                        @php
-                                            $owners = json_decode($unitApplication->multiple_owners_names);
-                                            $firstOwner = isset($owners[0]) ? $owners[0] : 'N/A';
-                                            $allOwners = json_encode($owners);
-                                        @endphp
-                                        {{ $firstOwner }}
-                                        <span class="info-icon" onclick="showOwners({{ $allOwners }})">i</span>
-                                    @else
-                                        {{ $unitApplication->owner_name ?? 'N/A' }}
-                                    @endif
-                                </td>
-                                <td class="table-cell">{{ $unitApplication->property_lga ?? 'N/A' }}</td>
-                                <td class="table-cell">{{ $unitApplication->unit_number ?? '' }}-{{ $unitApplication->floor_number ?? '' }}-{{ $unitApplication->block_number ?? '' }}</td>
-                                <td class="table-cell">{{ $unitApplication->land_use ?? 'N/A' }}</td>
-                                <td class="table-cell">
-                                    @if($unitApplication->has_st_memo ?? false)
-                                        <span class="badge badge-success">
-                                            <i data-lucide="check-circle" class="w-3 h-3"></i>
-                                            Generated
-                                        </span>
-                                    @else
-                                        <span class="badge badge-warning">
-                                            <i data-lucide="alert-circle" class="w-3 h-3"></i>
-                                            Not Generated
-                                        </span>
-                                    @endif
-                                </td>
-                                <td class="table-cell">{{ $unitApplication->created_at ? date('d-m-Y', strtotime($unitApplication->created_at)) : 'N/A' }}</td>
-                                <td class="table-cell">
-                                    <div class="dropdown-container">
-                                        <button onclick="toggleDropdown(this)" class="dropdown-trigger" type="button">
-                                            <i data-lucide="more-horizontal" class="w-5 h-5"></i>
-                                        </button>
-                                        
-                                        <div class="dropdown-menu">
-                                            <a href="{{ route('sectionaltitling.viewrecorddetail_sub', $unitApplication->id) }}" class="dropdown-item">
-                                                <i data-lucide="eye" class="w-4 h-4"></i>
-                                                <span>View Record</span>
-                                            </a>
-                                            @if($unitApplication->has_st_memo ?? false)
-                                                <a href="{{ route('programmes.generate_rofo', $unitApplication->id) }}" class="dropdown-item">
-                                                    <i data-lucide="file-plus" class="w-4 h-4"></i>
-                                                    <span>Generate RoFO</span>
-                                                </a>
+                    <div class="overflow-x-auto">
+                        <table id="notGeneratedTable" class="modern-table">
+                            <thead>
+                                <tr>
+                                    <th class="table-header">ST FileNo</th>
+                                    <th class="table-header">Scheme No</th>
+                                    <th class="table-header">Unit Owner</th>
+                                    <th class="table-header">LGA</th>
+                                    <th class="table-header">Unit/Section/Block</th>
+                                    <th class="table-header">Land Use</th>
+                                    <th class="table-header">ST Memo Status</th>
+                                    <th class="table-header">Date Created</th>
+                                    <th class="table-header">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($subapplications->filter(function($app) { return empty($app->rofo_no); }) as $unitApplication)
+                                <tr class="table-row" 
+                                    data-land-use="{{ strtolower($unitApplication->land_use ?? '') }}" 
+                                    data-date="{{ $unitApplication->created_at ? date('Y-m-d', strtotime($unitApplication->created_at)) : '' }}">
+                                    <td class="table-cell font-medium">
+                                        <div class="truncate min-w-[120px]" title="{{ $unitApplication->fileno }}">
+                                            {{ $unitApplication->fileno ?? 'N/A' }}
+                                        </div>
+                                    </td>
+                                    <td class="table-cell">
+                                        <div class="truncate min-w-[100px]" title="{{ $unitApplication->scheme_no }}">
+                                            {{ $unitApplication->scheme_no ?? 'N/A' }}
+                                        </div>
+                                    </td>
+                                    <td class="table-cell">
+                                        <div class="min-w-[150px]">
+                                            @if(!empty($unitApplication->multiple_owners_names) && json_decode($unitApplication->multiple_owners_names))
+                                                @php
+                                                    $owners = json_decode($unitApplication->multiple_owners_names);
+                                                    $firstOwner = isset($owners[0]) ? $owners[0] : 'N/A';
+                                                    $allOwners = json_encode($owners);
+                                                @endphp
+                                                <div class="truncate" title="{{ $firstOwner }}">
+                                                    {{ $firstOwner }}
+                                                    <span class="info-icon" onclick="showOwners({{ $allOwners }})">i</span>
+                                                </div>
                                             @else
-                                                <div class="dropdown-item disabled" title="ST Memo prerequisite required">
-                                                    <i data-lucide="file-plus" class="w-4 h-4"></i>
-                                                    <span>Generate RoFO</span>
+                                                <div class="truncate" title="{{ $unitApplication->owner_name }}">
+                                                    {{ $unitApplication->owner_name ?? 'N/A' }}
                                                 </div>
                                             @endif
                                         </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="9" class="table-empty-state">
-                                    <div class="flex flex-col items-center gap-3">
-                                        <div class="empty-icon">
-                                            <i data-lucide="inbox" class="w-full h-full"></i>
+                                    </td>
+                                    <td class="table-cell">
+                                        <div class="truncate min-w-[80px]" title="{{ $unitApplication->property_lga }}">
+                                            {{ $unitApplication->property_lga ?? 'N/A' }}
                                         </div>
-                                        <div class="empty-text">No records pending RoFO generation</div>
-                                        <p class="text-sm text-gray-400 mt-1">All applications have been processed or no applications exist yet.</p>
-                                    </div>
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                                    </td>
+                                    <td class="table-cell">
+                                        <div class="truncate min-w-[120px]" title="{{ $unitApplication->unit_number ?? '' }}-{{ $unitApplication->floor_number ?? '' }}-{{ $unitApplication->block_number ?? '' }}">
+                                            {{ $unitApplication->unit_number ?? '' }}-{{ $unitApplication->floor_number ?? '' }}-{{ $unitApplication->block_number ?? '' }}
+                                        </div>
+                                    </td>
+                                    <td class="table-cell">
+                                        <div class="min-w-[100px]">
+                                            {{ $unitApplication->land_use ?? 'N/A' }}
+                                        </div>
+                                    </td>
+                                    <td class="table-cell">
+                                        <div class="min-w-[120px]">
+                                            @if($unitApplication->has_st_memo ?? false)
+                                                <span class="badge badge-success">
+                                                    <i data-lucide="check-circle" class="w-3 h-3"></i>
+                                                    Generated
+                                                </span>
+                                            @else
+                                                <span class="badge badge-warning">
+                                                    <i data-lucide="alert-circle" class="w-3 h-3"></i>
+                                                    Not Generated
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    <td class="table-cell">
+                                        <div class="min-w-[100px]">
+                                            {{ $unitApplication->created_at ? date('d-m-Y', strtotime($unitApplication->created_at)) : 'N/A' }}
+                                        </div>
+                                    </td>
+                                    <td class="table-cell">
+                                        <div class="dropdown-container min-w-[60px]">
+                                            <button onclick="toggleDropdown(this)" class="dropdown-trigger" type="button">
+                                                <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+                                            </button>
+                                            
+                                            <div class="dropdown-menu">
+                                                <a href="{{ route('sectionaltitling.viewrecorddetail_sub', $unitApplication->id) }}" class="dropdown-item">
+                                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                                    <span>View Record</span>
+                                                </a>
+                                                @if($unitApplication->has_st_memo ?? false)
+                                                    <a href="{{ route('programmes.generate_rofo', $unitApplication->id) }}" class="dropdown-item">
+                                                        <i data-lucide="file-plus" class="w-4 h-4"></i>
+                                                        <span>Generate RoFO</span>
+                                                    </a>
+                                                @else
+                                                    <div class="dropdown-item disabled" title="ST Memo prerequisite required">
+                                                        <i data-lucide="file-plus" class="w-4 h-4"></i>
+                                                        <span>Generate RoFO</span>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="9" class="table-empty-state">
+                                        <div class="flex flex-col items-center gap-3">
+                                            <div class="empty-icon">
+                                                <i data-lucide="inbox" class="w-full h-full"></i>
+                                            </div>
+                                            <div class="empty-text">No records pending RoFO generation</div>
+                                            <p class="text-sm text-gray-400 mt-1">All applications have been processed or no applications exist yet.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <!-- Generated RoFO Table -->
                 <div id="generated-table" class="table-wrapper slide-up" style="display: none;">
                     <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
+                        <table id="generatedTable" class="modern-table">
                             <thead>
-                                <tr class="text-xs">
+                                <tr>
                                     <th class="table-header text-green-500">ST FileNo</th>
                                     <th class="table-header text-green-500">RoFO No</th>
                                     <th class="table-header text-green-500">Scheme No</th>
@@ -888,37 +922,39 @@
                                     <th class="table-header text-green-500">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
+                            <tbody>
                                 @forelse($subapplications->filter(function($app) { return !empty($app->rofo_no); }) as $unitApplication)
-                                <tr class="text-xs table-row" 
+                                <tr class="table-row" 
                                     data-land-use="{{ strtolower($unitApplication->land_use ?? '') }}" 
                                     data-date="{{ $unitApplication->created_at ? date('Y-m-d', strtotime($unitApplication->created_at)) : '' }}">
                                     <td class="table-cell">
-                                        <div class="truncate max-w-[120px]" title="{{ $unitApplication->fileno }}">
+                                        <div class="truncate min-w-[120px]" title="{{ $unitApplication->fileno }}">
                                             {{ $unitApplication->fileno ?? 'N/A' }}
                                         </div>
                                     </td>
                                     <td class="table-cell">
-                                        <div class="truncate max-w-[120px] font-medium text-green-600" title="{{ $unitApplication->rofo_no }}">
+                                        <div class="truncate min-w-[120px] font-medium text-green-600" title="{{ $unitApplication->rofo_no }}">
                                             {{ $unitApplication->rofo_no ?? 'N/A' }}
                                         </div>
                                     </td>
                                     <td class="table-cell">
-                                        <div class="truncate max-w-[120px]" title="{{ $unitApplication->scheme_no }}">
+                                        <div class="truncate min-w-[100px]" title="{{ $unitApplication->scheme_no }}">
                                             {{ $unitApplication->scheme_no ?? 'N/A' }}
                                         </div>
                                     </td>
                                     <td class="table-cell">
-                                        <div class="flex items-center">
-                                            <span class="truncate max-w-[120px]">
-                                                @if(!empty($unitApplication->multiple_owners_names) && json_decode($unitApplication->multiple_owners_names))
-                                                    @php
-                                                        $owners = json_decode($unitApplication->multiple_owners_names);
-                                                        $firstOwner = isset($owners[0]) ? $owners[0] : 'N/A';
-                                                        $allOwners = json_encode($owners);
-                                                    @endphp
-                                                    {{ $firstOwner }}
-                                                    <span class="ml-1 cursor-pointer text-blue-500"
+                                        <div class="min-w-[150px]">
+                                            @if(!empty($unitApplication->multiple_owners_names) && json_decode($unitApplication->multiple_owners_names))
+                                                @php
+                                                    $owners = json_decode($unitApplication->multiple_owners_names);
+                                                    $firstOwner = isset($owners[0]) ? $owners[0] : 'N/A';
+                                                    $allOwners = json_encode($owners);
+                                                @endphp
+                                                <div class="flex items-center">
+                                                    <span class="truncate" title="{{ $firstOwner }}">
+                                                        {{ $firstOwner }}
+                                                    </span>
+                                                    <span class="ml-1 cursor-pointer text-blue-500 flex-shrink-0"
                                                         onclick="showOwners({{ $allOwners }})">
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline"
                                                             fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -927,43 +963,59 @@
                                                                 d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                         </svg>
                                                     </span>
-                                                @else
+                                                </div>
+                                            @else
+                                                <div class="truncate" title="{{ $unitApplication->owner_name }}">
                                                     {{ $unitApplication->owner_name ?? 'N/A' }}
-                                                @endif
-                                            </span>
+                                                </div>
+                                            @endif
                                         </div>
                                     </td>  
-                                    <td class="table-cell">{{ $unitApplication->property_lga ?? 'N/A' }}</td>
-                                    <td class="table-cell">{{ $unitApplication->unit_number ?? '' }}-{{ $unitApplication->floor_number ?? '' }}-{{ $unitApplication->block_number ?? '' }}</td>
                                     <td class="table-cell">
-                                        @if($unitApplication->land_use)
-                                            @php
-                                                $landUseClass = '';
-                                                switch(strtolower($unitApplication->land_use)) {
-                                                    case 'residential':
-                                                        $landUseClass = 'badge-residential';
-                                                        break;
-                                                    case 'commercial':
-                                                        $landUseClass = 'badge-commercial';
-                                                        break;
-                                                    case 'industrial':
-                                                        $landUseClass = 'badge-industrial';
-                                                        break;
-                                                    default:
-                                                        $landUseClass = 'badge-primary';
-                                                }
-                                            @endphp
-                                            <span class="badge {{ $landUseClass }}">
-                                                <i data-lucide="map-pin" class="w-3 h-3 mr-1"></i>
-                                                {{ $unitApplication->land_use }}
-                                            </span>
-                                        @else
-                                            <span class="badge badge-primary">N/A</span>
-                                        @endif
+                                        <div class="truncate min-w-[80px]" title="{{ $unitApplication->property_lga }}">
+                                            {{ $unitApplication->property_lga ?? 'N/A' }}
+                                        </div>
                                     </td>
-                                    <td class="table-cell">{{ $unitApplication->created_at ? date('d-m-Y', strtotime($unitApplication->created_at)) : 'N/A' }}</td>
+                                    <td class="table-cell">
+                                        <div class="truncate min-w-[120px]" title="{{ $unitApplication->unit_number ?? '' }}-{{ $unitApplication->floor_number ?? '' }}-{{ $unitApplication->block_number ?? '' }}">
+                                            {{ $unitApplication->unit_number ?? '' }}-{{ $unitApplication->floor_number ?? '' }}-{{ $unitApplication->block_number ?? '' }}
+                                        </div>
+                                    </td>
+                                    <td class="table-cell">
+                                        <div class="min-w-[100px]">
+                                            @if($unitApplication->land_use)
+                                                @php
+                                                    $landUseClass = '';
+                                                    switch(strtolower($unitApplication->land_use)) {
+                                                        case 'residential':
+                                                            $landUseClass = 'badge-residential';
+                                                            break;
+                                                        case 'commercial':
+                                                            $landUseClass = 'badge-commercial';
+                                                            break;
+                                                        case 'industrial':
+                                                            $landUseClass = 'badge-industrial';
+                                                            break;
+                                                        default:
+                                                            $landUseClass = 'badge-primary';
+                                                    }
+                                                @endphp
+                                                <span class="badge {{ $landUseClass }}">
+                                                    <i data-lucide="map-pin" class="w-3 h-3 mr-1"></i>
+                                                    {{ $unitApplication->land_use }}
+                                                </span>
+                                            @else
+                                                <span class="badge badge-primary">N/A</span>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    <td class="table-cell">
+                                        <div class="min-w-[100px]">
+                                            {{ $unitApplication->created_at ? date('d-m-Y', strtotime($unitApplication->created_at)) : 'N/A' }}
+                                        </div>
+                                    </td>
                                     <td class="table-cell overflow-visible relative">
-                                        <div class="dropdown-container">
+                                        <div class="dropdown-container min-w-[60px]">
                                             <button onclick="toggleDropdown(this)" class="dropdown-trigger" type="button">
                                                 <i data-lucide="more-horizontal" class="w-5 h-5"></i>
                                             </button>

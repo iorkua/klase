@@ -577,13 +577,10 @@
 <script src="{{ asset('js/batch_registration_handler_final.js') }}?v={{ time() }}"></script>
 
 <!-- Include the batch fix to handle empty selectedBatchProperties -->
-<script src="{{ asset('js/batch_fix.js') }}?v={{ time() }}"></script>
 
 <!-- Include the quick batch handler -->
-<script src="{{ asset('js/quick_batch_handler.js') }}?v={{ time() }}"></script>`n`n<!-- Include the batch registration fix -->`n<script src="{{ asset('js/batch_registration_fix.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('js/quick_batch_handler.js') }}?v={{ time() }}"></script>
 
-<!-- Include the batch registration fix -->
-<script src="{{ asset('js/batch_registration_fix.js') }}?v={{ time() }}"></script>
 
 @if(session('success'))
 <script>

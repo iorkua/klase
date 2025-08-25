@@ -1018,13 +1018,23 @@
         const serialNo = getMappedValue(cofo, 'serialNo');
         const pageNo = getMappedValue(cofo, 'pageNo');
         const volumeNo = getMappedValue(cofo, 'volumeNo');
+
+        // Ensure Registration Particulars show 0/0/0 when null (instead of N/A/N/A/N/A)
+        const serialClean = cleanNumericValue(serialNo);
+        const pageClean = cleanNumericValue(pageNo);
+        const volumeClean = cleanNumericValue(volumeNo);
+        const allPartsMissing = [serialClean, pageClean, volumeClean].every(v => v === 'N/A' || v === null || v === undefined || v === '');
+        const cofoRegParticulars = allPartsMissing
+          ? '0/0/0'
+          : `${serialClean}/${pageClean}/${volumeClean}`;
+
         const date = getMappedValue(cofo, 'date');
         const grantee = toProperCase(getMappedValue(cofo, 'grantee'));
         const landUse = toProperCase(getMappedValue(cofo, 'landUse'));
         
         const row = document.createElement('tr');
         row.innerHTML = `
-          <td>${cleanNumericValue(serialNo)}/${cleanNumericValue(pageNo)}/${cleanNumericValue(volumeNo)}</td>
+          <td>${cofoRegParticulars}</td>
           <td>
             <div>${date}</div>
           </td>
@@ -1119,7 +1129,7 @@
       ) {
         return `${cleanNumericValue(transaction.volume_no)}/${cleanNumericValue(transaction.page_no)}/${cleanNumericValue(transaction.serial_no)}`;
       }
-      return 'N/A/N/A/N/A';
+      return '0/0/0';
     }
 
     // Create combined array of all transactions

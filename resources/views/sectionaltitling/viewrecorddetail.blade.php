@@ -1323,16 +1323,31 @@
                         <div>
                             <label for="swal-buyer-title" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
                             <select id="swal-buyer-title" class="swal2-input">
-                                <option value="">Select title</option>
+                                <option value="" ${!buyerTitle ? 'selected' : ''} disabled>Select title</option>
                                 <option value="Mr." ${buyerTitle === 'Mr.' ? 'selected' : ''}>Mr.</option>
                                 <option value="Mrs." ${buyerTitle === 'Mrs.' ? 'selected' : ''}>Mrs.</option>
                                 <option value="Chief" ${buyerTitle === 'Chief' ? 'selected' : ''}>Chief</option>
-                                <option value="Dr." ${buyerTitle === 'Dr.' ? 'selected' : ''}>Dr.</option>
+                                <option value="Master" ${buyerTitle === 'Master' ? 'selected' : ''}>Master</option>
+                                <option value="Capt" ${buyerTitle === 'Capt' ? 'selected' : ''}>Capt</option>
+                                <option value="Coln" ${buyerTitle === 'Coln' ? 'selected' : ''}>Coln</option>
+                                <option value="Pastor" ${buyerTitle === 'Pastor' ? 'selected' : ''}>Pastor</option>
+                                <option value="King" ${buyerTitle === 'King' ? 'selected' : ''}>King</option>
                                 <option value="Prof" ${buyerTitle === 'Prof' ? 'selected' : ''}>Prof</option>
+                                <option value="Dr." ${buyerTitle === 'Dr.' ? 'selected' : ''}>Dr.</option>
+                                <option value="Alhaji" ${buyerTitle === 'Alhaji' ? 'selected' : ''}>Alhaji</option>
+                                <option value="Alhaja" ${buyerTitle === 'Alhaja' ? 'selected' : ''}>Alhaja</option>
+                                <option value="High Chief" ${buyerTitle === 'High Chief' ? 'selected' : ''}>High Chief</option>
+                                <option value="Lady" ${buyerTitle === 'Lady' ? 'selected' : ''}>Lady</option>
+                                <option value="Bishop" ${buyerTitle === 'Bishop' ? 'selected' : ''}>Bishop</option>
+                                <option value="Senator" ${buyerTitle === 'Senator' ? 'selected' : ''}>Senator</option>
+                                <option value="Messr" ${buyerTitle === 'Messr' ? 'selected' : ''}>Messr</option>
+                                <option value="Honorable" ${buyerTitle === 'Honorable' ? 'selected' : ''}>Honorable</option>
                                 <option value="Miss" ${buyerTitle === 'Miss' ? 'selected' : ''}>Miss</option>
                                 <option value="Rev." ${buyerTitle === 'Rev.' ? 'selected' : ''}>Rev.</option>
                                 <option value="Barr." ${buyerTitle === 'Barr.' ? 'selected' : ''}>Barr.</option>
                                 <option value="Arc." ${buyerTitle === 'Arc.' ? 'selected' : ''}>Arc.</option>
+                                <option value="Sister" ${buyerTitle === 'Sister' ? 'selected' : ''}>Sister</option>
+                                <option value="Other" ${buyerTitle === 'Other' ? 'selected' : ''}>Other</option>
                             </select>
                         </div>
                         <div>

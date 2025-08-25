@@ -1,4 +1,4 @@
-<div class="modal-dialog shadow-none" role="document">
+rk<div class="modal-dialog shadow-none" role="document">
     <div class="max-w-6xl mx-auto">
         <div class="bg-white rounded-lg overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -17,7 +17,7 @@
                 </button>
             </div>
 
-            {{ Form::open(['url' => 'users', 'method' => 'post']) }}
+            {{ Form::open(['url' => 'users', 'method' => 'post', 'enctype' => 'multipart/form-data']) }}
 
             <div class="p-6 overflow-y-auto max-h-[80vh]" x-data="{
                 selectedDept: '',
@@ -249,6 +249,164 @@
                                                 'placeholder' => __('Enter email'),
                                                 'required' => 'required'
                                             ]) }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex flex-wrap -mx-2 mb-4">
+                                    {{-- Passport Upload --}}
+                                    <div class="w-full px-2 mb-4" x-data="{ 
+                                        previewUrl: null,
+                                        fileName: '',
+                                        fileSize: '',
+                                        showPreview: false,
+                                        
+                                        handleFileSelect(event) {
+                                            const file = event.target.files[0];
+                                            if (file) {
+                                                // Validate file size (2MB = 2 * 1024 * 1024 bytes)
+                                                if (file.size > 2 * 1024 * 1024) {
+                                                    alert('File size must be less than 2MB');
+                                                    event.target.value = '';
+                                                    this.clearPreview();
+                                                    return;
+                                                }
+                                                
+                                                // Validate file type
+                                                const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+                                                if (!allowedTypes.includes(file.type)) {
+                                                    alert('Please select a valid image file (JPG, PNG, or GIF)');
+                                                    event.target.value = '';
+                                                    this.clearPreview();
+                                                    return;
+                                                }
+                                                
+                                                this.fileName = file.name;
+                                                this.fileSize = this.formatFileSize(file.size);
+                                                
+                                                const reader = new FileReader();
+                                                reader.onload = (e) => {
+                                                    this.previewUrl = e.target.result;
+                                                    this.showPreview = true;
+                                                };
+                                                reader.readAsDataURL(file);
+                                            } else {
+                                                this.clearPreview();
+                                            }
+                                        },
+                                        
+                                        clearPreview() {
+                                            this.previewUrl = null;
+                                            this.fileName = '';
+                                            this.fileSize = '';
+                                            this.showPreview = false;
+                                        },
+                                        
+                                        formatFileSize(bytes) {
+                                            if (bytes === 0) return '0 Bytes';
+                                            const k = 1024;
+                                            const sizes = ['Bytes', 'KB', 'MB'];
+                                            const i = Math.floor(Math.log(bytes) / Math.log(k));
+                                            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+                                        },
+                                        
+                                        removeFile() {
+                                            document.getElementById('passport_input').value = '';
+                                            this.clearPreview();
+                                        }
+                                    }">
+                                        <div>
+                                            {{ Form::label('passport', __('Passport Photo'), ['class' => 'block text-sm font-medium text-gray-700 mb-1']) }}
+                                            <div class="text-xs text-gray-500 mb-2">Upload a passport-sized photo (JPG, PNG, or GIF format, max 2MB)</div>
+                                            
+                                            {{-- Custom Upload Button --}}
+                                            <div class="relative">
+                                                <input type="file" 
+                                                    name="profile" 
+                                                    id="passport_input"
+                                                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                    accept="image/jpeg,image/png,image/gif"
+                                                    required
+                                                    @change="handleFileSelect($event)" required />
+                                                
+                                                <div x-show="!showPreview" class="flex items-center justify-center w-full">
+                                                    <label for="passport_input" class="flex flex-col items-center justify-center w-full h-32 border-2 border-indigo-300 border-dashed rounded-lg cursor-pointer bg-indigo-50 hover:bg-indigo-100 transition-colors duration-200">
+                                                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                                            <svg class="w-8 h-8 mb-3 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                                            </svg>
+                                                            <p class="mb-2 text-sm text-indigo-600 font-medium">
+                                                                <span class="font-semibold">Click to upload</span> passport photo
+                                                            </p>
+                                                            <p class="text-xs text-indigo-500">JPG, PNG or GIF (max. 2MB)</p>
+                                                        </div>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            
+                                            {{-- Preview Section --}}
+                                            <div x-show="showPreview" class="mt-4">
+                                                <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                                                    <div class="p-4">
+                                                        <div class="flex items-center space-x-4">
+                                                            {{-- Image Preview --}}
+                                                            <div class="flex-shrink-0">
+                                                                <div class="relative">
+                                                                    <img :src="previewUrl" 
+                                                                         alt="Passport Preview" 
+                                                                         class="w-20 h-20 object-cover rounded-lg border-2 border-indigo-200 shadow-sm">
+                                                                    <div class="absolute -top-2 -right-2">
+                                                                        <span class="inline-flex items-center justify-center w-6 h-6 bg-green-500 text-white rounded-full text-xs">
+                                                                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                                                            </svg>
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            {{-- File Info --}}
+                                                            <div class="flex-1 min-w-0">
+                                                                <div class="flex items-center space-x-2">
+                                                                    <svg class="w-4 h-4 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+                                                                    </svg>
+                                                                    <span class="text-sm font-medium text-gray-900 truncate" x-text="fileName"></span>
+                                                                </div>
+                                                                <div class="mt-1 flex items-center space-x-4">
+                                                                    <span class="text-xs text-gray-500" x-text="fileSize"></span>
+                                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                                                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                                                        </svg>
+                                                                        Ready to upload
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            {{-- Action Buttons --}}
+                                                            <div class="flex-shrink-0 flex space-x-2">
+                                                                {{-- Change Photo Button --}}
+                                                                <label for="passport_input" class="inline-flex items-center px-3 py-1.5 border border-indigo-300 text-xs font-medium rounded-md text-indigo-700 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer transition-colors duration-200">
+                                                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                                                                    </svg>
+                                                                    Change
+                                                                </label>
+                                                                
+                                                                {{-- Remove Button --}}
+                                                                <button type="button" 
+                                                                        @click="removeFile()"
+                                                                        class="inline-flex items-center px-3 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200">
+                                                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                                    </svg>
+                                                                    Remove
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

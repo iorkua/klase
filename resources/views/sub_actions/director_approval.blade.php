@@ -168,7 +168,8 @@
         @include('admin.header')
 
         @php
-            $is_view = request()->query('url') === 'view' ? 'none' : 'no';
+            // Always show tabs; do not hide container based on ?url=view
+            $is_view = 'block';
         
             $statusClass = match (strtolower($application->application_status ?? '')) {
                 'approve' => 'bg-green-100 text-green-800',
@@ -587,15 +588,15 @@
                                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                 <div class="bg-gray-50 p-3 rounded-lg">
                                                     <p class="text-xs text-gray-600 font-medium">Application Fee:</p>
-                                                    <p class="text-sm">₦{{ number_format($application->application_fee ?? 0, 2) }}</p>
+                                                    <p class="text-sm">₦{{ number_format((float)($application->application_fee ?? 0), 2) }}</p>
                                                 </div>
                                                 <div class="bg-gray-50 p-3 rounded-lg">
                                                     <p class="text-xs text-gray-600 font-medium">Processing Fee:</p>
-                                                    <p class="text-sm">₦{{ number_format($application->processing_fee ?? 0, 2) }}</p>
+                                                    <p class="text-sm">₦{{ number_format((float)($application->processing_fee ?? 0), 2) }}</p>
                                                 </div>
                                                 <div class="bg-gray-50 p-3 rounded-lg">
                                                     <p class="text-xs text-gray-600 font-medium">Survey Fee:</p>
-                                                    <p class="text-sm">₦{{ number_format($application->site_plan_fee ?? 0, 2) }}</p>
+                                                    <p class="text-sm">₦{{ number_format((float)($application->site_plan_fee ?? 0), 2) }}</p>
                                                 </div>
                                             </div>
                                             
@@ -603,7 +604,7 @@
                                                 <div class="flex justify-between items-center">
                                                     <p class="text-sm font-medium text-gray-600">Total Initial Bill:</p>
                                                     <p class="text-lg font-bold text-green-700">
-                                                        ₦{{ number_format(($application->application_fee ?? 0) + ($application->processing_fee ?? 0) + ($application->site_plan_fee ?? 0), 2) }}
+                                                        ₦{{ number_format((float)($application->application_fee ?? 0) + (float)($application->processing_fee ?? 0) + (float)($application->site_plan_fee ?? 0), 2) }}
                                                     </p>
                                                 </div>
                                             </div>

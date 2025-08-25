@@ -18,35 +18,53 @@
                                         <label class="block text-sm font-medium text-gray-700 mb-1">
                                             Title <span class="text-red-500">*</span>
                                         </label>
-                                        <select id="applicantTitle" name="applicant_title"
+                                        <select id="applicantTitleSelect"
                                             class="w-full py-3 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm"
-                                            onchange="updateApplicantNamePreview()">
+                                            onchange="(function(sel){
+                                                const isOther = sel.value==='Other';
+                                                const otherWrap = document.getElementById('applicantTitleOtherWrapper');
+                                                const otherInput = document.getElementById('applicantTitleOther');
+                                                const hidden = document.getElementById('applicantTitle'); // holds submitted value
+                                                otherWrap.classList.toggle('hidden', !isOther);
+                                                hidden.value = isOther ? otherInput.value : sel.value;
+                                                updateApplicantNamePreview();
+                                            })(this)">
                                             <option value="" disabled selected>Select title</option>
-                                            <option value="MR.">MR.</option>
-                                            <option value="MRS.">MRS.</option>
-                                            <option value="CHIEF">CHIEF</option>
-                                            <option value="MASTER">MASTER</option>
-                                            <option value="CAPT">CAPT</option>
-                                            <option value="COLN">COLN</option>
-                                            <option value="PASTOR">PASTOR</option>
-                                            <option value="KING">KING</option>
-                                            <option value="PROF">PROF</option>
-                                            <option value="DR.">DR.</option>
-                                            <option value="ALHAJI">ALHAJI</option>
-                                            <option value="ALHAJA">ALHAJA</option>
-                                            <option value="HIGH CHIEF">HIGH CHIEF</option>
-                                            <option value="LADY">LADY</option>
-                                            <option value="BISHOP">BISHOP</option>
-                                            <option value="SENATOR">SENATOR</option>
-                                            <option value="MESSR">MESSR</option>
-                                            <option value="HONORABLE">HONORABLE</option>
-                                            <option value="MISS">MISS</option>
-                                            <option value="REV.">REV.</option>
-                                            <option value="BARR.">BARR.</option>
-                                            <option value="ARC.">ARC.</option>
-                                            <option value="SISTER">SISTER</option>
-                                            <option value="OTHER">OTHER</option>
+                                            <option value="Mr.">Mr.</option>
+                                            <option value="Mrs.">Mrs.</option>
+                                            <option value="Chief">Chief</option>
+                                            <option value="Master">Master</option>
+                                            <option value="Capt">Capt</option>
+                                            <option value="Coln">Coln</option>
+                                            <option value="HRH">HRH</option>
+                                            <option value="Mallam">Mallam</option>
+                                            <option value="Prof">Prof</option>
+                                            <option value="Dr.">Dr.</option>
+                                            <option value="Alhaji">Alhaji</option>
+                                            <option value="Hajia">Hajia</option>
+                                            <option value="High Chief">High Chief</option>
+                                            <option value="Lady">Lady</option>
+                                            <option value="Senator">Senator</option>
+                                            <option value="Messr">Messr</option>
+                                            <option value="Honorable">Honorable</option>
+                                            <option value="Miss">Miss</option>
+                                            <option value="Rev.">Rev.</option>
+                                            <option value="Barr.">Barr.</option>
+                                            <option value="Arc.">Arc.</option>
+                                            <option value="Sister">Sister</option>
+                                            <option value="Other">Other</option>
                                         </select>
+
+                                        <!-- This hidden input carries the actual value to submit and is read by updateApplicantNamePreview() -->
+                                        <input type="hidden" id="applicantTitle" name="applicant_title" value="">
+
+                                        <!-- Shown only when 'Other' is selected -->
+                                        <div id="applicantTitleOtherWrapper" class="mt-2 hidden">
+                                            <input type="text" id="applicantTitleOther"
+                                                class="w-full py-3 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm"
+                                                placeholder="Enter other title"
+                                                oninput="document.getElementById('applicantTitle').value = this.value; updateApplicantNamePreview();">
+                                        </div>
                                     </div>
 
                                     <!-- First Name -->
@@ -56,7 +74,8 @@
                                         </label>
                                         <input type="text" id="applicantName" name="first_name"
                                             class="w-full py-3 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm"
-                                            placeholder="Enter first name" style="text-transform:uppercase" oninput="this.value = this.value.toUpperCase(); updateApplicantNamePreview();">
+                                            placeholder="Enter first name" style="text-transform:uppercase" 
+                                            oninput="this.value = this.value.toUpperCase(); updateApplicantNamePreview();">
                                     </div>
 
                                     <!-- Middle Name -->
@@ -66,7 +85,8 @@
                                         </label>
                                         <input type="text" id="applicantMiddleName" name="middle_name"
                                             class="w-full py-3 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm"
-                                            placeholder="Enter middle name" style="text-transform:uppercase" oninput="this.value = this.value.toUpperCase(); updateApplicantNamePreview();">
+                                            placeholder="Enter middle name" style="text-transform:uppercase" 
+                                            oninput="this.value = this.value.toUpperCase(); updateApplicantNamePreview();">
                                     </div>
 
                                     <!-- Surname -->
@@ -76,7 +96,8 @@
                                         </label>
                                         <input type="text" id="applicantSurname" name="surname"
                                             class="w-full py-3 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm"
-                                            placeholder="Enter surname" style="text-transform:uppercase" oninput="this.value = this.value.toUpperCase(); updateApplicantNamePreview();">
+                                            placeholder="Enter surname" style="text-transform:uppercase" 
+                                            oninput="this.value = this.value.toUpperCase(); updateApplicantNamePreview();">
                                     </div>
                                
                                     <!-- Name of Applicant -->
@@ -93,6 +114,9 @@
 
                             <!-- Right side - Photo Upload -->
                             <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Passport Photo <span class="text-red-500">*</span>
+                                </label>
                                 <div id="photoUploadContainer"
                                     class="relative w-full aspect-[7/9] max-w-xs mx-auto border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors">
                                     <div id="photoPlaceholder"

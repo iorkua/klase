@@ -94,7 +94,7 @@
                                                 <strong>Registration No:</strong> {{ $property->regNo ?? 'N/A' }}
                                             </div>
                                             <div>
-                                                <strong>Instrument Type:</strong> {{ $property->instrument_type ?? 'N/A' }}
+                                                <strong>Instrument Type:</strong> {{ $property->transaction_type ?? 'N/A' }}
                                             </div>
                                         </div>
                                     </div>
@@ -274,8 +274,8 @@
                 },
                
                 {
-                    data: 'instrument_type',
-                    name: 'instrument_type',
+                    data: 'transaction_type',
+                    name: 'transaction_type',
                     render: function(data, type, row) {
                         return data || 'N/A';
                     }

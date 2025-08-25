@@ -153,7 +153,12 @@ class  SectionalTitlingController extends Controller
             'dbo.mother_applications.property_lga' ,  
             'dbo.mother_applications.np_fileno'
              
-            );
+            )
+            // Only fetch records that are not soft-deleted
+            ->where(function($q) {
+                $q->whereNull('dbo.subapplications.is_deleted')
+                  ->orWhere('dbo.subapplications.is_deleted', 0);
+            });
 
         // Check if main_application_id parameter exists in URL
         if ($request->has('main_application_id')) {
@@ -249,11 +254,11 @@ class  SectionalTitlingController extends Controller
             $validatedData = $request->validate([
                 'application_id' => 'required|integer',
                 'transaction_type' => 'required|string',
-                'certificate_date' => 'required|date',
-                'serial_no' => 'required|integer',
-                'page_no' => 'required|integer',
-                'volume_no' => 'required|integer',
-                'transaction_date' => 'required|date',
+                'certificate_date' => 'nullable|string',
+                'serial_no' =>'nullable|string',
+                'page_no' => 'nullable|string',
+                'volume_no' => 'nullable|string',
+                'transaction_date' => 'nullable|string',
                 'transaction_time' => 'nullable|string',
                 'land_use' => 'nullable|string',
                 'period' => 'nullable|integer',
@@ -391,9 +396,39 @@ class  SectionalTitlingController extends Controller
             ], 500);
         }
     }
+
+    public function deleteSubapplication(Request $request, $id)
+    {
+        try {
+            // Soft delete: mark the sub-application as deleted
+            $affected = DB::connection('sqlsrv')
+                ->table('dbo.subapplications')
+                ->where('id', $id)
+                ->update([
+                    'is_deleted' => 1,
+                    'updated_at' => now(),
+                ]);
+
+            if ($affected === 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sub-application not found or already deleted.'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sub-application deleted successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting sub-application: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
   
 }
 
 
 // sort all  record by the latest created record first
-            
