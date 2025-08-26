@@ -43,7 +43,7 @@
   </div>
 
   <!-- Sidebar Content -->
-  <div class="sidebar-content p-2 overflow-y-auto max-h-[calc(100vh-8rem)] scroll-smooth">
+  <div class="sidebar-content p-2 overflow-y-auto max-h-[calc(100vh-8rem)] scroll-smooth scrollbar-visible">
     <!-- 0. Dashboard -->
     @if($hasRole('Dashboard'))
     <div class="py-1 px-3 mb-0.5 border-t border-slate-100">
@@ -1038,7 +1038,7 @@
         <span>Payments</span>
       </a>
       <a href="{{route('programmes.payments')}}?url=report" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('programmes.payments') && request()->query('url') === 'report' ? 'active' : '' }}">
-        <i data-lucide="file-bar-chart" class="h-3.5 w-3.5"></i>
+        <i data-lucide="file-bar-chart" class="h-3.5 w-3.5 text-lime-400"></i>
         <span>Payments Report</span>
       </a>
  
@@ -1646,5 +1646,189 @@
       });
     }
   });
+  
+  // Enhanced scroll indicators and feedback
+  const sidebarContent = document.querySelector('.sidebar-content');
+  
+  if (sidebarContent) {
+    function updateScrollIndicators() {
+      const { scrollTop, scrollHeight, clientHeight } = sidebarContent;
+      const isScrolledToTop = scrollTop <= 5;
+      const isScrolledToBottom = scrollTop + clientHeight >= scrollHeight - 5;
+      
+      // Update CSS custom properties for gradient indicators
+      sidebarContent.style.setProperty('--scroll-top-opacity', isScrolledToTop ? '0' : '1');
+      sidebarContent.style.setProperty('--scroll-bottom-opacity', isScrolledToBottom ? '0' : '1');
+      
+      // Update scroll position data attribute for styling
+      if (isScrolledToTop) {
+        sidebarContent.setAttribute('data-scroll', 'top');
+      } else if (isScrolledToBottom) {
+        sidebarContent.setAttribute('data-scroll', 'bottom');
+      } else {
+        sidebarContent.setAttribute('data-scroll', 'middle');
+      }
+    }
+    
+    // Add scroll event listener with throttling for performance
+    let scrollTimeout;
+    sidebarContent.addEventListener('scroll', function() {
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(updateScrollIndicators, 10);
+    });
+    
+    // Initial call
+    updateScrollIndicators();
+    
+    // Add smooth scroll behavior for menu items
+    const menuItems = document.querySelectorAll('.sidebar-item, .sidebar-module-header');
+    menuItems.forEach(item => {
+      item.addEventListener('click', function(e) {
+        // Add a subtle animation feedback
+        this.style.transform = 'scale(0.98)';
+        setTimeout(() => {
+          this.style.transform = '';
+        }, 100);
+      });
+    });
+    
+    // Add keyboard navigation support
+    sidebarContent.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const scrollAmount = 50;
+        if (e.key === 'ArrowUp') {
+          this.scrollTop -= scrollAmount;
+        } else {
+          this.scrollTop += scrollAmount;
+        }
+      }
+    });
+    
+    // Make sidebar content focusable for keyboard navigation
+    sidebarContent.setAttribute('tabindex', '0');
+  }
 </script>
+
+<style>
+/* Enhanced scrollbar visibility */
+.scrollbar-visible {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #f1f5f9;
+}
+
+.scrollbar-visible::-webkit-scrollbar {
+  width: 10px;
+}
+
+.scrollbar-visible::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 6px;
+  margin: 4px 0;
+  border: 1px solid #e2e8f0;
+}
+
+.scrollbar-visible::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%);
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.scrollbar-visible::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #64748b 0%, #475569 100%);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.scrollbar-visible::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #475569 0%, #334155 100%);
+}
+
+/* Add subtle gradient indicators for scrollable content */
+.sidebar-content {
+  position: relative;
+}
+
+.sidebar-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 8px;
+  height: 12px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.95), transparent);
+  pointer-events: none;
+  z-index: 10;
+  opacity: var(--scroll-top-opacity, 0);
+  transition: opacity 0.3s ease;
+}
+
+.sidebar-content::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 8px;
+  height: 12px;
+  background: linear-gradient(to top, rgba(255,255,255,0.95), transparent);
+  pointer-events: none;
+  z-index: 10;
+  opacity: var(--scroll-bottom-opacity, 1);
+  transition: opacity 0.3s ease;
+}
+
+/* Add scroll indicator shadow */
+.sidebar-content {
+  box-shadow: inset 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+/* Enhance hover effects for better UX */
+.sidebar-item:hover {
+  background-color: #f8fafc;
+  transform: translateX(2px);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-module-header:hover {
+  background-color: #f8fafc;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* Add visual feedback for scrollable areas */
+@media (hover: hover) {
+  .sidebar-content:hover::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #64748b 0%, #475569 100%);
+  }
+}
+
+/* Mobile scrollbar enhancement */
+@media (max-width: 768px) {
+  .scrollbar-visible::-webkit-scrollbar {
+    width: 8px;
+  }
+}
+
+/* Add a subtle border to indicate scrollable content */
+.sidebar-content {
+  border-left: 2px solid transparent;
+  transition: border-color 0.3s ease;
+}
+
+.sidebar-content:hover {
+  border-left-color: #e2e8f0;
+}
+
+/* Scroll position indicators */
+.sidebar-content[data-scroll="top"] {
+  border-top: 2px solid #3b82f6;
+}
+
+.sidebar-content[data-scroll="bottom"] {
+  border-bottom: 2px solid #3b82f6;
+}
+
+.sidebar-content[data-scroll="middle"] {
+  border-left-color: #3b82f6;
+}
+</style>
 

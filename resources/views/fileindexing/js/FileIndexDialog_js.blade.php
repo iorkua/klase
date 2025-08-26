@@ -1,23 +1,25 @@
 <script>
-        // Initialize Lucide icons
-        lucide.createIcons();
+        // Initialize Lucide icons safely
+        try { if (window.lucide && lucide.createIcons) { lucide.createIcons(); } } catch (e) { /* no-op */ }
 
         const generateTrackingId = () => {
-            const timestamp = Date.now().toString(36)
-            const random = Math.random().toString(36).substr(2, 5)
-            return `TRK-${timestamp.toUpperCase()}-${random.toUpperCase()}`
+            // Generate random alphanumeric segments
+            const segment1 = generateRandomAlphanumeric(8); // 8 characters like MESALDX6
+            const segment2 = generateRandomAlphanumeric(5); // 5 characters like QWB08
+            return `TRK-${segment1}-${segment2}`;
         }
 
-        const generateLogId = () => {
-            const now = new Date()
-            const timestamp = now.toISOString().replace(/[-:T]/g, "").split(".")[0]
-            const random = Math.floor(Math.random() * 999)
-                .toString()
-                .padStart(3, "0")
-            return `LOG-${timestamp}-${random}`
+        // Generate random alphanumeric string
+        const generateRandomAlphanumeric = (length) => {
+            const characters = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789'; // Exclude O, 0 for clarity
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += characters.charAt(Math.floor(Math.random() * characters.length));
+            }
+            return result;
         }
 
-        // DOM Elements
+        // DOM Elements (guarded)
         const newFileDialogOverlay = document.getElementById('new-file-dialog-overlay');
         const closeDialogBtn = document.getElementById('close-dialog-btn');
         const cancelBtn = document.getElementById('cancel-btn');
@@ -27,207 +29,262 @@
         const districtSelect = document.getElementById('district-select');
         const customDistrictContainer = document.getElementById('custom-district-container');
         const customDistrictInput = document.getElementById('custom-district-input');
+        const newFileIndexBtn = document.getElementById('new-file-index-btn');
 
-        // Tab functionality and file number preview
-        const tabTriggers = document.querySelectorAll('.tab-trigger');
-        const tabContents = document.querySelectorAll('.tab-content');
-        const fileNumberPreview = document.getElementById('file-number-preview');
-        const completeFileNumber = document.getElementById('complete-file-number');
-
-        // Tab switching functionality
-        tabTriggers.forEach(trigger => {
-            trigger.addEventListener('click', function() {
-                const targetTab = this.getAttribute('data-tab');
-                
-                // Update active tab trigger
-                tabTriggers.forEach(t => {
-                    t.classList.remove('active');
-                    t.style.backgroundColor = 'white';
-                    t.style.color = '#374151';
-                });
-                this.classList.add('active');
-                this.style.backgroundColor = '#dbeafe';
-                this.style.color = '#1d4ed8';
-                
-                // Update active tab content
-                tabContents.forEach(content => {
-                    content.style.display = 'none';
-                    content.classList.remove('active');
-                });
-                const activeContent = document.getElementById(targetTab);
-                activeContent.style.display = 'block';
-                activeContent.classList.add('active');
-                
-                updateFileNumberPreview();
-            });
-        });
-
-        // Update file number preview
-        function updateFileNumberPreview() {
-            const activeTab = document.querySelector('.tab-content.active');
-            const activeTabId = activeTab.id;
-            
-            let prefix = '';
-            let serial = '';
-            
-            if (activeTabId === 'mlsFileNo') {
-                prefix = document.getElementById('mls-prefix').value;
-                serial = document.getElementById('mls-serial').value;
-            } else if (activeTabId === 'kangisFileNo') {
-                prefix = document.getElementById('kangis-prefix').value;
-                serial = document.getElementById('kangis-serial').value;
-            } else if (activeTabId === 'newKangisFileNo') {
-                prefix = document.getElementById('new-kangis-prefix').value;
-                serial = document.getElementById('new-kangis-serial').value;
-            }
-            
-            if (prefix && serial) {
-                let completeNumber = '';
-                if (activeTabId === 'mlsFileNo') {
-                    // For MLS: prefix-serial (e.g., CON-COM-2019-296)
-                    completeNumber = `${prefix}-${serial}`;
-                } else if (activeTabId === 'kangisFileNo') {
-                    // For KANGIS: prefix serial (e.g., KNML 09846)
-                    completeNumber = `${prefix} ${serial}`;
-                } else if (activeTabId === 'newKangisFileNo') {
-                    // For New KANGIS: prefixserial (e.g., KN0001)
-                    completeNumber = `${prefix}${serial}`;
-                }
-                
-                completeFileNumber.textContent = completeNumber;
-                fileNumberPreview.style.display = 'block';
-            } else {
-                fileNumberPreview.style.display = 'none';
-            }
+        // Open dialog from main CTA button
+        if (newFileIndexBtn) {
+            newFileIndexBtn.addEventListener('click', () => showNewFileDialog());
         }
 
-        // Add event listeners for file number inputs
-        document.getElementById('mls-prefix').addEventListener('change', updateFileNumberPreview);
-        document.getElementById('mls-serial').addEventListener('input', updateFileNumberPreview);
-        document.getElementById('kangis-prefix').addEventListener('change', updateFileNumberPreview);
-        document.getElementById('kangis-serial').addEventListener('input', updateFileNumberPreview);
-        document.getElementById('new-kangis-prefix').addEventListener('change', updateFileNumberPreview);
-        document.getElementById('new-kangis-serial').addEventListener('input', updateFileNumberPreview);
-
-        districtSelect.addEventListener('change', function() {
-            if (this.value === 'other') {
-                customDistrictContainer.classList.remove('hidden');
-                customDistrictInput.focus();
-            } else {
-                customDistrictContainer.classList.add('hidden');
-                customDistrictInput.value = '';
-            }
-        });
+        if (districtSelect) {
+            districtSelect.addEventListener('change', function() {
+                if (this.value === 'other') {
+                    if (customDistrictContainer) customDistrictContainer.classList.remove('hidden');
+                    if (customDistrictInput) customDistrictInput.focus();
+                } else {
+                    if (customDistrictContainer) customDistrictContainer.classList.add('hidden');
+                    if (customDistrictInput) customDistrictInput.value = '';
+                }
+            });
+        }
 
         // Show new file dialog
         function showNewFileDialog() {
+            if (!newFileDialogOverlay) return;
             newFileDialogOverlay.classList.remove('hidden');
+            
             // Reset form fields
-            document.getElementById('new-file-form').reset();
-            // Reset to first tab
-            tabTriggers.forEach(t => {
-                t.classList.remove('active');
-                t.style.backgroundColor = 'white';
-                t.style.color = '#374151';
-            });
-            tabTriggers[0].classList.add('active');
-            tabTriggers[0].style.backgroundColor = '#dbeafe';
-            tabTriggers[0].style.color = '#1d4ed8';
-            
-            tabContents.forEach(content => {
-                content.style.display = 'none';
-                content.classList.remove('active');
-            });
-            tabContents[0].style.display = 'block';
-            tabContents[0].classList.add('active');
-            
-            // Hide file number preview
-            fileNumberPreview.style.display = 'none';
+            const formEl = document.getElementById('new-file-form');
+            if (formEl && formEl.reset) formEl.reset();
             
             // Generate initial tracking ID
-            trackingIdInput.value = generateTrackingId();
+            if (trackingIdInput) {
+                trackingIdInput.value = generateTrackingId();
+            }
+            
+            // Reset smart file number selector
+            resetSmartFileNumberSelector();
+        }
+        // Expose for external callers
+        window.showNewFileDialog = showNewFileDialog;
+
+        // Reset smart file number selector to default state
+        function resetSmartFileNumberSelector() {
+            // Clear the main fileno field
+            const filenoInput = document.getElementById('fileno');
+            if (filenoInput) filenoInput.value = '';
+            
+            // Clear dropdown selection
+            const filenoSelect = document.getElementById('fileno-select');
+            if (filenoSelect) {
+                filenoSelect.value = '';
+                // Trigger change event to clear display
+                filenoSelect.dispatchEvent(new Event('change'));
+            }
+            
+            // Hide selected display
+            const selectedDisplay = document.getElementById('selected-fileno-display');
+            if (selectedDisplay) selectedDisplay.classList.add('hidden');
+            
+            // Reset to dropdown mode
+            const dropdownMode = document.getElementById('dropdown-mode');
+            const manualMode = document.getElementById('manual-mode');
+            if (dropdownMode && manualMode) {
+                dropdownMode.classList.remove('hidden');
+                dropdownMode.style.display = 'block';
+                manualMode.classList.add('hidden');
+                manualMode.style.display = 'none';
+            }
         }
 
         // Close new file dialog
         function closeNewFileDialog() {
+            if (!newFileDialogOverlay) return;
             newFileDialogOverlay.classList.add('hidden');
+        }
+
+        // Helper to title-case a simple value
+        function toTitleCase(val) {
+            if (!val) return val;
+            return val.charAt(0).toUpperCase() + val.slice(1).toLowerCase();
+        }
+
+        // Get the active file number from smart selector
+        function getActiveFileNumber() {
+            const filenoInput = document.getElementById('fileno');
+            return filenoInput ? filenoInput.value.trim() : '';
+        }
+
+        // Get file number mapping data for backend
+        function getFileNumberMappingData() {
+            const selectedApplication = window.selectedApplication;
+            
+            if (selectedApplication && !selectedApplication.isManual) {
+                // For dropdown selections, send the file_number_id
+                return {
+                    source_file_id: selectedApplication.id,
+                    file_number_id: selectedApplication.id, // This is the ID from fileNumber table
+                    file_number_source: 'existing'
+                };
+            } else {
+                // For manual entries, file_number_id will be null
+                return {
+                    source_file_id: null,
+                    file_number_id: null,
+                    file_number_source: 'manual'
+                };
+            }
         }
 
         // Create new file
         function createNewFile() {
-            // Get form values
-            const fileTitle = document.getElementById('file-title').value;
-            const activeTab = document.querySelector('.tab-content.active');
-            const activeTabId = activeTab.id;
-            const prefix = document.querySelector(`#${activeTabId} select`).value;
-            const serial = document.querySelector(`#${activeTabId} input`).value;
-            const serialNo = document.getElementById('serial-no').value;
-            const batchNo = document.getElementById('batch-no').value;
-            const shelfLocation = document.getElementById('shelf-location').value;
-            const districtValue = districtSelect.value === 'other' ? customDistrictInput.value : districtSelect.value;
-            
-            if (!fileTitle.trim()) {
+            // Get form values (guard missing inputs)
+            const fileTitleEl = document.getElementById('file-title');
+            const plotNumberEl = document.getElementById('plot-number');
+            const landUseTypeEl = document.getElementById('land-use-type');
+            const lgaCityEl = document.getElementById('lga-city');
+            const serialNoEl = document.getElementById('serial-no');
+            const batchNoEl = document.getElementById('batch-no');
+            const shelfLocationEl = document.getElementById('shelf-location');
+
+            const fileTitle = (fileTitleEl?.value || '').trim();
+            const fileNumber = getActiveFileNumber();
+            const plotNumber = plotNumberEl?.value || '';
+            const landUseTypeRaw = landUseTypeEl?.value || 'residential';
+            const landUseType = toTitleCase(landUseTypeRaw);
+            const lgaCity = lgaCityEl?.value || '';
+            const serialNo = serialNoEl?.value || '';
+            const batchNo = batchNoEl?.value || '';
+            const shelfLocation = shelfLocationEl?.value || '';
+            const districtValue = (districtSelect?.value === 'other') ? (customDistrictInput?.value || '') : (districtSelect?.value || '');
+
+            // Checkboxes
+            const hasCofo = !!document.getElementById('has-cofo')?.checked;
+            const hasTransaction = !!document.getElementById('has-transaction')?.checked;
+            const isProblematic = !!document.getElementById('is-problematic')?.checked;
+            const coOwnedPlot = !!document.getElementById('co-owned-plot')?.checked;
+            const mergedPlot = !!document.getElementById('merged-plot')?.checked;
+
+            if (!fileTitle) {
                 alert('Please enter a file title.');
                 return;
             }
 
-            if (districtSelect.value === 'other' && !customDistrictInput.value.trim()) {
-                alert('Please enter a district name.');
-                customDistrictInput.focus();
+            if (!fileNumber) {
+                alert('Please select or enter a file number.');
                 return;
             }
 
-            // Create a new file object (for demo purposes)
-            let fileNumber = '';
-            if (activeTabId === 'mlsFileNo' && prefix && serial) {
-                fileNumber = `${prefix}-${serial}`;
-            } else if (activeTabId === 'kangisFileNo' && prefix && serial) {
-                fileNumber = `${prefix} ${serial}`;
-            } else if (activeTabId === 'newKangisFileNo' && prefix && serial) {
-                fileNumber = `${prefix}${serial}`;
+            if (districtSelect && districtSelect.value === 'other' && !customDistrictInput?.value.trim()) {
+                alert('Please enter a district name.');
+                customDistrictInput?.focus();
+                return;
             }
 
-            const newFile = {
-                id: `FILE-${Date.now()}`,
-                fileNumber: fileNumber,
-                name: fileTitle,
-                type: 'Certificate of Occupancy',
-                source: 'Collated',
-                date: new Date().toISOString().split('T')[0],
-                landUseType: document.querySelector('select').value || 'Residential',
-                district: districtValue || 'Nasarawa',
-                hasCofo: document.getElementById('has-cofo').checked,
-                serialNo: serialNo,
-                batchNo: batchNo,
-                shelfLocation: shelfLocation
+            // Disable button to prevent double submission
+            if (createFileBtn) {
+                createFileBtn.disabled = true;
+                createFileBtn.textContent = 'Creating...';
+            }
+
+            // Get file number mapping data
+            const fileNumberMapping = getFileNumberMappingData();
+
+            // Prepare data for submission with proper mapping
+            const formData = {
+                file_number: fileNumber,
+                file_title: fileTitle,
+                plot_number: plotNumber,
+                land_use_type: landUseType,
+                district: districtValue,
+                lga: lgaCity,
+                has_cofo: hasCofo,
+                has_transaction: hasTransaction,
+                is_problematic: isProblematic,
+                is_co_owned_plot: coOwnedPlot,
+                is_merged: mergedPlot,
+                serial_no: serialNo,
+                batch_no: batchNo,
+                shelf_location: shelfLocation,
+                // Include file number mapping data
+                ...fileNumberMapping,
+                _token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
             };
 
-            // Close dialog
-            closeNewFileDialog();
-            
-            // Show success message with file details
-            alert(`New file index created successfully!\n\nFile Number: ${newFile.fileNumber}\nTitle: ${newFile.name}\nType: ${newFile.landUseType}\nDistrict: ${newFile.district}\nSerial No: ${newFile.serialNo}\nBatch No: ${newFile.batchNo}\nShelf Location: ${newFile.shelfLocation}`);
+            // Submit to server
+            fetch('{{ route('fileindexing.store') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': formData._token
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Close dialog
+                    closeNewFileDialog();
+                    
+                    // Show success message
+                    alert(`New file index created successfully!\n\nFile Number: ${fileNumber}\nTitle: ${fileTitle}\nType: ${landUseType}\nDistrict: ${districtValue}`);
+                    
+                    // Optionally redirect or refresh the page
+                    if (data.redirect) {
+                        window.location.href = data.redirect;
+                    } else {
+                        // Refresh the current page to show the new file
+                        window.location.reload();
+                    }
+                } else {
+                    alert('Error creating file index: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error creating file index. Please try again.');
+            })
+            .finally(() => {
+                // Re-enable button
+                if (createFileBtn) {
+                    createFileBtn.disabled = false;
+                    createFileBtn.textContent = 'Create File Index';
+                }
+            });
         }
 
-        // Event listeners
-        closeDialogBtn.addEventListener('click', closeNewFileDialog);
-        cancelBtn.addEventListener('click', closeNewFileDialog);
-        createFileBtn.addEventListener('click', createNewFile);
-        generateTrackingBtn.addEventListener('click', function() {
-            trackingIdInput.value = generateTrackingId();
-        });
+        // Event listeners (guarded)
+        if (closeDialogBtn) closeDialogBtn.addEventListener('click', closeNewFileDialog);
+        if (cancelBtn) cancelBtn.addEventListener('click', closeNewFileDialog);
+        if (createFileBtn) createFileBtn.addEventListener('click', createNewFile);
+        if (generateTrackingBtn && trackingIdInput) {
+            generateTrackingBtn.addEventListener('click', function() {
+                trackingIdInput.value = generateTrackingId();
+            });
+        }
 
         // Close dialog when clicking outside
-        newFileDialogOverlay.addEventListener('click', function(e) {
-            if (e.target === newFileDialogOverlay) {
+        if (newFileDialogOverlay) {
+            newFileDialogOverlay.addEventListener('click', function(e) {
+                if (e.target === newFileDialogOverlay) {
+                    closeNewFileDialog();
+                }
+            });
+        }
+ 
+        // Handle escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && newFileDialogOverlay && !newFileDialogOverlay.classList.contains('hidden')) {
                 closeNewFileDialog();
             }
         });
 
-        // Handle escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && !newFileDialogOverlay.classList.contains('hidden')) {
-                closeNewFileDialog();
+        // Initialize smart file number selector when dialog loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Ensure the smart selector is initialized
+            if (typeof initializeSmartFilenoSelector === 'function') {
+                initializeSmartFilenoSelector();
             }
         });
     </script>

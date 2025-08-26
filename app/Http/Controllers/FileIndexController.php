@@ -88,14 +88,17 @@ class FileIndexController extends Controller
                 return $this->storeBulkEntries($request);
             }
 
-            // Handle single entry creation
+            // Handle single entry creation with smart file number selector
             $validator = Validator::make($request->all(), [
-                'file_number_type' => 'nullable|in:application,manual',
                 'main_application_id' => 'nullable|integer',
                 'subapplication_id' => 'nullable|integer',
-                'source_table' => 'nullable|in:mother,sub',
                 'file_number' => 'required|string|max:255',
+                'file_number_id' => 'nullable|integer', // ID from fileNumber table when selected
                 'file_title' => 'required|string|max:255',
+                'st_fillno' => 'nullable|string|max:100',
+                'serial_no' => 'nullable|string|max:100',
+                'batch_no' => 'nullable|string|max:100',
+                'shelf_location' => 'nullable|string|max:100',
                 'land_use_type' => 'nullable|string|max:100',
                 'plot_number' => 'nullable|string|max:100',
                 'district' => 'nullable|string|max:100',
@@ -108,6 +111,9 @@ class FileIndexController extends Controller
                 'source' => 'nullable|string',
                 'scanning_id' => 'nullable|integer',
                 'extracted_metadata' => 'nullable|array',
+                // Smart file number selector fields
+                'source_file_id' => 'nullable|string',
+                'file_number_source' => 'nullable|in:existing,manual',
             ]);
 
             if ($validator->fails()) {
@@ -120,35 +126,31 @@ class FileIndexController extends Controller
 
             $validated = $validator->validated();
 
-            // Check if file indexing already exists for this application
-            if (isset($validated['file_number_type']) && $validated['file_number_type'] === 'application') {
-                $existingIndex = null;
-                
-                if ($validated['main_application_id']) {
-                    $existingIndex = FileIndexing::on('sqlsrv')
-                        ->where('main_application_id', $validated['main_application_id'])
-                        ->first();
-                } elseif ($validated['subapplication_id']) {
-                    $existingIndex = FileIndexing::on('sqlsrv')
-                        ->where('subapplication_id', $validated['subapplication_id'])
-                        ->first();
-                }
-                
-                if ($existingIndex) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'File indexing already exists for this application',
-                        'redirect' => route('fileindexing.show', $existingIndex->id)
-                    ], 409);
-                }
+            // Process file number ID from smart selector
+            $fileNumberId = $this->processFileNumberId($validated);
+
+            // Check for existing file indexing
+            $existingIndex = $this->checkForExistingFileIndex($validated, $fileNumberId);
+            
+            if ($existingIndex) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File indexing already exists for this file number',
+                    'redirect' => route('fileindexing.show', $existingIndex->id)
+                ], 409);
             }
 
             // Create file indexing record
-            $fileIndexing = FileIndexing::on('sqlsrv')->create([
-                'main_application_id' => $validated['main_application_id'],
-                'subapplication_id' => $validated['subapplication_id'],
+            $fileIndexingData = [
+                'main_application_id' => $validated['main_application_id'] ?? null,
+                'subapplication_id' => $validated['subapplication_id'] ?? null,
                 'file_number' => $validated['file_number'],
+                'file_number_id' => $fileNumberId,
                 'file_title' => $validated['file_title'],
+                'st_fillno' => $validated['st_fillno'] ?? null,
+                'serial_no' => $validated['serial_no'] ?? null,
+                'batch_no' => $validated['batch_no'] ?? null,
+                'shelf_location' => $validated['shelf_location'] ?? null,
                 'land_use_type' => $validated['land_use_type'] ?? 'Residential',
                 'plot_number' => $validated['plot_number'],
                 'district' => $validated['district'],
@@ -160,13 +162,17 @@ class FileIndexController extends Controller
                 'is_co_owned_plot' => $validated['is_co_owned_plot'] ?? false,
                 'created_by' => Auth::id(),
                 'updated_by' => Auth::id(),
-            ]);
+            ];
 
-            Log::info('File indexing created', [
+            $fileIndexing = FileIndexing::on('sqlsrv')->create($fileIndexingData);
+
+            Log::info('File indexing created via smart selector', [
                 'file_indexing_id' => $fileIndexing->id,
                 'file_number' => $fileIndexing->file_number,
+                'file_number_id' => $fileNumberId,
                 'file_title' => $fileIndexing->file_title,
-                'source' => $validated['source'] ?? 'manual',
+                'file_number_source' => $validated['file_number_source'] ?? 'unknown',
+                'source_file_id' => $validated['source_file_id'] ?? null,
                 'created_by' => Auth::id()
             ]);
 
@@ -174,11 +180,11 @@ class FileIndexController extends Controller
                 'success' => true,
                 'message' => 'File indexing created successfully!',
                 'file_indexing_id' => $fileIndexing->id,
-                'redirect' => route('scanning.index', ['file_indexing_id' => $fileIndexing->id])
+                'redirect' => route('fileindexing.index')
             ]);
 
         } catch (Exception $e) {
-            Log::error('Error creating file indexing', [
+            Log::error('Error creating file indexing via smart selector', [
                 'error' => $e->getMessage(),
                 'request_data' => $request->all()
             ]);
@@ -188,6 +194,62 @@ class FileIndexController extends Controller
                 'message' => 'Error creating file indexing: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Process file number ID from smart selector
+     */
+    private function processFileNumberId(array $validated)
+    {
+        // If file number was selected from dropdown, extract the ID
+        if (!empty($validated['source_file_id']) && $validated['file_number_source'] === 'existing') {
+            // Remove 'manual_' prefix if it exists (for manual entries)
+            $sourceFileId = str_replace('manual_', '', $validated['source_file_id']);
+            
+            if (is_numeric($sourceFileId)) {
+                return (int) $sourceFileId;
+            }
+        }
+
+        // For manual entries, file_number_id remains null
+        return null;
+    }
+
+    /**
+     * Check for existing file indexing
+     */
+    private function checkForExistingFileIndex(array $validated, $fileNumberId = null)
+    {
+        // Check by file_number_id first if available (for selected files)
+        if ($fileNumberId) {
+            $existing = FileIndexing::on('sqlsrv')
+                ->where('file_number_id', $fileNumberId)
+                ->first();
+            if ($existing) return $existing;
+        }
+
+        // Check by exact file number match
+        $existing = FileIndexing::on('sqlsrv')
+            ->where('file_number', $validated['file_number'])
+            ->first();
+        if ($existing) return $existing;
+
+        // Check by application IDs if provided
+        if (!empty($validated['main_application_id'])) {
+            $existing = FileIndexing::on('sqlsrv')
+                ->where('main_application_id', $validated['main_application_id'])
+                ->first();
+            if ($existing) return $existing;
+        }
+
+        if (!empty($validated['subapplication_id'])) {
+            $existing = FileIndexing::on('sqlsrv')
+                ->where('subapplication_id', $validated['subapplication_id'])
+                ->first();
+            if ($existing) return $existing;
+        }
+
+        return null;
     }
 
     /**
@@ -339,6 +401,10 @@ class FileIndexController extends Controller
                 'plot_number' => 'nullable|string|max:100',
                 'district' => 'nullable|string|max:100',
                 'lga' => 'nullable|string|max:100',
+                'st_fillno' => 'nullable|string|max:100',
+                'serial_no' => 'nullable|string|max:100',
+                'batch_no' => 'nullable|string|max:100',
+                'shelf_location' => 'nullable|string|max:100',
                 'has_cofo' => 'boolean',
                 'is_merged' => 'boolean',
                 'has_transaction' => 'boolean',
@@ -584,6 +650,107 @@ class FileIndexController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error searching applications: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Search file numbers for Select2 dropdown (AJAX endpoint)
+     */
+    public function searchFileNumbers(Request $request)
+    {
+        try {
+            $search = trim($request->get('search', ''));
+            $page = (int) $request->get('page', 1);
+            $limit = min((int) $request->get('limit', 20), 50); // Max 50 results per page
+            $offset = ($page - 1) * $limit;
+
+            if (strlen($search) < 2) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Search term must be at least 2 characters',
+                    'files' => [],
+                    'has_more' => false
+                ]);
+            }
+
+            // Search in fileNumber table
+            $query = DB::connection('sqlsrv')
+                ->table('fileNumber')
+                ->select([
+                    'id',
+                    'kangisFileNo',
+                    'mlsfNo', 
+                    'NewKANGISFileNo'
+                ])
+                ->where(function ($q) use ($search) {
+                    $q->where('kangisFileNo', 'like', "%{$search}%")
+                      ->orWhere('mlsfNo', 'like', "%{$search}%")
+                      ->orWhere('NewKANGISFileNo', 'like', "%{$search}%");
+                })
+                ->where(function ($q) {
+                    $q->whereNotNull('kangisFileNo')
+                      ->orWhereNotNull('mlsfNo')
+                      ->orWhereNotNull('NewKANGISFileNo');
+                })
+                ->orderBy('id', 'desc')
+                ->offset($offset)
+                ->limit($limit + 1); // Get one extra to check if there are more
+
+            $results = $query->get();
+            $hasMore = $results->count() > $limit;
+            
+            if ($hasMore) {
+                $results = $results->take($limit); // Remove the extra record
+            }
+
+            $files = $results->map(function ($record) {
+                // Determine primary file number and type
+                $fileNumber = '';
+                $fileType = '';
+                
+                if (!empty($record->mlsfNo)) {
+                    $fileNumber = $record->mlsfNo;
+                    $fileType = 'MLS';
+                } elseif (!empty($record->kangisFileNo)) {
+                    $fileNumber = $record->kangisFileNo;
+                    $fileType = 'KANGIS';
+                } elseif (!empty($record->NewKANGISFileNo)) {
+                    $fileNumber = $record->NewKANGISFileNo;
+                    $fileType = 'New KANGIS';
+                }
+
+                return [
+                    'id' => $record->id,
+                    'file_number' => $fileNumber,
+                    'kangis_file_no' => $record->kangisFileNo ?? '',
+                    'mls_file_no' => $record->mlsfNo ?? '',
+                    'new_kangis_file_no' => $record->NewKANGISFileNo ?? '',
+                    'file_type' => $fileType
+                ];
+            })->filter(function ($file) {
+                return !empty($file['file_number']); // Only include records with valid file numbers
+            })->values();
+
+            return response()->json([
+                'success' => true,
+                'files' => $files,
+                'has_more' => $hasMore,
+                'total_found' => $files->count(),
+                'page' => $page
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error searching file numbers', [
+                'search' => $search,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error searching file numbers: ' . $e->getMessage(),
+                'files' => [],
+                'has_more' => false
             ], 500);
         }
     }
@@ -1085,8 +1252,9 @@ class FileIndexController extends Controller
 
             $PageTitle = 'File Tracking Sheet';
             $PageDescription = 'Generate tracking sheet for file indexing record';
+            $settings = settings(); // Add missing settings variable
 
-            return view('fileindexing.tracking-sheet', compact('PageTitle', 'PageDescription', 'fileIndexing', 'tracker'));
+            return view('fileindexing.tracking-sheet', compact('PageTitle', 'PageDescription', 'fileIndexing', 'tracker', 'settings'));
         } catch (Exception $e) {
             Log::error('Error generating tracking sheet', [
                 'file_indexing_id' => $id,
@@ -1211,24 +1379,50 @@ class FileIndexController extends Controller
     }
 
     /**
-     * Generate unique tracking ID
+     * Generate unique tracking ID with format TRK-XXXXXXXX-XXXXX
      */
     private function generateUniqueTrackingId($fileIndexingId)
     {
-        $year = date('Y');
-        $sequence = str_pad($fileIndexingId, 3, '0', STR_PAD_LEFT);
-        $baseId = "TRK-{$year}-{$sequence}";
+        // Generate random alphanumeric segments
+        $segment1 = $this->generateRandomAlphanumeric(8); // 8 characters like MESALDX6
+        $segment2 = $this->generateRandomAlphanumeric(5); // 5 characters like QWB08
         
-        // Check if ID already exists and add suffix if needed
-        $counter = 1;
+        $baseId = "TRK-{$segment1}-{$segment2}";
+        
+        // Check if ID already exists and regenerate if needed
+        $counter = 0;
         $trackingId = $baseId;
         
         while (IndexedFileTracker::on('sqlsrv')->where('tracking_id', $trackingId)->exists()) {
-            $trackingId = $baseId . '-' . $counter;
             $counter++;
+            // If collision occurs, generate new segments
+            $segment1 = $this->generateRandomAlphanumeric(8);
+            $segment2 = $this->generateRandomAlphanumeric(5);
+            $trackingId = "TRK-{$segment1}-{$segment2}";
+            
+            // Prevent infinite loop
+            if ($counter > 100) {
+                break;
+            }
         }
         
         return $trackingId;
+    }
+
+    /**
+     * Generate random alphanumeric string
+     */
+    private function generateRandomAlphanumeric($length)
+    {
+        $characters = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789'; // Exclude O, 0 for clarity
+        $result = '';
+        $charactersLength = strlen($characters);
+        
+        for ($i = 0; $i < $length; $i++) {
+            $result .= $characters[rand(0, $charactersLength - 1)];
+        }
+        
+        return $result;
     }
 
     /**

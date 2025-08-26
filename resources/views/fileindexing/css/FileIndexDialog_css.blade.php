@@ -5,7 +5,7 @@
             box-sizing: border-box;
         }
 
-      
+       
 
         /* Dialog styles */
         .dialog-overlay {

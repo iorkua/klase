@@ -6,12 +6,28 @@
  
 @section('content')
   @include('fileindexing.css.style')
+  {{-- Include new File Index Dialog CSS --}}
+  @include('fileindexing.css.FileIndexDialog_css')
     <!-- Main Content -->
     <div class="flex-1 overflow-auto">
         <!-- Header -->
         @include('admin.header')
         <!-- Dashboard Content -->
         <div class="p-6">
+
+     {{-- updatig....  --}}
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+          <svg class="animate-spin h-5 w-5 text-blue-600 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <div>
+            <h4 class="text-blue-800 font-medium">System Update in Progress</h4>
+            <p class="text-blue-600 text-sm">Please wait while we update the file indexing system...</p>
+          </div>
+        </div>
+      </div>
 
      <div class="container py-6">
     <!-- Stats Cards -->
@@ -252,158 +268,16 @@
 </div>
   </div>
 
-  <!-- New File Index Dialog -->
-<div class="dialog-overlay hidden" id="new-file-dialog-overlay">
-  <div class="dialog">
-    <div class="dialog-header">
-      <div class="dialog-title">
-        <i data-lucide="file-plus" class="h-5 w-5"></i>
-        Create New File Index
-      </div>
-      <button id="close-dialog-btn" class="text-white">
-        <i data-lucide="x" class="h-5 w-5"></i>
-      </button>
-    </div>
-    <div class="dialog-description px-4 py-2 bg-gray-100">
-      Enter the details for the new file to be indexed
-    </div>
-    <div class="dialog-content">
-      <form id="new-file-form">
-        <!-- File Identification Section -->
-        <div class="form-section">
-          <h3 class="form-section-title">File Identification</h3>
-          
-          <div class="form-group">
-            <label for="file-number" class="form-label required">File Number</label>
-            <div class="form-info">
-              <i data-lucide="file-text" class="h-4 w-4 form-info-icon text-green-600"></i>
-              <span class="form-info-text">File Number Information<br>Select file number type and enter the details</span>
-            </div>
-            
-            <div class="form-radio-group">
-              <label class="form-radio-item active">
-                <input type="radio" name="file-number-type" value="mls" checked>
-                MLS
-              </label>
-              <label class="form-radio-item">
-                <input type="radio" name="file-number-type" value="kangis">
-                KANGIS
-              </label>
-              <label class="form-radio-item">
-                <input type="radio" name="file-number-type" value="new-kangis">
-                New KANGIS
-              </label>
-            </div>
-            
-            <div id="mls-fields">
-              <div class="form-group">
-                <label class="form-label">Legacy File Number (MLS)</label>
-              </div>
-              
-              <div class="grid grid-cols-2 gap-4">
-                <div class="form-group">
-                  <label class="form-label">File Prefix</label>
-                  <select class="input">
-                    <option value="">Select prefix</option>
-                    <option value="CON">CON</option>
-                    <option value="RES">RES</option>
-                    <option value="COM">COM</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Serial Number</label>
-                  <input type="text" class="input" placeholder="e.g. 2019-296 or 91-249">
-                </div>
-              </div>
-              
-              <div class="form-help-text">Format example: CON-COM-2019-296, RES-2015-4859, COM-91-249</div>
-            </div>
-          </div>
-          
-          <div class="form-group">
-            <label for="file-title" class="form-label required">File Title</label>
-            <input type="text" id="file-title" class="input" placeholder="e.g. John Doe's Property">
-          </div>
-        </div>
-        
-        <!-- Property Details Section -->
-        <div class="form-section">
-          <h3 class="form-section-title">Property Details</h3>
-          
-          <div class="grid grid-cols-2 gap-4">
-            <div class="form-group">
-              <label class="form-label">Land Use Type</label>
-              <select class="input">
-                <option value="residential">Residential</option>
-                <option value="commercial">Commercial</option>
-                <option value="industrial">Industrial</option>
-                <option value="agricultural">Agricultural</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Plot Number</label>
-              <input type="text" class="input" placeholder="e.g. PL-1234">
-            </div>
-          </div>
-          
-          <div class="grid grid-cols-2 gap-4">
-            <div class="form-group">
-              <label class="form-label">District</label>
-              <select class="input">
-                <option value="nasarawa">Nasarawa</option>
-                <option value="fagge">Fagge</option>
-                <option value="bompai">Bompai</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">LGA/City</label>
-              <input type="text" class="input" value="Kano Municipal">
-            </div>
-          </div>
-        </div>
-        
-        <!-- File Properties Section -->
-        <div class="form-section">
-          <h3 class="form-section-title">File Properties</h3>
-          
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <div class="form-checkbox">
-                <input type="checkbox" id="has-cofo">
-                <label for="has-cofo">Has Certificate of Occupancy</label>
-              </div>
-              <div class="form-checkbox">
-                <input type="checkbox" id="has-transaction">
-                <label for="has-transaction">Has Transaction</label>
-              </div>
-            </div>
-            <div>
-              <div class="form-checkbox">
-                <input type="checkbox" id="co-owned-plot">
-                <label for="co-owned-plot">Co-Owned Plot</label>
-              </div>
-              <div class="form-checkbox">
-                <input type="checkbox" id="merged-plot">
-                <label for="merged-plot">Merged Plot</label>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="flex justify-between mt-6">
-          <button type="button" class="btn" id="cancel-btn">Cancel</button>
-          <button type="button" class="btn btn-blue" id="create-file-btn">Create File Index</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
+  {{-- Replace old inline dialog with the new partial --}}
+  @include('fileindexing.partial.file_indexing_dialog')
  
         </div>
 
         <!-- Footer -->
         @include('admin.footer')
     </div>
+    {{-- Existing File Indexing JS --}}
     @include('fileindexing.js.javascript')
+    {{-- Include new File Index Dialog JS (after the existing JS so it overrides dialog handlers) --}}
+    @include('fileindexing.js.FileIndexDialog_js')
 @endsection

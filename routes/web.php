@@ -840,6 +840,9 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'fileindexing'], func
     Route::delete('/{id}', [App\Http\Controllers\FileIndexController::class, 'destroy'])->name('fileindexing.destroy');
 });
 
+// File number search API endpoint for Select2
+Route::get('/api/search-file-numbers', [App\Http\Controllers\FileIndexController::class, 'searchFileNumbers'])->name('api.search-file-numbers');
+
 // File Tracker Integration
 Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'filetracker'], function () {
     Route::get('/', [App\Http\Controllers\FileTrackerController::class, 'index'])->name('filetracker.index');
@@ -861,6 +864,5 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'pagetyping'], functi
     Route::get('/', [App\Http\Controllers\PageTypingController::class, 'index'])->name('pagetyping.index');
     Route::post('/save', [App\Http\Controllers\PageTypingController::class, 'save'])->name('pagetyping.save');
 });
-
 
 require __DIR__ . '/instrument_batch_fix.php';

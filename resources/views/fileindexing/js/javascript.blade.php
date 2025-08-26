@@ -517,10 +517,6 @@
                     <i data-lucide="printer" class="h-4 w-4 mr-2 inline"></i>
                     Print Tracking Sheet
                   </button>
-                  <button class="start-tracking-btn w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-file-id="${file.id}">
-                    <i data-lucide="play" class="h-4 w-4 mr-2 inline"></i>
-                    Start Tracking
-                  </button>
                 </div>
               </div>
             </div>
@@ -766,12 +762,23 @@
   function generateSingleTrackingSheet() {
     const selectedFile = indexedFiles.find(file => file.id === selectedIndexedFiles[0]);
     if (selectedFile) {
+      // Extract numeric ID if the file ID contains non-numeric characters
+      let fileId = selectedFile.id;
+      
+      // If the ID is not purely numeric, try to extract a numeric part or use a timestamp
+      if (!/^\d+$/.test(fileId)) {
+        // For demo files with non-numeric IDs, use a fallback approach
+        console.log('Non-numeric file ID detected:', fileId);
+        alert('This is a demo file. Tracking sheet generation is not available for demo files.');
+        return;
+      }
+      
       // Open tracking sheet in new tab using the blade template
-      const trackingUrl = `/fileindexing/tracking-sheet/${selectedFile.id}`;
+      const trackingUrl = `/fileindexing/tracking-sheet/${fileId}`;
       window.open(trackingUrl, '_blank');
     }
   }
-  
+
   // Function to open smart batch tracking interface
   function openSmartBatchInterface() {
     if (selectedIndexedFiles.length < 1) {
@@ -832,7 +839,17 @@
       btn.addEventListener('click', function(e) {
         e.stopPropagation();
         const fileId = this.dataset.fileId;
-        generateSingleTrackingSheet(fileId);
+        
+        // Check if this is a demo file (non-numeric ID)
+        if (!/^\d+$/.test(fileId)) {
+          alert('This is a demo file. Tracking sheet generation is not available for demo files.');
+          this.closest('.action-dropdown').classList.add('hidden');
+          return;
+        }
+        
+        // Open tracking sheet in new tab
+        const trackingUrl = `/fileindexing/tracking-sheet/${fileId}`;
+        window.open(trackingUrl, '_blank');
         this.closest('.action-dropdown').classList.add('hidden');
       });
     });
@@ -842,18 +859,15 @@
       btn.addEventListener('click', function(e) {
         e.stopPropagation();
         const fileId = this.dataset.fileId;
+        
+        // Check if this is a demo file (non-numeric ID)
+        if (!/^\d+$/.test(fileId)) {
+          alert('This is a demo file. Print tracking is not available for demo files.');
+          this.closest('.action-dropdown').classList.add('hidden');
+          return;
+        }
+        
         printTrackingSheet(fileId);
-        this.closest('.action-dropdown').classList.add('hidden');
-      });
-    });
-    
-    // Handle start tracking
-    document.querySelectorAll('.start-tracking-btn').forEach(btn => {
-      btn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        const fileId = this.dataset.fileId;
-        // Redirect to file tracker to start tracking for this file
-        window.location.href = `/filetracker/create?file_indexing_id=${fileId}`;
         this.closest('.action-dropdown').classList.add('hidden');
       });
     });

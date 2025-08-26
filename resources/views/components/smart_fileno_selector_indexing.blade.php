@@ -1,5 +1,5 @@
 <!-- Smart File Number Selector Component -->
-<div class="smart-fileno-selector">
+<div class="smart-fileno-selector" style="max-width: 700px; margin: 0 auto;">
     <!-- Hidden input for the main fileno field that gets submitted -->
     <input type="hidden" id="fileno" name="fileno" value="">
     
@@ -80,7 +80,7 @@
             
             <!-- Include the File Number Information component -->
             <div class="bg-white rounded-lg p-4 border border-blue-100">
-                @include('primaryform.gis_fileno')
+                @include('fileindexing.partial.file_number_info')
             </div>
             
             <div class="mt-6 flex justify-end">

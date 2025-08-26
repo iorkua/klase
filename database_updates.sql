@@ -7,6 +7,21 @@ BEGIN
     ALTER TABLE [dbo].[file_indexings] ADD [st_fillno] NVARCHAR(255) NULL;
 END
 
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[file_indexings]') AND name = 'serial_no')
+BEGIN
+    ALTER TABLE [dbo].[file_indexings] ADD [serial_no] NVARCHAR(100) NULL;
+END
+
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[file_indexings]') AND name = 'batch_no')
+BEGIN
+    ALTER TABLE [dbo].[file_indexings] ADD [batch_no] NVARCHAR(100) NULL;
+END
+
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[file_indexings]') AND name = 'shelf_location')
+BEGIN
+    ALTER TABLE [dbo].[file_indexings] ADD [shelf_location] NVARCHAR(100) NULL;
+END
+
 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[file_indexings]') AND name = 'is_co_owned_plot')
 BEGIN
     ALTER TABLE [dbo].[file_indexings] ADD [is_co_owned_plot] BIT NOT NULL DEFAULT 0;

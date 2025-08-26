@@ -592,12 +592,13 @@ class PropertyRecordController extends Controller
 
             // Search in existing property records
             if (!empty($search)) {
+                // Fix: Use proper string comparison instead of complex where clauses
                 $propertyRecords = DB::connection('sqlsrv')
                     ->table('property_records')
                     ->select('id', 'mlsFNo as fileno', 'property_description as description', 'plot_no', 'lgsaOrCity as lga', 'location')
-                    ->where('mlsFNo', 'LIKE', "%{$search}%")
+                    ->whereRaw("mlsFNo LIKE ?", ["%{$search}%"])
                     ->whereNotNull('mlsFNo')
-                    ->where('mlsFNo', '!=', '')
+                    ->whereRaw("mlsFNo != ''")
                     ->limit($perPage)
                     ->get();
 
@@ -617,9 +618,9 @@ class PropertyRecordController extends Controller
                 $kangisRecords = DB::connection('sqlsrv')
                     ->table('property_records')
                     ->select('id', 'kangisFileNo as fileno', 'property_description as description', 'plot_no', 'lgsaOrCity as lga', 'location')
-                    ->where('kangisFileNo', 'LIKE', "%{$search}%")
+                    ->whereRaw("kangisFileNo LIKE ?", ["%{$search}%"])
                     ->whereNotNull('kangisFileNo')
-                    ->where('kangisFileNo', '!=', '')
+                    ->whereRaw("kangisFileNo != ''")
                     ->limit($perPage)
                     ->get();
 
@@ -639,9 +640,9 @@ class PropertyRecordController extends Controller
                 $newKangisRecords = DB::connection('sqlsrv')
                     ->table('property_records')
                     ->select('id', 'NewKANGISFileno as fileno', 'property_description as description', 'plot_no', 'lgsaOrCity as lga', 'location')
-                    ->where('NewKANGISFileno', 'LIKE', "%{$search}%")
+                    ->whereRaw("NewKANGISFileno LIKE ?", ["%{$search}%"])
                     ->whereNotNull('NewKANGISFileno')
-                    ->where('NewKANGISFileno', '!=', '')
+                    ->whereRaw("NewKANGISFileno != ''")
                     ->limit($perPage)
                     ->get();
 
@@ -662,9 +663,9 @@ class PropertyRecordController extends Controller
                     $applications = DB::connection('sqlsrv')
                         ->table('dbo.mother_applications')
                         ->select('id', 'fileno', 'plot_no', 'lga_name as lga', 'layout_name as location')
-                        ->where('fileno', 'LIKE', "%{$search}%")
+                        ->whereRaw("fileno LIKE ?", ["%{$search}%"])
                         ->whereNotNull('fileno')
-                        ->where('fileno', '!=', '')
+                        ->whereRaw("fileno != ''")
                         ->limit($perPage)
                         ->get();
 
@@ -689,7 +690,7 @@ class PropertyRecordController extends Controller
                         ->table('property_records')
                         ->select('id', 'mlsFNo as fileno', 'property_description as description', 'plot_no', 'lgsaOrCity as lga', 'location')
                         ->whereNotNull('mlsFNo')
-                        ->where('mlsFNo', '!=', '')
+                        ->whereRaw("mlsFNo != ''")
                         ->orderBy('created_at', 'desc')
                         ->limit($perPage)
                         ->get();
