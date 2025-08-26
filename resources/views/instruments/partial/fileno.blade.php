@@ -245,7 +245,7 @@
         
         let fileNumber = '';
         
-        // Get the file number based on active tab
+        // Get the file number based on active tab (use hidden DB fields, not preview text)
         if (activeTab === 'mlsFNo') {
             fileNumber = document.getElementById('mlsFNo').value;
         } else if (activeTab === 'kangisFileNo') {
@@ -440,17 +440,17 @@
         const select = document.getElementById('mlsExistingFileNo');
         if (!select || select.dataset.loaded === '1') return;
         select.innerHTML = '<option value="">Loading existing file numbers...</option>';
-        fetch('/api/get-existing-mls-files', {
+        const url = "{{ route('file-numbers.existing') }}"; // Use real route
+        fetch(url, {
             method: 'GET',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                'Accept': 'application/json'
             }
         }).then(r => r.json()).then(data => {
             select.innerHTML = '<option value="">Select existing file number...</option>';
-            if (data?.success && Array.isArray(data.files) && data.files.length) {
-                data.files.forEach(f => {
-                    const val = f.mlsFNo || f.file_number;
+            if (Array.isArray(data) && data.length) {
+                data.forEach(f => {
+                    const val = (f.mlsfNo || '').trim();
                     if (!val) return;
                     const opt = document.createElement('option');
                     opt.value = val;
@@ -531,7 +531,7 @@
 
     // Updates the form data for submission
     function updateFormFileData() {
-        // Ensure all file numbers are properly set in hidden fields
+        // Ensure all file numbers are properly set in hidden fields via their preview updaters
         updateMlsFileNumberPreview();
         updateKangisFileNumberPreview();
         updateNewKangisFileNumberPreview();
@@ -539,14 +539,20 @@
         // Get the active tab
         const activeTab = document.getElementById('activeFileTab').value;
         
-        // Set the active file number based on the active tab
-        if (activeTab === "mlsFNo") {
-            document.getElementById('mlsFNo').value = document.getElementById('mlsPreviewFileNumber').textContent;
-        } else if (activeTab === "kangisFileNo") {
-            document.getElementById('kangisFileNo').value = document.getElementById('kangisPreviewFileNumber').value;
-        } else if (activeTab === "NewKANGISFileno") {
-            document.getElementById('NewKANGISFileno').value = document.getElementById('newKangisPreviewFileNumber').value;
+        // Clear non-active hidden fields so only one value is submitted
+        if (activeTab === 'mlsFNo') {
+            document.getElementById('kangisFileNo').value = '';
+            document.getElementById('NewKANGISFileno').value = '';
+        } else if (activeTab === 'kangisFileNo') {
+            document.getElementById('mlsFNo').value = '';
+            document.getElementById('NewKANGISFileno').value = '';
+        } else if (activeTab === 'NewKANGISFileno') {
+            document.getElementById('mlsFNo').value = '';
+            document.getElementById('kangisFileNo').value = '';
         }
+        
+        // Sync the main fileno field
+        updateMainFilenoField();
         
         return true;
     }

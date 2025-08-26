@@ -159,6 +159,99 @@ class PropertyRecordController extends Controller
                 $titleType = $this->determineTitleType($request->transactionType);
             }
 
+            // NEW: Route CofO-related transactions to CofO table instead of property_records
+            $cofoTransactionTypes = [
+                'Certificate of Occupancy',
+                'ST Certificate of Occupancy',
+                'SLTR Certificate of Occupancy',
+            ];
+            $isCofO = in_array($request->transactionType, $cofoTransactionTypes, true);
+
+            if ($isCofO) {
+                // Ensure CofO table exists
+                if (!Schema::connection('sqlsrv')->hasTable('CofO')) {
+                    throw new \Exception('Table CofO does not exist in the database');
+                }
+                $cofoColumns = Schema::connection('sqlsrv')->getColumnListing('CofO');
+
+                // Map cofo_type
+                $cofoTypeMap = [
+                    'Certificate of Occupancy' => 'Legacy CofO',
+                    'ST Certificate of Occupancy' => 'ST CofO',
+                    'SLTR Certificate of Occupancy' => 'SLTR CofO',
+                ];
+                $cofoType = $cofoTypeMap[$request->transactionType] ?? null;
+
+                // Build full data payload for CofO, then filter by available columns
+                $allCofOData = [
+                    'np_fileno' => $request->input('np_fileno') ?: null,
+                    'mlsFNo' => $mls ?: null,
+                    'kangisFileNo' => $kangis ?: null,
+                    'NewKANGISFileno' => $newKangis ?: null,
+                    'title_type' => $titleType,
+                    'transaction_type' => $request->transactionType,
+                    'transaction_date' => $request->transactionDate,
+                    'transaction_time' => $request->regTime,
+                    'serialNo' => $request->serialNo,
+                    'pageNo' => $request->pageNo,
+                    'volumeNo' => $request->volumeNo,
+                    'regNo' => $regNo,
+                    'instrument_type' => $request->instrumentType ?: $request->transactionType,
+                    'period' => $request->period ? (int)$request->period : null,
+                    'period_unit' => $request->periodUnit,
+                    'Assignor' => $partyData['Assignor'] ?? null,
+                    'Assignee' => $partyData['Assignee'] ?? null,
+                    'Mortgagor' => $partyData['Mortgagor'] ?? null,
+                    'Mortgagee' => $partyData['Mortgagee'] ?? null,
+                    'Surrenderor' => $partyData['Surrenderor'] ?? null,
+                    'Surrenderee' => $partyData['Surrenderee'] ?? null,
+                    'Lessor' => $partyData['Lessor'] ?? null,
+                    'Lessee' => $partyData['Lessee'] ?? null,
+                    'Grantor' => $partyData['Grantor'] ?? null,
+                    'Grantee' => $partyData['Grantee'] ?? null,
+                    'property_description' => $request->property_description,
+                    'location' => $request->location,
+                    'plot_no' => $request->plot_no,
+                    'lgsaOrCity' => $request->lgsaOrCity,
+                    'layout' => $request->layout,
+                    'schedule' => $request->schedule,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                    'deleted_at' => null,
+                    'created_by' => Auth::id(),
+                    'updated_by' => Auth::id(),
+                    'land_use' => $request->landUse,
+                    'cofo_type' => $cofoType,
+                ];
+
+                // Keep only keys that exist as columns in CofO table
+                $filteredCofOData = [];
+                foreach ($allCofOData as $key => $value) {
+                    if (in_array($key, $cofoColumns, true)) {
+                        $filteredCofOData[$key] = $value;
+                    }
+                }
+
+                \Log::info('CofO data for insertion:', $filteredCofOData);
+
+                // Insert into CofO table
+                $id = DB::connection('sqlsrv')->table('CofO')->insertGetId($filteredCofOData);
+
+                // Commit and respond
+                DB::connection('sqlsrv')->commit();
+                \Log::info('CofO record created successfully:', ['id' => $id]);
+
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'CofO record created successfully',
+                        'data' => ['id' => $id, 'table' => 'CofO']
+                    ], 201);
+                }
+
+                return redirect()->route('propertycard.index')->with('success', 'CofO record created successfully');
+            }
+
             // Prepare base data for database insertion
             $data = [
                 'mlsFNo' => $mls ?: null,

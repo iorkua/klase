@@ -1,6 +1,6 @@
 <script>
     // Initialize Lucide icons
-    lucide.createIcons();
+    // Removed duplicate immediate initialization; handled in init()
 
     // State management
     let currentInstrumentType = null;
@@ -94,7 +94,11 @@
         secondPartyLabel: document.getElementById('second-party-label'),
         surveyInfo: document.getElementById('surveyInfo'),
         surveyInfoSection: document.getElementById('survey-info-section'),
-        instrumentFields: document.getElementById('instrument-fields')
+        instrumentFields: document.getElementById('instrument-fields'),
+        // New: generate particulars support
+        generateRootBtn: document.getElementById('generate-root-btn'),
+        rootRegNoInput: document.getElementById('rootRegNo'),
+        generateParticularsUrlInput: document.getElementById('generateParticularsUrl')
     };
 
     // Helper functions
@@ -104,7 +108,34 @@
         return `TEMP-${paddedCounter}`;
     }
 
-    
+    // New: fetch next particulars registration number from server
+    async function generateRootParticulars() {
+        try {
+            const url = elements.generateParticularsUrlInput?.value;
+            if (!url) return;
+            if (elements.generateRootBtn) {
+                elements.generateRootBtn.disabled = true;
+                elements.generateRootBtn.classList.add('opacity-60', 'cursor-not-allowed');
+            }
+            const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            const data = await res.json();
+            if (data?.success && data.rootRegistrationNumber && elements.rootRegNoInput) {
+                elements.rootRegNoInput.value = data.rootRegistrationNumber;
+            } else {
+                console.error('Failed to generate particulars', data);
+                alert(data?.message || 'Failed to generate registration particulars.');
+            }
+        } catch (e) {
+            console.error('Error generating particulars', e);
+            alert('Error generating registration particulars.');
+        } finally {
+            if (elements.generateRootBtn) {
+                elements.generateRootBtn.disabled = false;
+                elements.generateRootBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+            }
+        }
+    }
+
     function updatePartyLabels(instrumentType) {
         const type = instrumentTypes[instrumentType];
         if (!type) return;
@@ -351,6 +382,13 @@
             
             // Initialize the temporary reg number section visibility
             handleTemporaryRegNoChange();
+            // Auto-generate root particulars if not using temporary reg no
+            if (elements.isTemporaryRegNo && !elements.isTemporaryRegNo.checked) {
+                // Only auto-generate if empty to avoid overwriting user input
+                if (elements.rootRegNoInput && !elements.rootRegNoInput.value) {
+                    generateRootParticulars();
+                }
+            }
         } else {
             // For instruments that don't need Root Reg, hide the entire registration details section
             if (registrationDetailsSection) {
@@ -411,6 +449,10 @@
         } else {
             elements.regNoSection.classList.add('hidden');
             elements.rootRegNoSection.classList.remove('hidden');
+            // If field is empty, auto-generate on toggle
+            if (elements.rootRegNoInput && !elements.rootRegNoInput.value) {
+                generateRootParticulars();
+            }
         }
     }
 
@@ -466,49 +508,173 @@
         return data;
     }
 
+    // Helper to set or update a form control/hidden input on the form
+    function setHidden(name, value) {
+        // Prefer existing control (input/select/textarea) with the name
+        let control = elements.registrationForm.querySelector(`[name="${name}"]`);
+        if (!control) {
+            // Create hidden input if not found
+            control = document.createElement('input');
+            control.type = 'hidden';
+            control.name = name;
+            elements.registrationForm.appendChild(control);
+        }
+        control.value = value == null ? '' : value;
+    }
+
+    function buildAddress(prefix) {
+        const street = document.getElementById(`${prefix}Street`)?.value?.trim() || '';
+        const city = document.getElementById(`${prefix}City`)?.value?.trim() || '';
+        const state = document.getElementById(`${prefix}State`)?.value?.trim() || '';
+        const postal = document.getElementById(`${prefix}PostalCode`)?.value?.trim() || '';
+        const country = document.getElementById(`${prefix}Country`)?.value?.trim() || '';
+        return [street, city, state, postal, country].filter(Boolean).join(', ');
+    }
+
     function handleSubmit() {
-        const formData = collectFormData();
-        console.log('Form submitted:', formData);
-        
-        // Here you would typically send the data to a server
-        alert('Instrument registration submitted successfully!');
-        closeRegistrationDialog();
+        try {
+            if (!currentInstrumentType) {
+                alert('Please select an instrument type.');
+                return;
+            }
+
+            // Sync file number hidden fields from the fileno widgets if available
+            if (typeof updateFormFileData === 'function') {
+                try { updateFormFileData(); } catch (e) { /* ignore */ }
+            }
+
+            // Instrument type name
+            const typeDef = instrumentTypes[currentInstrumentType];
+            const instrumentTypeName = typeDef ? typeDef.name : currentInstrumentType;
+            setHidden('instrument_type', instrumentTypeName);
+
+            // Parties
+            const grantor = document.getElementById('firstPartyName')?.value?.trim() || '';
+            const grantee = document.getElementById('secondPartyName')?.value?.trim() || '';
+            setHidden('Grantor', grantor);
+            setHidden('Grantee', grantee);
+
+            // Addresses (combined)
+            setHidden('GrantorAddress', buildAddress('firstParty'));
+            setHidden('GranteeAddress', buildAddress('secondParty'));
+
+            // Dates: use entryDate as instrumentDate
+            const entryDate = document.getElementById('entryDate')?.value || '';
+            setHidden('instrumentDate', entryDate);
+
+            // Property details
+            setHidden('propertyDescription', document.getElementById('plotDescription')?.value || '');
+            setHidden('size', document.getElementById('plotSize')?.value || '');
+            setHidden('solicitorName', document.getElementById('solicitorName')?.value || '');
+            setHidden('solicitorAddress', document.getElementById('solicitorAddress')?.value || '');
+
+            // Survey fields
+            const surveyChecked = document.getElementById('surveyInfo')?.checked;
+            setHidden('lga', surveyChecked ? (document.getElementById('lga')?.value || '') : '');
+            setHidden('district', surveyChecked ? (document.getElementById('district')?.value || '') : '');
+            setHidden('plotNumber', surveyChecked ? (document.getElementById('plotNumber')?.value || '') : '');
+
+            // Root registration number
+            if (elements.isTemporaryRegNo && elements.isTemporaryRegNo.checked) {
+                setHidden('rootRegistrationNumber', '0/0/0');
+            } else {
+                setHidden('rootRegistrationNumber', document.getElementById('rootRegNo')?.value || '');
+            }
+
+            // Duration (instrument-specific; safe to set if present)
+            const durationEl = document.getElementById('duration');
+            if (durationEl) setHidden('duration', durationEl.value || '');
+
+            // File numbers
+            let mls = '';
+            let kagis = '';
+            let newKagis = '';
+            const isTemp = !!(elements.isTemporaryFileNo && elements.isTemporaryFileNo.checked);
+            if (isTemp) {
+                mls = elements.temporaryFileNo?.value || '';
+                // Explicitly post temp_fileno and isTemporary for backend
+                setHidden('temp_fileno', mls);
+                setHidden('isTemporary', '1');
+            } else {
+                const activeTab = document.getElementById('activeFileTab')?.value;
+                mls = document.getElementById('mlsFNo')?.value || '';
+                kagis = document.getElementById('kangisFileNo')?.value || '';
+                newKagis = document.getElementById('NewKANGISFileno')?.value || '';
+                // Zero out non-active values
+                if (activeTab === 'mlsFNo') { kagis = ''; newKagis = ''; }
+                else if (activeTab === 'kangisFileNo') { mls = ''; newKagis = ''; }
+                else if (activeTab === 'NewKANGISFileno') { mls = ''; kagis = ''; }
+                // Ensure temp flags are cleared when not temporary
+                setHidden('temp_fileno', '');
+                setHidden('isTemporary', '0');
+            }
+
+            // Fallback: if all are empty but a generic fileno exists (smart selector), use it as MLS
+            const genericFileno = document.getElementById('fileno')?.value || '';
+            if (!mls && !kagis && !newKagis && genericFileno) {
+                mls = genericFileno;
+            }
+
+            setHidden('mlsFNo', mls);
+            setHidden('kangisFileNo', kagis);
+            setHidden('NewKANGISFileno', newKagis);
+
+            // Set action/method and submit
+            const storeUrlInput = document.getElementById('storeUrl');
+            const actionUrl = storeUrlInput ? storeUrlInput.value : '/instruments/store';
+            elements.registrationForm.setAttribute('method', 'POST');
+            elements.registrationForm.setAttribute('action', actionUrl);
+
+            elements.registrationForm.submit();
+        } catch (err) {
+            console.error('Submit failed', err);
+            alert('Failed to submit. Please try again.');
+        }
     }
 
-    // Event listeners
-    document.querySelectorAll('.instrument-type-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const type = btn.getAttribute('data-type');
-            openRegistrationDialog(type);
+    // Event listeners (guard to avoid double-binding)
+    if (!window.__instrumentCreateInit) {
+        window.__instrumentCreateInit = true;
+
+        document.querySelectorAll('.instrument-type-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const type = btn.getAttribute('data-type');
+                openRegistrationDialog(type);
+            });
         });
-    });
 
-    elements.cancelBtn.addEventListener('click', closeRegistrationDialog);
-    elements.submitBtn.addEventListener('click', handleSubmit);
+        elements.cancelBtn?.addEventListener('click', closeRegistrationDialog);
+        elements.submitBtn?.addEventListener('click', handleSubmit);
 
-    elements.isTemporaryFileNo.addEventListener('change', handleTemporaryFileNoChange);
-    if (elements.isTemporaryRegNo) {
-        elements.isTemporaryRegNo.addEventListener('change', handleTemporaryRegNoChange);
-    }
-    
-    if (elements.regenerateTempBtn) {
-        elements.regenerateTempBtn.addEventListener('click', () => {
+        elements.isTemporaryFileNo?.addEventListener('change', handleTemporaryFileNoChange);
+        elements.isTemporaryRegNo?.addEventListener('change', handleTemporaryRegNoChange);
+        elements.regenerateTempBtn?.addEventListener('click', () => {
             elements.temporaryFileNo.value = generateTemporaryFileNo();
         });
-    }
+        // New: generate particulars click
+        elements.generateRootBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            generateRootParticulars();
+        });
 
-    // Close dialog when clicking outside
-    elements.registrationDialog.addEventListener('click', (e) => {
-        if (e.target === elements.registrationDialog) {
-            closeRegistrationDialog();
-        }
-    });
+        // Close dialog when clicking outside content
+        elements.registrationDialog?.addEventListener('click', (e) => {
+            if (e.target === elements.registrationDialog) {
+                closeRegistrationDialog();
+            }
+        });
+        // Prevent backdrop-close when clicking inside content
+        const dialogContent = elements.registrationDialog?.querySelector('.dialog-content');
+        dialogContent?.addEventListener('click', (e) => e.stopPropagation());
+    }
 
     // Set default dates to today
     function setDefaultDates() {
         const today = new Date().toISOString().split('T')[0];
-        document.getElementById('registrationDate').value = today;
-        document.getElementById('entryDate').value = today;
+        const reg = document.getElementById('registrationDate');
+        const entry = document.getElementById('entryDate');
+        if (reg) reg.value = today;
+        if (entry) entry.value = today;
     }
 
     // Initialize the page

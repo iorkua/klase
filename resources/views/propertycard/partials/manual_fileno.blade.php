@@ -2,6 +2,9 @@
                       mlsPrefix: '', mlsYear: (new Date().getFullYear()).toString(), mlsSerial: '', mlsType: 'regular',
                       mlsMiddlePrefix: 'KN', mlsMiscSerial: '', mlsSpecialSerial: '', mlsOldSerial: '',
                       mlsExistingOptions: [], mlsExistingSelected: '',
+                      // Added initial state for KANGIS and New KANGIS
+                      kangisPrefix: '', kangisNumber: '',
+                      newkangisPrefix: '', newkangisNumber: '',
                       loadExistingMls() {
                         if (this.mlsExistingOptions.length) return;
                         fetch('/api/get-existing-mls-files', { headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': (document.querySelector('meta[name=csrf-token]')?.content || '') } })
@@ -52,14 +55,20 @@
                         return '';
                       },
                       kangisPreview() {
-                        if (this.kangisPrefix && this.kangisNumber) {
-                          const n = this.kangisNumber.toString().padStart(5, '0');
-                          this.kangisNumber = n;
-                          return `${this.kangisPrefix} ${n}`;
+                        // Do not mutate state during render; just compute preview safely
+                        const prefix = (this.kangisPrefix || '').toString().trim();
+                        const num = (this.kangisNumber || '').toString().trim();
+                        if (prefix && num) {
+                          const n = num.padStart(5, '0');
+                          return `${prefix} ${n}`;
                         }
-                        return this.kangisPrefix || this.kangisNumber;
+                        return prefix || num || '';
                       },
-                      newkangisPreview() { return this.newkangisPrefix && this.newkangisNumber ? `${this.newkangisPrefix}${this.newkangisNumber}` : (this.newkangisPrefix || this.newkangisNumber); }
+                      newkangisPreview() { 
+                        const p = (this.newkangisPrefix || '').toString().trim();
+                        const n = (this.newkangisNumber || '').toString().trim();
+                        return p && n ? `${p}${n}` : (p || n || ''); 
+                      }
                     }"
      class="bg-green-50 border border-green-100 rounded-md p-4 mb-6" x-cloak>
   <div class="flex items-center mb-2">

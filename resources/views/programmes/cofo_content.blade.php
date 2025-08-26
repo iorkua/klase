@@ -429,10 +429,10 @@
         <!-- Signature section -->
         <div class="signature-section">
           <div class="signature-line"></div>
-          <div class="signature-name">{{ $cofo->signed_by ?? 'Alh. Abduljabbar Mohammed Umar' }}</div>
-          <div class="signature-title">
-            {{ $cofo->signed_title ?? 'Honorable Commissioner of Land and Physical Planning' }}
-          </div>
+          <div class="signature-name"> {{ $cofo->signed_title ?? 'Honorable Commissioner of Land and Physical Planning' }}</div>
+          <!-- <div class="signature-title">
+           
+          </div> -->
           <div class="signature-title">Kano State, Nigeria</div>
         </div>
       </div>
@@ -733,9 +733,9 @@
             </script>
           </body>
           </html>
-        `);
+        ` 
         
-        printWindow.document.close();
+      
       }
     </script>
   </body>

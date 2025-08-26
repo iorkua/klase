@@ -5,7 +5,7 @@
 
 @section('content')
 @include('propertycard.css.style') 
-    <!-- Main Content -->
+    <!-- Main Content --> 
     <div class="flex-1 overflow-auto">
         <!-- Header -->
         @include('admin.header')

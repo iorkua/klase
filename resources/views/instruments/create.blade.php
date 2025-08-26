@@ -76,6 +76,9 @@
             </div>
             
             <form id="registration-form" class="p-6 space-y-6">
+                @csrf
+                <input type="hidden" id="storeUrl" value="{{ route('instruments.store') }}" />
+                <input type="hidden" id="generateParticularsUrl" value="{{ route('instruments.generateParticulars') }}" />
                 <!-- File Number Section -->
                 <div class="space-y-4 border rounded-md p-4 bg-gray-50">
                     <h3 class="text-lg font-medium">File Number</h3>
@@ -135,7 +138,14 @@
                     </div>
                     <div id="rootRegNoSection" class="space-y-2">
                         <label for="rootRegNo" class="label">Root Registration Number</label>
-                        <input id="rootRegNo" name="rootRegNo" class="input" placeholder="Enter root registration number">
+                        <div class="flex gap-2">
+                            <input id="rootRegNo" name="rootRegNo" class="input" placeholder="Enter root registration number">
+                            <button type="button" id="generate-root-btn" class="btn btn-outline" title="Generate next particulars number">
+                                <i data-lucide="refresh-ccw" class="h-4 w-4 mr-1"></i>
+                                Generate
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500">Click Generate to auto-fill next Serial/Page/Volume.</p>
                     </div>  
                 </div>
 
@@ -382,20 +392,5 @@
         @include('admin.footer')
     </div>
 
-@include('instruments.create.js')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const surveyCheckbox = document.getElementById('surveyInfo');
-    const surveySection = document.getElementById('survey-info-section');
-    if (surveyCheckbox && surveySection) {
-        surveyCheckbox.addEventListener('change', function() {
-            if (surveyCheckbox.checked) {
-                surveySection.classList.remove('hidden');
-            } else {
-                surveySection.classList.add('hidden');
-            }
-        });
-    }
-});
-</script>
+{{-- Removed redundant inline script; functionality handled in instruments.create.js --}}
 @endsection

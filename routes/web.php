@@ -452,6 +452,13 @@ Route::group(['middleware' => ['auth'], 'prefix' => 'st_deeds'], function () {
     Route::get('/', [StInstrumentRegistrationController::class, 'StInstrumentRegistration'])->name('st_deeds.index');
  
 });
+// Instrument routes
+Route::group(['middleware' => ['auth'], 'prefix' => 'instruments'], function () {
+    Route::get('/', [App\Http\Controllers\InstrumentController::class, 'index'])->name('instruments.index');
+    Route::post('/store', [App\Http\Controllers\InstrumentController::class, 'store'])->name('instruments.store');
+    Route::get('/create', [App\Http\Controllers\InstrumentController::class, 'create'])->name('instruments.create');
+    Route::get('/generate-particulars', [App\Http\Controllers\InstrumentController::class, 'generateParticulars'])->name('instruments.generateParticulars');
+});
 // Add a fallback route for debugging
 Route::fallback(function () {
     return response('Route not found. Please check the URL.', 404);
@@ -515,12 +522,6 @@ Route::post('/mark-welcome-popup-shown', function () {
 })->middleware('auth')->name('markWelcomePopupShown');
 // Add this route wherever your other GIS routes are defined
 Route::get('/gis/get-all-units', [GisController::class, 'getAllUnits'])->name('gis.get-all-units');
-// Instrument routes
-Route::group(['middleware' => ['auth'], 'prefix' => 'instruments'], function () {
-    Route::get('/', [App\Http\Controllers\InstrumentController::class, 'index'])->name('instruments.index');
-    Route::post('/store', [App\Http\Controllers\InstrumentController::class, 'store'])->name('instruments.store');
-    Route::get('/create', [App\Http\Controllers\InstrumentController::class, 'create'])->name('instruments.create');
-});
 // COROI routes
 Route::get('/coroi', [App\Http\Controllers\CoroiController::class, 'index'])->name('coroi.index');
 Route::get('/coroi/search-by-fileno', [App\Http\Controllers\CoroiController::class, 'searchByFileno'])->name('coroi.search.fileno');

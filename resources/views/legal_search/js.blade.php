@@ -458,71 +458,110 @@
     }
     
     const cleanValue = cleanNumericValue(value.toString().trim());
+    const normalized = cleanValue.replace(/\//g, '-');
     
     // ST File Number patterns: ST-RES-2024-01-001, ST-COM-2024-02-002, ST-IND-2024-03-009
-    if (/^ST-(RES|COM|IND|AG)-\d{4}-\d+-\d+$/i.test(cleanValue)) {
+    if (/^ST-(RES|COM|IND|AG)-\d{4}-\d+-\d+$/i.test(normalized)) {
       return 'st';
     }
     
     // Parent File Number (NP) patterns: ST-RES-2024-01, ST-COM-2024-02, ST-IND-2024-03
-    if (/^ST-(RES|COM|IND|AG)-\d{4}-\d+$/i.test(cleanValue)) {
+    if (/^ST-(RES|COM|IND|AG)-\d{4}-\d+$/i.test(normalized)) {
       return 'parent';
     }
     
-    // MLS File Number patterns: COM-2022-572, RES-2023-145, CON-COM-2024-089, CON-IND-42154, etc.
-    if (/^(COM|RES|IND|AG|CON-COM|CON-RES|CON-AG|CON-IND)-\d{4}-\d+$/i.test(cleanValue) ||
-        /^(COM|RES|IND|AG|CON-COM|CON-RES|CON-AG|CON-IND)-\d+$/i.test(cleanValue)) {
+    // MLS File Number patterns: allow dash or slash separators
+    if (/^(COM|RES|IND|AG|CON-COM|CON-RES|CON-AG|CON-IND)-\d{4}-\d+$/i.test(normalized) ||
+        /^(COM|RES|IND|AG|CON-COM|CON-RES|CON-AG|CON-IND)-\d+$/i.test(normalized)) {
       return 'mls';
     }
     
-    // KANGIS File Number patterns: KNML 00001, MNKL 02500, MLKN 00567, KNGP 01234
-    if (/^[A-Z]{4}\s?\d{5}$/i.test(cleanValue)) {
+    // KANGIS File Number patterns: allow 3-6 digits after 4-letter prefix
+    if (/^[A-Z]{4}\s?\d{3,6}$/i.test(cleanValue)) {
       return 'kangis';
     }
     
-    // New KANGIS File Number patterns: KN1586, KN0001, KN2345
-    if (/^KN\d{4}$/i.test(cleanValue)) {
+    // New KANGIS File Number patterns: KN followed by 2-6 digits
+    if (/^KN\d{2,6}$/i.test(cleanValue)) {
       return 'new_kangis';
     }
     
     return 'unknown';
   };
 
-  // Helper function to extract correct file numbers from a file record - UPDATED WITH PATTERN RECOGNITION
+  // Helper function to extract correct file numbers from a file record - prefer backend-computed fields and broaden patterns
   const extractFileNumbers = (file) => {
     console.log('Extracting file numbers from:', file);
     
     const result = {
       st: 'N/A',
-      parent: 'N/A', 
+      parent: 'N/A',
       mls: 'N/A',
       kangis: 'N/A',
       new_kangis: 'N/A'
     };
     
-    // Collect all possible file number values from the record
-    const allPossibleValues = [
-      file.STFileNo, file.StFileNo, file.st_file_no, file.sub_fileno,
-      file.ParentFileNo, file.parent_fileNo, file.np_fileno, file.mother_np_fileno,
-      file.MLSFileNo, file.mlsFNo, file.fileNo, file.fileno, file.mother_fileno,
-      file.KANGISFileNo, file.kangisFileNo, file.KAGISFileNO,
-      file.NewKANGISFileNo, file.NewKANGISFileno, file.new_kangis_file_no
-    ].filter(val => val && val !== 'N/A' && val !== null && val !== undefined);
+    // 1) Prefer backend-computed aliases when present
+    if (file.STFileNo && file.STFileNo !== 'N/A') {
+      result.st = cleanNumericValue(file.STFileNo);
+    }
+    if (file.ParentFileNo && file.ParentFileNo !== 'N/A') {
+      result.parent = cleanNumericValue(file.ParentFileNo);
+    }
+    if (file.MLSFileNo && file.MLSFileNo !== 'N/A') {
+      result.mls = cleanNumericValue(file.MLSFileNo);
+    }
+    if (file.KANGISFileNo && file.KANGISFileNo !== 'N/A') {
+      result.kangis = cleanNumericValue(file.KANGISFileNo);
+    }
+    if (file.NewKANGISFileNo && file.NewKANGISFileNo !== 'N/A') {
+      result.new_kangis = cleanNumericValue(file.NewKANGISFileNo);
+    }
     
-    console.log('All possible file number values:', allPossibleValues);
+    // 2) Fallbacks if aliases are missing depending on table
+    if (result.st === 'N/A') {
+      const stValues = [file.StFileNo, file.st_file_no, file.sub_fileno].filter(v => v && v !== 'N/A');
+      if (stValues.length) result.st = cleanNumericValue(stValues[0]);
+    }
     
-    // Categorize each value by its pattern
-    allPossibleValues.forEach(value => {
-      const cleanValue = cleanNumericValue(value);
-      const type = identifyFileNumberType(cleanValue);
+    if (result.parent === 'N/A') {
+      const parentValues = [file.parent_fileNo, file.np_fileno, file.mother_np_fileno].filter(v => v && v !== 'N/A');
+      if (parentValues.length) result.parent = cleanNumericValue(parentValues[0]);
+    }
+    
+    if (result.mls === 'N/A') {
+      const mlsValues = [file.mlsFNo, file.fileNo, file.fileno, file.mother_fileno].filter(v => v && v !== 'N/A');
+      if (mlsValues.length) result.mls = cleanNumericValue(mlsValues[0]);
+    }
+    
+    if (result.kangis === 'N/A') {
+      const kangisValues = [file.kangisFileNo, file.KAGISFileNO].filter(v => v && v !== 'N/A');
+      if (kangisValues.length) result.kangis = cleanNumericValue(kangisValues[0]);
+    }
+    
+    if (result.new_kangis === 'N/A') {
+      const newKangisValues = [file.NewKANGISFileno, file.new_kangis_file_no].filter(v => v && v !== 'N/A');
+      if (newKangisValues.length) result.new_kangis = cleanNumericValue(newKangisValues[0]);
+    }
+    
+    // 3) As a last resort, scan all possible values and categorize by pattern
+    if (result.st === 'N/A' || result.parent === 'N/A' || result.mls === 'N/A' || result.kangis === 'N/A' || result.new_kangis === 'N/A') {
+      const allPossibleValues = [
+        file.STFileNo, file.StFileNo, file.st_file_no, file.sub_fileno,
+        file.ParentFileNo, file.parent_fileNo, file.np_fileno, file.mother_np_fileno,
+        file.MLSFileNo, file.mlsFNo, file.fileNo, file.fileno, file.mother_fileno,
+        file.KANGISFileNo, file.kangisFileNo, file.KAGISFileNO,
+        file.NewKANGISFileNo, file.NewKANGISFileno, file.new_kangis_file_no
+      ].filter(val => val && val !== 'N/A' && val !== null && val !== undefined);
       
-      console.log(`Value: ${cleanValue}, Type: ${type}`);
-      
-      // Only assign if we haven't found a value for this type yet
-      if (type !== 'unknown' && result[type] === 'N/A') {
-        result[type] = cleanValue;
-      }
-    });
+      allPossibleValues.forEach(value => {
+        const cleanValue = cleanNumericValue(value);
+        const type = identifyFileNumberType(cleanValue);
+        if (type !== 'unknown' && result[type] === 'N/A') {
+          result[type] = cleanValue;
+        }
+      });
+    }
     
     console.log('Final extracted file numbers:', result);
     return result;

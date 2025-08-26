@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class InstrumentController extends Controller
 {
@@ -49,6 +50,35 @@ class InstrumentController extends Controller
                     ->withInput();
             }
             
+            // Normalize and collect file number inputs (supporting multiple sources)
+            $mls = trim((string)($request->input('mlsFNo') ?? $request->input('MLSFileNo')));
+            $kangis = trim((string)($request->input('kangisFileNo') ?? $request->input('KAGISFileNo') ?? $request->input('KAGISFileNO')));
+            $newKangis = trim((string)($request->input('NewKANGISFileno') ?? $request->input('NewKANGISFileNo')));
+            $tempFileno = trim((string)($request->input('temp_fileno') ?? $request->input('temporaryFileNo')));
+
+            // Fallback: if all three official file numbers are empty but a generic fileno exists (smart selector), use it as MLS
+            if ($mls === '' && $kangis === '' && $newKangis === '') {
+                $generic = trim((string)$request->input('fileno', ''));
+                if ($generic !== '') {
+                    $mls = $generic;
+                }
+            }
+
+            // If temp flag present and no explicit temp_fileno provided, use the temporaryFileNo value
+            $isTemporary = filter_var($request->input('isTemporary', false), FILTER_VALIDATE_BOOLEAN) || $request->boolean('isTemporaryFileNo');
+            if ($isTemporary && $tempFileno === '') {
+                $tempFileno = trim((string)$request->input('temporaryFileNo', ''));
+            }
+
+            // Log for diagnostics
+            Log::info('Instrument store request file numbers', [
+                'mlsFNo' => $mls,
+                'kangisFileNo' => $kangis,
+                'NewKANGISFileno' => $newKangis,
+                'temp_fileno' => $tempFileno,
+                'fileno_fallback' => $request->input('fileno')
+            ]);
+            
             // Format date for SQL Server
             $instrumentDate = $request->instrumentDate ? date('Y-m-d', strtotime($request->instrumentDate)) : null;
             
@@ -57,9 +87,10 @@ class InstrumentController extends Controller
             
             $data = [
                 'instrument_type' => $request->instrument_type,
-                'MLSFileNo' => $request->mlsFNo,
-                'KAGISFileNO' => $request->kangisFileNo,
-                'NewKANGISFileNo' => $request->NewKANGISFileno,
+                'MLSFileNo' => $mls !== '' ? $mls : null,
+                'KAGISFileNO' => $kangis !== '' ? $kangis : null,
+                'NewKANGISFileNo' => $newKangis !== '' ? $newKangis : null,
+                'temp_fileno' => $tempFileno !== '' ? $tempFileno : null,
                 'Grantor' => $request->Grantor,
                 'GrantorAddress' => $request->GrantorAddress,
                 'Grantee' => $request->Grantee,
@@ -94,37 +125,11 @@ class InstrumentController extends Controller
                 $success = DB::connection('sqlsrv')->table('instrument_registration')->insert($data);
                 
                 if ($success) {
-                    // Get the last inserted ID
-                    $idResult = DB::connection('sqlsrv')->select('SELECT SCOPE_IDENTITY() as id');
+                    // Explicitly commit the transaction
+                    DB::connection('sqlsrv')->commit();
                     
-                    if (!empty($idResult)) {
-                        $instrument_id = $idResult[0]->id;
-                        
-                        // Parse the registration number
-                        $regParts = explode('/', $request->rootRegistrationNumber);
-                        $serial_no = $regParts[0] ?? 0;
-                        $page_no = $regParts[1] ?? 0;
-                        $volume_no = $regParts[2] ?? 0;
-                        
-                        // Log the generated number with the instrument ID
-                        DB::connection('sqlsrv')->table('instrument_particulars_log')->insert([
-                            'instrument_id' => $instrument_id,
-                            'serial_no' => $serial_no,
-                            'page_no' => $page_no,
-                            'volume_no' => $volume_no,
-                            'generated_root_particulars_number' => $request->rootRegistrationNumber,
-                            'created_at' => $now,
-                            'updated_at' => $now
-                        ]);
-                        
-                        // Explicitly commit the transaction
-                        DB::connection('sqlsrv')->commit();
-                        
-                        // Redirect to index with success message
-                        return redirect()->route('instruments.index')->with('success', 'Instrument registered successfully');
-                    } else {
-                        throw new \Exception('Failed to retrieve inserted record ID');
-                    }
+                    // Redirect to index with success message
+                    return redirect()->route('instruments.index')->with('success', 'Instrument registered successfully');
                 } else {
                     throw new \Exception('Failed to insert record');
                 }
@@ -142,22 +147,24 @@ class InstrumentController extends Controller
     public function generateParticulars()
     {
         try {
-            // Get the last record from the log table to determine the next sequence
+            // Get the last record from the instrument_registration table to determine the next sequence
             $lastRecord = DB::connection('sqlsrv')
-                ->table('instrument_particulars_log')
+                ->table('instrument_registration')
+                ->whereNotNull('rootRegistrationNumber')
                 ->orderBy('id', 'desc')
                 ->first();
             
-            if (!$lastRecord) {
+            if (!$lastRecord || !$lastRecord->rootRegistrationNumber) {
                 // Initialize with starting values if no records exist
                 $serial_no = 1;
                 $page_no = 1;
                 $volume_no = 1;
             } else {
-                // Calculate the next values based on the last record
-                $serial_no = $lastRecord->serial_no + 1;
-                $page_no = $lastRecord->page_no + 1;
-                $volume_no = $lastRecord->volume_no;
+                // Parse the last registration number
+                $regParts = explode('/', $lastRecord->rootRegistrationNumber);
+                $serial_no = (int)($regParts[0] ?? 0) + 1;
+                $page_no = (int)($regParts[1] ?? 0) + 1;
+                $volume_no = (int)($regParts[2] ?? 1);
                 
                 // If we've reached the maximum, reset and increment volume
                 if ($serial_no > 300) {
@@ -169,8 +176,6 @@ class InstrumentController extends Controller
             
             // Format the particulars registration number
             $formatted = "{$serial_no}/{$page_no}/{$volume_no}";
-            
-            // We no longer insert into the log here - we'll do that on form submission
             
             return response()->json([
                 'success' => true,

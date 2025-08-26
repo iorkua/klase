@@ -447,6 +447,7 @@
                                 <option value="Memorandum of Loss">Memorandum of Loss</option>
                                 <option value="Vesting Deed">Vesting Deed</option>
                                 <option value="ST Fragmentation">ST Fragmentation</option>
+                                <option value="Occupation Permit">Occupancy Permit</option>
                                 <option value="Other">Other</option>
                             </select>
                         </div>
