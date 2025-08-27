@@ -210,7 +210,7 @@
                    
                     <div  >
 
-                      <div class="grid grid-cols-4 gap-2 mb-4">
+                      <div class="grid grid-cols-5 gap-2 mb-4">
                         <button class="tab-button active" data-tab="summary">
                           <i data-lucide="user" class="w-3.5 h-3.5 mr-1.5"></i>
                           SUMMARY
@@ -219,10 +219,17 @@
                           <i data-lucide="calculator" class="w-3.5 h-3.5 mr-1.5"></i>
                           DOCUMENTS
                         </button>
+                       
                         <button class="tab-button" data-tab="edms">
                           <i data-lucide="folder" class="w-3.5 h-3.5 mr-1.5"></i>
                           EDMS
                         </button>
+
+                        <button class="tab-button" data-tab="bills">
+                          <i data-lucide="receipt" class="w-3.5 h-3.5 mr-1.5"></i>
+                          BILLS
+                        </button>
+                        
                         <button 
                           class="tab-button" 
                           data-tab="approval"
@@ -693,6 +700,154 @@
                           </div>
                           </div>
                         </div>
+                        </div>
+
+                        <!-- Bills Tab -->
+                        <div id="bills-tab" class="tab-content">
+                          <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+                            <div class="p-4 border-b">
+                              <h3 class="text-sm font-medium">Bills Information</h3>
+                              <p class="text-xs text-gray-500">Application bill details</p>
+                            </div>
+                            <div class="p-4 space-y-4">
+                              
+                              @php
+                                // Get bill data directly from database
+                                $initialBillData = null;
+                                $bettermentBillData = null;
+                                $finalBillData = null;
+                                
+                                try {
+                                  // Get Initial Bill from current application
+                                  $initialBillData = [
+                                    'receipt_number' => $application->receipt_number ?? 'N/A',
+                                    'amount' => ($application->application_fee ?? 0) + ($application->processing_fee ?? 0) + ($application->site_plan_fee ?? 0),
+                                    'payment_date' => $application->payment_date ?? 'N/A',
+                                    'status' => $application->Payment_Status ?? 'Paid'
+                                  ];
+                                  
+                                  // Get Betterment Bill from billing table
+                                  $bettermentBill = DB::connection('sqlsrv')->table('billing')
+                                    ->where('application_id', $application->id)
+                                    ->first();
+                                  
+                                  if ($bettermentBill) {
+                                    $bettermentBillData = [
+                                      'reference_id' => 'BB-' . $application->fileno . '-' . date('Y'),
+                                      'amount' => ($bettermentBill->Betterment_Charges ?? 0) + ($bettermentBill->Penalty_Fees ?? 0),
+                                      'receipt_number' => $bettermentBill->Betterment_receipt ?? 'N/A',
+                                      'receipt_date' => $bettermentBill->Betterment_receipt_date ?? 'N/A',
+                                      'status' => $bettermentBill->Payment_Status ?? 'Pending'
+                                    ];
+                                  }
+                                  
+                                  // Get Final Bill from final_bills table
+                                  $finalBill = DB::connection('sqlsrv')->table('final_bills')
+                                    ->where('application_id', $application->id)
+                                    ->first();
+                                  
+                                  if ($finalBill) {
+                                    $finalBillData = [
+                                      'receipt_number' => $finalBill->receipt_number ?? 'N/A',
+                                      'amount' => ($finalBill->recertification_fee ?? 0) + ($finalBill->assignment_fee ?? 0) + ($finalBill->dev_charges ?? 0) + ($finalBill->bill_balance ?? 0),
+                                      'payment_date' => $finalBill->payment_date ?? 'N/A',
+                                      'status' => $finalBill->Payment_Status ?? 'Pending'
+                                    ];
+                                  }
+                                } catch (Exception $e) {
+                                  // Handle error silently
+                                }
+                              @endphp
+                              
+                              <!-- 1. Initial Bill Receipt -->
+                              <div class="border rounded-lg p-4">
+                                <h4 class="text-sm font-medium mb-3">Initial Bill Receipt</h4>
+                                @if($initialBillData)
+                                  <div class="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                      <span class="font-medium">Receipt Number:</span>
+                                      <span>{{ $initialBillData['receipt_number'] }}</span>
+                                    </div>
+                                    <div>
+                                      <span class="font-medium">Amount:</span>
+                                      <span>₦{{ number_format($initialBillData['amount'], 2) }}</span>
+                                    </div>
+                                    <div>
+                                      <span class="font-medium">Payment Date:</span>
+                                      <span>{{ $initialBillData['payment_date'] }}</span>
+                                    </div>
+                                    <div>
+                                      <span class="font-medium">Status:</span>
+                                      <span>{{ $initialBillData['status'] }}</span>
+                                    </div>
+                                  </div>
+                                @else
+                                  <p class="text-sm">No initial bill data available</p>
+                                @endif
+                              </div>
+
+                              <!-- 2. Better Bill Reference ID -->
+                              <div class="border rounded-lg p-4">
+                                <h4 class="text-sm font-medium mb-3">Better Bill Reference ID</h4>
+                                @if($bettermentBillData)
+                                  <div class="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                      <span class="font-medium">Reference ID:</span>
+                                      <span>{{ $bettermentBillData['reference_id'] }}</span>
+                                    </div>
+                                    <div>
+                                      <span class="font-medium">Amount:</span>
+                                      <span>₦{{ number_format($bettermentBillData['amount'], 2) }}</span>
+                                    </div>
+                                    <div>
+                                      <span class="font-medium">Status:</span>
+                                      <span>{{ $bettermentBillData['status'] }}</span>
+                                    </div>
+                                  </div>
+                                @else
+                                  <p class="text-sm">No betterment bill data available</p>
+                                @endif
+                              </div>
+
+                              <!-- 3. Better Bill Receipt -->
+                              <div class="border rounded-lg p-4">
+                                <h4 class="text-sm font-medium mb-3">Better Bill Receipt</h4>
+                                @if($bettermentBillData && $bettermentBillData['receipt_number'] !== 'N/A')
+                                  <div class="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                      <span class="font-medium">Receipt Number:</span>
+                                      <span>{{ $bettermentBillData['receipt_number'] }}</span>
+                                    </div>
+                                    <div>
+                                      <span class="font-medium">Receipt Date:</span>
+                                      <span>{{ $bettermentBillData['receipt_date'] }}</span>
+                                    </div>
+                                    <div>
+                                      <span class="font-medium">Amount:</span>
+                                      <span>₦{{ number_format($bettermentBillData['amount'], 2) }}</span>
+                                    </div>
+                                    <div>
+                                      <span class="font-medium">Status:</span>
+                                      <span>{{ $bettermentBillData['status'] }}</span>
+                                    </div>
+                                  </div>
+                                @else
+                                  <p class="text-sm">No better bill receipt data available</p>
+                                @endif
+                              </div>
+
+                              <hr class="my-4">
+                              
+                              <div class="flex justify-between items-center">
+                                <div class="flex gap-2">
+                                  <button type="button" onclick="window.history.back()" class="flex items-center px-3 py-1 text-xs border border-gray-300 rounded-md bg-white hover:bg-gray-50">
+                                    <i data-lucide="undo-2" class="w-3.5 h-3.5 mr-1.5"></i>
+                                    Back
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
 
                         <!-- EDMS Tab -->
@@ -1169,6 +1324,7 @@
             // Initialize Lucide icons safely
             safeCreateIcons();
 
+            
             // Document preview function
             function previewDesign(fileUrl) {
               // Create modal overlay

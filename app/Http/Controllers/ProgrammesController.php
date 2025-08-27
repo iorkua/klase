@@ -1543,4 +1543,195 @@ class ProgrammesController extends Controller
         ));
     }
 
+    /**
+     * Get initial bill receipt data from mother_applications table
+     */
+    public function getInitialBillReceipt($fileNo)
+    {
+        try {
+            // First try to find in mother_applications
+            $application = DB::connection('sqlsrv')->table('mother_applications')
+                ->where('fileno', $fileNo)
+                ->select(
+                    'id',
+                    'fileno',
+                    'receipt_number',
+                    'application_fee',
+                    'processing_fee', 
+                    'site_plan_fee',
+                    'payment_date',
+                    'Payment_Status',
+                    'created_at'
+                )
+                ->first();
+
+            if ($application) {
+                $totalAmount = floatval($application->application_fee ?? 0) + 
+                              floatval($application->processing_fee ?? 0) + 
+                              floatval($application->site_plan_fee ?? 0);
+
+                return response()->json([
+                    'success' => true,
+                    'receipt_number' => $application->receipt_number ?? 'N/A',
+                    'amount' => $totalAmount,
+                    'payment_date' => $application->payment_date ? 
+                        \Carbon\Carbon::parse($application->payment_date)->format('Y-m-d') : 'N/A',
+                    'status' => $application->Payment_Status ?? 'N/A',
+                    'notes' => 'Initial bill payment for primary application'
+                ]);
+            }
+
+            // If not found in mother_applications, try subapplications
+            $subApplication = DB::connection('sqlsrv')->table('subapplications')
+                ->where('fileno', $fileNo)
+                ->select(
+                    'id',
+                    'fileno',
+                    'receipt_number',
+                    'application_fee',
+                    'processing_fee',
+                    'site_plan_fee',
+                    'payment_date',
+                    'Payment_Status',
+                    'created_at'
+                )
+                ->first();
+
+            if ($subApplication) {
+                $totalAmount = floatval($subApplication->application_fee ?? 0) + 
+                              floatval($subApplication->processing_fee ?? 0) + 
+                              floatval($subApplication->site_plan_fee ?? 0);
+
+                return response()->json([
+                    'success' => true,
+                    'receipt_number' => $subApplication->receipt_number ?? 'N/A',
+                    'amount' => $totalAmount,
+                    'payment_date' => $subApplication->payment_date ? 
+                        \Carbon\Carbon::parse($subApplication->payment_date)->format('Y-m-d') : 'N/A',
+                    'status' => $subApplication->Payment_Status ?? 'N/A',
+                    'notes' => 'Initial bill payment for unit application'
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'No initial bill receipt found for file number: ' . $fileNo
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving initial bill receipt: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get better bill reference ID
+     */
+    public function getBetterBillReference($fileNo)
+    {
+        try {
+            // Check in billing table for betterment charges - only for primary applications
+            $bettermentBill = DB::connection('sqlsrv')->table('billing')
+                ->leftJoin('mother_applications', 'billing.application_id', '=', 'mother_applications.id')
+                ->where('mother_applications.fileno', $fileNo)
+                ->whereNotNull('billing.Betterment_Charges')
+                ->select(
+                    'billing.id',
+                    'billing.Betterment_Charges',
+                    'billing.created_at',
+                    'billing.Payment_Status'
+                )
+                ->first();
+
+            if ($bettermentBill) {
+                // Generate reference ID based on file number and billing ID
+                $referenceId = 'BBR-' . strtoupper($fileNo) . '-' . date('Ymd') . '-' . str_pad($bettermentBill->id, 4, '0', STR_PAD_LEFT);
+
+                return response()->json([
+                    'success' => true,
+                    'reference_id' => $referenceId,
+                    'amount' => floatval($bettermentBill->Betterment_Charges ?? 0),
+                    'generated_date' => $bettermentBill->created_at ? 
+                        \Carbon\Carbon::parse($bettermentBill->created_at)->format('Y-m-d') : 'N/A',
+                    'status' => $bettermentBill->Payment_Status ?? 'Pending'
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'No better bill reference found for file number: ' . $fileNo
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving better bill reference: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Save better bill receipt
+     */
+    public function saveBetterBillReceipt(Request $request)
+    {
+        try {
+            // Validate the request - removed amount field as requested
+            $request->validate([
+                'file_no' => 'required|string',
+                'receipt_number' => 'required|string',
+                'receipt_date' => 'required|date',
+                'notes' => 'nullable|string'
+            ]);
+
+            $fileNo = $request->input('file_no');
+
+            // Find the billing record for this file number - only check mother_applications
+            $billingRecord = DB::connection('sqlsrv')->table('billing')
+                ->leftJoin('mother_applications', 'billing.application_id', '=', 'mother_applications.id')
+                ->where('mother_applications.fileno', $fileNo)
+                ->whereNotNull('billing.Betterment_Charges')
+                ->select('billing.id')
+                ->first();
+
+            if (!$billingRecord) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No betterment bill found for file number: ' . $fileNo
+                ]);
+            }
+
+            // Update the billing record with receipt information - removed amount field
+            $updateData = [
+                'Betterment_receipt' => $request->input('receipt_number'),
+                'Betterment_receipt_date' => $request->input('receipt_date'),
+                'Betterment_receipt_notes' => $request->input('notes'),
+                'updated_at' => now()
+            ];
+
+            DB::connection('sqlsrv')->table('billing')
+                ->where('id', $billingRecord->id)
+                ->update($updateData);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Better bill receipt saved successfully'
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error saving better bill receipt: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

@@ -375,6 +375,7 @@ Route::get('sectionaltitling/getFinancialData', [App\Http\Controllers\Applicatio
 Route::get('sectionaltitling/get-billing-data/{id}', [App\Http\Controllers\ApplicationMotherController::class, 'getBillingData'])->name('sectionaltitling.getBillingData');
 Route::get('sectionaltitling/get-billing-data2/{id}', [App\Http\Controllers\ApplicationMotherController::class, 'getBillingData2'])->name('sectionaltitling.getBillingData2');
 Route::post('sectionaltitling/save-billing-data', [App\Http\Controllers\ApplicationMotherController::class, 'saveBillingData'])->name('sectionaltitling.saveBillingData');
+Route::post('sectionaltitling/save-application-data', [App\Http\Controllers\ApplicationMotherController::class, 'saveApplicationData'])->name('sectionaltitling.saveApplicationData');
 Route::get('sectionaltitling/viewrecorddetail',  [App\Http\Controllers\ApplicationMotherController::class, 'Veiwrecords'])->name('sectionaltitling.viewrecorddetail');
 Route::get('sectionaltitling/edit/{id}', [App\Http\Controllers\ApplicationMotherController::class, 'edit'])->name('sectionaltitling.edit');
 Route::put('sectionaltitling/update/{id}', [App\Http\Controllers\ApplicationMotherController::class, 'update'])->name('sectionaltitling.update');
@@ -496,6 +497,12 @@ Route::get('/map', [\App\Http\Controllers\SectionalTitlingController::class, 'Ma
  
 // Payment filtering route
 Route::get('/programmes/payments/filter', [App\Http\Controllers\ProgrammesController::class, 'filterPayments'])->name('programmes.payments.filter');
+
+// Payment action menu routes
+Route::get('/programmes/payments/initial-bill-receipt/{fileNo}', [App\Http\Controllers\ProgrammesController::class, 'getInitialBillReceipt'])->name('programmes.payments.initial-bill-receipt');
+Route::get('/programmes/payments/better-bill-reference/{fileNo}', [App\Http\Controllers\ProgrammesController::class, 'getBetterBillReference'])->name('programmes.payments.better-bill-reference');
+Route::post('/programmes/payments/save-better-bill-receipt', [App\Http\Controllers\ProgrammesController::class, 'saveBetterBillReceipt'])->name('programmes.payments.save-better-bill-receipt');
+
 Route::get('/programmes/memo/{id}', 'App\Http\Controllers\ProgrammeController@viewMemo')->name('programmes.view_memo_detail');
 //landing page
 Route::get('/landing', [LandingController::class, 'index'])->name('landing.index');

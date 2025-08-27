@@ -1110,4 +1110,111 @@ class ApplicationMotherController extends Controller
     }
 
  
+
+    /**
+     * Save Application Data for Planning Recommendation
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function saveApplicationData(Request $request)
+    {
+        try {
+            $request->validate([
+                'application_id' => 'required|integer',
+                'lkn_number' => 'nullable|string|max:255',
+                'tp_plan_number' => 'nullable|string|max:255',
+                'approved_plan_number' => 'nullable|string|max:255',
+                'scheme_number' => 'nullable|string|max:255',
+                'property_house_no' => 'nullable|string|max:255',
+                'property_plot_no' => 'nullable|string|max:255',
+            ]);
+            
+            $id = $request->input('application_id');
+            Log::info("saveApplicationData: Attempting to save application data for application ID {$id}");
+            
+            // Check if application exists
+            $app = DB::connection('sqlsrv')->table('dbo.mother_applications')->where('id', $id)->first();
+            
+            if (!$app) {
+                Log::error("saveApplicationData: Application with ID {$id} not found");
+                return response()->json(['error' => 'Application not found'], 404);
+            }
+            
+            // Prepare update data for mother_applications table
+            $updateData = [
+                'scheme_no' => $request->input('scheme_number'),
+                'property_house_no' => $request->input('property_house_no'),
+                'property_plot_no' => $request->input('property_plot_no'),
+                'updated_at' => now(),
+            ];
+            
+            // Remove null values to avoid overwriting existing data with nulls
+            $updateData = array_filter($updateData, function($value) {
+                return $value !== null && $value !== '';
+            });
+            
+            // Update mother_applications table
+            if (!empty($updateData)) {
+                DB::connection('sqlsrv')->table('dbo.mother_applications')->where('id', $id)->update($updateData);
+            }
+            
+            // Handle survey record data (LKN, TP Plan, Approved Plan numbers)
+            $surveyData = [
+                'tp_plan_no' => $request->input('lkn_number') ?: $request->input('tp_plan_number'),
+                'approved_plan_no' => $request->input('approved_plan_number'),
+                'updated_at' => now(),
+            ];
+            
+            // Remove null values
+            $surveyData = array_filter($surveyData, function($value) {
+                return $value !== null && $value !== '';
+            });
+            
+            if (!empty($surveyData)) {
+                // Check if survey record exists
+                $surveyRecord = DB::connection('sqlsrv')
+                    ->table('surveyCadastralRecord')
+                    ->where('application_id', $id)
+                    ->first();
+                
+                if ($surveyRecord) {
+                    // Update existing record
+                    DB::connection('sqlsrv')
+                        ->table('surveyCadastralRecord')
+                        ->where('application_id', $id)
+                        ->update($surveyData);
+                } else {
+                    // Create new record
+                    $surveyData['application_id'] = $id;
+                    $surveyData['created_at'] = now();
+                    DB::connection('sqlsrv')
+                        ->table('surveyCadastralRecord')
+                        ->insert($surveyData);
+                }
+            }
+            
+            Log::info("saveApplicationData: Successfully saved application data for application ID {$id}");
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Application data has been updated successfully for File Number {$app->fileno}."
+            ]);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error("saveApplicationData: Validation error: " . json_encode($e->errors()));
+            return response()->json([
+                'success' => false,
+                'error' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error("saveApplicationData: Error saving data: " . $e->getMessage());
+            Log::error("saveApplicationData: Stack trace: " . $e->getTraceAsString());
+            return response()->json([
+                'success' => false,
+                'error' => 'Database error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

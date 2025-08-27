@@ -4,8 +4,8 @@
     {{ $PageTitle ?? __('KLAES') }}
 @endsection
 
-
 @section('content')
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 @include('programmes.partials.style')
@@ -226,6 +226,7 @@
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
@@ -326,10 +327,40 @@
                       <span class="text-lg text-blue-600">₦{{ number_format($total, 2) }}</span>
                     </div>
                   </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <div class="relative inline-block text-left" x-data="{ open: false }">
+                      <button type="button" @click="open = !open" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <i data-lucide="more-horizontal" class="w-4 h-4"></i>
+                        <span class="ml-1">Actions</span>
+                        <i data-lucide="chevron-down" class="ml-2 -mr-1 h-4 w-4"></i>
+                      </button>
+                      
+                      <div x-show="open" @click.away="open = false" x-transition class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:within:outline-none z-10">
+                        <div class="py-1" role="menu">
+                          <button type="button" @click="viewInitialBillReceipt('{{ $payment->Sectional_Title_File_No }}')" class="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left">
+                            <i data-lucide="file-text" class="mr-3 h-4 w-4 text-gray-400 group-hover:text-gray-500"></i>
+                            View Initial Bill Receipt
+                          </button>
+                          <button type="button" @click="viewBetterBillReference('{{ $payment->Sectional_Title_File_No }}')" class="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left">
+                            <i data-lucide="hash" class="mr-3 h-4 w-4 text-gray-400 group-hover:text-gray-500"></i>
+                            View Better Bill Reference ID
+                          </button>
+                          @php
+                            // Check if betterment receipt already exists
+                            $hasBettermentReceipt = !empty($payment->Betterment_receipt);
+                          @endphp
+                          <button type="button" @click="enterBetterBillReceipt('{{ $payment->Sectional_Title_File_No }}')" class="group flex items-center px-4 py-2 text-sm w-full text-left {{ $hasBettermentReceipt ? 'text-gray-400 cursor-not-allowed bg-gray-50' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900' }}" {{ $hasBettermentReceipt ? 'disabled' : '' }}>
+                            <i data-lucide="plus-circle" class="mr-3 h-4 w-4 {{ $hasBettermentReceipt ? 'text-gray-300' : 'text-gray-400 group-hover:text-gray-500' }}"></i>
+                            {{ $hasBettermentReceipt ? 'Better Bill Receipt Entered' : 'Enter Better Bill Receipt' }}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
                 </tr>
                 @empty
                 <tr>
-                  <td colspan="10" class="px-6 py-8 text-center text-gray-500">
+                  <td colspan="12" class="px-6 py-8 text-center text-gray-500">
                     <div class="flex flex-col items-center">
                       <i data-lucide="inbox" class="w-12 h-12 text-gray-300 mb-2"></i>
                       <p class="text-sm">No primary application payment records found</p>
@@ -512,9 +543,273 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script>
+  // Global Alpine.js functions for action menu
+  window.viewInitialBillReceipt = function(fileNo) {
+    // Show loading
+    showModal('Loading...', '<div class="text-center"><div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div></div>');
+    
+    // Fetch initial bill receipt data from mother_applications table
+    fetch(`/programmes/payments/initial-bill-receipt/${fileNo}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          const content = `
+            <div class="space-y-4">
+              <div class="bg-blue-50 p-4 rounded-lg">
+                <h4 class="font-semibold text-blue-900">Initial Bill Receipt Details</h4>
+                <p class="text-sm text-blue-700 mt-1">File No: ${fileNo}</p>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Receipt Number</label>
+                  <p class="mt-1 text-sm text-gray-900">${data.receipt_number || 'N/A'}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Amount</label>
+                  <p class="mt-1 text-sm text-gray-900">₦${data.amount ? parseFloat(data.amount).toLocaleString() : 'N/A'}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Payment Date</label>
+                  <p class="mt-1 text-sm text-gray-900">${data.payment_date || 'N/A'}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Status</label>
+                  <p class="mt-1 text-sm text-gray-900">${data.status || 'N/A'}</p>
+                </div>
+              </div>
+              ${data.notes ? `
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Notes</label>
+                  <p class="mt-1 text-sm text-gray-900">${data.notes}</p>
+                </div>
+              ` : ''}
+            </div>
+          `;
+          showModal('Initial Bill Receipt', content);
+        } else {
+          showModal('Error', `<p class="text-red-600">${data.message || 'Failed to load initial bill receipt'}</p>`);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showModal('Error', '<p class="text-red-600">An error occurred while loading the initial bill receipt</p>');
+      });
+  };
+
+  window.viewBetterBillReference = function(fileNo) {
+    // Show loading
+    showModal('Loading...', '<div class="text-center"><div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div></div>');
+    
+    // Fetch better bill reference data
+    fetch(`/programmes/payments/better-bill-reference/${fileNo}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          const content = `
+            <div class="space-y-4">
+              <div class="bg-green-50 p-4 rounded-lg">
+                <h4 class="font-semibold text-green-900">Better Bill Reference Details</h4>
+                <p class="text-sm text-green-700 mt-1">File No: ${fileNo}</p>
+              </div>
+              <div class="grid grid-cols-1 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Reference ID</label>
+                  <p class="mt-1 text-lg font-mono text-gray-900 bg-gray-100 p-2 rounded">${data.reference_id || 'N/A'}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Generated Date</label>
+                  <p class="mt-1 text-sm text-gray-900">${data.generated_date || 'N/A'}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Amount</label>
+                  <p class="mt-1 text-sm text-gray-900">₦${data.amount ? parseFloat(data.amount).toLocaleString() : 'N/A'}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Status</label>
+                  <p class="mt-1 text-sm text-gray-900">${data.status || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+          `;
+          showModal('Better Bill Reference ID', content);
+        } else {
+          showModal('Error', `<p class="text-red-600">${data.message || 'Failed to load better bill reference'}</p>`);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showModal('Error', '<p class="text-red-600">An error occurred while loading the better bill reference</p>');
+      });
+  };
+
+  window.enterBetterBillReceipt = function(fileNo) {
+    const content = `
+      <form id="better-bill-form" class="space-y-4">
+        <div class="bg-yellow-50 p-4 rounded-lg">
+          <h4 class="font-semibold text-yellow-900">Enter Better Bill Receipt</h4>
+          <p class="text-sm text-yellow-700 mt-1">File No: ${fileNo}</p>
+        </div>
+        <div>
+          <label for="receipt-number" class="block text-sm font-medium text-gray-700">Receipt Number *</label>
+          <input type="text" id="receipt-number" name="receipt_number" required 
+                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label for="receipt-date" class="block text-sm font-medium text-gray-700">Receipt Date *</label>
+          <input type="date" id="receipt-date" name="receipt_date" required 
+                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label for="receipt-notes" class="block text-sm font-medium text-gray-700">Notes</label>
+          <textarea id="receipt-notes" name="notes" rows="3" 
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+        </div>
+        <div class="flex justify-end space-x-3 pt-4">
+          <button type="button" onclick="closeModal()" 
+                  class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200">
+            Cancel
+          </button>
+          <button type="submit" 
+                  class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700">
+            Save Receipt
+          </button>
+        </div>
+      </form>
+    `;
+    
+    showModal('Enter Better Bill Receipt', content);
+    
+    // Handle form submission
+    document.getElementById('better-bill-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const formData = new FormData(this);
+      formData.append('file_no', fileNo);
+      
+      // Show loading
+      const submitBtn = this.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.textContent = 'Saving...';
+      submitBtn.disabled = true;
+      
+      fetch('/programmes/payments/save-better-bill-receipt', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          closeModal();
+          showSuccessMessage('Better bill receipt saved successfully!');
+          // Refresh the page to update the button state
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else {
+          showModal('Error', `<p class="text-red-600">${data.message || 'Failed to save receipt'}</p>`);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showModal('Error', '<p class="text-red-600">An error occurred while saving the receipt</p>');
+      })
+      .finally(() => {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+      });
+    });
+  };
+
+  // Modal functions
+  window.showModal = function(title, content) {
+    // Remove existing modal if any
+    const existingModal = document.getElementById('action-modal');
+    if (existingModal) {
+      existingModal.remove();
+    }
+    
+    const modal = document.createElement('div');
+    modal.id = 'action-modal';
+    modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50';
+    modal.innerHTML = `
+      <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-medium text-gray-900">${title}</h3>
+          <button type="button" onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+        <div class="mt-2">
+          ${content}
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Initialize Lucide icons for the modal
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
+    }
+  };
+  
+  window.closeModal = function() {
+    const modal = document.getElementById('action-modal');
+    if (modal) {
+      modal.remove();
+    }
+  };
+  
+  window.showSuccessMessage = function(message) {
+    const successDiv = document.createElement('div');
+    successDiv.className = 'fixed top-4 right-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-lg z-50';
+    successDiv.innerHTML = `
+      <div class="flex items-center">
+        <i data-lucide="check-circle" class="w-5 h-5 mr-2"></i>
+        <span>${message}</span>
+      </div>
+    `;
+    
+    document.body.appendChild(successDiv);
+    
+    // Initialize Lucide icons
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
+    }
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+      successDiv.remove();
+    }, 3000);
+  };
+
+  // Debug: Check if page is loading
+  console.log('Script is loading...');
+  
   // Make sure everything is wrapped in a DOMContentLoaded event
   document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded!');
+    
+    // Initialize Lucide icons
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
+      console.log('Lucide icons initialized');
+    } else {
+      console.error('Lucide is not loaded!');
+    }
+    
+    // Check if action buttons exist
+    const actionButtons = document.querySelectorAll('.action-menu-btn');
+    console.log('Found action buttons:', actionButtons.length);
+    actionButtons.forEach((btn, index) => {
+      console.log(`Action button ${index}:`, btn);
+    });
     // Initialize date pickers
     flatpickr("#start-date", {
       dateFormat: "Y-m-d",
@@ -1164,6 +1459,313 @@
         }
       });
     }
+    
+    // Action Menu Functionality
+    document.addEventListener('click', function(e) {
+      console.log('Click detected on:', e.target);
+      
+      // Handle action menu button clicks
+      if (e.target.closest('.action-menu-btn')) {
+        console.log('Action menu button clicked!');
+        e.preventDefault();
+        const button = e.target.closest('.action-menu-btn');
+        const dropdown = button.nextElementSibling;
+        
+        console.log('Button:', button);
+        console.log('Dropdown:', dropdown);
+        
+        // Close all other dropdowns
+        document.querySelectorAll('.action-dropdown').forEach(dd => {
+          if (dd !== dropdown) {
+            dd.classList.add('hidden');
+          }
+        });
+        
+        // Toggle current dropdown
+        dropdown.classList.toggle('hidden');
+        console.log('Dropdown toggled, hidden class:', dropdown.classList.contains('hidden'));
+      }
+      
+      // Close dropdowns when clicking outside
+      else if (!e.target.closest('.action-dropdown')) {
+        document.querySelectorAll('.action-dropdown').forEach(dd => {
+          dd.classList.add('hidden');
+        });
+      }
+      
+      // Handle View Initial Bill Receipt
+      else if (e.target.closest('.view-initial-bill-btn')) {
+        e.preventDefault();
+        const fileNo = e.target.closest('.view-initial-bill-btn').dataset.fileNo;
+        viewInitialBillReceipt(fileNo);
+      }
+      
+      // Handle View Better Bill Reference ID
+      else if (e.target.closest('.view-better-bill-ref-btn')) {
+        e.preventDefault();
+        const fileNo = e.target.closest('.view-better-bill-ref-btn').dataset.fileNo;
+        viewBetterBillReference(fileNo);
+      }
+      
+      // Handle Enter Better Bill Receipt
+      else if (e.target.closest('.enter-better-bill-btn') && !e.target.closest('.enter-better-bill-btn').disabled) {
+        e.preventDefault();
+        const fileNo = e.target.closest('.enter-better-bill-btn').dataset.fileNo;
+        enterBetterBillReceipt(fileNo);
+      }
+    });
+    
+    // Function to view Initial Bill Receipt from mother application
+    function viewInitialBillReceipt(fileNo) {
+      // Show loading
+      showModal('Loading...', '<div class="text-center"><div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div></div>');
+      
+      // Fetch initial bill receipt data from mother_applications table
+      fetch(`/programmes/payments/initial-bill-receipt/${fileNo}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const content = `
+              <div class="space-y-4">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                  <h4 class="font-semibold text-blue-900">Initial Bill Receipt Details</h4>
+                  <p class="text-sm text-blue-700 mt-1">File No: ${fileNo}</p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700">Receipt Number</label>
+                    <p class="mt-1 text-sm text-gray-900">${data.receipt_number || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700">Amount</label>
+                    <p class="mt-1 text-sm text-gray-900">₦${data.amount ? parseFloat(data.amount).toLocaleString() : 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700">Payment Date</label>
+                    <p class="mt-1 text-sm text-gray-900">${data.payment_date || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700">Status</label>
+                    <p class="mt-1 text-sm text-gray-900">${data.status || 'N/A'}</p>
+                  </div>
+                </div>
+                ${data.notes ? `
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700">Notes</label>
+                    <p class="mt-1 text-sm text-gray-900">${data.notes}</p>
+                  </div>
+                ` : ''}
+              </div>
+            `;
+            showModal('Initial Bill Receipt', content);
+          } else {
+            showModal('Error', `<p class="text-red-600">${data.message || 'Failed to load initial bill receipt'}</p>`);
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          showModal('Error', '<p class="text-red-600">An error occurred while loading the initial bill receipt</p>');
+        });
+    }
+    
+    // Function to view Better Bill Reference ID
+    function viewBetterBillReference(fileNo) {
+      // Show loading
+      showModal('Loading...', '<div class="text-center"><div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div></div>');
+      
+      // Fetch better bill reference data
+      fetch(`/programmes/payments/better-bill-reference/${fileNo}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const content = `
+              <div class="space-y-4">
+                <div class="bg-green-50 p-4 rounded-lg">
+                  <h4 class="font-semibold text-green-900">Better Bill Reference Details</h4>
+                  <p class="text-sm text-green-700 mt-1">File No: ${fileNo}</p>
+                </div>
+                <div class="grid grid-cols-1 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700">Reference ID</label>
+                    <p class="mt-1 text-lg font-mono text-gray-900 bg-gray-100 p-2 rounded">${data.reference_id || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700">Generated Date</label>
+                    <p class="mt-1 text-sm text-gray-900">${data.generated_date || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700">Amount</label>
+                    <p class="mt-1 text-sm text-gray-900">₦${data.amount ? parseFloat(data.amount).toLocaleString() : 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700">Status</label>
+                    <p class="mt-1 text-sm text-gray-900">${data.status || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+            `;
+            showModal('Better Bill Reference ID', content);
+          } else {
+            showModal('Error', `<p class="text-red-600">${data.message || 'Failed to load better bill reference'}</p>`);
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          showModal('Error', '<p class="text-red-600">An error occurred while loading the better bill reference</p>');
+        });
+    }
+    
+    // Function to enter Better Bill Receipt
+    function enterBetterBillReceipt(fileNo) {
+      const content = `
+        <form id="better-bill-form" class="space-y-4">
+          <div class="bg-yellow-50 p-4 rounded-lg">
+            <h4 class="font-semibold text-yellow-900">Enter Better Bill Receipt</h4>
+            <p class="text-sm text-yellow-700 mt-1">File No: ${fileNo}</p>
+          </div>
+          <div>
+            <label for="receipt-number" class="block text-sm font-medium text-gray-700">Receipt Number *</label>
+            <input type="text" id="receipt-number" name="receipt_number" required 
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+          </div>
+          <div>
+            <label for="receipt-date" class="block text-sm font-medium text-gray-700">Receipt Date *</label>
+            <input type="date" id="receipt-date" name="receipt_date" required 
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+          </div>
+          <div>
+            <label for="receipt-notes" class="block text-sm font-medium text-gray-700">Notes</label>
+            <textarea id="receipt-notes" name="notes" rows="3" 
+                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+          </div>
+          <div class="flex justify-end space-x-3 pt-4">
+            <button type="button" onclick="closeModal()" 
+                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200">
+              Cancel
+            </button>
+            <button type="submit" 
+                    class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700">
+              Save Receipt
+            </button>
+          </div>
+        </form>
+      `;
+      
+      showModal('Enter Better Bill Receipt', content);
+      
+      // Handle form submission
+      document.getElementById('better-bill-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        formData.append('file_no', fileNo);
+        
+        // Show loading
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Saving...';
+        submitBtn.disabled = true;
+        
+        fetch('/programmes/payments/save-better-bill-receipt', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            closeModal();
+            showSuccessMessage('Better bill receipt saved successfully!');
+            // Refresh the page to update the button state
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+          } else {
+            showModal('Error', `<p class="text-red-600">${data.message || 'Failed to save receipt'}</p>`);
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          showModal('Error', '<p class="text-red-600">An error occurred while saving the receipt</p>');
+        })
+        .finally(() => {
+          submitBtn.textContent = originalText;
+          submitBtn.disabled = false;
+        });
+      });
+    }
+    
+    // Modal functions
+    function showModal(title, content) {
+      // Remove existing modal if any
+      const existingModal = document.getElementById('action-modal');
+      if (existingModal) {
+        existingModal.remove();
+      }
+      
+      const modal = document.createElement('div');
+      modal.id = 'action-modal';
+      modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50';
+      modal.innerHTML = `
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-medium text-gray-900">${title}</h3>
+            <button type="button" onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+          </div>
+          <div class="mt-2">
+            ${content}
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      // Initialize Lucide icons for the modal
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+    }
+    
+    function closeModal() {
+      const modal = document.getElementById('action-modal');
+      if (modal) {
+        modal.remove();
+      }
+    }
+    
+    function showSuccessMessage(message) {
+      const successDiv = document.createElement('div');
+      successDiv.className = 'fixed top-4 right-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-lg z-50';
+      successDiv.innerHTML = `
+        <div class="flex items-center">
+          <i data-lucide="check-circle" class="w-5 h-5 mr-2"></i>
+          <span>${message}</span>
+        </div>
+      `;
+      
+      document.body.appendChild(successDiv);
+      
+      // Initialize Lucide icons
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+      
+      // Auto remove after 3 seconds
+      setTimeout(() => {
+        successDiv.remove();
+      }, 3000);
+    }
+    
+    // Close modal when clicking outside
+    document.addEventListener('click', function(e) {
+      if (e.target.id === 'action-modal') {
+        closeModal();
+      }
+    });
   });
 </script>
 @endsection

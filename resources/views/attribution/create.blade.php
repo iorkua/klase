@@ -25,7 +25,7 @@
                         Create A {{ request()->query('is') == 'secondary' ? 'Unit' : 'Primary' }} Survey
                     </h3>
                     
-                    <!-- Selection Grid - 2x2 layout -->
+                    <!-- Selection Grid Layout -->
                     <div class="border border-gray-200 rounded-lg p-4 bg-gray-50 mb-4">
                         @if(request()->query('is') == 'secondary')
                             <!-- Grid for Unit Survey: Primary Survey + File Number -->
@@ -245,71 +245,114 @@
                     </div>
                 </div>
 
-                <!-- Survey Plan Upload Section -->
-                <div id="surveyPlanSection" class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200 hidden">
-                    <h4 class="text-lg font-semibold mb-4 text-blue-800 flex items-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                        Survey Plan Upload (Optional)
-                    </h4>
-                    <div class="space-y-4">
-                        <div class="relative">
-                            <input type="file" id="surveyPlan" name="survey_plan_path"  
-                                   class="hidden" onchange="handleSurveyPlanUpload(this)">
-                            <label for="surveyPlan" class="flex flex-col items-center justify-center w-full h-32 border-2 border-blue-300 border-dashed rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors duration-200">
-                                <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                    <svg class="w-8 h-8 mb-4 text-blue-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
-                                    </svg>
-                                    <p class="mb-2 text-sm text-blue-600"><span class="font-semibold">Click to upload</span> survey plan</p>
-                                    <p class="text-xs text-blue-500">All file types accepted (MAX. 10MB)</p>
-                                </div>
-                            </label>
-                        </div>
-                        
-                        <!-- File Preview Area -->
-                        <div id="surveyPlanPreview" class="hidden">
-                            <div class="bg-white p-4 rounded-lg border border-gray-200">
-                                <div class="flex items-center justify-between mb-3">
-                                    <h5 class="text-sm font-medium text-gray-700">Survey Plan Preview</h5>
-                                    <button type="button" onclick="removeSurveyPlan()" class="text-red-600 hover:text-red-800 text-sm">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                        </svg>
-                                    </button>
-                                </div>
-                                <div id="previewContent" class="text-center">
-                                    <!-- Preview content will be inserted here -->
-                                </div>
-                                <div id="fileInfo" class="mt-3 text-xs text-gray-500">
-                                    <!-- File info will be inserted here -->
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Submit Button (appears after survey plan upload) -->
-                        <div class="flex justify-end space-x-3 mt-4">
-                            <button type="submit" id="save-survey-btn" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                                Save Survey
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Upload Survey Plan Button -->
+                <!-- Action Buttons -->
                 <div class="flex justify-end space-x-3">
                     <button type="button" onclick="window.history.back()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
                         Cancel
                     </button>
-                    <button type="button" id="uploadSurveyPlanBtn" onclick="toggleSurveyPlanSection()" 
-                            class="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                        </svg>
-                        Upload Survey Plan
-                    </button>
+                    @if(request()->query('is') == 'primary')
+                        <button type="button" id="viewSurveyPlanBtn" onclick="viewSurveyPlan()" 
+                                class="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                            View Survey Plan
+                        </button>
+                        <button type="submit" id="save-survey-btn" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200">
+                            Save Survey
+                        </button>
+                    @else
+                        <button type="button" id="uploadSurveyPlanBtn" onclick="toggleSurveyPlanSection()" 
+                                class="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            Upload Survey Plan
+                        </button>
+                    @endif
                 </div>
+                
+                @if(request()->query('is') != 'primary')
+                    <!-- Survey Plan Upload Section (only for secondary/unit surveys) -->
+                    <div id="surveyPlanSection" class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200 hidden">
+                        <h4 class="text-lg font-semibold mb-4 text-blue-800 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Survey Plan Upload <span class="text-red-600">*</span>
+                        </h4>
+                        <div class="space-y-4">
+                            <div class="relative">
+                                <input type="file" id="surveyPlan" name="survey_plan_path" accept=".pdf,.jpg,.jpeg,.png,.dwg,.dxf" 
+                                       class="hidden" required onchange="handleSurveyPlanUpload(this)">
+                                <label for="surveyPlan" class="flex flex-col items-center justify-center w-full h-32 border-2 border-blue-300 border-dashed rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors duration-200">
+                                    <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                        <svg class="w-8 h-8 mb-4 text-blue-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                                        </svg>
+                                        <p class="mb-2 text-sm text-blue-600"><span class="font-semibold">Click to upload</span> survey plan</p>
+                                        <p class="text-xs text-blue-500">All file types accepted (MAX. 10MB)</p>
+                                    </div>
+                                </label>
+                            </div>
+                            
+                            <!-- File Preview Area -->
+                            <div id="surveyPlanPreview" class="hidden">
+                                <div class="bg-white p-4 rounded-lg border border-gray-200">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <h5 class="text-sm font-medium text-gray-700">Survey Plan Preview</h5>
+                                        <button type="button" onclick="removeSurveyPlan()" class="text-red-600 hover:text-red-800 text-sm">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div id="previewContent" class="text-center">
+                                        <!-- Preview content will be inserted here -->
+                                    </div>
+                                    <div id="fileInfo" class="mt-3 text-xs text-gray-500">
+                                        <!-- File info will be inserted here -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Submit Button (appears after survey plan upload) -->
+                            <div class="flex justify-end space-x-3 mt-4">
+                                <button type="submit" id="save-survey-btn-secondary" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200">
+                                    Save Survey
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+                
+                <!-- Survey Plan View Modal (for primary surveys) -->
+                @if(request()->query('is') == 'primary')
+                    <div id="surveyPlanModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+                        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-bold text-gray-900">Survey Plan</h3>
+                                <button type="button" onclick="closeSurveyPlanModal()" class="text-gray-400 hover:text-gray-600">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div id="surveyPlanContent" class="min-h-96">
+                                <!-- Survey plan content will be loaded here -->
+                                <div class="flex items-center justify-center h-96">
+                                    <div class="text-gray-500">
+                                        <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                        <p>Select a file number to view survey plan</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
             </div>
         </form>
     </div>
@@ -460,7 +503,19 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             // Enable save button
-            saveSurveyBtn.disabled = false;
+            if (saveSurveyBtn) {
+                saveSurveyBtn.disabled = false;
+            }
+            
+            // Enable view survey plan button for primary surveys
+            if (!isSecondary) {
+                const viewSurveyPlanBtn = document.getElementById('viewSurveyPlanBtn');
+                if (viewSurveyPlanBtn) {
+                    viewSurveyPlanBtn.disabled = false;
+                    viewSurveyPlanBtn.setAttribute('data-application-id', selectedApplication.id);
+                    viewSurveyPlanBtn.setAttribute('data-file-number', selectedApplication.fileno);
+                }
+            }
             
             // Populate the scheme_no field for secondary surveys if available
             if (isSecondary && selectedApplication.scheme_no) {
@@ -1187,6 +1242,237 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         saveButton.disabled = true;
     });
+});
+
+// Survey Plan viewing functions for primary surveys
+function viewSurveyPlan() {
+    const viewSurveyPlanBtn = document.getElementById('viewSurveyPlanBtn');
+    if (!viewSurveyPlanBtn || viewSurveyPlanBtn.disabled) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'No File Selected',
+                text: 'Please select a file number first to view its survey plan.',
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
+        } else {
+            alert('Please select a file number first to view its survey plan.');
+        }
+        return;
+    }
+    
+    const applicationId = viewSurveyPlanBtn.getAttribute('data-application-id');
+    const fileNumber = viewSurveyPlanBtn.getAttribute('data-file-number');
+    
+    if (!applicationId || !fileNumber) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'Error',
+                text: 'Unable to retrieve application information.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        } else {
+            alert('Unable to retrieve application information.');
+        }
+        return;
+    }
+    
+    // Show loading state
+    viewSurveyPlanBtn.innerHTML = `
+        <svg class="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+        Loading...
+    `;
+    viewSurveyPlanBtn.disabled = true;
+    
+    // Fetch survey plan from mother applications
+    fetch(`/api/survey-plan/${applicationId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.survey_plan) {
+                showSurveyPlanModal(data.survey_plan, fileNumber);
+            } else {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'No Survey Plan Found',
+                        text: data.message || 'No survey plan is available for this application.',
+                        icon: 'info',
+                        confirmButtonText: 'OK'
+                    });
+                } else {
+                    alert(data.message || 'No survey plan is available for this application.');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching survey plan:', error);
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to load survey plan. Please try again.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            } else {
+                alert('Failed to load survey plan. Please try again.');
+            }
+        })
+        .finally(() => {
+            // Reset button state
+            viewSurveyPlanBtn.innerHTML = `
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+                View Survey Plan
+            `;
+            viewSurveyPlanBtn.disabled = false;
+        });
+}
+
+function showSurveyPlanModal(surveyPlan, fileNumber) {
+    const modal = document.getElementById('surveyPlanModal');
+    const content = document.getElementById('surveyPlanContent');
+    
+    if (!modal || !content) return;
+    
+    // Update modal title
+    const modalTitle = modal.querySelector('h3');
+    if (modalTitle) {
+        modalTitle.textContent = `Survey Plan - ${fileNumber}`;
+    }
+    
+    // Clear existing content
+    content.innerHTML = '';
+    
+    // Create survey plan content
+    const surveyPlanContainer = document.createElement('div');
+    surveyPlanContainer.className = 'survey-plan-container';
+    
+    if (surveyPlan.path) {
+        const fileExtension = surveyPlan.original_name ? surveyPlan.original_name.split('.').pop().toLowerCase() : 'unknown';
+        const filePath = `/storage/${surveyPlan.path}`;
+        
+        if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)) {
+            // Image file
+            surveyPlanContainer.innerHTML = `
+                <div class="text-center">
+                    <img src="${filePath}" alt="Survey Plan" class="max-w-full h-auto mx-auto border border-gray-300 rounded-lg shadow-sm">
+                    <div class="mt-4 text-sm text-gray-600">
+                        <p><strong>File:</strong> ${surveyPlan.original_name}</p>
+                        <p><strong>Uploaded:</strong> ${new Date(surveyPlan.uploaded_at).toLocaleDateString()}</p>
+                    </div>
+                    <div class="mt-4">
+                        <a href="${filePath}" target="_blank" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                            </svg>
+                            Open in New Tab
+                        </a>
+                    </div>
+                </div>
+            `;
+        } else if (fileExtension === 'pdf') {
+            // PDF file
+            surveyPlanContainer.innerHTML = `
+                <div class="text-center">
+                    <div class="bg-gray-100 border border-gray-300 rounded-lg p-8 mb-4">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p class="text-lg font-medium text-gray-900 mb-2">PDF Survey Plan</p>
+                        <p class="text-sm text-gray-600 mb-4">${surveyPlan.original_name}</p>
+                    </div>
+                    <div class="text-sm text-gray-600 mb-4">
+                        <p><strong>Uploaded:</strong> ${new Date(surveyPlan.uploaded_at).toLocaleDateString()}</p>
+                    </div>
+                    <div class="space-x-2">
+                        <a href="${filePath}" target="_blank" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                            </svg>
+                            Open PDF
+                        </a>
+                        <a href="${filePath}" download class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Download
+                        </a>
+                    </div>
+                </div>
+            `;
+        } else {
+            // Other file types
+            surveyPlanContainer.innerHTML = `
+                <div class="text-center">
+                    <div class="bg-gray-100 border border-gray-300 rounded-lg p-8 mb-4">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p class="text-lg font-medium text-gray-900 mb-2">Survey Plan Document</p>
+                        <p class="text-sm text-gray-600 mb-4">${surveyPlan.original_name}</p>
+                    </div>
+                    <div class="text-sm text-gray-600 mb-4">
+                        <p><strong>Type:</strong> ${fileExtension.toUpperCase()}</p>
+                        <p><strong>Uploaded:</strong> ${new Date(surveyPlan.uploaded_at).toLocaleDateString()}</p>
+                    </div>
+                    <div class="space-x-2">
+                        <a href="${filePath}" target="_blank" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                            </svg>
+                            Open File
+                        </a>
+                        <a href="${filePath}" download class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Download
+                        </a>
+                    </div>
+                </div>
+            `;
+        }
+    } else {
+        surveyPlanContainer.innerHTML = `
+            <div class="text-center py-12">
+                <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <p class="text-gray-500">No survey plan file available</p>
+            </div>
+        `;
+    }
+    
+    content.appendChild(surveyPlanContainer);
+    
+    // Show modal
+    modal.classList.remove('hidden');
+}
+
+function closeSurveyPlanModal() {
+    const modal = document.getElementById('surveyPlanModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('surveyPlanModal');
+    if (modal && event.target === modal) {
+        closeSurveyPlanModal();
+    }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeSurveyPlanModal();
+    }
 });
 </script>
 @endsection
