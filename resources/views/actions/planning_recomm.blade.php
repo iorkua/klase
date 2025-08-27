@@ -356,7 +356,7 @@
       <img src="{{ asset('assets/logo/logo3.jpeg') }}" alt="Kano State Coat of Arms" class="w-24 h-24 mx-auto mb-4">
       <h1 class="text-xl font-bold uppercase mb-2">Kano State Ministry of Land and Physical Planning</h1>
       <p class="text-sm">No 2 Dr Bala Muhammad Road</p>
-      <p class="text-sm">Physical Planning Department</p>
+      <p class="text-sm">Physical Planning Report</p>
     </header>
 
     <!-- Reference and Date Section -->

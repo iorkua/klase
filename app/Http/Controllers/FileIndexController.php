@@ -656,6 +656,7 @@ class FileIndexController extends Controller
 
     /**
      * Search file numbers for Select2 dropdown (AJAX endpoint)
+     * Now includes mother_applications table with np_fileno
      */
     public function searchFileNumbers(Request $request)
     {
@@ -674,14 +675,21 @@ class FileIndexController extends Controller
                 ]);
             }
 
-            // Search in fileNumber table
-            $query = DB::connection('sqlsrv')
+            $allFiles = collect();
+            $totalResults = 0;
+
+            // 1. Search in fileNumber table (existing file numbers)
+            $fileNumberResults = DB::connection('sqlsrv')
                 ->table('fileNumber')
                 ->select([
                     'id',
                     'kangisFileNo',
                     'mlsfNo', 
-                    'NewKANGISFileNo'
+                    'NewKANGISFileNo',
+                    DB::raw("'fileNumber' as source_table"),
+                    DB::raw('NULL as np_fileno'),
+                    DB::raw('NULL as applicant_name'),
+                    DB::raw('NULL as land_use')
                 ])
                 ->where(function ($q) use ($search) {
                     $q->where('kangisFileNo', 'like', "%{$search}%")
@@ -694,39 +702,89 @@ class FileIndexController extends Controller
                       ->orWhereNotNull('NewKANGISFileNo');
                 })
                 ->orderBy('id', 'desc')
-                ->offset($offset)
-                ->limit($limit + 1); // Get one extra to check if there are more
+                ->limit($limit)
+                ->get();
 
-            $results = $query->get();
-            $hasMore = $results->count() > $limit;
+            // 2. Search in mother_applications table (sectional titling applications)
+            $motherAppResults = DB::connection('sqlsrv')
+                ->table('mother_applications')
+                ->select([
+                    'id',
+                    DB::raw('NULL as kangisFileNo'),
+                    'fileno as mlsfNo',
+                    DB::raw('NULL as NewKANGISFileNo'),
+                    DB::raw("'mother_applications' as source_table"),
+                    'np_fileno',
+                    DB::raw("CASE 
+                        WHEN applicant_type = 'individual' THEN CONCAT(COALESCE(first_name, ''), ' ', COALESCE(surname, ''))
+                        WHEN applicant_type = 'corporate' THEN COALESCE(corporate_name, '')
+                        WHEN applicant_type = 'multiple' THEN 'Multiple Owners'
+                        ELSE 'Unknown'
+                    END as applicant_name"),
+                    'land_use'
+                ])
+                ->where(function ($q) use ($search) {
+                    $q->where('np_fileno', 'like', "%{$search}%")
+                      ->orWhere('fileno', 'like', "%{$search}%")
+                      ->orWhere('first_name', 'like', "%{$search}%")
+                      ->orWhere('surname', 'like', "%{$search}%")
+                      ->orWhere('corporate_name', 'like', "%{$search}%");
+                })
+                ->where(function ($q) {
+                    $q->whereNotNull('np_fileno')
+                      ->orWhereNotNull('fileno');
+                })
+                ->orderBy('id', 'desc')
+                ->limit($limit)
+                ->get();
+
+            // Combine results
+            $allFiles = $fileNumberResults->merge($motherAppResults);
             
-            if ($hasMore) {
-                $results = $results->take($limit); // Remove the extra record
-            }
+            // Apply pagination
+            $paginatedFiles = $allFiles->slice($offset, $limit);
+            $hasMore = $allFiles->count() > ($offset + $limit);
 
-            $files = $results->map(function ($record) {
+            $files = $paginatedFiles->map(function ($record) {
                 // Determine primary file number and type
                 $fileNumber = '';
                 $fileType = '';
                 
-                if (!empty($record->mlsfNo)) {
-                    $fileNumber = $record->mlsfNo;
-                    $fileType = 'MLS';
-                } elseif (!empty($record->kangisFileNo)) {
-                    $fileNumber = $record->kangisFileNo;
-                    $fileType = 'KANGIS';
-                } elseif (!empty($record->NewKANGISFileNo)) {
-                    $fileNumber = $record->NewKANGISFileNo;
-                    $fileType = 'New KANGIS';
+                if ($record->source_table === 'mother_applications') {
+                    // For mother applications, prioritize np_fileno, then fileno
+                    if (!empty($record->np_fileno)) {
+                        $fileNumber = $record->np_fileno;
+                        $fileType = 'NP FileNo (Sectional Titling)';
+                    } elseif (!empty($record->mlsfNo)) {
+                        $fileNumber = $record->mlsfNo;
+                        $fileType = 'Primary FileNo';
+                    }
+                } else {
+                    // For fileNumber table, use existing logic
+                    if (!empty($record->mlsfNo)) {
+                        $fileNumber = $record->mlsfNo;
+                        $fileType = 'MLS';
+                    } elseif (!empty($record->kangisFileNo)) {
+                        $fileNumber = $record->kangisFileNo;
+                        $fileType = 'KANGIS';
+                    } elseif (!empty($record->NewKANGISFileNo)) {
+                        $fileNumber = $record->NewKANGISFileNo;
+                        $fileType = 'New KANGIS';
+                    }
                 }
 
                 return [
-                    'id' => $record->id,
+                    'id' => $record->source_table . '_' . $record->id, // Prefix with source to avoid conflicts
+                    'source' => $record->source_table,
+                    'application_id' => $record->id,
                     'file_number' => $fileNumber,
                     'kangis_file_no' => $record->kangisFileNo ?? '',
                     'mls_file_no' => $record->mlsfNo ?? '',
                     'new_kangis_file_no' => $record->NewKANGISFileNo ?? '',
-                    'file_type' => $fileType
+                    'np_fileno' => $record->np_fileno ?? '',
+                    'file_type' => $fileType,
+                    'applicant_name' => $record->applicant_name ?? '',
+                    'land_use' => $record->land_use ?? ''
                 ];
             })->filter(function ($file) {
                 return !empty($file['file_number']); // Only include records with valid file numbers

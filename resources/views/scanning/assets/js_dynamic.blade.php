@@ -12,10 +12,19 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentEditingDocument = null;
     let currentEditingFileIndex = null;
     let isEditingFileName = false;
+    let isUnindexedMode = false; // Track upload mode
     
     // DOM Elements
     const tabs = document.querySelectorAll('.tab');
     const tabContents = document.querySelectorAll('.tab-content');
+    const uploadTypeSwitch = document.getElementById('upload-type-switch');
+    const switchLabel = document.getElementById('switch-label');
+    const pageTitle = document.getElementById('page-title');
+    const pageDescription = document.getElementById('page-description');
+    const uploadTabBtn = document.getElementById('upload-tab-btn');
+    const selectedFileInfo = document.getElementById('selected-file-info');
+    const indexedUploadContent = document.getElementById('indexed-upload-content');
+    const unindexedUploadContent = document.getElementById('unindexed-upload-content');
     const selectFileBtn = document.getElementById('select-file-btn');
     const fileSelectorDialog = document.getElementById('file-selector-dialog');
     const indexedFilesList = document.getElementById('indexed-files-list');
@@ -80,6 +89,53 @@ document.addEventListener('DOMContentLoaded', function() {
         if (tabName === 'scanned-files') {
             loadScannedFiles();
         }
+    }
+    
+    // Toggle upload mode function
+    function toggleUploadMode() {
+        isUnindexedMode = uploadTypeSwitch ? uploadTypeSwitch.checked : false;
+        
+        // Update UI elements
+        if (switchLabel) {
+            switchLabel.textContent = isUnindexedMode ? 'Unindexed Files' : 'Indexed Files';
+        }
+        
+        if (pageTitle) {
+            pageTitle.textContent = isUnindexedMode ? 'Upload Unindexed Files' : 'Upload Indexed Scanned File';
+        }
+        
+        if (pageDescription) {
+            pageDescription.textContent = isUnindexedMode ? 
+                'Upload files for analysis and automatic indexing' : 
+                'Upload scanned documents to their digital folders';
+        }
+        
+        if (uploadTabBtn) {
+            uploadTabBtn.textContent = isUnindexedMode ? 'Upload Unindexed Files' : 'Upload Indexed Scanned File';
+        }
+        
+        // Show/hide appropriate content
+        if (indexedUploadContent && unindexedUploadContent) {
+            if (isUnindexedMode) {
+                indexedUploadContent.style.display = 'none';
+                unindexedUploadContent.style.display = 'block';
+                unindexedUploadContent.classList.remove('hidden');
+                unindexedUploadContent.setAttribute('data-tab-content', 'upload');
+            } else {
+                indexedUploadContent.style.display = 'block';
+                unindexedUploadContent.style.display = 'none';
+                unindexedUploadContent.classList.add('hidden');
+                indexedUploadContent.setAttribute('data-tab-content', 'upload');
+            }
+        }
+        
+        // Hide/show selected file info
+        if (selectedFileInfo) {
+            selectedFileInfo.style.display = isUnindexedMode ? 'none' : 'block';
+        }
+        
+        // Reset any ongoing uploads
+        resetUploadState();
     }
     
     // Load indexed files for selection
@@ -804,6 +860,10 @@ document.addEventListener('DOMContentLoaded', function() {
             switchTab('scanned-files');
             loadScannedFiles();
         });
+    }
+    
+    if (uploadTypeSwitch) {
+        uploadTypeSwitch.addEventListener('change', toggleUploadMode);
     }
     
     // Document details dialog event listeners

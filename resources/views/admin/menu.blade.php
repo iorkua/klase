@@ -1072,18 +1072,19 @@
       
    
     </div>
-    @if($hasRole('ST - ST Memo'))
-    <a href="{{route('programmes.memo')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 text-black {{ request()->routeIs('programmes.memo') ? 'active' : '' }}">
-    <i data-lucide="clipboard-list" class="h-3.5 w-3.5 text-lime-500"></i>
-    <span>ST Memo</span>
-    </a>
-    @endif
     @if($hasRole("ST - Director's Approval"))
     <a href="{{route('programmes.approvals.director')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 text-black {{ request()->routeIs('programmes.approvals.director') ? 'active' : '' }}">
       <i data-lucide="stamp" class="h-3.5 w-3.5 text-lime-500"></i>
       <span>Director's Approval</span>
     </a>
     @endif
+    @if($hasRole('ST - ST Memo'))
+    <a href="{{route('programmes.memo')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 text-black {{ request()->routeIs('programmes.memo') ? 'active' : '' }}">
+    <i data-lucide="clipboard-list" class="h-3.5 w-3.5 text-lime-500"></i>
+    <span>ST Memo</span>
+    </a>
+    @endif
+   
     @endif
  
     @if($hasRole('ST - Certificate'))

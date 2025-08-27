@@ -856,7 +856,12 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'filetracker'], funct
 Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'scanning'], function () {
     Route::get('/', [App\Http\Controllers\ScanningController::class, 'index'])->name('scanning.index');
     Route::post('/upload', [App\Http\Controllers\ScanningController::class, 'upload'])->name('scanning.upload');
+    Route::post('/upload-unindexed', [App\Http\Controllers\ScanningController::class, 'uploadUnindexed'])->name('scanning.upload-unindexed');
     Route::get('/list', [App\Http\Controllers\ScanningController::class, 'list'])->name('scanning.list');
+    Route::get('/{id}', [App\Http\Controllers\ScanningController::class, 'view'])->name('scanning.view');
+    Route::get('/{id}/details', [App\Http\Controllers\ScanningController::class, 'details'])->name('scanning.details');
+    Route::put('/{id}/update', [App\Http\Controllers\ScanningController::class, 'updateDetails'])->name('scanning.update');
+    Route::delete('/{id}', [App\Http\Controllers\ScanningController::class, 'delete'])->name('scanning.delete');
 });
 
 // Page Typing Integration
@@ -866,3 +871,5 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'pagetyping'], functi
 });
 
 require __DIR__ . '/instrument_batch_fix.php';
+
+Route::get('/api/survey-plan/{applicationId}', [App\Http\Controllers\PrimaryFormController::class, 'getSurveyPlan'])->name('api.survey-plan');

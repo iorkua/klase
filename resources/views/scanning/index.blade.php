@@ -13,11 +13,25 @@
             <div class="container mx-auto py-6 space-y-6">
                 <!-- Page Header -->
                 <div class="flex flex-col space-y-2">
-                    <h1 class="text-2xl font-bold tracking-tight">Upload Indexed Scanned File</h1>
-                    <p class="text-muted-foreground">Upload scanned documents to their digital folders</p>
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h1 class="text-2xl font-bold tracking-tight" id="page-title">Upload Indexed Scanned File</h1>
+                            <p class="text-muted-foreground" id="page-description">Upload scanned documents to their digital folders</p>
+                        </div>
+                        
+                        <!-- Upload Type Switch -->
+                        <div class="flex items-center space-x-4">
+                            <span class="text-sm font-medium text-gray-700">Upload Type:</span>
+                            <div class="relative inline-flex items-center">
+                                <input type="checkbox" id="upload-type-switch" class="sr-only peer">
+                                <label for="upload-type-switch" class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 cursor-pointer"></label>
+                                <span class="ml-3 text-sm font-medium text-gray-900" id="switch-label">Indexed Files</span>
+                            </div>
+                        </div>
+                    </div>
                     
                     @if($selectedFileIndexing)
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4" id="selected-file-info">
                             <div class="flex items-center">
                                 <i data-lucide="folder-open" class="h-5 w-5 text-blue-600 mr-2"></i>
                                 <div>
@@ -71,12 +85,12 @@
                 <!-- Tabs -->
                 <div class="tabs">
                     <div class="tabs-list grid w-full md:w-auto grid-cols-2">
-                        <button class="tab active" role="tab" aria-selected="true" data-tab="upload">Upload Indexed Scanned File</button>
+                        <button class="tab active" role="tab" aria-selected="true" data-tab="upload" id="upload-tab-btn">Upload Indexed Scanned File</button>
                         <button class="tab" role="tab" aria-selected="false" data-tab="scanned-files">Scanned Files</button>
                     </div>
 
-                    <!-- Upload Tab -->
-                    <div class="tab-content mt-6 active" role="tabpanel" aria-hidden="false" data-tab-content="upload">
+                    <!-- Indexed Upload Tab -->
+                    <div class="tab-content mt-6 active" role="tabpanel" aria-hidden="false" data-tab-content="upload" id="indexed-upload-content">
                         <div class="card">
                             <div class="p-6 border-b">
                                 <div class="flex flex-col md:flex-row md:items-center justify-between">
@@ -187,6 +201,24 @@
                                         </a>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Unindexed Upload Tab (Hidden by default) -->
+                    <div class="tab-content mt-6 hidden" role="tabpanel" aria-hidden="true" data-tab-content="unindexed-upload" id="unindexed-upload-content">
+                        <div class="card">
+                            <div class="p-6 border-b">
+                                <div class="flex flex-col md:flex-row md:items-center justify-between">
+                                    <div>
+                                        <h2 class="text-lg font-semibold">Upload Unindexed Files</h2>
+                                        <p class="text-sm text-muted-foreground">Upload files for analysis and automatic indexing</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-6">
+                                <!-- Include the unindexed files upload content -->
+                                @include('scanning.unindexed_files_scans')
                             </div>
                         </div>
                     </div>

@@ -267,7 +267,9 @@ function initializeSmartFilenoSelector() {
                 toggleFilenoMode();
                 
                 // Trigger the same logic as dropdown selection
-                handleFilenoSelection(manualApplication);
+                if (window.handleFilenoSelection) {
+                    window.handleFilenoSelection(manualApplication);
+                }
                 
                 // Show success message
                 if (typeof Swal !== 'undefined') {
@@ -313,11 +315,63 @@ function initializeSmartFilenoSelector() {
     
     // Function to handle file number selection (both dropdown and manual)
     function handleFilenoSelection(application) {
+        console.log('=== handleFilenoSelection called ===');
+        console.log('Application data:', application);
+        console.log('Current URL params:', window.location.search);
+        console.log('Is primary GIS:', '{{ request()->query('is') }}' === 'primary');
+        
         // Store the selected application globally
         window.selectedApplication = application;
         
         // Set the main fileno field
         if (filenoInput) filenoInput.value = application.fileno;
+        
+        // Enable View Survey Plan button for primary GIS if application has survey plan
+        const viewSurveyPlanBtn = document.getElementById('viewSurveyPlanBtn');
+        console.log('View Survey Plan Button found:', !!viewSurveyPlanBtn);
+        
+        if (viewSurveyPlanBtn && '{{ request()->query('is') }}' === 'primary') {
+            // Check if this is a mother application with potential survey plan
+            const isMotherApplication = application.source === 'mother_applications' || 
+                                       application.np_fileno || 
+                                       application.file_type === 'NP FileNo (Sectional Titling)' ||
+                                       application.file_type === 'Primary FileNo' ||
+                                       (application.id && application.id.toString().startsWith('mother_applications_'));
+            
+            console.log('Is mother application check:', {
+                source: application.source,
+                np_fileno: application.np_fileno,
+                file_type: application.file_type,
+                id_starts_with_mother: application.id && application.id.toString().startsWith('mother_applications_'),
+                final_result: isMotherApplication
+            });
+            
+            if (isMotherApplication) {
+                console.log('✅ Enabling View Survey Plan button for mother application:', application);
+                viewSurveyPlanBtn.disabled = false;
+                viewSurveyPlanBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                viewSurveyPlanBtn.classList.add('hover:bg-blue-700');
+                
+                // Set data attributes for the API call
+                const applicationId = application.id.toString().replace('mother_applications_', '');
+                viewSurveyPlanBtn.setAttribute('data-application-id', applicationId);
+                viewSurveyPlanBtn.setAttribute('data-file-number', application.fileno || application.np_fileno || '');
+                viewSurveyPlanBtn.setAttribute('data-source', 'mother_applications');
+                
+                console.log('Button attributes set:', {
+                    'data-application-id': applicationId,
+                    'data-file-number': application.fileno || application.np_fileno || '',
+                    'data-source': 'mother_applications'
+                });
+            } else {
+                console.log('❌ Disabling View Survey Plan button for non-mother application:', application);
+                viewSurveyPlanBtn.disabled = true;
+                viewSurveyPlanBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                viewSurveyPlanBtn.classList.remove('hover:bg-blue-700');
+            }
+        } else {
+            console.log('View Survey Plan button not found or not primary GIS');
+        }
         
         // Populate hidden fields based on survey type
         const isSecondary = '{{ request()->query('is') }}' === 'secondary';
@@ -335,7 +389,13 @@ function initializeSmartFilenoSelector() {
                 populateUnitInformation(application);
             }
         } else {
-            if (appIdEl) appIdEl.value = application.id;
+            // For primary applications, extract the actual ID if it has the prefix
+            let actualId = application.id;
+            if (application.id && application.id.toString().startsWith('mother_applications_')) {
+                actualId = application.id.toString().replace('mother_applications_', '');
+            }
+            
+            if (appIdEl) appIdEl.value = actualId;
             if (subAppIdEl) subAppIdEl.value = '';
             application.isSecondary = false;
         }
@@ -348,7 +408,9 @@ function initializeSmartFilenoSelector() {
             renderApplicationHeader(application);
         }
     }
-    
+    // Expose for global access (used by Select2 handler outside this scope)
+    window.handleFilenoSelection = handleFilenoSelection;
+
     // Function to enable form inputs
     function enableFormInputs() {
         // Try different form selectors since we're in GIS record form
@@ -549,7 +611,9 @@ function initializeSmartFilenoSelector() {
                 if (selectedDisplay) selectedDisplay.classList.remove('hidden');
                 
                 // Handle the selection
-                handleFilenoSelection(application);
+                if (window.handleFilenoSelection) {
+                    window.handleFilenoSelection(application);
+                }
             } else {
                 // Clear selection if empty option is selected
                 if (selectedDisplay) selectedDisplay.classList.add('hidden');
@@ -581,7 +645,9 @@ function initializeSmartFilenoSelector() {
         if (selectedDisplay) selectedDisplay.classList.remove('hidden');
         
         // Handle the selection
-        handleFilenoSelection(application);
+        if (window.handleFilenoSelection) {
+            window.handleFilenoSelection(application);
+        }
     };
     
     // Initialize Select2 for file number dropdown
@@ -628,7 +694,11 @@ function initializeSelect2FilenoDropdown() {
                                 kangis_file_no: file.kangis_file_no || '',
                                 mls_file_no: file.mls_file_no || '',
                                 new_kangis_file_no: file.new_kangis_file_no || '',
-                                file_type: file.file_type || 'Unknown'
+                                np_fileno: file.np_fileno || '',
+                                file_type: file.file_type || 'Unknown',
+                                source: file.source || 'fileNumber',
+                                applicant_name: file.applicant_name || '',
+                                land_use: file.land_use || ''
                             };
                         }),
                         pagination: {
@@ -673,7 +743,11 @@ function initializeSelect2FilenoDropdown() {
             kangisFileNo: data.kangis_file_no,
             mlsfNo: data.mls_file_no,
             NewKANGISFileNo: data.new_kangis_file_no,
-            file_type: data.file_type
+            np_fileno: data.np_fileno,
+            file_type: data.file_type,
+            source: data.source,
+            applicant_name: data.applicant_name,
+            land_use: data.land_use
         };
         
         // Set the main fileno field
@@ -690,8 +764,8 @@ function initializeSelect2FilenoDropdown() {
         window.selectedApplication = application;
         
         // Handle the selection (enable form inputs, etc.)
-        if (typeof handleDropdownSelection === 'function') {
-            handleDropdownSelection(application);
+        if (window.handleFilenoSelection) {
+            window.handleFilenoSelection(application);
         }
     });
     

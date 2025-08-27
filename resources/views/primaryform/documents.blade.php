@@ -157,6 +157,29 @@
                    </div>
                </div>
 
+               <div class="grid grid-cols-1 gap-6 mb-6">
+                   <div class="border border-gray-200 rounded-md p-4">
+                       <h4 class="font-medium mb-2">Survey Plan <span class="text-red-500">*</span></h4>
+                       <p class="text-sm text-gray-600 mb-4">Approved survey plan showing property boundaries and measurements</p>
+
+                       <div class="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
+                           <div class="flex justify-center mb-2">
+                               <i data-lucide="upload" class="w-6 h-6 text-gray-400"></i>
+                           </div>
+                           <div class="flex justify-center">
+                               <input type="file" name="survey_plan" id="survey_plan"
+                                   accept=".pdf,.jpg,.jpeg,.png" class="hidden" required
+                                   onchange="updateFileName(this, 'survey_plan_label')">
+                               <label for="survey_plan" id="survey_plan_label"
+                                   class="flex items-center text-blue-600 cursor-pointer">
+                                   <span>Upload Document</span>
+                               </label>
+                           </div>
+                           <p class="text-xs text-gray-500 mt-2" id="survey_plan_name">PDF, JPG or PNG (max. 5MB)</p>
+                       </div>
+                   </div>
+               </div>
+
                <div class="flex justify-between mt-8">
                    <button type="button" class="px-4 py-2 bg-white border border-gray-300 rounded-md"
                        id="backStep3">Back</button>

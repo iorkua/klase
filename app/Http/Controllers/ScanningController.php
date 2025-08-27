@@ -293,6 +293,176 @@ class ScanningController extends Controller
     }
 
     /**
+     * Upload unindexed documents with metadata extraction
+     */
+    public function uploadUnindexed(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'documents' => 'required|array|min:1',
+                'documents.*' => 'required|file|mimes:pdf,jpg,jpeg,png,tiff|max:20480', // 20MB max
+                'extracted_metadata' => 'nullable|array',
+                'extracted_metadata.*' => 'nullable|array',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $extractedMetadata = $request->input('extracted_metadata', []);
+            $uploadedDocuments = [];
+            $createdIndexings = [];
+            $errors = [];
+
+            foreach ($request->file('documents') as $index => $document) {
+                try {
+                    $originalName = $document->getClientOriginalName();
+                    $metadata = $extractedMetadata[$index] ?? [];
+                    
+                    // Generate unique filename for storage
+                    $extension = $document->getClientOriginalExtension();
+                    $filename = time() . '_' . $index . '_' . uniqid() . '.' . $extension;
+                    
+                    // Store file
+                    $path = $document->storeAs(
+                        'unindexed_documents', 
+                        $filename, 
+                        'public'
+                    );
+
+                    // Extract metadata for file indexing
+                    $fileNumber = $metadata['extractedFileNumber'] ?? 'TEMP-' . time() . '-' . $index;
+                    $fileTitle = $metadata['detectedOwner'] ?? $originalName;
+                    $plotNumber = $metadata['plotNumber'] ?? '';
+                    $landUseType = $metadata['landUseType'] ?? 'Unknown';
+                    $district = $metadata['district'] ?? 'Unknown';
+
+                    // Create file indexing record
+                    $fileIndexing = FileIndexing::on('sqlsrv')->create([
+                        'file_number' => $fileNumber,
+                        'file_title' => $fileTitle,
+                        'plot_number' => $plotNumber,
+                        'land_use_type' => $landUseType,
+                        'district' => $district,
+                        'lga' => $district, // Use same as district if LGA not provided
+                        'has_cofo' => false,
+                        'is_merged' => false,
+                        'has_transaction' => true, // Since it's from uploaded document
+                        'is_problematic' => false,
+                        'is_co_owned_plot' => false,
+                        'created_by' => Auth::id(),
+                        'updated_by' => Auth::id(),
+                    ]);
+
+                    // Create scanning record
+                    $scanning = Scanning::on('sqlsrv')->create([
+                        'file_indexing_id' => $fileIndexing->id,
+                        'document_path' => $path,
+                        'original_filename' => $originalName,
+                        'paper_size' => $this->detectPaperSize($document),
+                        'document_type' => $this->detectDocumentType($originalName),
+                        'uploaded_by' => Auth::id(),
+                        'status' => 'scanned',
+                        'notes' => 'Created from unindexed file upload with metadata extraction',
+                    ]);
+
+                    // Create property record if we have enough metadata
+                    if (!empty($metadata['extractedFileNumber']) || !empty($metadata['detectedOwner'])) {
+                        try {
+                            $propertyRecord = new \App\Models\PropertyRecord();
+                            $propertyRecord->setConnection('sqlsrv');
+                            $propertyRecord->fill([
+                                'kangisFileNo' => $fileNumber,
+                                'NewKANGISFileno' => $fileNumber,
+                                'title_type' => 'Certificate of Occupancy',
+                                'transaction_type' => 'Original Grant',
+                                'transaction_date' => now(),
+                                'instrument_type' => $metadata['documentType'] ?? 'Land Document',
+                                'Grantee' => $metadata['detectedOwner'] ?? 'Unknown',
+                                'property_description' => $fileTitle,
+                                'location' => $district,
+                                'plot_no' => $plotNumber,
+                                'lgsaOrCity' => $district,
+                                'created_by' => Auth::id(),
+                                'updated_by' => Auth::id(),
+                            ]);
+                            $propertyRecord->save();
+                        } catch (Exception $e) {
+                            Log::warning('Could not create property record for unindexed upload', [
+                                'file_indexing_id' => $fileIndexing->id,
+                                'error' => $e->getMessage()
+                            ]);
+                        }
+                    }
+
+                    $uploadedDocuments[] = [
+                        'id' => $scanning->id,
+                        'file_indexing_id' => $fileIndexing->id,
+                        'filename' => $originalName,
+                        'path' => $path,
+                        'size' => $document->getSize(),
+                        'type' => $extension,
+                        'file_number' => $fileNumber,
+                        'metadata' => $metadata,
+                    ];
+
+                    $createdIndexings[] = $fileIndexing;
+
+                } catch (Exception $e) {
+                    $errors[] = "Error uploading {$originalName}: " . $e->getMessage();
+                    Log::error('Error uploading unindexed document', [
+                        'filename' => $originalName ?? 'unknown',
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            Log::info('Unindexed documents uploaded', [
+                'successful_uploads' => count($uploadedDocuments),
+                'created_indexings' => count($createdIndexings),
+                'errors' => count($errors),
+                'uploaded_by' => Auth::id()
+            ]);
+
+            $response = [
+                'success' => count($uploadedDocuments) > 0,
+                'message' => count($uploadedDocuments) . ' documents uploaded and indexed successfully!',
+                'uploaded_documents' => $uploadedDocuments,
+                'created_indexings' => $createdIndexings->map(function($indexing) {
+                    return [
+                        'id' => $indexing->id,
+                        'file_number' => $indexing->file_number,
+                        'file_title' => $indexing->file_title,
+                    ];
+                }),
+                'redirect' => count($createdIndexings) > 0 ? route('pagetyping.index', ['file_indexing_id' => $createdIndexings[0]->id]) : null
+            ];
+
+            if (count($errors) > 0) {
+                $response['errors'] = $errors;
+                $response['message'] .= ' ' . count($errors) . ' uploads failed.';
+            }
+
+            return response()->json($response);
+
+        } catch (Exception $e) {
+            Log::error('Error in unindexed document upload', [
+                'error' => $e->getMessage(),
+                'request_data' => $request->except('documents')
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error uploading documents: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * View a specific scanned document
      */
     public function view($id)
@@ -571,46 +741,33 @@ class ScanningController extends Controller
     }
 
     /**
-     * Detect paper size from uploaded file
+     * Helper method to detect paper size from file
      */
     private function detectPaperSize($file)
     {
-        // Basic paper size detection logic
-        // This can be enhanced with actual image analysis
-        $size = $file->getSize();
-        
-        if ($size > 5000000) { // > 5MB, likely A3 or larger
-            return 'A3';
-        } elseif ($size > 1000000) { // > 1MB, likely A4
-            return 'A4';
-        } else {
-            return 'A5';
-        }
+        // Default to A4, could be enhanced with actual dimension detection
+        return 'A4';
     }
 
     /**
-     * Detect document type from filename
+     * Helper method to detect document type from filename
      */
     private function detectDocumentType($filename)
     {
         $filename = strtolower($filename);
         
-        if (strpos($filename, 'certificate') !== false || strpos($filename, 'cert') !== false) {
+        if (strpos($filename, 'certificate') !== false) {
             return 'Certificate';
         } elseif (strpos($filename, 'deed') !== false) {
             return 'Deed';
-        } elseif (strpos($filename, 'letter') !== false) {
-            return 'Letter';
-        } elseif (strpos($filename, 'application') !== false || strpos($filename, 'app') !== false) {
-            return 'Application Form';
-        } elseif (strpos($filename, 'map') !== false) {
-            return 'Map';
-        } elseif (strpos($filename, 'survey') !== false || strpos($filename, 'plan') !== false) {
-            return 'Survey Plan';
         } elseif (strpos($filename, 'receipt') !== false) {
             return 'Receipt';
+        } elseif (strpos($filename, 'survey') !== false) {
+            return 'Survey Plan';
+        } elseif (strpos($filename, 'map') !== false) {
+            return 'Map';
         } else {
-            return 'Other';
+            return 'Document';
         }
     }
 }

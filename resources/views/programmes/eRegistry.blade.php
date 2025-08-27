@@ -284,24 +284,32 @@
                                         <td class="table-cell">{{ $application->Expected_Return_Date ?? 'N/A' }}</td>
                                         <td class="table-cell">{{ $application->Current_Office ?? 'N/A' }}</td>
                                         <td class="table-cell">
-                                            @if($application->processing_status == 'Completed')
-                                                <a href="{{ route('file-viewer.primary', $application->application_id) }}" 
-                                                   class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
-                                                    <i data-lucide="folder-open" class="w-3 h-3 mr-1"></i>
-                                                    View File
-                                                </a>
-                                            @else
-                                                <button disabled 
-                                                        class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white btn-disabled transition-colors"
-                                                        title="Files not available - Processing {{ strtolower($application->processing_status) }}">
-                                                    <i data-lucide="folder-x" class="w-3 h-3 mr-1"></i>
-                                                    @if($application->processing_status == 'In Progress')
-                                                        Processing...
-                                                    @else
-                                                        No File
-                                                    @endif
+                                            <div class="flex space-x-2">
+                                                @if($application->processing_status == 'Completed')
+                                                    <a href="{{ route('file-viewer.primary', $application->application_id) }}" 
+                                                       class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                                                        <i data-lucide="folder-open" class="w-3 h-3 mr-1"></i>
+                                                        View File
+                                                    </a>
+                                                @else
+                                                    <button disabled 
+                                                            class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white btn-disabled transition-colors"
+                                                            title="Files not available - Processing {{ strtolower($application->processing_status) }}">
+                                                        <i data-lucide="folder-x" class="w-3 h-3 mr-1"></i>
+                                                        @if($application->processing_status == 'In Progress')
+                                                            Processing...
+                                                        @else
+                                                            No File
+                                                        @endif
+                                                    </button>
+                                                @endif
+                                                
+                                                <button onclick="updateEdms('primary', '{{ $application->application_id }}')"
+                                                        class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
+                                                    <i data-lucide="refresh-cw" class="w-3 h-3 mr-1"></i>
+                                                    Update EDMS
                                                 </button>
-                                            @endif
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -381,24 +389,32 @@
                                         <td class="table-cell">{{ $application->Expected_Return_Date ?? 'N/A' }}</td>
                                         <td class="table-cell">{{ $application->Current_Office ?? 'N/A' }}</td>
                                         <td class="table-cell">
-                                            @if($application->processing_status == 'Completed')
-                                                <a href="{{ route('file-viewer.unit', $application->sub_application_id) }}" 
-                                                   class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors">
-                                                    <i data-lucide="folder-open" class="w-3 h-3 mr-1"></i>
-                                                    View File
-                                                </a>
-                                            @else
-                                                <button disabled 
-                                                        class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white btn-disabled transition-colors"
-                                                        title="Files not available - Processing {{ strtolower($application->processing_status) }}">
-                                                    <i data-lucide="folder-x" class="w-3 h-3 mr-1"></i>
-                                                    @if($application->processing_status == 'In Progress')
-                                                        Processing...
-                                                    @else
-                                                        No File
-                                                    @endif
+                                            <div class="flex space-x-2">
+                                                @if($application->processing_status == 'Completed')
+                                                    <a href="{{ route('file-viewer.unit', $application->sub_application_id) }}" 
+                                                       class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors">
+                                                        <i data-lucide="folder-open" class="w-3 h-3 mr-1"></i>
+                                                        View File
+                                                    </a>
+                                                @else
+                                                    <button disabled 
+                                                            class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white btn-disabled transition-colors"
+                                                            title="Files not available - Processing {{ strtolower($application->processing_status) }}">
+                                                        <i data-lucide="folder-x" class="w-3 h-3 mr-1"></i>
+                                                        @if($application->processing_status == 'In Progress')
+                                                            Processing...
+                                                        @else
+                                                            No File
+                                                        @endif
+                                                    </button>
+                                                @endif
+                                                
+                                                <button onclick="updateEdms('unit', '{{ $application->sub_application_id }}')"
+                                                        class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
+                                                    <i data-lucide="refresh-cw" class="w-3 h-3 mr-1"></i>
+                                                    Update EDMS
                                                 </button>
-                                            @endif
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -411,6 +427,31 @@
                     </table>
                 </div>
             </div>
+
+<script>
+function updateEdms(type, id) {
+    // Add your EDMS update logic here
+    console.log('Updating EDMS for ' + type + ' application ID: ' + id);
+    
+    // Example implementation:
+    // You can make an AJAX call to your backend endpoint
+    // fetch('/update-edms', {
+    //     method: 'POST',
+    //     headers: {
+    //         'Content-Type': 'application/json',
+    //         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+    //     },
+    //     body: JSON.stringify({
+    //         type: type,
+    //         id: id
+    //     })
+    // }).then(response => response.json())
+    //   .then(data => {
+    //       // Handle response
+    //       alert('EDMS updated successfully');
+    //   });
+}
+</script>
         </div>
     </div>
     

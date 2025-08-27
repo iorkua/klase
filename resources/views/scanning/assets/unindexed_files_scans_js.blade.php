@@ -210,8 +210,8 @@
         }
     }
 
-    // Upload functionality
-    function startUpload() {
+    // Real backend upload for unindexed files
+    async function startUpload() {
         if (selectedFiles.length === 0) {
             alert('Please select files to upload');
             return;
@@ -225,6 +225,20 @@
         // Show progress bar
         const progressDiv = document.getElementById('upload-progress');
         if (progressDiv) progressDiv.classList.remove('hidden');
+
+        // Create FormData for real backend upload
+        const formData = new FormData();
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'));
+        
+        // Add files to FormData
+        selectedFiles.forEach((file, index) => {
+            formData.append(`documents[${index}]`, file);
+        });
+        
+        // Add extracted metadata if available
+        if (Object.keys(extractedMetadata).length > 0) {
+            formData.append('extracted_metadata', JSON.stringify(extractedMetadata));
+        }
 
         // Add files to uploaded list with original file references immediately
         const newFiles = selectedFiles.map((file, index) => ({
@@ -241,33 +255,79 @@
         filteredFiles = uploadedFiles; // Initialize filtered files
         updateUploadedFilesDisplay(); // Update display to show new files as 'Uploading...'
 
-        // Simulate upload progress
-        const interval = setInterval(() => {
-            uploadProgress += 5;
-            updateUploadProgress();
+        try {
+            // Send to real backend
+            const response = await fetch('{{ route("scanning.upload-unindexed") }}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': formData.get('_token')
+                }
+            });
 
-            if (uploadProgress >= 100) {
-                clearInterval(interval);
+            const result = await response.json();
+
+            if (result.success) {
+                // Update progress to 100%
+                uploadProgress = 100;
+                updateUploadProgress();
+                
                 uploadStatus = 'complete';
                 updateUploadStatus();
                 updateUploadButtons();
 
-                // Update status of newly uploaded files to 'Ready for analysis'
-                newFiles.forEach(file => {
-                    const index = uploadedFiles.findIndex(f => f.id === file.id);
-                    if (index !== -1) {
-                        uploadedFiles[index].status = 'Ready for analysis';
+                // Update status of newly uploaded files
+                newFiles.forEach((file, index) => {
+                    const uploadedDoc = result.uploaded_documents[index];
+                    if (uploadedDoc) {
+                        const fileIndex = uploadedFiles.findIndex(f => f.id === file.id);
+                        if (fileIndex !== -1) {
+                            uploadedFiles[fileIndex].status = 'Indexed & Scanned';
+                            uploadedFiles[fileIndex].backendId = uploadedDoc.id;
+                            uploadedFiles[fileIndex].file_indexing_id = uploadedDoc.file_indexing_id;
+                            uploadedFiles[fileIndex].file_number = uploadedDoc.file_number;
+                        }
                     }
                 });
-                updateUploadedFilesDisplay(); // Refresh table with new status
+
+                updateUploadedFilesDisplay();
                 updateStats();
 
-                // Start AI processing for the newly uploaded files
-                setTimeout(() => {
-                    startAiProcessing(newFiles.map(f => f.id)); // Pass IDs of files to process
-                }, 500);
+                // Show success message with redirect option
+                if (result.created_indexings && result.created_indexings.length > 0) {
+                    const indexing = result.created_indexings[0];
+                    if (confirm(`Files successfully uploaded and indexed!\n\nFile Number: ${indexing.file_number}\nTitle: ${indexing.file_title}\n\nWould you like to proceed to Page Typing?`)) {
+                        window.location.href = `{{ route('pagetyping.index') }}?file_indexing_id=${indexing.id}`;
+                    }
+                }
+
+                // Clear selected files for next upload
+                selectedFiles = [];
+                updateSelectedFilesDisplay();
+
+            } else {
+                throw new Error(result.message || 'Upload failed');
             }
-        }, 200);
+
+        } catch (error) {
+            console.error('Upload error:', error);
+            
+            // Update file status to show error
+            newFiles.forEach(file => {
+                const fileIndex = uploadedFiles.findIndex(f => f.id === file.id);
+                if (fileIndex !== -1) {
+                    uploadedFiles[fileIndex].status = 'Upload Failed';
+                }
+            });
+            
+            updateUploadedFilesDisplay();
+            
+            uploadStatus = 'error';
+            updateUploadStatus();
+            updateUploadButtons();
+            
+            alert('Upload failed: ' + error.message);
+        }
     }
 
     function cancelUpload() {

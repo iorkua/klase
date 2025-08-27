@@ -111,6 +111,7 @@ class PrimaryFormController extends Controller
                 'building_plan' => 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png',
                 'architectural_design' => 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png',
                 'ownership_document' => 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png',
+                'survey_plan' => 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png',
                 'shared_areas' => 'nullable|array',
                 'shared_areas.*' => 'nullable|string',
                 'other_areas_detail' => 'nullable|string|max:500',
@@ -229,7 +230,7 @@ class PrimaryFormController extends Controller
 
             // Process document uploads - using direct file access
             $documents = [];
-            $documentTypes = ['application_letter', 'building_plan', 'architectural_design', 'ownership_document'];
+            $documentTypes = ['application_letter', 'building_plan', 'architectural_design', 'ownership_document', 'survey_plan'];
             
             foreach ($documentTypes as $docType) {
                 if ($request->hasFile($docType)) {
@@ -557,5 +558,103 @@ class PrimaryFormController extends Controller
             // Don't throw exception to avoid breaking the main flow
             return null;
         }
+    }
+
+    /**
+     * Get survey plan for an application
+     */
+    public function getSurveyPlan($applicationId)
+    {
+        try {
+            // Extract the actual application ID if it starts with 'mother_'
+            $actualId = $applicationId;
+            if (strpos($applicationId, 'mother_') === 0) {
+                $actualId = str_replace('mother_', '', $applicationId);
+            }
+            
+            // Fetch the application from mother_applications table
+            $application = DB::connection('sqlsrv')
+                ->table('mother_applications')
+                ->where('id', $actualId)
+                ->first();
+            
+            if (!$application) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Application not found.'
+                ], 404);
+            }
+            
+            // Check if documents exist and parse them
+            if (!$application->documents) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No documents found for this application.'
+                ]);
+            }
+            
+            // Parse the documents JSON
+            $documents = json_decode($application->documents, true);
+            
+            if (!$documents || !isset($documents['survey_plan'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No survey plan found for this application.'
+                ]);
+            }
+            
+            $surveyPlan = $documents['survey_plan'];
+            
+            // Verify the file exists
+            $filePath = storage_path('app/public/' . $surveyPlan['path']);
+            if (!file_exists($filePath)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Survey plan file not found on server.'
+                ]);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'survey_plan' => $surveyPlan,
+                'application' => [
+                    'id' => $application->id,
+                    'np_fileno' => $application->np_fileno,
+                    'fileno' => $application->fileno,
+                    'applicant_name' => $this->getApplicantName($application)
+                ]
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Error fetching survey plan', [
+                'application_id' => $applicationId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching survey plan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Helper method to get applicant name
+     */
+    private function getApplicantName($application)
+    {
+        if ($application->applicant_type === 'individual') {
+            return trim(($application->first_name ?? '') . ' ' . ($application->middle_name ?? '') . ' ' . ($application->surname ?? ''));
+        } elseif ($application->applicant_type === 'corporate') {
+            return $application->corporate_name ?? 'Corporate Applicant';
+        } elseif ($application->applicant_type === 'multiple') {
+            $names = json_decode($application->multiple_owners_names ?? '[]', true);
+            if (is_array($names) && count($names) > 0) {
+                return $names[0] . ' et al.';
+            }
+            return 'Multiple Owners';
+        }
+        
+        return 'Unknown Applicant';
     }
 }

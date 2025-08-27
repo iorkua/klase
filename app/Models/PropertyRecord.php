@@ -9,92 +9,63 @@ class PropertyRecord extends Model
 {
     use HasFactory;
 
-    protected $table = 'gis_datacapture';
+    protected $connection = 'sqlsrv';
+    protected $table = 'property_records';
 
     protected $fillable = [
-        'planid',
-        'mlsfNo',
-        'kangisFileNo',
-        'plotNo',
-        'blockNo',
-        'approvedPlanNo',
-        'tpPlanNo',
-        'surveyedBy',
-        'drawnBy',
-        'checkedBy',
-        'passedBy',
-        'plotYearCreated',
-        'beaconControlName',
-        'beaconControlX',
-        'beaconControlY',
-        'metricSheetIndex',
-        'metricSheetNo',
-        'imperialSheet',
-        'imperialSheetNo',
-        'layoutName',
-        'districtName',
-        'lgaName',
-        'streetName',
-        'houseNo',
-        'tenancy',
-        'areaInHectares',
-        'titleStatus',
-        'picture',
-        'oldTitleSerialNo',
-        'oldTitlePageNo',
-        'oldTitleVolumeNo',
-        'deedsDate',
-        'deedsTime',
-        'certificateDate',
-        'originalAllottee',
-        'addressOfOriginalAllottee',
-        'titleIssuedYear',
-        'currentAllottee',
-        'addressOfCurrentAllottee',
-        'titleOfCurrentAllottee',
-        'currentYearTitleOwned',
-        'phoneNo',
-        'emailAddress',
-        'occupation',
-        'nationality',
-        'parcelNewlyDigitized',
-        'digitizationSource',
-        'workTime',
-        'electronicSupervisor',
-        'directorGeneral',
-        'evidenceOfPayment',
-        'title',
-        'transactionDocument',
-        'passportPhoto',
-        'nationalId',
-        'internationalPassport',
-        'businessRegCert',
-        'formCO7AndCO4',
-        'certOfIncorporation',
-        'memorandumAndArticle',
-        'letterOfAdmin',
-        'courtAffidavit',
-        'policeReport',
-        'newspaperAdvert',
-        'acknowledgementStatus',
-        'acknowledgementIssuedDate',
-        'acknowledgementIssuedBy',
-        'bankDraftSerialNo',
-        'bankName',
-        'conflictExistence',
-        'problemNature1',
-        'problemNature2',
-        'landUse',
-        'specifically',
-        'changeOfOwnership',
-        'reasonForChange',
+        'mlsFNo',
+        'kangisFileNo', 
+        'NewKANGISFileno',
+        'title_type',
+        'transaction_type',
+        'transaction_date',
+        'serialNo',
+        'pageNo',
+        'volumeNo',
+        'regNo',
+        'instrument_type',
+        'period',
+        'period_unit',
+        'Assignor',
+        'Assignee',
+        'Mortgagor',
+        'Mortgagee',
+        'Surrenderor',
+        'Surrenderee',
+        'Lessor',
+        'Lessee',
+        'Grantor',
+        'Grantee',
+        'property_description',
+        'location',
+        'plot_no',
+        'lgsaOrCity',
+        'layout',
+        'schedule',
+        'created_by',
+        'updated_by',
     ];
 
-    // New method to switch the data source table
-    public function setDataSource(string $source)
+    protected $casts = [
+        'transaction_date' => 'date',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'deleted_at' => 'datetime',
+    ];
+
+    // Relationships
+    public function fileIndexing()
     {
-        if (in_array($source, ['gis_datacapture', 'property_records'])) {
-            $this->table = $source;
-        }
+        return $this->belongsTo(FileIndexing::class, 'kangisFileNo', 'file_number');
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 }
