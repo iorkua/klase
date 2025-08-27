@@ -87,6 +87,16 @@ class ScanningController extends Controller
                 'document_types.*' => 'nullable|string|max:100',
                 'notes' => 'nullable|array',
                 'notes.*' => 'nullable|string|max:1000',
+                // Optional workflow extras
+                'batch_id' => 'nullable|integer',
+                'pra.instrument_type' => 'nullable|string|max:100',
+                'pra.reg_no' => 'nullable|string|max:100',
+                'pra.reg_date' => 'nullable|date',
+                'pra.grantor' => 'nullable|string|max:255',
+                'pra.grantee' => 'nullable|string|max:255',
+                'pra.extras' => 'nullable|string',
+                'barcode_value' => 'nullable|string|max:150',
+                'qr_payload' => 'nullable|string',
             ]);
 
             if ($validator->fails()) {
@@ -116,6 +126,40 @@ class ScanningController extends Controller
             } else {
                 $fileIndexing = FileIndexing::on('sqlsrv')->findOrFail($fileIndexingId);
             }
+
+            // Optional: attach to batch if provided
+            if ($request->filled('batch_id')) {
+                try {
+                    FileIndexing::on('sqlsrv')->where('id', $fileIndexingId)->update(['batch_id' => $request->batch_id]);
+                } catch (Exception $e) {
+                    Log::warning('Could not set batch_id on file_indexings (column or FK may be missing).', [
+                        'file_indexing_id' => $fileIndexingId,
+                        'batch_id' => $request->batch_id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            // Optional: store barcode/QR info
+            if ($request->filled('barcode_value')) {
+                try {
+                    \DB::connection('sqlsrv')->table('barcodes')->insert([
+                        'file_indexing_id' => $fileIndexingId,
+                        'barcode_value' => $request->barcode_value,
+                        'qr_payload' => $request->qr_payload,
+                        'printed_at' => null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                } catch (Exception $e) {
+                    Log::warning('Could not insert barcode record (table or columns may be missing).', [
+                        'file_indexing_id' => $fileIndexingId,
+                        'barcode_value' => $request->barcode_value,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
             $customNames = $request->input('custom_names', []);
             $paperSizes = $request->input('paper_sizes', []);
             $documentTypes = $request->input('document_types', []);
@@ -174,6 +218,41 @@ class ScanningController extends Controller
                     Log::error('Error uploading document', [
                         'file_indexing_id' => $fileIndexingId,
                         'filename' => $originalName ?? 'unknown',
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            // Mark file_indexings.is_updated = 1 if column exists
+            try {
+                FileIndexing::on('sqlsrv')->where('id', $fileIndexingId)->update(['is_updated' => 1]);
+            } catch (Exception $e) {
+                Log::warning('Could not update file_indexings.is_updated (column may be missing). Generate and run EDMS schema SQL.', [
+                    'file_indexing_id' => $fileIndexingId,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
+            // Optional: capture PRA if present
+            $pra = $request->input('pra', []);
+            if (!empty($pra['instrument_type'] ?? null)) {
+                try {
+                    \DB::connection('sqlsrv')->table('property_records')->insert([
+                        'file_indexing_id' => $fileIndexingId,
+                        'instrument_type' => $pra['instrument_type'],
+                        'reg_no' => $pra['reg_no'] ?? null,
+                        'reg_date' => $pra['reg_date'] ?? null,
+                        'grantor' => $pra['grantor'] ?? null,
+                        'grantee' => $pra['grantee'] ?? null,
+                        'extras' => $pra['extras'] ?? null,
+                        'created_by' => Auth::id(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                } catch (Exception $e) {
+                    Log::warning('Could not insert PRA property record (table or columns may be missing).', [
+                        'file_indexing_id' => $fileIndexingId,
+                        'pra' => $pra,
                         'error' => $e->getMessage()
                     ]);
                 }
@@ -453,6 +532,14 @@ class ScanningController extends Controller
                 'message' => 'Error loading scanned files: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Alias for getScannedFiles to match route name scanning.list
+     */
+    public function list(Request $request)
+    {
+        return $this->getScannedFiles($request);
     }
 
     /**

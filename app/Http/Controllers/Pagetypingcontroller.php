@@ -451,6 +451,16 @@ class PageTypingController extends Controller
                 }
             }
 
+            // Mark file_indexings.is_updated = 1 if column exists
+            try {
+                FileIndexing::on('sqlsrv')->where('id', $fileIndexingId)->update(['is_updated' => 1]);
+            } catch (Exception $e) {
+                Log::warning('Could not update file_indexings.is_updated after page typing (column may be missing). Generate and run EDMS schema SQL.', [
+                    'file_indexing_id' => $fileIndexingId,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
             $response = [
                 'success' => $savedCount > 0,
                 'message' => "{$savedCount} pages classified successfully!",
@@ -476,6 +486,14 @@ class PageTypingController extends Controller
                 'message' => 'Error saving page typing: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Alias for store() to match pagetyping.save route
+     */
+    public function save(Request $request)
+    {
+        return $this->store($request);
     }
 
     /**
@@ -623,6 +641,16 @@ class PageTypingController extends Controller
                 ]));
             }
 
+            // Mark file_indexings.is_updated = 1 if column exists
+            try {
+                FileIndexing::on('sqlsrv')->where('id', $validated['file_indexing_id'])->update(['is_updated' => 1]);
+            } catch (Exception $e) {
+                Log::warning('Could not update file_indexings.is_updated after single page typing (column may be missing). Generate and run EDMS schema SQL.', [
+                    'file_indexing_id' => $validated['file_indexing_id'],
+                    'error' => $e->getMessage()
+                ]);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Page classification saved successfully!',
@@ -766,8 +794,8 @@ class PageTypingController extends Controller
     private function getPdfPageCount($filePath)
     {
         try {
-            // Check if file exists
-            $fullPath = public_path($filePath);
+            // Resolve to storage path where uploads are saved
+            $fullPath = storage_path('app/public/' . ltrim($filePath, '/'));
             if (!file_exists($fullPath)) {
                 return 1; // Default to 1 page if file not found
             }

@@ -1,515 +1,1391 @@
-<!-- Dynamic Page Typing JavaScript -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
     // Initialize Lucide icons
     lucide.createIcons();
-    
-    // State variables
-    let selectedFileIndexing = @json($selectedFileIndexing ?? null);
-    let currentDocuments = [];
-    let currentDocumentIndex = 0;
-    let currentPageNumber = 1;
-    let savedPages = [];
-    let totalPages = 0;
-    
-    // DOM Elements
-    const tabs = document.querySelectorAll('.tab');
-    const tabContents = document.querySelectorAll('.tab-content');
-    const pageTypingModal = document.getElementById('page-typing-modal');
-    const closeTypingModal = document.getElementById('close-typing-modal');
-    const typingModalTitle = document.getElementById('typing-modal-title');
-    const documentViewer = document.getElementById('document-viewer');
-    const documentCounter = document.getElementById('document-counter');
-    const prevDocumentBtn = document.getElementById('prev-document');
-    const nextDocumentBtn = document.getElementById('next-document');
-    
-    // Form elements
-    const pageTypingForm = document.getElementById('page-typing-form');
-    const pageNumberInput = document.getElementById('page-number');
-    const pageTypeSelect = document.getElementById('page-type');
-    const pageSubtypeInput = document.getElementById('page-subtype');
-    const serialNumberInput = document.getElementById('serial-number');
-    const pageCodeInput = document.getElementById('page-code');
-    const savePageBtn = document.getElementById('save-page');
-    const saveAndNextBtn = document.getElementById('save-and-next');
-    const completeTypingBtn = document.getElementById('complete-typing');
-    const typingProgress = document.getElementById('typing-progress');
-    const typingProgressBar = document.getElementById('typing-progress-bar');
-    
-    // Search elements
-    const searchPendingFiles = document.getElementById('search-pending-files');
-    const searchProgressFiles = document.getElementById('search-progress-files');
-    const searchCompletedFiles = document.getElementById('search-completed-files');
-    
-    // Tab switching functionality
-    function switchTab(tabName) {
-        tabs.forEach(tab => {
-            if (tab.getAttribute('data-tab') === tabName) {
-                tab.classList.add('active');
-                tab.setAttribute('aria-selected', 'true');
-            } else {
-                tab.classList.remove('active');
-                tab.setAttribute('aria-selected', 'false');
-            }
-        });
 
-        tabContents.forEach(content => {
-            if (content.getAttribute('data-tab-content') === tabName) {
-                content.classList.remove('hidden');
-                content.classList.add('active');
-                content.setAttribute('aria-hidden', 'false');
-            } else {
-                content.classList.add('hidden');
-                content.classList.remove('active');
-                content.setAttribute('aria-hidden', 'true');
-            }
-        });
+    // Application state
+    let state = {
+      activeTab: 'pending',
+      selectedFile: null,
+      currentPage: 1,
+      typedContent: '',
+      typingProgress: 0,
+      zoomLevel: 100,
+      rotation: 0,
+      showFolderView: false,
+      selectedPageInFolder: null,
+      pageType: '1',
+      pageSubType: '1',
+      serialNo: '01',
+      expandedFiles: [],
+      batchMode: false,
+      batchTypedPages: {},
+      currentBatchPageIndex: null,
+      batchSubmitReady: false,
+      batchProgress: 0,
+      batchProcessing: false,
+      processedPages: {},
+      bookletMode: false,
+      currentBooklet: null,
+      bookletStartPage: null,
+      bookletPages: {},
+      bookletCounter: 'a',
+      expandedFileId: null
+    };
+
+    // Sample data
+    const samplePages = {
+      "FILE-2023-001": [
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+1",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+2",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+3",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+4",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+5"
+      ],
+      "FILE-2023-002": [
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+1",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+2",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+3"
+      ],
+      "FILE-2023-003": [
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+1",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+2"
+      ],
+      "FILE-2023-004": [
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+1",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+2",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+3",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+4"
+      ],
+      "FILE-2023-005": [
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+1",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+2",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+3",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+4",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+5",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+6"
+      ],
+      "FILE-2023-006": [
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+1",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+2",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+3"
+      ],
+      "SCAN-EXAMPLE": [
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+1",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+2",
+        "https://via.placeholder.com/800x1000/f8fafc/1e293b?text=Document+Page+3"
+      ]
+    };
+
+    // Sample data for pending typing files
+    const pendingFiles = [
+      {
+        id: "FILE-2023-001",
+        fileNumber: "KNML 34591",
+        name: "Certificate of Occupancy - Alhaji Ibrahim Dantata",
+        type: "Certificate of Occupancy",
+        pages: 5,
+        completed: 0,
+        date: "2023-06-15",
+        status: "Pending",
+      },
+      {
+        id: "FILE-2023-002",
+        fileNumber: "KNGP 00892",
+        name: "Site Plan - Hajiya Amina Yusuf",
+        type: "Site Plan",
+        pages: 3,
+        completed: 0,
+        date: "2023-06-14",
+        status: "Pending",
+      },
+      {
+        id: "FILE-2023-003",
+        fileNumber: "KNML 42786",
+        name: "Letter of Administration - Kano Traders Association",
+        type: "Letter of Administration",
+        pages: 2,
+        completed: 0,
+        date: "2023-06-13",
+        status: "Pending",
+      },
+      {
+        id: "SCAN-EXAMPLE",
+        fileNumber: "KNML 09846",
+        name: "Certificate of Occupancy - Example",
+        type: "Certificate of Occupancy",
+        pages: 3,
+        completed: 0,
+        date: "2023-06-18",
+        status: "Pending",
+      }
+    ];
+
+    // Sample data for in-progress typing files
+    const inProgressFiles = [
+      {
+        id: "FILE-2023-006",
+        fileNumber: "KNML 09213",
+        name: "Land Use Permit - Abdullahi Sani",
+        type: "Land Use Permit",
+        pages: 3,
+        completed: 1,
+        date: "2023-06-09",
+        status: "In Progress",
+      }
+    ];
+
+    // Sample data for completed typing files
+    const completedFiles = [
+      {
+        id: "FILE-2023-004",
+        fileNumber: "KNGP 01478",
+        name: " Musa Usman Bayero",
+        type: "Right of Occupancy",
+        pages: 4,
+        completed: 4,
+        date: "2023-06-12",
+        status: "Completed",
+        processedPages: [
+          { pageNumber: 1, pageCode: "KNGP 01478-1-1-01", pageType: "File Cover", pageSubType: "New File Cover" },
+          {
+            pageNumber: 2,
+            pageCode: "KNGP 01478-5-5-02",
+            pageType: "Land Title",
+            pageSubType: "Certificate of Occupancy",
+          },
+          { pageNumber: 3, pageCode: "KNGP 01478-9-25-03", pageType: "Survey", pageSubType: "Survey Plan" },
+          {
+            pageNumber: 4,
+            pageCode: "KNGP 01478-4-8-04",
+            pageType: "Correspondence",
+            pageSubType: "Acknowledgment Letter",
+          }
+        ]
+      },
+      {
+        id: "FILE-2023-005",
+        fileNumber: "KNML 37925",
+        name: "Hajiya Fatima Mohammed",
+        type: "Deed of Assignment",
+        pages: 6,
+        completed: 6,
+        date: "2023-06-10",
+        status: "Completed",
+        processedPages: [
+          { pageNumber: 1, pageCode: "KNML 37925-1-1-01", pageType: "File Cover", pageSubType: "New File Cover" },
+          { pageNumber: 2, pageCode: "KNML 37925-6-53-02", pageType: "Legal", pageSubType: "Deed of Assignment" },
+          { pageNumber: 3, pageCode: "KNML 37925-6-53-03", pageType: "Legal", pageSubType: "Deed of Assignment" },
+          { pageNumber: 4, pageCode: "KNML 37925-7-20-04", pageType: "Payment Evidence", pageSubType: "Bank Teller" },
+          { pageNumber: 5, pageCode: "KNML 37925-7-78-05", pageType: "Payment Evidence", pageSubType: "Receipts" },
+          {
+            pageNumber: 6,
+            pageCode: "KNML 37925-4-72-06",
+            pageType: "Correspondence",
+            pageSubType: "Letter of Acceptance",
+          }
+        ]
+      }
+    ];
+
+    // Page types and subtypes
+    const pageTypes = [
+      { id: 1, code: "FC", name: "File Cover" },
+      { id: 2, code: "APP", name: "Application" },
+      { id: 3, code: "BN", name: "Bill Notice" },
+      { id: 4, code: "COR", name: "Correspondence" },
+      { id: 5, code: "LT", name: "Land Title" },
+      { id: 6, code: "LEG", name: "Legal" },
+      { id: 7, code: "PE", name: "Payment Evidence" },
+      { id: 8, code: "REP", name: "Report" },
+      { id: 9, code: "SUR", name: "Survey" },
+      { id: 10, code: "MISC", name: "Miscellaneous" },
+      { id: 11, code: "IMG", name: "Image" },
+      { id: 12, code: "TP", name: "Town Planning" }
+    ];
+
+    // Page subtypes organized by page type ID
+    const pageSubTypes = {
+      1: [
+        // File Cover
+        { id: 1, code: "NFC", name: "New File Cover" },
+        { id: 2, code: "OFC", name: "Old File Cover" }
+      ],
+      2: [
+        // Application
+        { id: 3, code: "CO", name: "Certificate of Occupancy" },
+        { id: 4, code: "REV", name: "Revalidation" },
+        { id: 42, code: "OTH", name: "Others" },
+        { id: 96, code: "ASI", name: "Application for Surrender/Issuance of CofO" },
+        { id: 97, code: "ATF", name: "Application for Temporary Files" },
+        { id: 128, code: "REC", name: "Recertification" },
+        { id: 136, code: "INS", name: "Inspection" },
+        { id: 137, code: "CF", name: "Computer Form" }
+      ],
+      3: [
+        // Bill Notice
+        { id: 7, code: "DGR", name: "Demand for Ground Rent" },
+        { id: 34, code: "DN", name: "Demand Notice" },
+        { id: 35, code: "MISC", name: "Miscellaneous" },
+        { id: 77, code: "NOA", name: "Notice of Assessment" },
+        { id: 92, code: "AUC", name: "Auction Notice" },
+        { id: 133, code: "FRP", name: "First Registration of Plot Bill" }
+      ],
+      4: [
+        // Correspondence
+        { id: 8, code: "AL", name: "Acknowledgment Letter" },
+        { id: 9, code: "ASR", name: "Application Submission for Recommendation" },
+        { id: 10, code: "ACO", name: "Approval of Certificate of Occupancy" },
+        { id: 11, code: "AUL", name: "Authority Letter" },
+        { id: 12, code: "BIR", name: "Board of Internal Revenue" },
+        { id: 13, code: "CL", name: "Conveyance Letter" },
+        { id: 14, code: "DTP", name: "Director Town Planning" },
+        { id: 15, code: "SD", name: "Survey Description" },
+        { id: 16, code: "SP", name: "Survey Plan" },
+        { id: 17, code: "SG", name: "Surveyor General" },
+        { id: 29, code: "MISC", name: "Miscellaneous" },
+        { id: 30, code: "IM", name: "Internal Memo" },
+        { id: 31, code: "EM", name: "External Memo" }
+        // ... more subtypes
+      ],
+      5: [
+        // Land Title
+        { id: 5, code: "CO", name: "Certificate of Occupancy" },
+        { id: 6, code: "SP", name: "Survey Plan" },
+        { id: 32, code: "MISC", name: "Miscellaneous" },
+        { id: 130, code: "LFR", name: "Letter of First Registration" },
+        { id: 131, code: "CR", name: "Confirmation of Registration" },
+        { id: 140, code: "PRO", name: "Provisional Right of Occupancy" }
+      ],
+      6: [
+        // Legal
+        { id: 18, code: "AGR", name: "Agreement" },
+        { id: 39, code: "REP", name: "Report" },
+        { id: 44, code: "POA", name: "Power of Attorney" },
+        { id: 45, code: "DOS", name: "Deed of Surrender" },
+        { id: 46, code: "WCC", name: "Withdrawal of Clients CofO" },
+        { id: 48, code: "CACC", name: "CAC Certificate" },
+        { id: 49, code: "CI", name: "Certificate of Incorporation" },
+        { id: 50, code: "LA", name: "Letter of Administration" },
+        { id: 51, code: "MISC", name: "Miscellaneous" },
+        { id: 53, code: "DOA", name: "Deed of Assignment" }
+        // ... more subtypes
+      ],
+      7: [
+        // Payment Evidence
+        { id: 19, code: "AOF", name: "Assessment of Fees" },
+        { id: 20, code: "BT", name: "Bank Teller" },
+        { id: 21, code: "ITCC", name: "Income Tax Clearance Certificate" },
+        { id: 22, code: "RCR", name: "Revenue Collector's Receipt" },
+        { id: 36, code: "MISC", name: "Miscellaneous" },
+        { id: 41, code: "REP", name: "Report" },
+        { id: 70, code: "ITPR", name: "Income TAX P.A.Y.E Receipt" },
+        { id: 78, code: "REC", name: "Receipts" }
+        // ... more subtypes
+      ],
+      8: [
+        // Report
+        { id: 23, code: "RR", name: "Reinspection Report" },
+        { id: 37, code: "MISC", name: "Miscellaneous" },
+        { id: 65, code: "IPVR", name: "Inspection and Property Valuation Report" },
+        { id: 101, code: "PSR", name: "Property Search Report" },
+        { id: 110, code: "LITR", name: "Low Income TAX Report" },
+        { id: 111, code: "RVR", name: "Reconciliation of Valuation Report" },
+        { id: 116, code: "PVR", name: "Property Valuation Report" }
+      ],
+      9: [
+        // Survey
+        { id: 24, code: "TDP", name: "Title Deed Plan" },
+        { id: 25, code: "SP", name: "Survey Plan" },
+        { id: 26, code: "SD", name: "Survey Description" },
+        { id: 33, code: "MISC", name: "Miscellaneous" },
+        { id: 38, code: "REP", name: "Report" }
+      ],
+      10: [
+        // Miscellaneous
+        { id: 27, code: "MISC", name: "Miscellaneous" },
+        { id: 43, code: "OC", name: "Other Certificates" },
+        { id: 59, code: "CP", name: "Company Profile" },
+        { id: 132, code: "LRAT", name: "Land Registration Acknowledgment Ticket" }
+      ],
+      11: [
+        // Image
+        { id: 28, code: "PP", name: "Passport" }
+      ],
+      12: [
+        // Town Planning
+        { id: 135, code: "SKT", name: "Sketch" },
+        { id: 141, code: "LP", name: "Location Plan" }
+      ]
+    };
+
+    // Get all files
+    const allFiles = [...pendingFiles, ...inProgressFiles, ...completedFiles];
+
+    // DOM Elements
+    const elements = {
+      // Tabs
+      tabs: document.querySelectorAll('[role="tab"]'),
+      tabContents: document.querySelectorAll('[role="tabpanel"]'),
+      typingTab: document.getElementById('typing-tab'),
+      
+      // File lists
+      pendingFilesList: document.getElementById('pending-files-list'),
+      inProgressFilesList: document.getElementById('in-progress-files-list'),
+      completedFilesList: document.getElementById('completed-files-list'),
+      
+      // Typing card
+      typingCard: document.getElementById('typing-card'),
+      
+      // Counters
+      pendingCount: document.getElementById('pending-count'),
+      inProgressCount: document.getElementById('in-progress-count'),
+      completedCount: document.getElementById('completed-count')
+    };
+
+    // Helper functions
+    function getFileById(fileId) {
+      return allFiles.find(file => file.id === fileId);
     }
-    
-    // Start page typing for a file
-    function startPageTyping(fileIndexingId) {
-        loadFileForTyping(fileIndexingId);
+
+    function getPageTypeById(typeId) {
+      return pageTypes.find(type => type.id.toString() === typeId);
     }
-    
-    // Continue page typing for a file
-    function continuePageTyping(fileIndexingId) {
-        loadFileForTyping(fileIndexingId);
+
+    function getPageSubTypeById(typeId, subTypeId) {
+      return pageSubTypes[parseInt(typeId)]?.find(subType => subType.id.toString() === subTypeId);
     }
-    
-    // View completed page typing
-    function viewPageTyping(fileIndexingId) {
-        // Redirect to view page or show read-only modal
-        window.open(`{{ route('fileindexing.show', '') }}/${fileIndexingId}`, '_blank');
+
+    function getCurrentPageImage() {
+      if (!state.selectedFile || !samplePages[state.selectedFile]) {
+        return null;
+      }
+
+      const pageIndex = state.currentPage - 1;
+      return pageIndex >= 0 && pageIndex < samplePages[state.selectedFile].length 
+        ? samplePages[state.selectedFile][pageIndex] 
+        : null;
     }
-    
-    // Load file for typing
-    function loadFileForTyping(fileIndexingId) {
-        // Show loading state
-        showPageTypingModal();
-        typingModalTitle.textContent = 'Loading...';
-        documentViewer.innerHTML = '<div class="flex items-center justify-center h-full"><i data-lucide="loader" class="h-8 w-8 animate-spin text-gray-400"></i></div>';
+
+    // UI update functions
+    function updateUI() {
+      updateStats();
+      renderPendingFiles();
+      renderInProgressFiles();
+      renderCompletedFilesTable(); // Changed from renderCompletedFiles
+      renderTypingView();
+    }
+
+    function updateStats() {
+      // Update tabs
+      elements.tabs.forEach(tab => {
+        const tabId = tab.getAttribute('data-tab');
+        tab.setAttribute('aria-selected', tabId === state.activeTab);
+      });
+      
+      elements.tabContents.forEach(content => {
+        const contentId = content.getAttribute('data-tab-content');
+        content.setAttribute('aria-hidden', contentId !== state.activeTab);
+      });
+
+      // Update typing tab state
+      elements.typingTab.setAttribute('aria-disabled', state.selectedFile ? 'false' : 'true');
+
+      // Update counters
+      elements.pendingCount.textContent = pendingFiles.length;
+      elements.inProgressCount.textContent = inProgressFiles.length;
+      elements.completedCount.textContent = completedFiles.length;
+    }
+
+    function renderPendingFiles() {
+      elements.pendingFilesList.innerHTML = '';
+      
+      if (pendingFiles.length === 0) {
+        elements.pendingFilesList.innerHTML = `
+          <div class="rounded-md border p-8 text-center">
+            <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <i data-lucide="file-text" class="h-6 w-6"></i>
+            </div>
+            <h3 class="mb-2 text-lg font-medium">No files pending page typing</h3>
+            <p class="mb-4 text-sm text-muted-foreground">All files have been processed</p>
+          </div>
+        `;
         lucide.createIcons();
+        return;
+      }
+      
+      pendingFiles.forEach(file => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'flex items-center justify-between p-4';
+        fileItem.innerHTML = `
+          <div class="flex items-center gap-3">
+            <i data-lucide="file-text" class="h-8 w-8 text-blue-500"></i>
+            <div>
+              <p class="text-blue-600 font-medium">${file.fileNumber}</p>
+              <p class="text-sm text-gray-700 mt-0.5">
+                ${file.name.includes(" - ") ? file.name.split(" - ")[1] : file.name}
+              </p>
+              <div class="flex items-center gap-2 mt-1">
+                <span class="badge badge-secondary text-xs">
+                  ${file.pages} ${file.pages === 1 ? "page" : "pages"}
+                </span>
+                <span class="text-xs text-muted-foreground">${file.date}</span>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-outline btn-sm start-typing" data-id="${file.id}">
+            <i data-lucide="edit" class="h-3.5 w-3.5 mr-1"></i>
+            Start Page Typing
+          </button>
+        `;
         
-        // Fetch file data and documents
-        fetch(`{{ route("scanning.list") }}?file_indexing_id=${fileIndexingId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                currentDocuments = data.scanned_files;
-                selectedFileIndexing = { id: fileIndexingId };
-                
-                if (currentDocuments.length === 0) {
-                    documentViewer.innerHTML = '<div class="flex items-center justify-center h-full text-gray-500"><p>No scanned documents found</p></div>';
-                    return;
-                }
-                
-                // Load existing page typings
-                loadExistingPageTypings(fileIndexingId);
-                
-                // Initialize document viewer
-                currentDocumentIndex = 0;
-                loadDocument(0);
-                updateDocumentCounter();
-                updateTypingProgress();
-                
-                typingModalTitle.textContent = `Page Typing - ${currentDocuments[0].file_indexing.file_number}`;
-            } else {
-                throw new Error(data.message || 'Failed to load documents');
-            }
-        })
-        .catch(error => {
-            console.error('Error loading file for typing:', error);
-            alert('Error loading file: ' + error.message);
-            hidePageTypingModal();
+        elements.pendingFilesList.appendChild(fileItem);
+      });
+      
+      // Initialize icons for the new elements
+      lucide.createIcons();
+      
+      // Add event listeners
+      document.querySelectorAll('.start-typing').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const fileId = btn.getAttribute('data-id');
+          selectFileForTyping(fileId);
         });
+      });
     }
-    
-    // Load existing page typings
-    function loadExistingPageTypings(fileIndexingId) {
-        fetch(`{{ route("pagetyping.list") }}?file_indexing_id=${fileIndexingId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                savedPages = data.page_typings;
-                updateTypingProgress();
-                
-                // If there are existing typings, load the last one
-                if (savedPages.length > 0) {
-                    const lastPage = savedPages[savedPages.length - 1];
-                    currentPageNumber = lastPage.page_number + 1;
-                    pageNumberInput.value = currentPageNumber;
-                    serialNumberInput.value = savedPages.length + 1;
-                }
-            }
-        })
-        .catch(error => {
-            console.error('Error loading existing page typings:', error);
-        });
-    }
-    
-    // Load document in viewer
-    function loadDocument(index) {
-        if (index < 0 || index >= currentDocuments.length) return;
-        
-        currentDocumentIndex = index;
-        const document = currentDocuments[index];
-        
-        // Display document
-        const fileUrl = document.file_url;
-        const fileExtension = document.filename.split('.').pop().toLowerCase();
-        
-        if (['jpg', 'jpeg', 'png', 'gif', 'tiff'].includes(fileExtension)) {
-            documentViewer.innerHTML = `
-                <img src="${fileUrl}" alt="Document" class="max-w-full max-h-full object-contain">
-            `;
-        } else if (fileExtension === 'pdf') {
-            documentViewer.innerHTML = `
-                <iframe src="${fileUrl}" class="w-full h-full border-0"></iframe>
-            `;
-        } else {
-            documentViewer.innerHTML = `
-                <div class="flex flex-col items-center justify-center h-full text-gray-500">
-                    <i data-lucide="file-text" class="h-12 w-12 mb-4"></i>
-                    <p class="mb-2">${document.filename}</p>
-                    <a href="${fileUrl}" target="_blank" class="btn btn-outline btn-sm">
-                        <i data-lucide="external-link" class="h-4 w-4 mr-2"></i>
-                        Open Document
-                    </a>
+
+    function renderInProgressFiles() {
+      elements.inProgressFilesList.innerHTML = '';
+      
+      if (inProgressFiles.length === 0) {
+        elements.inProgressFilesList.innerHTML = `
+          <div class="rounded-md border p-8 text-center">
+            <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <i data-lucide="file-text" class="h-6 w-6"></i>
+            </div>
+            <h3 class="mb-2 text-lg font-medium">No files in progress</h3>
+            <p class="mb-4 text-sm text-muted-foreground">Start typing a file to see it here</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+      
+      inProgressFiles.forEach(file => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'flex items-center justify-between p-4';
+        fileItem.innerHTML = `
+          <div class="flex items-center gap-3">
+            <i data-lucide="file-text" class="h-8 w-8 text-orange-500"></i>
+            <div class="flex-1">
+              <p class="text-blue-600 font-medium">${file.fileNumber}</p>
+              <p class="text-sm text-gray-700 mt-0.5">
+                ${file.name.includes(" - ") ? file.name.split(" - ")[1] : file.name}
+              </p>
+              <div class="flex items-center gap-2 mt-1">
+                <span class="badge badge-secondary text-xs">
+                  ${file.completed}/${file.pages} pages
+                </span>
+                <span class="text-xs text-muted-foreground">${file.date}</span>
+              </div>
+              <div class="mt-2 w-full">
+                <div class="progress">
+                  <div class="progress-bar" style="width: ${(file.completed / file.pages) * 100}%"></div>
                 </div>
-            `;
-        }
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-outline btn-sm continue-typing" data-id="${file.id}">
+            <i data-lucide="edit" class="h-3.5 w-3.5 mr-1"></i>
+            Continue
+          </button>
+        `;
         
+        elements.inProgressFilesList.appendChild(fileItem);
+      });
+      
+      // Initialize icons for the new elements
+      lucide.createIcons();
+      
+      // Add event listeners
+      document.querySelectorAll('.continue-typing').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const fileId = btn.getAttribute('data-id');
+          selectFileForTyping(fileId);
+        });
+      });
+    }
+
+    function renderCompletedFilesTable() {
+      const tableBody = document.getElementById('completed-files-table-body');
+      if (!tableBody) return;
+      
+      tableBody.innerHTML = '';
+      
+      if (completedFiles.length === 0) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="7" class="text-center p-8">
+              <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                <i data-lucide="file-text" class="h-6 w-6"></i>
+              </div>
+              <h3 class="mb-2 text-lg font-medium">No completed files</h3>
+              <p class="mb-4 text-sm text-muted-foreground">Complete typing files to see them here</p>
+            </td>
+          </tr>
+        `;
         lucide.createIcons();
-        updateDocumentCounter();
+        return;
+      }
+      
+      completedFiles.forEach(file => {
+        // Main row
+        const row = document.createElement('tr');
+        row.className = 'border-b hover:bg-muted/10 cursor-pointer';
+        row.setAttribute('data-file-id', file.id);
+        
+        row.innerHTML = `
+          <td class="p-3">
+            <span class="text-blue-600 font-medium">${file.fileNumber}</span>
+          </td>
+          <td class="p-3">
+            <div class="flex items-center gap-2">
+              <i data-lucide="file-text" class="h-4 w-4 text-green-500"></i>
+              <span class="font-medium">${file.name}</span>
+            </div>
+          </td>
+          <td class="p-3 text-sm text-muted-foreground">${file.date}</td>
+          <td class="p-3 text-sm">System User</td>
+          <td class="p-3">
+            <span class="badge bg-green-500 text-white">
+              <i data-lucide="check-circle" class="h-3 w-3 mr-1"></i>
+              Completed
+            </span>
+          </td>
+          <td class="p-3">
+            <span class="badge badge-secondary">${file.pages} ${file.pages === 1 ? "page" : "pages"}</span>
+          </td>
+          <td class="p-3">
+            <div class="flex items-center gap-2">
+              <button class="btn btn-ghost btn-sm" onclick="toggleFileExpansion('${file.id}')">
+                <i data-lucide="${state.expandedFileId === file.id ? 'chevron-up' : 'chevron-down'}" class="h-4 w-4"></i>
+                ${state.expandedFileId === file.id ? 'Hide' : 'Show'} Pages
+              </button>
+              <button class="btn btn-ghost btn-sm">
+                <i data-lucide="download" class="h-4 w-4"></i>
+              </button>
+            </div>
+          </td>
+        `;
+        
+        tableBody.appendChild(row);
+        
+        // Expanded content row
+        if (state.expandedFileId === file.id) {
+          const expandedRow = document.createElement('tr');
+          expandedRow.className = 'bg-muted/5';
+          expandedRow.innerHTML = `
+            <td colspan="7" class="p-4">
+              <div class="border rounded-lg p-4 bg-white">
+                <h4 class="text-sm font-medium mb-3">Processed Pages (${file.processedPages.length})</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  ${file.processedPages.map((page, index) => `
+                    <div class="border rounded-md overflow-hidden bg-white shadow-sm">
+                      <div class="h-32 bg-muted flex items-center justify-center">
+                        ${samplePages[file.id] && samplePages[file.id][index] 
+                          ? `<img src="${samplePages[file.id][index]}" alt="Page ${page.pageNumber}" class="max-h-full max-w-full object-contain">`
+                          : `<i data-lucide="file-text" class="h-10 w-10 text-muted-foreground"></i>`
+                        }
+                      </div>
+                      <div class="p-3">
+                        <div class="flex justify-between items-center mb-2">
+                          <span class="text-sm font-medium">Page ${page.pageNumber}</span>
+                          <span class="badge badge-outline text-xs">${page.pageType}</span>
+                        </div>
+                        <div class="space-y-1">
+                          <div class="badge bg-blue-500 text-white text-xs w-full justify-center">
+                            ${page.pageCode}
+                          </div>
+                          <p class="text-xs text-muted-foreground truncate" title="${page.pageSubType}">
+                            ${page.pageSubType}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            </td>
+          `;
+          tableBody.appendChild(expandedRow);
+        }
+      });
+      
+      lucide.createIcons();
     }
-    
-    // Update document counter
-    function updateDocumentCounter() {
-        if (documentCounter) {
-            documentCounter.textContent = `${currentDocumentIndex + 1} / ${currentDocuments.length}`;
-        }
-        
-        // Update navigation buttons
-        if (prevDocumentBtn) {
-            prevDocumentBtn.disabled = currentDocumentIndex === 0;
-        }
-        if (nextDocumentBtn) {
-            nextDocumentBtn.disabled = currentDocumentIndex === currentDocuments.length - 1;
-        }
+
+    function toggleFileExpansion(fileId) {
+      if (state.expandedFileId === fileId) {
+        state.expandedFileId = null;
+      } else {
+        state.expandedFileId = fileId;
+      }
+      renderCompletedFilesTable();
     }
-    
-    // Update typing progress
-    function updateTypingProgress() {
-        // Calculate total pages from all documents
-        totalPages = currentDocuments.reduce((total, doc) => {
-            // Estimate pages based on file size or use 1 as default
-            return total + 1; // Simplified - each document = 1 page
-        }, 0);
+
+    function renderTypingView() {
+      const file = getFileById(state.selectedFile);
+      if (!file) return;
+      
+      // Determine what to show based on state
+      let content = '';
+      
+      // Header content
+      const headerContent = `
+        <div class="p-6 border-b">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-lg font-semibold">
+                <span class="text-blue-600">${file.fileNumber}</span> - 
+                ${file.name.split(" - ").length > 1 ? file.name.split(" - ")[1] : file.name}
+              </h2>
+              <p class="text-sm text-muted-foreground">
+                ${state.showFolderView && state.selectedPageInFolder === null
+                  ? state.batchMode
+                    ? "Select pages to type in batch mode"
+                    : "Select a page to type or categorize"
+                  : state.selectedPageInFolder !== null
+                    ? `Categorizing Page ${state.selectedPageInFolder + 1}`
+                    : `Typing Page ${state.currentPage} of ${file.pages}`}
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              ${state.showFolderView && state.selectedPageInFolder === null 
+                ? `<button class="btn ${state.batchMode ? 'btn-primary' : 'btn-outline'} btn-sm toggle-batch-mode">
+                    <i data-lucide="check-square" class="h-4 w-4 mr-1"></i>
+                    ${state.batchMode ? 'Exit Batch Mode' : 'Batch Mode'}
+                  </button>` 
+                : ''}
+              <button class="btn btn-outline btn-sm back-button">
+                ${state.selectedPageInFolder !== null ? 'Back to Folder' : 'Cancel'}
+              </button>
+              ${!state.showFolderView 
+                ? `<button class="btn btn-primary btn-sm save-page">
+                    <i data-lucide="save" class="h-4 w-4 mr-1"></i>
+                    Save Page
+                  </button>` 
+                : ''}
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Main content based on view mode
+      if (state.showFolderView) {
+        if (state.selectedPageInFolder !== null) {
+          // Page categorization view
+          content = `
+            ${headerContent}
+            <div class="p-6">
+              <div class="space-y-6">
+                <div class="flex justify-between items-center">
+                  <h3 class="text-lg font-medium">Categorize Page ${state.selectedPageInFolder + 1}</h3>
+                  <span class="badge bg-blue-500 text-white">${file.fileNumber}</span>
+                </div>
+
+                <!-- Added booklet management section -->
+                <div class="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <h4 class="text-sm font-semibold text-purple-900 mb-3">Booklet Management</h4>
+                  <div class="flex items-center space-x-4">
+                    ${state.bookletMode ? `
+                      <div class="flex items-center space-x-2">
+                        <span class="text-sm text-purple-700">
+                          <strong>Active Booklet:</strong> Pages ${state.bookletStartPage}a, ${state.bookletStartPage}b, ${state.bookletStartPage}c...
+                        </span>
+                        <button class="btn btn-outline btn-sm end-booklet">
+                          <i data-lucide="x-circle" class="h-3 w-3 mr-1"></i>
+                          End Booklet
+                        </button>
+                      </div>
+                    ` : `
+                      <button class="btn btn-outline btn-sm start-booklet">
+                        <i data-lucide="book-open" class="h-3 w-3 mr-1"></i>
+                        Start Booklet (e.g., PoA)
+                      </button>
+                      <span class="text-xs text-gray-600">
+                        Use this when multiple pages belong to the same document (Power of Attorney, etc.)
+                      </span>
+                    `}
+                  </div>
+                  ${state.bookletMode ? `
+                    <div class="mt-2 text-xs text-purple-600">
+                      Next page will be numbered: <strong>${state.bookletStartPage}${state.bookletCounter}</strong>
+                    </div>
+                  ` : ''}
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <div class="border rounded-md p-4 h-[400px] bg-white relative">
+                      ${samplePages[state.selectedFile] && samplePages[state.selectedFile][state.selectedPageInFolder] 
+                        ? `<div class="w-full h-full flex flex-col">
+                            <div class="flex justify-between mb-2">
+                              <span class="text-sm font-medium">Document Preview - Page ${state.selectedPageInFolder + 1}</span>
+                              <div class="flex items-center gap-2">
+                                <button class="btn btn-ghost btn-icon zoom-out">
+                                  <i data-lucide="zoom-out" class="h-4 w-4"></i>
+                                </button>
+                                <span class="text-xs">${state.zoomLevel}%</span>
+                                <button class="btn btn-ghost btn-icon zoom-in">
+                                  <i data-lucide="zoom-in" class="h-4 w-4"></i>
+                                </button>
+                                <button class="btn btn-ghost btn-icon rotate">
+                                  <i data-lucide="rotate-cw" class="h-4 w-4"></i>
+                                </button>
+                              </div>
+                            </div>
+                            <div class="flex-1 overflow-auto flex items-center justify-center">
+                              <img
+                                src="${samplePages[state.selectedFile][state.selectedPageInFolder]}"
+                                alt="Page ${state.selectedPageInFolder + 1}"
+                                class="max-h-full max-w-full object-contain transition-transform"
+                                style="transform: scale(${state.zoomLevel / 100}) rotate(${state.rotation}deg);"
+                              />
+                            </div>
+                          </div>`
+                        : `<div class="h-full flex items-center justify-center">
+                            <div class="text-center">
+                              <i data-lucide="file-text" class="h-12 w-12 mx-auto mb-4 text-muted-foreground"></i>
+                              <p class="text-sm font-medium">Document preview not available</p>
+                            </div>
+                          </div>`
+                      }
+                    </div>
+                  </div>
+                  <div class="space-y-6">
+                    <div class="space-y-4">
+                      <div>
+                        <label for="page-type" class="block text-sm font-medium mb-1.5">Page Type</label>
+                        <select id="page-type" class="input">
+                          ${pageTypes.map(type => 
+                            `<option value="${type.id}" ${state.pageType == type.id ? 'selected' : ''}>
+                              ${type.name} (${type.code})
+                            </option>`
+                          ).join('')}
+                        </select>
+                      </div>
+                      <div>
+                        <label for="page-subtype" class="block text-sm font-medium mb-1.5">Page Subtype</label>
+                        <select id="page-subtype" class="input">
+                          ${pageSubTypes[parseInt(state.pageType)]?.map(subtype => 
+                            `<option value="${subtype.id}" ${state.pageSubType == subtype.id ? 'selected' : ''}>
+                              ${subtype.name} (${subtype.code})
+                            </option>`
+                          ).join('')}
+                        </select>
+                      </div>
+                      <div>
+                        <label for="serial-no" class="block text-sm font-medium mb-1.5">Serial Number</label>
+                        <input id="serial-no" value="${state.bookletMode ? state.bookletStartPage + state.bookletCounter : state.serialNo}" 
+                               class="input" maxlength="3" ${state.bookletMode ? 'readonly' : ''}>
+                        <p class="text-xs text-muted-foreground mt-1">
+                          ${state.bookletMode 
+                            ? `Booklet mode: Serial number is auto-generated as ${state.bookletStartPage}${state.bookletCounter}`
+                            : 'Two-digit serial number (e.g., 01, 02, etc.)'
+                          }
+                        </p>
+                      </div>
+                    </div>
+
+                    <div class="p-4 border rounded-md bg-muted/30">
+                      <h4 class="font-medium mb-2">Page Code Preview</h4>
+                      <div class="flex items-center gap-2">
+                        <span class="badge bg-blue-500 text-white text-base py-1 px-3">
+                          ${file.fileNumber}-
+                          ${getPageTypeById(state.pageType)?.code}-
+                          ${getPageSubTypeById(state.pageType, state.pageSubType)?.code}-
+                          ${state.bookletMode ? state.bookletStartPage + state.bookletCounter : state.serialNo}
+                        </span>
+                      </div>
+                      <p class="text-xs text-muted-foreground mt-2">
+                        This code will be assigned to the page for easy identification and retrieval.
+                      </p>
+                    </div>
+
+                    <button class="btn btn-primary w-full process-page">
+                      ${state.batchMode ? 'Add to Batch' : 'Process Page'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        } else {
+          // Folder view
+          content = `
+            ${headerContent}
+            <div class="p-6">
+              <div class="space-y-6">
+                <div class="flex justify-between items-center">
+                  <h3 class="text-lg font-medium">File Pages</h3>
+                  <span class="badge bg-blue-500 text-white">${file.fileNumber}</span>
+                </div>
+
+                ${state.batchMode 
+                  ? `<div class="space-y-2">
+                      <div class="flex justify-between text-sm">
+                        <span>Batch Progress</span>
+                        <span>${Math.round(state.batchProgress)}%</span>
+                      </div>
+                      <div class="progress">
+                        <div class="progress-bar" style="width: ${state.batchProgress}%"></div>
+                      </div>
+                      <div class="flex justify-between text-xs text-muted-foreground">
+                        <span>Pages typed: ${Object.keys(state.batchTypedPages).length}</span>
+                        <span>Total pages: ${samplePages[state.selectedFile]?.length || 0}</span>
+                      </div>
+                    </div>`
+                  : ''}
+
+                <!-- Updated folder view to show booklet groupings -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="folder-pages">
+                  ${samplePages[state.selectedFile] 
+                    ? samplePages[state.selectedFile].map((page, index) => {
+                        const isProcessed = (state.batchMode && state.batchTypedPages[index]) || (!state.batchMode && state.processedPages[index]);
+                        const processedInfo = state.batchTypedPages[index] || state.processedPages[index];
+                        const isBookletPage = processedInfo?.isBookletPage;
+                        
+                        return `
+                          <div class="border rounded-md overflow-hidden cursor-pointer hover:border-blue-500 transition-colors folder-page ${
+                            isProcessed
+                              ? isBookletPage 
+                                ? 'border-purple-500 bg-purple-50'
+                                : 'border-green-500 bg-green-50'
+                              : ''
+                          }" data-index="${index}">
+                            <div class="h-40 bg-muted flex items-center justify-center relative">
+                              ${isProcessed 
+                                ? `<div class="absolute top-2 right-2 z-10">
+                                    <span class="badge ${isBookletPage ? 'bg-purple-500' : 'bg-green-500'} text-white">
+                                      <i data-lucide="check-circle" class="h-3 w-3 mr-1"></i>
+                                      ${isBookletPage ? 'Booklet' : 'Typed'}
+                                    </span>
+                                  </div>`
+                                : ''}
+                              <img
+                                src="${page}"
+                                alt="Page ${index + 1}"
+                                class="max-h-full max-w-full object-contain"
+                              />
+                            </div>
+                            <div class="p-2 bg-gray-50 border-t">
+                              <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium">Page ${index + 1}</span>
+                                <span class="badge badge-outline text-xs">
+                                  ${index === 0 ? 'Cover' : 'Content'}
+                                </span>
+                              </div>
+                              <div class="mt-1 text-xs text-muted-foreground">
+                                ${file.fileNumber}-${(index + 1).toString().padStart(2, '0')}
+                              </div>
+                              ${isProcessed 
+                                ? `<div class="mt-1">
+                                    <span class="badge ${isBookletPage ? 'bg-purple-500' : 'bg-blue-500'} text-white text-xs w-full justify-center overflow-hidden text-ellipsis">
+                                      ${file.fileNumber}-
+                                      ${getPageTypeById(processedInfo.pageType)?.code}-
+                                      ${getPageSubTypeById(processedInfo.pageType, processedInfo.pageSubType)?.code}-
+                                      ${processedInfo.serialNo}
+                                    </span>
+                                    ${isBookletPage ? `<div class="text-xs text-purple-600 mt-1">Booklet Page</div>` : ''}
+                                  </div>`
+                                : ''}
+                            </div>
+                          </div>
+                        `;
+                      }).join('')
+                    : `<div class="col-span-4 text-center p-8 border rounded-md">
+                        <i data-lucide="file-digit" class="h-12 w-12 mx-auto mb-4 text-muted-foreground"></i>
+                        <p class="text-sm font-medium">No pages available for this file</p>
+                      </div>`
+                  }
+                </div>
+
+                ${state.batchMode && state.batchSubmitReady 
+                  ? `<div class="mt-6 flex justify-center">
+                      <button class="btn btn-primary btn-lg submit-batch ${state.batchProcessing ? 'disabled' : ''}" ${state.batchProcessing ? 'disabled' : ''}>
+                        ${state.batchProcessing 
+                          ? `<div class="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2"></div>
+                             Processing Batch...`
+                          : `<i data-lucide="upload" class="h-4 w-4 mr-2"></i>
+                             Submit All Pages as Batch`
+                        }
+                      </button>
+                    </div>`
+                  : ''}
+              </div>
+            </div>
+          `;
+        }
+      } else {
+        // Traditional typing view
+        content = `
+          ${headerContent}
+          <div class="p-6">
+            <div class="space-y-6">
+              <div class="space-y-2">
+                <div class="flex justify-between text-sm">
+                  <span>Typing Progress</span>
+                  <span>${Math.round(state.typingProgress)}%</span>
+                </div>
+                <div class="progress">
+                  <div class="progress-bar" style="width: ${state.typingProgress}%"></div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <div class="border rounded-md p-4 h-[400px] bg-white relative">
+                    ${getCurrentPageImage() 
+                      ? `<div class="w-full h-full flex flex-col">
+                          <div class="flex justify-between mb-2">
+                            <span class="text-sm font-medium">Document Preview - Page ${state.currentPage}</span>
+                            <div class="flex items-center gap-2">
+                              <button class="btn btn-ghost btn-icon zoom-out">
+                                <i data-lucide="zoom-out" class="h-4 w-4"></i>
+                              </button>
+                              <span class="text-xs">${state.zoomLevel}%</span>
+                              <button class="btn btn-ghost btn-icon zoom-in">
+                                <i data-lucide="zoom-in" class="h-4 w-4"></i>
+                              </button>
+                              <button class="btn btn-ghost btn-icon rotate">
+                                <i data-lucide="rotate-cw" class="h-4 w-4"></i>
+                              </button>
+                            </div>
+                          </div>
+                          <div class="flex-1 overflow-auto flex items-center justify-center">
+                            <img
+                              src="${getCurrentPageImage()}"
+                              alt="Page ${state.currentPage}"
+                              class="max-h-full max-w-full object-contain transition-transform"
+                              style="transform: scale(${state.zoomLevel / 100}) rotate(${state.rotation}deg);"
+                            />
+                          </div>
+                        </div>`
+                      : `<div class="h-full flex items-center justify-center">
+                          <div class="text-center">
+                            <i data-lucide="file-text" class="h-12 w-12 mx-auto mb-4 text-muted-foreground"></i>
+                            <p class="text-sm font-medium">Document preview not available</p>
+                          </div>
+                        </div>`
+                    }
+                  </div>
+                </div>
+                <div>
+                  <label for="typed-content" class="block text-sm font-medium mb-2">
+                    Type the content of page ${state.currentPage}:
+                  </label>
+                  <textarea
+                    id="typed-content"
+                    class="textarea h-[350px]"
+                    placeholder="Type the content of the document here..."
+                  >${state.typedContent}</textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-between border-t pt-4 p-6">
+            <div class="flex gap-2">
+              <button class="btn btn-outline prev-page ${state.currentPage === 1 ? 'disabled' : ''}" ${state.currentPage === 1 ? 'disabled' : ''}>
+                <i data-lucide="arrow-left" class="h-4 w-4 mr-1"></i>
+                Previous Page
+              </button>
+              <button class="btn btn-outline next-page ${state.currentPage === file.pages ? 'disabled' : ''}" ${state.currentPage === file.pages ? 'disabled' : ''}>
+                Next Page
+                <i data-lucide="arrow-right" class="h-4 w-4 ml-1"></i>
+              </button>
+            </div>
+            <button class="btn btn-primary save-continue">
+              <i data-lucide="save" class="h-4 w-4 mr-1"></i>
+              Save and Continue
+            </button>
+          </div>
+        `;
+      }
+      
+      // Update the typing card
+      elements.typingCard.innerHTML = content;
+      
+      // Initialize icons for the new elements
+      lucide.createIcons();
+      
+      // Add event listeners
+      if (state.showFolderView) {
+        if (state.selectedPageInFolder !== null) {
+          // Page categorization view listeners
+          document.querySelector('#page-type')?.addEventListener('change', (e) => {
+            state.pageType = e.target.value;
+            // Reset subtype when type changes - select first subtype of the selected type
+            const firstSubtypeId = pageSubTypes[parseInt(state.pageType)]?.[0]?.id.toString() || "1";
+            state.pageSubType = firstSubtypeId;
+            updateUI();
+          });
+          
+          document.querySelector('#page-subtype')?.addEventListener('change', (e) => {
+            state.pageSubType = e.target.value;
+            updateUI();
+          });
+          
+          document.querySelector('#serial-no')?.addEventListener('input', (e) => {
+            if (!state.bookletMode) {
+              state.serialNo = e.target.value.padStart(2, '0');
+              updateUI();
+            }
+          });
+          
+          document.querySelector('.process-page')?.addEventListener('click', processPage);
+          
+          document.querySelector('.start-booklet')?.addEventListener('click', startBooklet);
+          document.querySelector('.end-booklet')?.addEventListener('click', endBooklet);
+          
+          // Image controls
+          document.querySelector('.zoom-in')?.addEventListener('click', zoomIn);
+          document.querySelector('.zoom-out')?.addEventListener('click', zoomOut);
+          document.querySelector('.rotate')?.addEventListener('click', rotate);
+        } else {
+          // Folder view listeners
+          document.querySelector('.toggle-batch-mode')?.addEventListener('click', toggleBatchMode);
+          
+          document.querySelectorAll('.folder-page').forEach(page => {
+            page.addEventListener('click', () => {
+              const index = parseInt(page.getAttribute('data-index'));
+              selectPageFromFolder(index);
+            });
+          });
+          
+          document.querySelector('.submit-batch')?.addEventListener('click', submitBatch);
+        }
         
-        const completedPages = savedPages.length;
-        const progressPercentage = totalPages > 0 ? (completedPages / totalPages) * 100 : 0;
+        document.querySelector('.back-button')?.addEventListener('click', () => {
+          if (state.selectedPageInFolder !== null) {
+            state.selectedPageInFolder = null;
+          } else if (state.showFolderView) {
+            state.showFolderView = false;
+            state.selectedFile = null;
+            state.activeTab = 'pending';
+          } else {
+            state.selectedFile = null;
+            state.activeTab = 'pending';
+          }
+          updateUI();
+        });
+      } else {
+        // Traditional typing view listeners
+        document.querySelector('#typed-content')?.addEventListener('input', (e) => {
+          state.typedContent = e.target.value;
+        });
         
-        if (typingProgress) {
-            typingProgress.textContent = `${completedPages} / ${totalPages} pages`;
-        }
-        if (typingProgressBar) {
-            typingProgressBar.style.width = progressPercentage + '%';
-        }
-        if (completeTypingBtn) {
-            completeTypingBtn.disabled = completedPages < totalPages;
-        }
+        document.querySelector('.prev-page')?.addEventListener('click', goToPreviousPage);
+        document.querySelector('.next-page')?.addEventListener('click', goToNextPage);
+        document.querySelector('.save-page')?.addEventListener('click', saveTypedContent);
+        document.querySelector('.save-continue')?.addEventListener('click', saveTypedContent);
+        
+        // Image controls
+        document.querySelector('.zoom-in')?.addEventListener('click', zoomIn);
+        document.querySelector('.zoom-out')?.addEventListener('click', zoomOut);
+        document.querySelector('.rotate')?.addEventListener('click', rotate);
+        
+        document.querySelector('.back-button')?.addEventListener('click', () => {
+          state.selectedFile = null;
+          state.activeTab = 'pending';
+          updateUI();
+        });
+      }
     }
-    
-    // Save page typing
-    function savePage(moveToNext = false) {
-        if (!validatePageForm()) return;
+
+    // Event handlers
+    function switchTab(tabId) {
+      state.activeTab = tabId;
+      updateUI();
+    }
+
+    function selectFileForTyping(fileId) {
+      state.selectedFile = fileId;
+      state.currentPage = 1;
+      state.typedContent = "";
+      state.activeTab = "typing";
+      state.zoomLevel = 100;
+      state.rotation = 0;
+      state.showFolderView = true;
+      state.selectedPageInFolder = null;
+      state.serialNo = "01"; // Reset serial number when selecting a new file
+      state.batchMode = false;
+      state.batchTypedPages = {};
+      state.currentBatchPageIndex = null;
+      state.batchSubmitReady = false;
+      state.processedPages = {};
+      state.bookletMode = false;
+      state.currentBooklet = null;
+      state.bookletStartPage = null;
+      state.bookletPages = {};
+      state.bookletCounter = 'a';
+
+      // Calculate progress based on completed pages
+      const file = getFileById(fileId);
+      if (file) {
+        state.typingProgress = (file.completed / file.pages) * 100;
+      }
+      
+      updateUI();
+    }
+
+    function saveTypedContent() {
+      if (!state.selectedFile) return;
+
+      const file = getFileById(state.selectedFile);
+      if (!file) return;
+
+      // In a real app, this would save the content to a database
+      alert(`Content for page ${state.currentPage} of ${file.name} saved successfully!`);
+
+      // Update progress
+      const newProgress = (state.currentPage / file.pages) * 100;
+      state.typingProgress = newProgress;
+
+      // Clear content for next page
+      state.typedContent = "";
+
+      // Move to next page if available
+      if (state.currentPage < file.pages) {
+        state.currentPage++;
+      } else {
+        // If all pages are completed, go back to file list
+        alert("All pages completed! Returning to file list.");
+        state.selectedFile = null;
+        state.activeTab = "completed";
+      }
+      
+      updateUI();
+    }
+
+    function processPage() {
+      if (!state.selectedFile || state.selectedPageInFolder === null) return;
+
+      const file = getFileById(state.selectedFile);
+      if (!file) return;
+
+      // Generate the page code with the new format including serial number
+      const pageTypeObj = getPageTypeById(state.pageType);
+      const pageSubTypeObj = getPageSubTypeById(state.pageType, state.pageSubType);
+      
+      let pageCode;
+      let serialNumber = state.serialNo;
+      
+      if (state.bookletMode && state.currentBooklet) {
+        // For booklet pages, use the booklet start page number with alphabetic suffix
+        serialNumber = `${state.bookletStartPage}${state.bookletCounter}`;
+        pageCode = `${file.fileNumber}-${pageTypeObj?.code}-${pageSubTypeObj?.code}-${serialNumber}`;
         
-        const currentDocument = currentDocuments[currentDocumentIndex];
-        const pageData = {
-            file_indexing_id: selectedFileIndexing.id,
-            scanning_id: currentDocument.id,
-            page_number: parseInt(pageNumberInput.value),
-            page_type: pageTypeSelect.value,
-            page_subtype: pageSubtypeInput.value,
-            serial_number: parseInt(serialNumberInput.value),
-            page_code: pageCodeInput.value,
-            file_path: currentDocument.document_path
+        // Store booklet page information
+        if (!state.bookletPages[state.currentBooklet]) {
+          state.bookletPages[state.currentBooklet] = [];
+        }
+        state.bookletPages[state.currentBooklet].push({
+          pageIndex: state.selectedPageInFolder,
+          serialNumber: serialNumber,
+          pageCode: pageCode
+        });
+        
+        // Increment booklet counter (a -> b -> c, etc.)
+        state.bookletCounter = String.fromCharCode(state.bookletCounter.charCodeAt(0) + 1);
+      } else {
+        // Normal page processing
+        pageCode = `${file.fileNumber}-${pageTypeObj?.code}-${pageSubTypeObj?.code}-${state.serialNo}`;
+      }
+
+      if (state.batchMode) {
+        // In batch mode, add to batch instead of immediate submission
+        state.batchTypedPages = {
+          ...state.batchTypedPages,
+          [state.selectedPageInFolder]: {
+            pageType: state.pageType,
+            pageSubType: state.pageSubType,
+            serialNo: serialNumber,
+            isBookletPage: state.bookletMode,
+            bookletId: state.currentBooklet,
+          }
         };
-        
-        // Show loading state
-        savePageBtn.disabled = true;
-        saveAndNextBtn.disabled = true;
-        savePageBtn.textContent = 'Saving...';
-        
-        fetch('{{ route("pagetyping.save-single") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-            },
-            body: JSON.stringify(pageData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Add to saved pages
-                savedPages.push({
-                    ...pageData,
-                    id: data.page_typing_id
-                });
-                
-                updateTypingProgress();
-                
-                if (moveToNext) {
-                    moveToNextPage();
-                } else {
-                    // Reset form for next page
-                    resetFormForNextPage();
-                }
-                
-                // Show success message briefly
-                const originalText = savePageBtn.textContent;
-                savePageBtn.textContent = 'Saved!';
-                setTimeout(() => {
-                    savePageBtn.textContent = originalText;
-                }, 1000);
-            } else {
-                throw new Error(data.message || 'Failed to save page');
-            }
-        })
-        .catch(error => {
-            console.error('Error saving page:', error);
-            alert('Error saving page: ' + error.message);
-        })
-        .finally(() => {
-            savePageBtn.disabled = false;
-            saveAndNextBtn.disabled = false;
-            savePageBtn.textContent = 'Save Page';
+
+        if (!state.bookletMode) {
+          const nextSerialNo = parseInt(state.serialNo) + 1;
+          state.serialNo = nextSerialNo.toString().padStart(2, '0');
+        }
+
+        // Return to folder view
+        state.selectedPageInFolder = null;
+
+        // Check if all pages are typed
+        const totalPages = samplePages[state.selectedFile]?.length || 0;
+        const typedPagesCount = Object.keys(state.batchTypedPages).length;
+
+        // Update batch progress
+        const progress = Math.min((typedPagesCount / totalPages) * 100, 100);
+        state.batchProgress = progress;
+
+        // If all pages are typed, show submit button
+        if (typedPagesCount >= totalPages) {
+          state.batchSubmitReady = true;
+        }
+      } else {
+        // In normal mode, submit immediately
+        alert(`Page ${state.selectedPageInFolder + 1} processed with code: ${pageCode}`);
+
+        // Store the processed page information
+        state.processedPages = {
+          ...state.processedPages,
+          [state.selectedPageInFolder]: {
+            pageType: state.pageType,
+            pageSubType: state.pageSubType,
+            serialNo: serialNumber,
+            pageCode: pageCode,
+            isBookletPage: state.bookletMode,
+            bookletId: state.currentBooklet,
+          }
+        };
+
+        if (!state.bookletMode) {
+          const nextSerialNo = parseInt(state.serialNo) + 1;
+          state.serialNo = nextSerialNo.toString().padStart(2, '0');
+        }
+
+        // Return to folder view
+        state.selectedPageInFolder = null;
+      }
+      
+      updateUI();
+    }
+
+    function startBooklet() {
+      if (!state.selectedFile || state.selectedPageInFolder === null) return;
+      
+      state.bookletMode = true;
+      state.currentBooklet = `booklet_${Date.now()}`;
+      state.bookletStartPage = state.serialNo;
+      state.bookletCounter = 'a';
+      
+      updateUI();
+    }
+
+    function endBooklet() {
+      state.bookletMode = false;
+      state.currentBooklet = null;
+      state.bookletStartPage = null;
+      state.bookletCounter = 'a';
+      
+      // Increment the main serial number for the next non-booklet page
+      const nextSerialNo = parseInt(state.serialNo) + 1;
+      state.serialNo = nextSerialNo.toString().padStart(2, '0');
+      
+      updateUI();
+    }
+
+    function selectPageFromFolder(index) {
+      state.selectedPageInFolder = index;
+      updateUI();
+    }
+
+    function toggleBatchMode() {
+      state.batchMode = !state.batchMode;
+      if (!state.batchMode) {
+        state.batchTypedPages = {};
+        state.batchSubmitReady = false;
+        state.batchProgress = 0;
+      }
+      updateUI();
+    }
+
+    function submitBatch() {
+      if (!state.batchSubmitReady || state.batchProcessing) return;
+      
+      state.batchProcessing = true;
+      updateUI();
+      
+      // Simulate batch processing
+      setTimeout(() => {
+        // Move batch pages to processed pages
+        Object.entries(state.batchTypedPages).forEach(([pageIndex, pageInfo]) => {
+          const file = getFileById(state.selectedFile);
+          const pageTypeObj = getPageTypeById(pageInfo.pageType);
+          const pageSubTypeObj = getPageSubTypeById(pageInfo.pageType, pageInfo.pageSubType);
+          const pageCode = `${file.fileNumber}-${pageTypeObj?.code}-${pageSubTypeObj?.code}-${pageInfo.serialNo}`;
+          
+          state.processedPages[pageIndex] = {
+            ...pageInfo,
+            pageCode: pageCode
+          };
         });
-    }
-    
-    // Validate page form
-    function validatePageForm() {
-        if (!pageNumberInput.value || pageNumberInput.value < 1) {
-            alert('Please enter a valid page number');
-            pageNumberInput.focus();
-            return false;
-        }
         
-        if (!pageTypeSelect.value) {
-            alert('Please select a page type');
-            pageTypeSelect.focus();
-            return false;
-        }
+        // Reset batch state
+        state.batchTypedPages = {};
+        state.batchSubmitReady = false;
+        state.batchProgress = 0;
+        state.batchProcessing = false;
+        state.batchMode = false;
         
-        if (!serialNumberInput.value || serialNumberInput.value < 1) {
-            alert('Please enter a valid serial number');
-            serialNumberInput.focus();
-            return false;
-        }
-        
-        return true;
+        alert('Batch processing completed successfully!');
+        updateUI();
+      }, 2000);
     }
+
     
-    // Reset form for next page
-    function resetFormForNextPage() {
-        currentPageNumber++;
-        pageNumberInput.value = currentPageNumber;
-        serialNumberInput.value = savedPages.length + 1;
-        pageTypeSelect.value = '';
-        pageSubtypeInput.value = '';
-        pageCodeInput.value = '';
+
+    function goToPreviousPage() {
+      if (state.currentPage > 1) {
+        state.currentPage--;
+        state.typedContent = "";
+        updateUI();
+      }
     }
-    
-    // Move to next page/document
-    function moveToNextPage() {
-        if (currentDocumentIndex < currentDocuments.length - 1) {
-            loadDocument(currentDocumentIndex + 1);
-        }
-        resetFormForNextPage();
+
+    function goToNextPage() {
+      const file = getFileById(state.selectedFile);
+      if (file && state.currentPage < file.pages) {
+        state.currentPage++;
+        state.typedContent = "";
+        updateUI();
+      }
     }
-    
-    // Complete page typing
-    function completePageTyping() {
-        if (savedPages.length === 0) {
-            alert('Please save at least one page before completing');
-            return;
-        }
-        
-        if (!confirm('Are you sure you want to complete page typing for this file?')) {
-            return;
-        }
-        
-        completeTypingBtn.disabled = true;
-        completeTypingBtn.textContent = 'Completing...';
-        
-        fetch(`{{ route("pagetyping.store") }}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-            },
-            body: JSON.stringify({
-                file_indexing_id: selectedFileIndexing.id,
-                page_types: savedPages.map(page => ({
-                    scanning_id: page.scanning_id,
-                    page_number: page.page_number,
-                    page_type: page.page_type,
-                    page_subtype: page.page_subtype,
-                    serial_number: page.serial_number,
-                    page_code: page.page_code,
-                    file_path: page.file_path
-                }))
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.message);
-                hidePageTypingModal();
-                
-                // Refresh the page to show updated data
-                if (data.redirect) {
-                    window.location.href = data.redirect;
-                } else {
-                    window.location.reload();
-                }
-            } else {
-                throw new Error(data.message || 'Failed to complete page typing');
-            }
-        })
-        .catch(error => {
-            console.error('Error completing page typing:', error);
-            alert('Error completing page typing: ' + error.message);
-        })
-        .finally(() => {
-            completeTypingBtn.disabled = false;
-            completeTypingBtn.textContent = 'Complete Page Typing';
-        });
+
+    function zoomIn() {
+      if (state.zoomLevel < 200) {
+        state.zoomLevel += 25;
+        updateUI();
+      }
     }
-    
-    // Show page typing modal
-    function showPageTypingModal() {
-        if (pageTypingModal) {
-            pageTypingModal.classList.remove('hidden');
-            pageTypingModal.setAttribute('aria-hidden', 'false');
-        }
+
+    function zoomOut() {
+      if (state.zoomLevel > 50) {
+        state.zoomLevel -= 25;
+        updateUI();
+      }
     }
-    
-    // Hide page typing modal
-    function hidePageTypingModal() {
-        if (pageTypingModal) {
-            pageTypingModal.classList.add('hidden');
-            pageTypingModal.setAttribute('aria-hidden', 'true');
-        }
-        
-        // Reset state
-        currentDocuments = [];
-        currentDocumentIndex = 0;
-        currentPageNumber = 1;
-        savedPages = [];
-        selectedFileIndexing = null;
+
+    function rotate() {
+      state.rotation = (state.rotation + 90) % 360;
+      updateUI();
     }
-    
-    // Event listeners
-    tabs.forEach(tab => {
+
+    // Initialize the application
+    document.addEventListener('DOMContentLoaded', () => {
+      // Add tab event listeners
+      elements.tabs.forEach(tab => {
         tab.addEventListener('click', () => {
-            const tabName = tab.getAttribute('data-tab');
-            switchTab(tabName);
+          const tabId = tab.getAttribute('data-tab');
+          if (tabId !== 'typing' || state.selectedFile) {
+            switchTab(tabId);
+          }
         });
+      });
+
+      // Initial UI update
+      updateUI();
     });
-    
-    if (closeTypingModal) {
-        closeTypingModal.addEventListener('click', hidePageTypingModal);
-    }
-    
-    if (prevDocumentBtn) {
-        prevDocumentBtn.addEventListener('click', () => {
-            if (currentDocumentIndex > 0) {
-                loadDocument(currentDocumentIndex - 1);
-            }
-        });
-    }
-    
-    if (nextDocumentBtn) {
-        nextDocumentBtn.addEventListener('click', () => {
-            if (currentDocumentIndex < currentDocuments.length - 1) {
-                loadDocument(currentDocumentIndex + 1);
-            }
-        });
-    }
-    
-    if (savePageBtn) {
-        savePageBtn.addEventListener('click', () => savePage(false));
-    }
-    
-    if (saveAndNextBtn) {
-        saveAndNextBtn.addEventListener('click', () => savePage(true));
-    }
-    
-    if (completeTypingBtn) {
-        completeTypingBtn.addEventListener('click', completePageTyping);
-    }
-    
-    // Search functionality
-    if (searchPendingFiles) {
-        let searchTimeout;
-        searchPendingFiles.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                filterFilesList('pending-files-list', this.value);
-            }, 300);
-        });
-    }
-    
-    if (searchProgressFiles) {
-        let searchTimeout;
-        searchProgressFiles.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                filterFilesList('in-progress-files-list', this.value);
-            }, 300);
-        });
-    }
-    
-    if (searchCompletedFiles) {
-        let searchTimeout;
-        searchCompletedFiles.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                filterFilesList('completed-files-list', this.value);
-            }, 300);
-        });
-    }
-    
-    // Filter files list
-    function filterFilesList(listId, searchTerm) {
-        const list = document.getElementById(listId);
-        if (!list) return;
-        
-        const items = list.querySelectorAll('.border.rounded-lg');
-        items.forEach(item => {
-            const text = item.textContent.toLowerCase();
-            if (text.includes(searchTerm.toLowerCase())) {
-                item.style.display = '';
-            } else {
-                item.style.display = 'none';
-            }
-        });
-    }
-    
-    // Auto-start typing if file is selected
-    if (selectedFileIndexing) {
-        startPageTyping(selectedFileIndexing.id);
-    }
-    
-    // Make functions globally available
-    window.startPageTyping = startPageTyping;
-    window.continuePageTyping = continuePageTyping;
-    window.viewPageTyping = viewPageTyping;
-    
-    console.log('Dynamic Page Typing module initialized');
-});
-</script>
+  </script>
