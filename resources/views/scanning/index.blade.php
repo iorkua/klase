@@ -225,7 +225,7 @@
                                                 @foreach($recentScans as $scan)
                                                     <tr class="hover:bg-gray-50">
                                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                            {{ $scan->fileIndexing->file_number ?? 'Unknown' }}
+                                                            {{ $scan->fileIndexing ? $scan->fileIndexing->file_number : 'Unknown' }}
                                                         </td>
                                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                             {{ $scan->original_filename ?? 'Document' }}
@@ -244,7 +244,7 @@
                                                             1 page
                                                         </td>
                                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            {{ $scan->uploader->name ?? 'Unknown' }}
+                                                            {{ $scan->uploader ? $scan->uploader->name : 'Unknown' }}
                                                         </td>
                                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                             <div class="flex items-center space-x-2">

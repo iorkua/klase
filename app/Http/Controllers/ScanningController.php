@@ -42,7 +42,7 @@ class ScanningController extends Controller
             
             // Get recent scanning records
             $recentScans = Scanning::on('sqlsrv')
-                ->with(['fileIndexing'])
+                ->with(['fileIndexing', 'uploader'])
                 ->orderBy('created_at', 'desc')
                 ->limit(10)
                 ->get();
@@ -220,7 +220,7 @@ class ScanningController extends Controller
     {
         try {
             $scanning = Scanning::on('sqlsrv')
-                ->with(['fileIndexing'])
+                ->with(['fileIndexing', 'uploader'])
                 ->findOrFail($id);
 
             $PageTitle = 'View Scanned Document';
@@ -245,7 +245,7 @@ class ScanningController extends Controller
     {
         try {
             $scanning = Scanning::on('sqlsrv')
-                ->with(['fileIndexing'])
+                ->with(['fileIndexing', 'uploader'])
                 ->findOrFail($id);
 
             return response()->json([
@@ -257,10 +257,14 @@ class ScanningController extends Controller
                     'document_type' => $scanning->document_type,
                     'notes' => $scanning->notes,
                     'status' => $scanning->status,
-                    'file_indexing' => [
+                    'file_indexing' => $scanning->fileIndexing ? [
                         'id' => $scanning->fileIndexing->id,
                         'file_number' => $scanning->fileIndexing->file_number,
                         'file_title' => $scanning->fileIndexing->file_title,
+                    ] : [
+                        'id' => null,
+                        'file_number' => 'Unknown',
+                        'file_title' => 'File not found',
                     ],
                     'uploaded_at' => $scanning->created_at->format('M d, Y H:i'),
                 ]
@@ -392,7 +396,7 @@ class ScanningController extends Controller
             $search = $request->get('search', '');
 
             $query = Scanning::on('sqlsrv')
-                ->with(['fileIndexing']);
+                ->with(['fileIndexing', 'uploader']);
 
             if ($fileIndexingId) {
                 $query->where('file_indexing_id', $fileIndexingId);
@@ -421,25 +425,32 @@ class ScanningController extends Controller
                         'document_type' => $scan->document_type,
                         'status' => $scan->status,
                         'notes' => $scan->notes,
-                        'file_indexing' => [
+                        'file_indexing' => $scan->fileIndexing ? [
                             'id' => $scan->fileIndexing->id,
                             'file_number' => $scan->fileIndexing->file_number,
                             'file_title' => $scan->fileIndexing->file_title,
+                        ] : [
+                            'id' => null,
+                            'file_number' => 'Unknown',
+                            'file_title' => 'File not found',
                         ],
+                        'uploader_name' => $scan->uploader ? $scan->uploader->name : 'Unknown',
                         'uploaded_at' => $scan->created_at->format('M d, Y H:i'),
-                        'file_url' => url('storage/app/public/' . $scan->document_path),
+                        'file_url' => url('storage/' . $scan->document_path),
                     ];
                 })
             ]);
 
         } catch (Exception $e) {
             Log::error('Error getting scanned files', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'file_indexing_id' => $request->get('file_indexing_id'),
+                'search' => $request->get('search', '')
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error loading scanned files'
+                'message' => 'Error loading scanned files: ' . $e->getMessage()
             ], 500);
         }
     }

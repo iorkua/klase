@@ -253,6 +253,24 @@
         margin-bottom: 1.5rem;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
+
+    /* Ensure horizontal scroll so all columns (incl. Actions) are reachable */
+    .tab-content {
+        overflow-x: auto !important;
+    }
+    .tab-content table {
+        width: max-content;   /* expand to fit columns */
+        min-width: 100%;      /* at least full container width */
+    }
+    .tab-content th,
+    .tab-content td {
+        white-space: nowrap;  /* prevent wrapping so width can overflow and scroll */
+    }
+    /* Give Actions column some breathing room */
+    .tab-content th:last-child,
+    .tab-content td:last-child {
+        min-width: 140px;
+    }
 </style>
 
 <div class="flex-1 overflow-auto">
@@ -362,13 +380,20 @@
                                             ->where('active', 1)
                                             ->exists();
 
-                                        // Check ST CofO and Reg Particulars
+                                        // Check ST CofO and Reg Particulars with robust matching and ordering
+                                        $cleanFileNo = trim($application->fileno ?? '');
                                         $instrument = \DB::connection('sqlsrv')->table('registered_instruments')
-                                            ->where('StFileNo', $application->fileno)
-                                            ->where('instrument_type', 'Sectional Titling CofO')
+                                            ->where(function($q) use ($cleanFileNo) {
+                                                $q->whereRaw("UPPER(RTRIM(LTRIM(registered_instruments.StFileNo))) = UPPER(RTRIM(LTRIM(?)))", [$cleanFileNo])
+                                                  ->orWhereRaw("UPPER(REPLACE(registered_instruments.StFileNo,' ','')) = UPPER(REPLACE(?,' ',''))", [$cleanFileNo]);
+                                            })
+                                            ->whereNotNull('registered_instruments.particularsRegistrationNumber')
+                                            ->orderByRaw("CASE WHEN UPPER(LTRIM(RTRIM(registered_instruments.instrument_type))) LIKE 'SECTIONAL TITLING%' THEN 0 ELSE 1 END")
+                                            ->orderByRaw("CASE WHEN registered_instruments.status = 'registered' THEN 0 ELSE 1 END")
+                                            ->orderByDesc('registered_instruments.id')
                                             ->first();
                                         $hasSTCofO = !empty($instrument);
-                                        $regParticulars = $instrument->particularsRegistrationNumber ?? 'N/A';
+                                        $regParticulars = $instrument->particularsRegistrationNumber ?? ($application->RegNo ?? 'N/A');
 
                                         $canGenerate = $hasSTMemo && $hasRofo && $hasSTCofO;
                                         $missingItems = [];
@@ -466,11 +491,27 @@
                             @php $generatedCount = 0; @endphp
                             @foreach($approvedUnitApplications as $application)
                                 @if($application->certificate_issued)
-                                    @php $generatedCount++; @endphp
+                                    @php 
+                                        $generatedCount++;
+                                        // Fetch registration number with robust matching and ordering
+                                        $cleanFileNo = trim($application->fileno ?? '');
+                                        $instrument = \DB::connection('sqlsrv')->table('registered_instruments')
+                                            ->where(function($q) use ($cleanFileNo) {
+                                                $q->whereRaw("UPPER(RTRIM(LTRIM(registered_instruments.StFileNo))) = UPPER(RTRIM(LTRIM(?)))", [$cleanFileNo])
+                                                  ->orWhereRaw("UPPER(REPLACE(registered_instruments.StFileNo,' ','')) = UPPER(REPLACE(?,' ',''))", [$cleanFileNo]);
+                                            })
+                                            ->whereNotNull('registered_instruments.particularsRegistrationNumber')
+                                            ->orderByRaw("CASE WHEN UPPER(LTRIM(RTRIM(registered_instruments.instrument_type))) LIKE 'SECTIONAL TITLING%' THEN 0 ELSE 1 END")
+                                            ->orderByRaw("CASE WHEN registered_instruments.status = 'registered' THEN 0 ELSE 1 END")
+                                            ->orderByDesc('registered_instruments.id')
+                                            ->first();
+                                        $regParticulars = $instrument->particularsRegistrationNumber ?? ($application->RegNo ?? 'N/A');
+                                        $application->RegNo = $regParticulars; // optional downstream use
+                                    @endphp
                                     <tr class="text-sm text-gray-700">
                                         <td class="table-cell">{{ $application->fileno }}</td> 
                                         <td class="table-cell">{{ $application->certificate_number ?? 'N/A' }}</td>
-                                        <td class="table-cell">{{ $application->Deeds_Serial_No ?? 'N/A' }}</td>
+                                        <td class="table-cell">{{ $regParticulars }}</td>
                                         <td class="table-cell">{{ $application->scheme_no }}</td>
                                         <td class="table-cell">{{ $application->owner_name }}</td>
                                 
