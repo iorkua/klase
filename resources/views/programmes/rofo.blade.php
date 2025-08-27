@@ -14,7 +14,7 @@
     .tab-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
     .search { max-width: 320px; flex: 1; }
     .search input { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; }
-
+ 
     .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; }
     .card-header { padding: 12px 16px; border-bottom: 1px solid #e5e7eb; font-weight: 700; color: #111827; }
     .table-container { overflow-x: auto; }
