@@ -740,6 +740,292 @@ class PageTypingController extends Controller
     }
 
     /**
+     * PageType More - Load previously pagetyped pages plus new scans for continued typing
+     */
+    public function pageTypeMore(Request $request)
+    {
+        try {
+            $fileIndexingId = $request->get('file_indexing_id');
+            
+            if (!$fileIndexingId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File indexing ID is required'
+                ], 400);
+            }
+
+            $fileIndexing = FileIndexing::on('sqlsrv')
+                ->with(['mainApplication', 'scannings', 'pagetypings'])
+                ->find($fileIndexingId);
+
+            if (!$fileIndexing) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File not found'
+                ], 404);
+            }
+
+            // Get existing page typings
+            $existingPageTypings = $fileIndexing->pagetypings()
+                ->orderBy('page_number')
+                ->get();
+
+            // Get all scannings (including new ones)
+            $allScannings = $fileIndexing->scannings()
+                ->orderBy('created_at')
+                ->get();
+
+            // Combine existing page typings with new scan pages
+            $combinedPages = [];
+            $nextSerialNumber = $existingPageTypings->max('serial_number') + 1;
+
+            // Add existing page typings first
+            foreach ($existingPageTypings as $pageTyping) {
+                $combinedPages[] = [
+                    'id' => $pageTyping->id,
+                    'page_number' => $pageTyping->page_number,
+                    'page_type' => $pageTyping->page_type,
+                    'page_subtype' => $pageTyping->page_subtype,
+                    'serial_number' => $pageTyping->serial_number,
+                    'page_code' => $pageTyping->page_code,
+                    'file_path' => $pageTyping->file_path,
+                    'scanning_id' => $pageTyping->scanning_id,
+                    'is_existing' => true,
+                    'is_typed' => true,
+                    'source' => $pageTyping->source ?? 'initial',
+                    'typed_by' => $pageTyping->typedBy ? $pageTyping->typedBy->name : 'Unknown',
+                    'created_at' => $pageTyping->created_at ? $pageTyping->created_at->format('M d, Y H:i') : 'Unknown'
+                ];
+            }
+
+            // Add new scan pages that haven't been typed yet
+            foreach ($allScannings as $scanning) {
+                $fileExtension = strtolower(pathinfo($scanning->document_path, PATHINFO_EXTENSION));
+                
+                if ($fileExtension === 'pdf') {
+                    $pdfPageCount = $this->getPdfPageCount($scanning->document_path);
+                    
+                    for ($i = 1; $i <= $pdfPageCount; $i++) {
+                        // Check if this page is already typed
+                        $existingTyping = $existingPageTypings
+                            ->where('scanning_id', $scanning->id)
+                            ->where('page_number', $i)
+                            ->first();
+                        
+                        if (!$existingTyping) {
+                            $combinedPages[] = [
+                                'id' => null,
+                                'page_number' => $i,
+                                'page_type' => null,
+                                'page_subtype' => null,
+                                'serial_number' => $nextSerialNumber++,
+                                'page_code' => null,
+                                'file_path' => $scanning->document_path . '#page=' . $i,
+                                'scanning_id' => $scanning->id,
+                                'is_existing' => false,
+                                'is_typed' => false,
+                                'source' => 'additional',
+                                'scanning_info' => [
+                                    'original_filename' => $scanning->original_filename,
+                                    'document_type' => $scanning->document_type,
+                                    'paper_size' => $scanning->paper_size,
+                                    'created_at' => $scanning->created_at ? $scanning->created_at->format('M d, Y H:i') : 'Unknown'
+                                ]
+                            ];
+                        }
+                    }
+                } else {
+                    // For image files, treat as single page
+                    $existingTyping = $existingPageTypings
+                        ->where('scanning_id', $scanning->id)
+                        ->where('page_number', 1)
+                        ->first();
+                    
+                    if (!$existingTyping) {
+                        $combinedPages[] = [
+                            'id' => null,
+                            'page_number' => 1,
+                            'page_type' => null,
+                            'page_subtype' => null,
+                            'serial_number' => $nextSerialNumber++,
+                            'page_code' => null,
+                            'file_path' => $scanning->document_path,
+                            'scanning_id' => $scanning->id,
+                            'is_existing' => false,
+                            'is_typed' => false,
+                            'source' => 'additional',
+                            'scanning_info' => [
+                                'original_filename' => $scanning->original_filename,
+                                'document_type' => $scanning->document_type,
+                                'paper_size' => $scanning->paper_size,
+                                'created_at' => $scanning->created_at ? $scanning->created_at->format('M d, Y H:i') : 'Unknown'
+                            ]
+                        ];
+                    }
+                }
+            }
+
+            // Mark file as updated since we're adding more pages
+            try {
+                $fileIndexing->update(['is_updated' => 1]);
+            } catch (Exception $e) {
+                Log::warning('Could not update file_indexings.is_updated in pageTypeMore (column may be missing)', [
+                    'file_indexing_id' => $fileIndexingId,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'PageType More data loaded successfully',
+                'file' => [
+                    'id' => $fileIndexing->id,
+                    'file_number' => $fileIndexing->file_number,
+                    'file_title' => $fileIndexing->file_title,
+                    'district' => $fileIndexing->district,
+                    'lga' => $fileIndexing->lga,
+                    'main_application' => $fileIndexing->mainApplication ? [
+                        'id' => $fileIndexing->mainApplication->id,
+                        'applicant_name' => $fileIndexing->mainApplication->applicant_name ?? 'Unknown'
+                    ] : null
+                ],
+                'pages' => $combinedPages,
+                'summary' => [
+                    'total_pages' => count($combinedPages),
+                    'existing_typed_pages' => count(array_filter($combinedPages, fn($page) => $page['is_existing'])),
+                    'new_pages_to_type' => count(array_filter($combinedPages, fn($page) => !$page['is_existing'])),
+                    'total_scannings' => $allScannings->count(),
+                    'next_serial_number' => $nextSerialNumber
+                ]
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error in pageTypeMore', [
+                'file_indexing_id' => $fileIndexingId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading PageType More data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Store additional page typings from PageType More workflow
+     */
+    public function storePageTypeMore(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'file_indexing_id' => 'required|integer|exists:sqlsrv.file_indexings,id',
+                'additional_pages' => 'required|array|min:1',
+                'additional_pages.*.scanning_id' => 'required|integer|exists:sqlsrv.scannings,id',
+                'additional_pages.*.page_number' => 'required|integer|min:1',
+                'additional_pages.*.page_type' => 'required|string|max:100',
+                'additional_pages.*.page_subtype' => 'nullable|string|max:100',
+                'additional_pages.*.serial_number' => 'required|integer|min:1',
+                'additional_pages.*.page_code' => 'nullable|string|max:100',
+                'additional_pages.*.file_path' => 'required|string|max:255',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $fileIndexingId = $request->file_indexing_id;
+            $savedCount = 0;
+            $errors = [];
+
+            foreach ($request->additional_pages as $pageData) {
+                try {
+                    // Check if page typing already exists for this specific page
+                    $existingPageTyping = PageTyping::on('sqlsrv')
+                        ->where('file_indexing_id', $fileIndexingId)
+                        ->where('scanning_id', $pageData['scanning_id'])
+                        ->where('page_number', $pageData['page_number'])
+                        ->first();
+
+                    if ($existingPageTyping) {
+                        // Update existing record
+                        $existingPageTyping->update([
+                            'page_type' => $pageData['page_type'],
+                            'page_subtype' => $pageData['page_subtype'],
+                            'serial_number' => $pageData['serial_number'],
+                            'page_code' => $pageData['page_code'],
+                            'typed_by' => Auth::id(),
+                            'source' => 'additional', // Mark as additional typing
+                        ]);
+                    } else {
+                        // Create new record
+                        PageTyping::on('sqlsrv')->create([
+                            'file_indexing_id' => $fileIndexingId,
+                            'scanning_id' => $pageData['scanning_id'],
+                            'page_number' => $pageData['page_number'],
+                            'page_type' => $pageData['page_type'],
+                            'page_subtype' => $pageData['page_subtype'],
+                            'serial_number' => $pageData['serial_number'],
+                            'page_code' => $pageData['page_code'],
+                            'file_path' => $pageData['file_path'],
+                            'typed_by' => Auth::id(),
+                            'source' => 'additional', // Mark as additional typing
+                        ]);
+                    }
+
+                    $savedCount++;
+                } catch (Exception $e) {
+                    $errors[] = "Error saving additional page {$pageData['page_number']}: " . $e->getMessage();
+                    Log::error('Error saving additional page typing', [
+                        'file_indexing_id' => $fileIndexingId,
+                        'page_data' => $pageData,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            // Update file_indexings.is_updated = 1 to indicate more pages were added
+            try {
+                FileIndexing::on('sqlsrv')->where('id', $fileIndexingId)->update(['is_updated' => 1]);
+            } catch (Exception $e) {
+                Log::warning('Could not update file_indexings.is_updated after PageType More (column may be missing)', [
+                    'file_indexing_id' => $fileIndexingId,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
+            $response = [
+                'success' => $savedCount > 0,
+                'message' => "{$savedCount} additional pages classified successfully!",
+                'saved_count' => $savedCount,
+                'total_count' => count($request->additional_pages),
+            ];
+
+            if (count($errors) > 0) {
+                $response['errors'] = $errors;
+                $response['message'] .= " " . count($errors) . " errors occurred.";
+            }
+
+            return response()->json($response);
+
+        } catch (Exception $e) {
+            Log::error('Error storing PageType More data', [
+                'error' => $e->getMessage(),
+                'request_data' => $request->except('additional_pages')
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error saving additional page typings: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get pending page typing count
      */
     private function getPendingPageTypingCount()
@@ -836,6 +1122,97 @@ class PageTypingController extends Controller
                 'error' => $e->getMessage()
             ]);
             return 1;
+        }
+    }
+
+    /**
+     * Get PageType More count (files with is_updated = 1)
+     */
+    private function getPageTypeMoreCount()
+    {
+        try {
+            return FileIndexing::on('sqlsrv')
+                ->whereHas('pagetypings') // Must have existing page typings
+                ->where('is_updated', 1) // And be marked as updated
+                ->count();
+        } catch (Exception $e) {
+            Log::warning('Could not get PageType More count (is_updated column may be missing)', [
+                'error' => $e->getMessage()
+            ]);
+            return 0;
+        }
+    }
+
+    /**
+     * Get files for PageType More (AJAX)
+     */
+    public function getPageTypeMoreFiles(Request $request)
+    {
+        try {
+            $search = $request->get('search', '');
+            $limit = $request->get('limit', 20);
+
+            $query = FileIndexing::on('sqlsrv')
+                ->with(['mainApplication', 'scannings', 'pagetypings'])
+                ->whereHas('pagetypings') // Must have existing page typings
+                ->where('is_updated', 1); // And be marked as updated
+
+            // Apply search filter
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('file_number', 'like', "%{$search}%")
+                      ->orWhere('file_title', 'like', "%{$search}%")
+                      ->orWhere('district', 'like', "%{$search}%")
+                      ->orWhere('lga', 'like', "%{$search}%");
+                });
+            }
+
+            $files = $query->orderBy('updated_at', 'desc')
+                          ->limit($limit)
+                          ->get();
+
+            $formattedFiles = $files->map(function ($file) {
+                $scanningsCount = $file->scannings->count();
+                $pageTypingsCount = $file->pagetypings->count();
+                
+                // Calculate existing vs new pages
+                $existingPages = $pageTypingsCount;
+                $newScans = max(0, $scanningsCount - $pageTypingsCount);
+                $totalPages = $scanningsCount;
+
+                return [
+                    'id' => $file->id,
+                    'file_number' => $file->file_number,
+                    'file_title' => $file->file_title,
+                    'district' => $file->district,
+                    'lga' => $file->lga,
+                    'existing_pages' => $existingPages,
+                    'new_scans' => $newScans,
+                    'total_pages' => $totalPages,
+                    'last_updated' => $file->updated_at ? $file->updated_at->format('M d, Y') : 'Unknown',
+                    'status' => 'Updated',
+                    'is_updated' => $file->is_updated,
+                    'main_application' => $file->mainApplication ? [
+                        'id' => $file->mainApplication->id,
+                        'applicant_name' => $file->mainApplication->applicant_name ?? 'Unknown'
+                    ] : null
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'files' => $formattedFiles
+            ]);
+        } catch (Exception $e) {
+            Log::error('Error getting PageType More files', [
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading PageType More files: ' . $e->getMessage(),
+                'files' => []
+            ], 500);
         }
     }
 }

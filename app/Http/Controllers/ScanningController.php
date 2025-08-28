@@ -770,4 +770,155 @@ class ScanningController extends Controller
             return 'Document';
         }
     }
+
+    /**
+     * Upload More - Set is_updated = 1 for additional uploads
+     */
+    public function uploadMore($fileIndexingId)
+    {
+        try {
+            $fileIndexing = FileIndexing::on('sqlsrv')->findOrFail($fileIndexingId);
+            
+            // Set is_updated = 1 to mark file for additional uploads
+            try {
+                $fileIndexing->update(['is_updated' => 1]);
+                
+                Log::info('File marked for Upload More', [
+                    'file_indexing_id' => $fileIndexingId,
+                    'file_number' => $fileIndexing->file_number,
+                    'marked_by' => Auth::id()
+                ]);
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'File marked for additional uploads successfully!',
+                    'file' => [
+                        'id' => $fileIndexing->id,
+                        'file_number' => $fileIndexing->file_number,
+                        'file_title' => $fileIndexing->file_title,
+                        'is_updated' => 1
+                    ]
+                ]);
+                
+            } catch (Exception $e) {
+                Log::warning('Could not update file_indexings.is_updated (column may be missing)', [
+                    'file_indexing_id' => $fileIndexingId,
+                    'error' => $e->getMessage()
+                ]);
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Upload More feature requires database schema update. Please run the EDMS schema SQL script.'
+                ], 500);
+            }
+            
+        } catch (Exception $e) {
+            Log::error('Error in Upload More', [
+                'file_indexing_id' => $fileIndexingId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error marking file for additional uploads: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Show unindexed files upload interface
+     */
+    public function unindexedFiles()
+    {
+        try {
+            $PageTitle = 'Unindexed File Upload';
+            $PageDescription = 'Upload scanned documents without existing indexing records';
+            
+            // Get statistics for unindexed uploads
+            $stats = [
+                'unindexed_uploads_today' => $this->getUnindexedUploadsTodayCount(),
+                'pending_processing' => $this->getPendingProcessingCount(),
+                'total_processed' => $this->getTotalProcessedCount(),
+            ];
+            
+            // Get recent processed files (files created from unindexed uploads)
+            $recentProcessed = FileIndexing::on('sqlsrv')
+                ->with(['scannings', 'uploader'])
+                ->where('file_number', 'like', 'AUTO-%')
+                ->orWhere('file_number', 'like', 'TEMP-%')
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get();
+            
+            return view('scanning.unindexed_files_scans', compact(
+                'PageTitle', 
+                'PageDescription', 
+                'stats', 
+                'recentProcessed'
+            ));
+        } catch (Exception $e) {
+            Log::error('Error loading unindexed files interface', [
+                'error' => $e->getMessage()
+            ]);
+            
+            return view('scanning.unindexed_files_scans', [
+                'PageTitle' => 'Unindexed File Upload',
+                'PageDescription' => 'Upload scanned documents without existing indexing records',
+                'stats' => ['unindexed_uploads_today' => 0, 'pending_processing' => 0, 'total_processed' => 0],
+                'recentProcessed' => collect()
+            ]);
+        }
+    }
+
+    /**
+     * Get unindexed uploads today count
+     */
+    private function getUnindexedUploadsTodayCount()
+    {
+        try {
+            return FileIndexing::on('sqlsrv')
+                ->where(function($query) {
+                    $query->where('file_number', 'like', 'AUTO-%')
+                          ->orWhere('file_number', 'like', 'TEMP-%');
+                })
+                ->whereDate('created_at', today())
+                ->count();
+        } catch (Exception $e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Get pending processing count
+     */
+    private function getPendingProcessingCount()
+    {
+        try {
+            // Files that are temporary but haven't been fully processed
+            return FileIndexing::on('sqlsrv')
+                ->where('file_number', 'like', 'TEMP-%')
+                ->whereDoesntHave('scannings')
+                ->count();
+        } catch (Exception $e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Get total processed count
+     */
+    private function getTotalProcessedCount()
+    {
+        try {
+            return FileIndexing::on('sqlsrv')
+                ->where(function($query) {
+                    $query->where('file_number', 'like', 'AUTO-%')
+                          ->orWhere('file_number', 'like', 'TEMP-%');
+                })
+                ->whereHas('scannings')
+                ->count();
+        } catch (Exception $e) {
+            return 0;
+        }
+    }
 }

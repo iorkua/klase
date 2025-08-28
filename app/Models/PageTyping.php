@@ -22,15 +22,29 @@ class PageTyping extends Model
         'scanning_id',
         'notes',
         'is_important',
+        'qc_status',
+        'qc_reviewed_by',
+        'qc_reviewed_at',
+        'qc_overridden',
+        'qc_override_note',
+        'has_qc_issues',
     ];
 
     protected $casts = [
         'serial_number' => 'integer',
         'page_number' => 'integer',
         'is_important' => 'boolean',
+        'qc_overridden' => 'boolean',
+        'has_qc_issues' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'qc_reviewed_at' => 'datetime',
     ];
+
+    // QC Status constants
+    const QC_STATUS_PENDING = 'pending';
+    const QC_STATUS_PASSED = 'passed';
+    const QC_STATUS_FAILED = 'failed';
 
     public function fileIndexing()
     {
@@ -45,6 +59,43 @@ class PageTyping extends Model
     public function scanning()
     {
         return $this->belongsTo(Scanning::class, 'scanning_id');
+    }
+
+    public function qcReviewer()
+    {
+        return $this->belongsTo(User::class, 'qc_reviewed_by');
+    }
+
+    /**
+     * Check if page typing has passed QC
+     */
+    public function hasPassedQC()
+    {
+        return $this->qc_status === self::QC_STATUS_PASSED;
+    }
+
+    /**
+     * Check if page typing has failed QC
+     */
+    public function hasFailedQC()
+    {
+        return $this->qc_status === self::QC_STATUS_FAILED;
+    }
+
+    /**
+     * Check if page typing is pending QC
+     */
+    public function isPendingQC()
+    {
+        return $this->qc_status === self::QC_STATUS_PENDING;
+    }
+
+    /**
+     * Check if QC has been overridden
+     */
+    public function isQCOverridden()
+    {
+        return $this->qc_overridden === true;
     }
 
     /**

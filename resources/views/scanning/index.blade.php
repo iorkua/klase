@@ -10,28 +10,100 @@
         <!-- Dashboard Content -->
         <div class="p-6">
             @include('scanning.assets.style')
+            
+            <!-- Switch Button Styles -->
+            <style>
+                .switch-container {
+                    position: relative;
+                    display: inline-block;
+                }
+                
+                .switch-input {
+                    display: none;
+                }
+                
+                .switch-label {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    width: 120px;
+                    height: 32px;
+                    background-color: #e5e7eb;
+                    border-radius: 16px;
+                    cursor: pointer;
+                    transition: background-color 0.3s;
+                    position: relative;
+                    padding: 2px;
+                }
+                
+                .switch-input:checked + .switch-label {
+                    background-color: #3b82f6;
+                }
+                
+                .switch-handle {
+                    width: 28px;
+                    height: 28px;
+                    background-color: white;
+                    border-radius: 50%;
+                    transition: transform 0.3s;
+                    position: absolute;
+                    left: 2px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                }
+                
+                .switch-input:checked + .switch-label .switch-handle {
+                    transform: translateX(88px);
+                }
+                
+                .switch-text {
+                    font-size: 12px;
+                    font-weight: 500;
+                    color: #374151;
+                    position: absolute;
+                    width: 100%;
+                    text-align: center;
+                    z-index: 1;
+                }
+                
+                .switch-input:checked + .switch-label .switch-text {
+                    color: white;
+                }
+                
+                .switch-text::before {
+                    content: attr(data-off);
+                }
+                
+                .switch-input:checked + .switch-label .switch-text::before {
+                    content: attr(data-on);
+                }
+            </style>
+            
             <div class="container mx-auto py-6 space-y-6">
                 <!-- Page Header -->
-                <div class="flex flex-col space-y-2">
-                    <div class="flex justify-between items-center">
+                <div class="flex flex-col space-y-4">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
                             <h1 class="text-2xl font-bold tracking-tight" id="page-title">Upload Indexed Scanned File</h1>
                             <p class="text-muted-foreground" id="page-description">Upload scanned documents to their digital folders</p>
                         </div>
                         
-                        <!-- Upload Type Switch -->
-                        <div class="flex items-center space-x-4">
-                            <span class="text-sm font-medium text-gray-700">Upload Type:</span>
-                            <div class="relative inline-flex items-center">
-                                <input type="checkbox" id="upload-type-switch" class="sr-only peer">
-                                <label for="upload-type-switch" class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 cursor-pointer"></label>
-                                <span class="ml-3 text-sm font-medium text-gray-900" id="switch-label">Indexed Files</span>
+                        <!-- Switch Button for Indexed/Unindexed -->
+                        <div class="flex items-center gap-4">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-medium">Upload Type:</span>
+                                <div class="switch-container">
+                                    <input type="checkbox" id="upload-type-switch" class="switch-input">
+                                    <label for="upload-type-switch" class="switch-label">
+                                        <span class="switch-text" data-on="Unindexed" data-off="Indexed"></span>
+                                        <span class="switch-handle"></span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
                     @if($selectedFileIndexing)
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4" id="selected-file-info">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4" id="selected-file-info">
                             <div class="flex items-center">
                                 <i data-lucide="folder-open" class="h-5 w-5 text-blue-600 mr-2"></i>
                                 <div>
@@ -82,221 +154,305 @@
                     </div>
                 </div>
 
-                <!-- Tabs -->
-                <div class="tabs">
-                    <div class="tabs-list grid w-full md:w-auto grid-cols-2">
-                        <button class="tab active" role="tab" aria-selected="true" data-tab="upload" id="upload-tab-btn">Upload Indexed Scanned File</button>
-                        <button class="tab" role="tab" aria-selected="false" data-tab="scanned-files">Scanned Files</button>
-                    </div>
+                <!-- Main Content Area -->
+                <div id="indexed-upload-content">
+                    <!-- Tabs -->
+                    <div class="tabs">
+                        <div class="tabs-list grid w-full md:w-auto grid-cols-2">
+                            <button class="tab active" role="tab" aria-selected="true" data-tab="upload">Upload Indexed Scanned File</button>
+                            <button class="tab" role="tab" aria-selected="false" data-tab="scanned-files">Scanned Files</button>
+                        </div>
 
-                    <!-- Indexed Upload Tab -->
-                    <div class="tab-content mt-6 active" role="tabpanel" aria-hidden="false" data-tab-content="upload" id="indexed-upload-content">
-                        <div class="card">
-                            <div class="p-6 border-b">
-                                <div class="flex flex-col md:flex-row md:items-center justify-between">
-                                    <div>
-                                        <h2 class="text-lg font-semibold">Upload Indexed Scanned File</h2>
-                                        <p class="text-sm text-muted-foreground">Upload scanned documents to their digital folders</p>
-                                    </div>
-                                    <div class="mt-2 md:mt-0 selected-file-badge {{ $selectedFileIndexing ? '' : 'hidden' }}">
-                                        <span class="badge bg-blue-500 text-white px-3 py-1 flex items-center">
-                                            <i data-lucide="folder-open" class="h-4 w-4 mr-2"></i>
-                                            <span id="selected-file-number">{{ $selectedFileIndexing->file_number ?? 'No file selected' }}</span>
-                                        </span>
+                        <!-- Upload Tab -->
+                        <div class="tab-content mt-6 active" role="tabpanel" aria-hidden="false" data-tab-content="upload">
+                            <div class="card">
+                                <div class="p-6 border-b">
+                                    <div class="flex flex-col md:flex-row md:items-center justify-between">
+                                        <div>
+                                            <h2 class="text-lg font-semibold">Upload Indexed Scanned File</h2>
+                                            <p class="text-sm text-muted-foreground">Upload scanned documents to their digital folders</p>
+                                        </div>
+                                        <div class="mt-2 md:mt-0 selected-file-badge {{ $selectedFileIndexing ? '' : 'hidden' }}">
+                                            <span class="badge bg-blue-500 text-white px-3 py-1 flex items-center">
+                                                <i data-lucide="folder-open" class="h-4 w-4 mr-2"></i>
+                                                <span id="selected-file-number">{{ $selectedFileIndexing->file_number ?? 'No file selected' }}</span>
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="p-6">
-                                <div class="space-y-6">
-                                    <div class="flex justify-between items-center">
-                                        <label class="text-sm font-medium">Select Indexed File</label>
-                                        <button class="btn btn-outline btn-sm gap-1" id="select-file-btn">
-                                            <i data-lucide="folder" class="h-4 w-4"></i>
-                                            <span id="change-file-text">{{ $selectedFileIndexing ? 'Change File' : 'Select File' }}</span>
-                                        </button>
-                                    </div>
-
-                                    <!-- Upload area -->
-                                    <div class="border rounded-md p-4">
-                                        <h3 class="text-sm font-medium mb-4">Upload Scanned Documents</h3>
-
-                                        <!-- Idle state -->
-                                        <div id="upload-idle" class="rounded-md border-2 border-dashed p-8 text-center">
-                                            <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                                                <i data-lucide="file-up" class="h-6 w-6"></i>
-                                            </div>
-                                            <h3 class="mb-2 text-lg font-medium">Drag and drop scanned documents here</h3>
-                                            <p class="mb-4 text-sm text-muted-foreground">or click to browse files on your computer</p>
-                                            <input type="file" multiple class="hidden" id="file-upload" accept=".pdf,.jpg,.jpeg,.png,.tiff">
-                                            <button class="btn btn-primary gap-2" id="browse-files-btn" {{ $selectedFileIndexing ? '' : 'disabled' }}>
-                                                <i data-lucide="upload" class="h-4 w-4"></i>
-                                                Browse Files
+                                <div class="p-6">
+                                    <div class="space-y-6">
+                                        <div class="flex justify-between items-center">
+                                            <label class="text-sm font-medium">Select Indexed File</label>
+                                            <button class="btn btn-outline btn-sm gap-1" id="select-file-btn">
+                                                <i data-lucide="folder" class="h-4 w-4"></i>
+                                                <span id="change-file-text">{{ $selectedFileIndexing ? 'Change File' : 'Select File' }}</span>
                                             </button>
-                                            @if(!$selectedFileIndexing)
-                                                <p class="mt-2 text-sm text-red-500" id="select-file-warning">Please select an indexed file first</p>
-                                            @endif
                                         </div>
 
-                                        <!-- Selected files list -->
-                                        <div id="selected-files-container" class="rounded-md border divide-y mt-4 hidden">
-                                            <div class="p-3 bg-muted/50 flex justify-between items-center">
-                                                <span class="font-medium"><span id="selected-files-count">0</span> files selected</span>
-                                                <button class="btn btn-ghost btn-sm" id="clear-all-btn">Clear All</button>
+                                        <!-- Upload area -->
+                                        <div class="border rounded-md p-4">
+                                            <h3 class="text-sm font-medium mb-4">Upload Scanned Documents</h3>
+
+                                            <!-- Idle state -->
+                                            <div id="upload-idle" class="rounded-md border-2 border-dashed p-8 text-center">
+                                                <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                                                    <i data-lucide="file-up" class="h-6 w-6"></i>
+                                                </div>
+                                                <h3 class="mb-2 text-lg font-medium">Drag and drop scanned documents here</h3>
+                                                <p class="mb-4 text-sm text-muted-foreground">or click to browse files on your computer</p>
+                                                <input type="file" multiple class="hidden" id="file-upload" accept=".pdf,.jpg,.jpeg,.png,.tiff">
+                                                <button class="btn btn-primary gap-2" id="browse-files-btn" {{ $selectedFileIndexing ? '' : 'disabled' }}>
+                                                    <i data-lucide="upload" class="h-4 w-4"></i>
+                                                    Browse Files
+                                                </button>
+                                                @if(!$selectedFileIndexing)
+                                                    <p class="mt-2 text-sm text-red-500" id="select-file-warning">Please select an indexed file first</p>
+                                                @endif
                                             </div>
-                                            <div id="selected-files-list">
-                                                <!-- Files will be added here dynamically -->
+
+                                            <!-- Selected files list -->
+                                            <div id="selected-files-container" class="rounded-md border divide-y mt-4 hidden">
+                                                <div class="p-3 bg-muted/50 flex justify-between items-center">
+                                                    <span class="font-medium"><span id="selected-files-count">0</span> files selected</span>
+                                                    <button class="btn btn-ghost btn-sm" id="clear-all-btn">Clear All</button>
+                                                </div>
+                                                <div id="selected-files-list">
+                                                    <!-- Files will be added here dynamically -->
+                                                </div>
+                                            </div>
+
+                                            <!-- Uploading state -->
+                                            <div id="upload-progress" class="space-y-2 mt-4 hidden">
+                                                <div class="flex justify-between text-sm">
+                                                    <span>Uploading <span id="uploading-count">0</span> files...</span>
+                                                    <span id="upload-percentage">0%</span>
+                                                </div>
+                                                <div class="progress">
+                                                    <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Complete state -->
+                                            <div id="upload-complete" class="mt-4 p-4 bg-green-50 border border-green-100 rounded-md hidden">
+                                                <div class="flex items-center gap-2 text-green-700">
+                                                    <i data-lucide="check-circle" class="h-5 w-5"></i>
+                                                    <span class="font-medium">Upload Complete!</span>
+                                                </div>
+                                                <p class="text-sm text-green-700 mt-1">
+                                                    Files have been successfully uploaded and organized by paper size.
+                                                </p>
                                             </div>
                                         </div>
 
-                                        <!-- Uploading state -->
-                                        <div id="upload-progress" class="space-y-2 mt-4 hidden">
-                                            <div class="flex justify-between text-sm">
-                                                <span>Uploading <span id="uploading-count">0</span> files...</span>
-                                                <span id="upload-percentage">0%</span>
-                                            </div>
-                                            <div class="progress">
-                                                <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
-                                            </div>
+                                        <!-- Action buttons -->
+                                        <div class="flex flex-col md:flex-row gap-4 justify-center">
+                                            <!-- Start upload button (idle state) -->
+                                            <button class="btn btn-primary gap-2 hidden" id="start-upload-btn">
+                                                <i data-lucide="upload" class="h-4 w-4"></i>
+                                                Start Upload
+                                            </button>
+
+                                            <!-- Cancel button (uploading state) -->
+                                            <button class="btn btn-destructive gap-2 hidden" id="cancel-upload-btn">
+                                                <i data-lucide="alert-circle" class="h-4 w-4"></i>
+                                                Cancel
+                                            </button>
+
+                                            <!-- Complete state buttons -->
+                                            <button class="btn btn-outline gap-2 hidden" id="upload-more-btn">
+                                                <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                                                Upload More
+                                            </button>
+                                            <button class="btn btn-primary gap-2 hidden" id="view-uploaded-btn">
+                                                <i data-lucide="check-circle" class="h-4 w-4"></i>
+                                                View Uploaded Files
+                                            </button>
+                                            <a href="{{ route('pagetyping.index', ['file_indexing_id' => $selectedFileIndexing->id ?? '']) }}" 
+                                               class="btn btn-primary gap-2 hidden" id="proceed-page-typing-btn">
+                                                <i data-lucide="type" class="h-4 w-4"></i>
+                                                Proceed to Page Typing
+                                            </a>
                                         </div>
-
-                                        <!-- Complete state -->
-                                        <div id="upload-complete" class="mt-4 p-4 bg-green-50 border border-green-100 rounded-md hidden">
-                                            <div class="flex items-center gap-2 text-green-700">
-                                                <i data-lucide="check-circle" class="h-5 w-5"></i>
-                                                <span class="font-medium">Upload Complete!</span>
-                                            </div>
-                                            <p class="text-sm text-green-700 mt-1">
-                                                Files have been successfully uploaded and organized by paper size.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <!-- Action buttons -->
-                                    <div class="flex flex-col md:flex-row gap-4 justify-center">
-                                        <!-- Start upload button (idle state) -->
-                                        <button class="btn btn-primary gap-2 hidden" id="start-upload-btn">
-                                            <i data-lucide="upload" class="h-4 w-4"></i>
-                                            Start Upload
-                                        </button>
-
-                                        <!-- Cancel button (uploading state) -->
-                                        <button class="btn btn-destructive gap-2 hidden" id="cancel-upload-btn">
-                                            <i data-lucide="alert-circle" class="h-4 w-4"></i>
-                                            Cancel
-                                        </button>
-
-                                        <!-- Complete state buttons -->
-                                        <button class="btn btn-outline gap-2 hidden" id="upload-more-btn">
-                                            <i data-lucide="refresh-cw" class="h-4 w-4"></i>
-                                            Upload More
-                                        </button>
-                                        <button class="btn btn-primary gap-2 hidden" id="view-uploaded-btn">
-                                            <i data-lucide="check-circle" class="h-4 w-4"></i>
-                                            View Uploaded Files
-                                        </button>
-                                        <a href="{{ route('pagetyping.index', ['file_indexing_id' => $selectedFileIndexing->id ?? '']) }}" 
-                                           class="btn btn-primary gap-2 hidden" id="proceed-page-typing-btn">
-                                            <i data-lucide="type" class="h-4 w-4"></i>
-                                            Proceed to Page Typing
-                                        </a>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Unindexed Upload Tab (Hidden by default) -->
-                    <div class="tab-content mt-6 hidden" role="tabpanel" aria-hidden="true" data-tab-content="unindexed-upload" id="unindexed-upload-content">
-                        <div class="card">
-                            <div class="p-6 border-b">
-                                <div class="flex flex-col md:flex-row md:items-center justify-between">
-                                    <div>
-                                        <h2 class="text-lg font-semibold">Upload Unindexed Files</h2>
-                                        <p class="text-sm text-muted-foreground">Upload files for analysis and automatic indexing</p>
+                        <!-- Scanned Files Tab -->
+                        <div class="tab-content mt-6 hidden" role="tabpanel" aria-hidden="true" data-tab-content="scanned-files">
+                            <div class="card">
+                                <div class="p-6 border-b">
+                                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                        <div>
+                                            <h2 class="text-lg font-semibold">Scanned Files</h2>
+                                            <p class="text-sm text-muted-foreground">View and manage uploaded documents</p>
+                                        </div>
+                                        <div class="relative w-full md:w-64">
+                                            <i data-lucide="search" class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"></i>
+                                            <input type="search" placeholder="Search files..." class="input w-full pl-8" id="search-scanned-files">
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="p-6">
-                                <!-- Include the unindexed files upload content -->
-                                @include('scanning.unindexed_files_scans')
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Scanned Files Tab -->
-                    <div class="tab-content mt-6 hidden" role="tabpanel" aria-hidden="true" data-tab-content="scanned-files">
-                        <div class="card">
-                            <div class="p-6 border-b">
-                                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                    <div>
-                                        <h2 class="text-lg font-semibold">Scanned Files</h2>
-                                        <p class="text-sm text-muted-foreground">View and manage uploaded documents</p>
-                                    </div>
-                                    <div class="relative w-full md:w-64">
-                                        <i data-lucide="search" class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"></i>
-                                        <input type="search" placeholder="Search files..." class="input w-full pl-8" id="search-scanned-files">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="p-6">
-                                @if($recentScans && $recentScans->count() > 0)
-                                    <div class="overflow-x-auto">
-                                        <table class="min-w-full divide-y divide-gray-200">
-                                            <thead class="bg-gray-50">
-                                                <tr>
-                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File No</th>
-                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scan Date</th>
-                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pages</th>
-                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scanned By</th>
-                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="scanned-files-list" class="bg-white divide-y divide-gray-200">
-                                                @foreach($recentScans as $scan)
-                                                    <tr class="hover:bg-gray-50">
-                                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                            {{ $scan->fileIndexing ? $scan->fileIndexing->file_number : 'Unknown' }}
-                                                        </td>
-                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                            {{ $scan->original_filename ?? 'Document' }}
-                                                        </td>
-                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            {{ $scan->created_at->format('M d, Y') }}
-                                                        </td>
-                                                        <td class="px-6 py-4 whitespace-nowrap">
-                                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                                                {{ $scan->status === 'typed' ? 'bg-green-100 text-green-800' : 
-                                                                   ($scan->status === 'scanned' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800') }}">
-                                                                {{ ucfirst($scan->status) }}
-                                                            </span>
-                                                        </td>
-                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            1 page
-                                                        </td>
-                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            {{ $scan->uploader ? $scan->uploader->name : 'Unknown' }}
-                                                        </td>
-                                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                            <div class="flex items-center space-x-2">
-                                                                <button class="text-indigo-600 hover:text-indigo-900" onclick="viewDocument({{ $scan->id }})">
-                                                                    <i data-lucide="eye" class="h-4 w-4 mr-1"></i>
-                                                                    View
-                                                                </button>
-                                                            </div>
-                                                        </td>
+                                <div class="p-6">
+                                    @if($recentScans && $recentScans->count() > 0)
+                                        <div class="overflow-x-auto">
+                                            <table class="min-w-full divide-y divide-gray-200">
+                                                <thead class="bg-gray-50">
+                                                    <tr>
+                                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File No</th>
+                                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scan Date</th>
+                                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pages</th>
+                                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scanned By</th>
+                                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                                     </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
+                                                </thead>
+                                                <tbody id="scanned-files-list" class="bg-white divide-y divide-gray-200">
+                                                    @foreach($recentScans as $scan)
+                                                        <tr class="hover:bg-gray-50">
+                                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                                {{ $scan->fileIndexing->file_number ?? 'Unknown' }}
+                                                            </td>
+                                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                                {{ $scan->original_filename ?? 'Document' }}
+                                                            </td>
+                                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                                {{ $scan->created_at->format('M d, Y') }}
+                                                            </td>
+                                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                                                    {{ $scan->status === 'typed' ? 'bg-green-100 text-green-800' : 
+                                                                       ($scan->status === 'scanned' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800') }}">
+                                                                    {{ ucfirst($scan->status) }}
+                                                                </span>
+                                                            </td>
+                                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                                1 page
+                                                            </td>
+                                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                                {{ $scan->uploader->name ?? 'Unknown' }}
+                                                            </td>
+                                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                                <div class="flex items-center space-x-2">
+                                                                    <button class="text-indigo-600 hover:text-indigo-900" onclick="viewDocument({{ $scan->id }})">
+                                                                        <i data-lucide="eye" class="h-4 w-4 mr-1"></i>
+                                                                        View
+                                                                    </button>
+                                                                    <button class="text-orange-600 hover:text-orange-900 upload-more-action" data-file-id="{{ $scan->file_indexing_id }}">
+                                                                        <i data-lucide="plus-circle" class="h-4 w-4 mr-1"></i>
+                                                                        Upload More
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    @else
+                                        <div class="text-center py-8">
+                                            <i data-lucide="inbox" class="h-12 w-12 mx-auto text-gray-300 mb-4"></i>
+                                            <p class="text-gray-500">No scanned files found</p>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Unindexed Upload Content (Hidden by default) -->
+                <div id="unindexed-upload-content" class="hidden">
+                    <div class="card">
+                        <div class="p-6 border-b">
+                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div>
+                                    <h2 class="text-lg font-semibold">Upload Unindexed Scanned File</h2>
+                                    <p class="text-sm text-muted-foreground">Upload scanned documents without existing indexing records</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <div class="space-y-6">
+                                <!-- Upload area for unindexed files -->
+                                <div class="border rounded-md p-4">
+                                    <h3 class="text-sm font-medium mb-4">Upload Unindexed Documents</h3>
+
+                                    <!-- Idle state -->
+                                    <div id="unindexed-upload-idle" class="rounded-md border-2 border-dashed p-8 text-center">
+                                        <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                                            <i data-lucide="file-plus" class="h-6 w-6"></i>
+                                        </div>
+                                        <h3 class="mb-2 text-lg font-medium">Drag and drop unindexed documents here</h3>
+                                        <p class="mb-4 text-sm text-muted-foreground">System will extract metadata and create indexing records automatically</p>
+                                        <input type="file" multiple class="hidden" id="unindexed-file-upload" accept=".pdf,.jpg,.jpeg,.png,.tiff">
+                                        <button class="btn btn-primary gap-2" id="browse-unindexed-files-btn">
+                                            <i data-lucide="upload" class="h-4 w-4"></i>
+                                            Browse Files
+                                        </button>
                                     </div>
-                                @else
-                                    <div class="text-center py-8">
-                                        <i data-lucide="inbox" class="h-12 w-12 mx-auto text-gray-300 mb-4"></i>
-                                        <p class="text-gray-500">No scanned files found</p>
+
+                                    <!-- Selected files list for unindexed -->
+                                    <div id="unindexed-selected-files-container" class="rounded-md border divide-y mt-4 hidden">
+                                        <div class="p-3 bg-muted/50 flex justify-between items-center">
+                                            <span class="font-medium"><span id="unindexed-selected-files-count">0</span> files selected</span>
+                                            <button class="btn btn-ghost btn-sm" id="clear-unindexed-all-btn">Clear All</button>
+                                        </div>
+                                        <div id="unindexed-selected-files-list">
+                                            <!-- Files will be added here dynamically -->
+                                        </div>
                                     </div>
-                                @endif
+
+                                    <!-- Processing state -->
+                                    <div id="unindexed-processing" class="space-y-2 mt-4 hidden">
+                                        <div class="flex justify-between text-sm">
+                                            <span>Processing <span id="unindexed-processing-count">0</span> files...</span>
+                                            <span id="unindexed-processing-percentage">0%</span>
+                                        </div>
+                                        <div class="progress">
+                                            <div class="progress-bar" id="unindexed-progress-bar" style="width: 0%"></div>
+                                        </div>
+                                        <p class="text-xs text-muted-foreground">Extracting metadata and creating indexing records...</p>
+                                    </div>
+
+                                    <!-- Complete state -->
+                                    <div id="unindexed-complete" class="mt-4 p-4 bg-green-50 border border-green-100 rounded-md hidden">
+                                        <div class="flex items-center gap-2 text-green-700">
+                                            <i data-lucide="check-circle" class="h-5 w-5"></i>
+                                            <span class="font-medium">Processing Complete!</span>
+                                        </div>
+                                        <p class="text-sm text-green-700 mt-1">
+                                            Files have been processed and indexing records created successfully.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Action buttons for unindexed -->
+                                <div class="flex flex-col md:flex-row gap-4 justify-center">
+                                    <!-- Start processing button -->
+                                    <button class="btn btn-primary gap-2 hidden" id="start-unindexed-processing-btn">
+                                        <i data-lucide="play" class="h-4 w-4"></i>
+                                        Start Processing
+                                    </button>
+
+                                    <!-- Cancel button -->
+                                    <button class="btn btn-destructive gap-2 hidden" id="cancel-unindexed-processing-btn">
+                                        <i data-lucide="alert-circle" class="h-4 w-4"></i>
+                                        Cancel
+                                    </button>
+
+                                    <!-- Complete state buttons -->
+                                    <button class="btn btn-outline gap-2 hidden" id="process-more-unindexed-btn">
+                                        <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                                        Process More
+                                    </button>
+                                    <button class="btn btn-primary gap-2 hidden" id="view-processed-files-btn">
+                                        <i data-lucide="check-circle" class="h-4 w-4"></i>
+                                        View Processed Files
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -395,6 +551,240 @@
         </div>
         <!-- Footer -->
         @include('admin.footer')
+        
+        <!-- Enhanced JavaScript -->
+        <script>
+            // Initialize Lucide icons
+            lucide.createIcons();
+
+            // Application state
+            let uploadState = {
+                isUnindexedMode: false,
+                selectedFileId: null,
+                selectedFiles: [],
+                uploadProgress: 0
+            };
+
+            // Switch between Indexed and Unindexed upload modes
+            document.getElementById('upload-type-switch').addEventListener('change', function() {
+                uploadState.isUnindexedMode = this.checked;
+                toggleUploadMode();
+            });
+
+            function toggleUploadMode() {
+                const pageTitle = document.getElementById('page-title');
+                const pageDescription = document.getElementById('page-description');
+                const selectedFileInfo = document.getElementById('selected-file-info');
+                const indexedContent = document.getElementById('indexed-upload-content');
+                const unindexedContent = document.getElementById('unindexed-upload-content');
+
+                if (uploadState.isUnindexedMode) {
+                    // Switch to Unindexed mode
+                    pageTitle.textContent = 'Upload Unindexed Scanned File';
+                    pageDescription.textContent = 'Upload scanned documents without existing indexing records';
+                    if (selectedFileInfo) selectedFileInfo.style.display = 'none';
+                    indexedContent.classList.add('hidden');
+                    unindexedContent.classList.remove('hidden');
+                } else {
+                    // Switch to Indexed mode
+                    pageTitle.textContent = 'Upload Indexed Scanned File';
+                    pageDescription.textContent = 'Upload scanned documents to their digital folders';
+                    if (selectedFileInfo) selectedFileInfo.style.display = 'block';
+                    indexedContent.classList.remove('hidden');
+                    unindexedContent.classList.add('hidden');
+                }
+            }
+
+            // Upload More action handler
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.upload-more-action')) {
+                    const fileId = e.target.closest('.upload-more-action').getAttribute('data-file-id');
+                    handleUploadMore(fileId);
+                }
+            });
+
+            function handleUploadMore(fileId) {
+                // Set is_updated = 1 for the file
+                fetch(`/scanning/upload-more/${fileId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show success message
+                        showNotification('File marked for additional uploads. You can now upload more scans for this file.', 'success');
+                        
+                        // Optionally redirect to upload interface for this file
+                        window.location.href = `/scanning?file_indexing_id=${fileId}`;
+                    } else {
+                        showNotification('Error: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('An error occurred while processing the request.', 'error');
+                });
+            }
+
+            // Unindexed file upload handlers
+            document.getElementById('browse-unindexed-files-btn').addEventListener('click', function() {
+                document.getElementById('unindexed-file-upload').click();
+            });
+
+            document.getElementById('unindexed-file-upload').addEventListener('change', function(e) {
+                handleUnindexedFileSelection(e.target.files);
+            });
+
+            function handleUnindexedFileSelection(files) {
+                uploadState.selectedFiles = Array.from(files);
+                displayUnindexedSelectedFiles();
+            }
+
+            function displayUnindexedSelectedFiles() {
+                const container = document.getElementById('unindexed-selected-files-container');
+                const list = document.getElementById('unindexed-selected-files-list');
+                const count = document.getElementById('unindexed-selected-files-count');
+                const startBtn = document.getElementById('start-unindexed-processing-btn');
+
+                if (uploadState.selectedFiles.length === 0) {
+                    container.classList.add('hidden');
+                    startBtn.classList.add('hidden');
+                    return;
+                }
+
+                container.classList.remove('hidden');
+                startBtn.classList.remove('hidden');
+                count.textContent = uploadState.selectedFiles.length;
+
+                list.innerHTML = '';
+                uploadState.selectedFiles.forEach((file, index) => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'p-3 flex items-center justify-between';
+                    fileItem.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="file-text" class="h-5 w-5 text-gray-400"></i>
+                            <div>
+                                <div class="font-medium text-sm">${file.name}</div>
+                                <div class="text-xs text-gray-500">${formatFileSize(file.size)}</div>
+                            </div>
+                        </div>
+                        <button type="button" class="text-red-500 hover:text-red-700 p-1" onclick="removeUnindexedFile(${index})">
+                            <i data-lucide="x" class="h-4 w-4"></i>
+                        </button>
+                    `;
+                    list.appendChild(fileItem);
+                });
+
+                lucide.createIcons();
+            }
+
+            function removeUnindexedFile(index) {
+                uploadState.selectedFiles.splice(index, 1);
+                displayUnindexedSelectedFiles();
+            }
+
+            // Start unindexed processing
+            document.getElementById('start-unindexed-processing-btn').addEventListener('click', function() {
+                startUnindexedProcessing();
+            });
+
+            function startUnindexedProcessing() {
+                if (uploadState.selectedFiles.length === 0) return;
+
+                // Show processing state
+                document.getElementById('unindexed-selected-files-container').classList.add('hidden');
+                document.getElementById('start-unindexed-processing-btn').classList.add('hidden');
+                document.getElementById('unindexed-processing').classList.remove('hidden');
+                document.getElementById('cancel-unindexed-processing-btn').classList.remove('hidden');
+
+                // Simulate processing
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 10;
+                    document.getElementById('unindexed-processing-percentage').textContent = progress + '%';
+                    document.getElementById('unindexed-progress-bar').style.width = progress + '%';
+                    document.getElementById('unindexed-processing-count').textContent = Math.ceil((progress / 100) * uploadState.selectedFiles.length);
+
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        completeUnindexedProcessing();
+                    }
+                }, 500);
+            }
+
+            function completeUnindexedProcessing() {
+                // Hide processing state
+                document.getElementById('unindexed-processing').classList.add('hidden');
+                document.getElementById('cancel-unindexed-processing-btn').classList.add('hidden');
+
+                // Show complete state
+                document.getElementById('unindexed-complete').classList.remove('hidden');
+                document.getElementById('process-more-unindexed-btn').classList.remove('hidden');
+                document.getElementById('view-processed-files-btn').classList.remove('hidden');
+
+                showNotification('Unindexed files processed successfully! Indexing records have been created.', 'success');
+            }
+
+            // Utility functions
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            function showNotification(message, type = 'info') {
+                // Create notification element
+                const notification = document.createElement('div');
+                notification.className = `fixed top-4 right-4 z-50 p-4 rounded-md shadow-lg max-w-sm ${
+                    type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' :
+                    type === 'error' ? 'bg-red-50 border border-red-200 text-red-800' :
+                    'bg-blue-50 border border-blue-200 text-blue-800'
+                }`;
+                
+                notification.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="${type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : 'info'}" class="h-5 w-5"></i>
+                        <span class="text-sm font-medium">${message}</span>
+                        <button onclick="this.parentElement.parentElement.remove()" class="ml-auto">
+                            <i data-lucide="x" class="h-4 w-4"></i>
+                        </button>
+                    </div>
+                `;
+                
+                document.body.appendChild(notification);
+                lucide.createIcons();
+                
+                // Auto remove after 5 seconds
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.remove();
+                    }
+                }, 5000);
+            }
+
+            // Clear buttons
+            document.getElementById('clear-unindexed-all-btn').addEventListener('click', function() {
+                uploadState.selectedFiles = [];
+                displayUnindexedSelectedFiles();
+            });
+
+            // Process more button
+            document.getElementById('process-more-unindexed-btn').addEventListener('click', function() {
+                // Reset to initial state
+                document.getElementById('unindexed-complete').classList.add('hidden');
+                document.getElementById('process-more-unindexed-btn').classList.add('hidden');
+                document.getElementById('view-processed-files-btn').classList.add('hidden');
+                uploadState.selectedFiles = [];
+                displayUnindexedSelectedFiles();
+            });
+        </script>
+        
         @include('scanning.assets.js_dynamic')
     </div>
 @endsection

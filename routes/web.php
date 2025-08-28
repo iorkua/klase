@@ -880,3 +880,23 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'pagetyping'], functi
 require __DIR__ . '/instrument_batch_fix.php';
 
 Route::get('/api/survey-plan/{applicationId}', [App\Http\Controllers\PrimaryFormController::class, 'getSurveyPlan'])->name('api.survey-plan');
+
+// Blind Scanning Routes
+Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'blind-scanning'], function () {
+    Route::get('/', [App\Http\Controllers\BlindScanningController::class, 'index'])->name('blind-scanning.index');
+    Route::post('/store', [App\Http\Controllers\BlindScanningController::class, 'store'])->name('blind-scanning.store');
+    Route::get('/list', [App\Http\Controllers\BlindScanningController::class, 'list'])->name('blind-scanning.list');
+    Route::post('/convert-to-upload', [App\Http\Controllers\BlindScanningController::class, 'convertToUpload'])->name('blind-scanning.convert-to-upload');
+    Route::get('/{id}', [App\Http\Controllers\BlindScanningController::class, 'show'])->name('blind-scanning.show');
+    Route::delete('/{id}', [App\Http\Controllers\BlindScanningController::class, 'destroy'])->name('blind-scanning.destroy');
+});
+
+// PTQ Control (Quality Control) Routes
+Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'ptq-control'], function () {
+    Route::get('/', [App\Http\Controllers\PTQController::class, 'index'])->name('ptq-control.index');
+    Route::get('/list-pending', [App\Http\Controllers\PTQController::class, 'listPending'])->name('ptq-control.list-pending');
+    Route::get('/qc-details/{fileIndexingId}', [App\Http\Controllers\PTQController::class, 'getQCDetails'])->name('ptq-control.qc-details');
+    Route::post('/mark-qc-status', [App\Http\Controllers\PTQController::class, 'markQCStatus'])->name('ptq-control.mark-qc-status');
+    Route::post('/override-qc', [App\Http\Controllers\PTQController::class, 'overrideQC'])->name('ptq-control.override-qc');
+    Route::get('/qc-stats', [App\Http\Controllers\PTQController::class, 'getQCStats'])->name('ptq-control.qc-stats');
+});
