@@ -896,9 +896,15 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'blind-scanning'], fu
 Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'ptq-control'], function () {
     Route::get('/', [App\Http\Controllers\PTQController::class, 'index'])->name('ptq-control.index');
     Route::get('/list-pending', [App\Http\Controllers\PTQController::class, 'listPending'])->name('ptq-control.list-pending');
+    Route::get('/list-in-progress', [App\Http\Controllers\PTQController::class, 'listInProgress'])->name('ptq-control.list-in-progress');
+    Route::get('/list-completed', [App\Http\Controllers\PTQController::class, 'listCompleted'])->name('ptq-control.list-completed');
     Route::get('/qc-details/{fileIndexingId}', [App\Http\Controllers\PTQController::class, 'getQCDetails'])->name('ptq-control.qc-details');
     Route::post('/mark-qc-status', [App\Http\Controllers\PTQController::class, 'markQCStatus'])->name('ptq-control.mark-qc-status');
     Route::post('/override-qc', [App\Http\Controllers\PTQController::class, 'overrideQC'])->name('ptq-control.override-qc');
+    Route::post('/batch-qc-operation', [App\Http\Controllers\PTQController::class, 'batchQCOperation'])->name('ptq-control.batch-qc-operation');
+    Route::post('/approve-for-archiving', [App\Http\Controllers\PTQController::class, 'approveForArchiving'])->name('ptq-control.approve-for-archiving');
+    Route::post('/archive-file', [App\Http\Controllers\PTQController::class, 'archiveFile'])->name('ptq-control.archive-file');
+    Route::get('/qc-audit-trail/{fileIndexingId}', [App\Http\Controllers\PTQController::class, 'getQCAuditTrail'])->name('ptq-control.qc-audit-trail');
     Route::get('/qc-stats', [App\Http\Controllers\PTQController::class, 'getQCStats'])->name('ptq-control.qc-stats');
 });
 

@@ -33,6 +33,8 @@ class FileIndexing extends Model
         'is_problematic',
         'is_co_owned_plot',
         'is_updated',
+        'workflow_status',
+        'has_qc_issues',
         'created_by',
         'updated_by',
     ];
@@ -44,6 +46,7 @@ class FileIndexing extends Model
         'is_problematic' => 'boolean',
         'is_co_owned_plot' => 'boolean',
         'is_updated' => 'boolean',
+        'has_qc_issues' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

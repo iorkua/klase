@@ -58,7 +58,7 @@ class PTQController extends Controller
             // Query for files that have been pagetyped but not QC reviewed
             $query = FileIndexing::with(['pagetypings' => function($q) {
                 $q->orderBy('page_number');
-            }, 'pagetypings.typedBy:id,first_name,last_name'])
+            }, 'pagetypings.typedBy:id,name'])
             ->whereHas('pagetypings') // Must have page typings (pagetyped files)
             ->whereDoesntHave('pagetypings', function($q) {
                 $q->whereNotNull('qc_reviewed_at'); // No QC review done yet
@@ -210,7 +210,7 @@ class PTQController extends Controller
         try {
             $query = FileIndexing::with(['pagetypings' => function($q) {
                 $q->orderBy('page_number');
-            }, 'pagetypings.qcReviewer:id,first_name,last_name'])
+            }, 'pagetypings.qcReviewer:id,name'])
             ->whereHas('pagetypings') // Must have page typings
             ->whereDoesntHave('pagetypings', function($q) {
                 $q->whereNull('qc_reviewed_at'); // All pages must be QC reviewed
@@ -242,7 +242,7 @@ class PTQController extends Controller
                 $file->failed_pages_count = $file->pagetypings->where('qc_status', 'failed')->count();
                 $file->overridden_pages_count = $file->pagetypings->where('qc_overridden', true)->count();
                 $file->qc_completed_at = $file->pagetypings->max('qc_reviewed_at');
-                $file->qc_reviewed_by_name = $file->pagetypings->whereNotNull('qc_reviewed_by')->first()?->qcReviewer?->name ?? 'Unknown';
+                $file->qc_reviewed_by_name = $file->pagetypings->whereNotNull('qc_reviewed_by')->first()?->qcReviewer?->name;
                 
                 // Create processed pages array for frontend
                 $file->processedPages = $file->pagetypings->map(function($page, $index) {
