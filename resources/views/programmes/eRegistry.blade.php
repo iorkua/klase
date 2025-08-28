@@ -88,6 +88,80 @@
       background-color: #9ca3af !important;
       transform: none !important;
     }
+    
+    /* Dropdown Styles */
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      right: 0;
+      background-color: white;
+      min-width: 160px;
+      box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+      border-radius: 6px;
+      z-index: 1000;
+      border: 1px solid #e5e7eb;
+    }
+    
+    .dropdown-content.show {
+      display: block;
+    }
+    
+    .dropdown-item {
+      color: #374151;
+      padding: 8px 12px;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      font-size: 0.75rem;
+      transition: background-color 0.2s;
+      cursor: pointer;
+    }
+    
+    .dropdown-item:hover {
+      background-color: #f3f4f6;
+    }
+    
+    .dropdown-item:first-child {
+      border-top-left-radius: 6px;
+      border-top-right-radius: 6px;
+    }
+    
+    .dropdown-item:last-child {
+      border-bottom-left-radius: 6px;
+      border-bottom-right-radius: 6px;
+    }
+    
+    .dropdown-item.disabled {
+      color: #9ca3af;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    
+    .dropdown-item.disabled:hover {
+      background-color: transparent;
+    }
+    
+    .dropdown-toggle {
+      background-color: #6b7280;
+      color: white;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      transition: background-color 0.2s;
+    }
+    
+    .dropdown-toggle:hover {
+      background-color: #4b5563;
+    }
 </style>
 
 <!-- Tab switching script -->
@@ -284,31 +358,36 @@
                                         <td class="table-cell">{{ $application->Expected_Return_Date ?? 'N/A' }}</td>
                                         <td class="table-cell">{{ $application->Current_Office ?? 'N/A' }}</td>
                                         <td class="table-cell">
-                                            <div class="flex space-x-2">
-                                                @if($application->processing_status == 'Completed')
-                                                    <a href="{{ route('file-viewer.primary', $application->application_id) }}" 
-                                                       class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
-                                                        <i data-lucide="folder-open" class="w-3 h-3 mr-1"></i>
-                                                        View File
-                                                    </a>
-                                                @else
-                                                    <button disabled 
-                                                            class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white btn-disabled transition-colors"
-                                                            title="Files not available - Processing {{ strtolower($application->processing_status) }}">
-                                                        <i data-lucide="folder-x" class="w-3 h-3 mr-1"></i>
-                                                        @if($application->processing_status == 'In Progress')
-                                                            Processing...
-                                                        @else
-                                                            No File
-                                                        @endif
-                                                    </button>
-                                                @endif
-                                                
-                                                <button onclick="updateEdms('primary', '{{ $application->application_id }}')"
-                                                        class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
-                                                    <i data-lucide="refresh-cw" class="w-3 h-3 mr-1"></i>
-                                                    Update EDMS
+                                            <div class="dropdown">
+                                                <button class="dropdown-toggle" onclick="toggleDropdown('primary-dropdown-{{ $index }}')">
+                                                    <i data-lucide="more-vertical" class="w-3 h-3 mr-1"></i>
+                                                   
                                                 </button>
+                                                <div id="primary-dropdown-{{ $index }}" class="dropdown-content">
+                                                    @if($application->processing_status == 'Completed')
+                                                        <a href="{{ route('file-viewer.primary', $application->application_id) }}" class="dropdown-item">
+                                                            <i data-lucide="folder-open" class="w-3 h-3 mr-2"></i>
+                                                            View File
+                                                        </a>
+                                                        <div class="dropdown-item" onclick="updateEdms('primary', '{{ $application->application_id }}')">
+                                                            <i data-lucide="refresh-cw" class="w-3 h-3 mr-2"></i>
+                                                            Update EDMS
+                                                        </div>
+                                                    @else
+                                                        <div class="dropdown-item disabled" title="Files not available - Processing {{ strtolower($application->processing_status) }}">
+                                                            <i data-lucide="folder-x" class="w-3 h-3 mr-2"></i>
+                                                            @if($application->processing_status == 'In Progress')
+                                                                Processing...
+                                                            @else
+                                                                No File
+                                                            @endif
+                                                        </div>
+                                                        <div class="dropdown-item disabled" title="Update EDMS is only available when status is Completed">
+                                                            <i data-lucide="refresh-cw" class="w-3 h-3 mr-2"></i>
+                                                            Update EDMS
+                                                        </div>
+                                                    @endif
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>
@@ -389,31 +468,36 @@
                                         <td class="table-cell">{{ $application->Expected_Return_Date ?? 'N/A' }}</td>
                                         <td class="table-cell">{{ $application->Current_Office ?? 'N/A' }}</td>
                                         <td class="table-cell">
-                                            <div class="flex space-x-2">
-                                                @if($application->processing_status == 'Completed')
-                                                    <a href="{{ route('file-viewer.unit', $application->sub_application_id) }}" 
-                                                       class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors">
-                                                        <i data-lucide="folder-open" class="w-3 h-3 mr-1"></i>
-                                                        View File
-                                                    </a>
-                                                @else
-                                                    <button disabled 
-                                                            class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white btn-disabled transition-colors"
-                                                            title="Files not available - Processing {{ strtolower($application->processing_status) }}">
-                                                        <i data-lucide="folder-x" class="w-3 h-3 mr-1"></i>
-                                                        @if($application->processing_status == 'In Progress')
-                                                            Processing...
-                                                        @else
-                                                            No File
-                                                        @endif
-                                                    </button>
-                                                @endif
+                                            <div class="dropdown">
+                                                <button class="dropdown-toggle" onclick="toggleDropdown('unit-dropdown-{{ $index }}')">
+                                                    <i data-lucide="more-vertical" class="w-3 h-3 mr-1"></i>
                                                 
-                                                <button onclick="updateEdms('unit', '{{ $application->sub_application_id }}')"
-                                                        class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
-                                                    <i data-lucide="refresh-cw" class="w-3 h-3 mr-1"></i>
-                                                    Update EDMS
                                                 </button>
+                                                <div id="unit-dropdown-{{ $index }}" class="dropdown-content">
+                                                    @if($application->processing_status == 'Completed')
+                                                        <a href="{{ route('file-viewer.unit', $application->sub_application_id) }}" class="dropdown-item">
+                                                            <i data-lucide="folder-open" class="w-3 h-3 mr-2"></i>
+                                                            View File
+                                                        </a>
+                                                        <div class="dropdown-item" onclick="updateEdms('unit', '{{ $application->sub_application_id }}')">
+                                                            <i data-lucide="refresh-cw" class="w-3 h-3 mr-2"></i>
+                                                            Update EDMS
+                                                        </div>
+                                                    @else
+                                                        <div class="dropdown-item disabled" title="Files not available - Processing {{ strtolower($application->processing_status) }}">
+                                                            <i data-lucide="folder-x" class="w-3 h-3 mr-2"></i>
+                                                            @if($application->processing_status == 'In Progress')
+                                                                Processing...
+                                                            @else
+                                                                No File
+                                                            @endif
+                                                        </div>
+                                                        <div class="dropdown-item disabled" title="Update EDMS is only available when status is Completed">
+                                                            <i data-lucide="refresh-cw" class="w-3 h-3 mr-2"></i>
+                                                            Update EDMS
+                                                        </div>
+                                                    @endif
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>
@@ -429,7 +513,47 @@
             </div>
 
 <script>
+// Dropdown functionality
+function toggleDropdown(dropdownId) {
+    // Close all other dropdowns first
+    const allDropdowns = document.querySelectorAll('.dropdown-content');
+    allDropdowns.forEach(dropdown => {
+        if (dropdown.id !== dropdownId) {
+            dropdown.classList.remove('show');
+        }
+    });
+    
+    // Toggle the clicked dropdown
+    const dropdown = document.getElementById(dropdownId);
+    if (dropdown) {
+        dropdown.classList.toggle('show');
+    }
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(event) {
+    if (!event.target.matches('.dropdown-toggle') && !event.target.closest('.dropdown-toggle')) {
+        const dropdowns = document.querySelectorAll('.dropdown-content');
+        dropdowns.forEach(dropdown => {
+            dropdown.classList.remove('show');
+        });
+    }
+});
+
+// Prevent dropdown from closing when clicking inside dropdown content
+document.addEventListener('click', function(event) {
+    if (event.target.closest('.dropdown-content')) {
+        event.stopPropagation();
+    }
+});
+
 function updateEdms(type, id) {
+    // Close the dropdown after clicking
+    const allDropdowns = document.querySelectorAll('.dropdown-content');
+    allDropdowns.forEach(dropdown => {
+        dropdown.classList.remove('show');
+    });
+    
     // Add your EDMS update logic here
     console.log('Updating EDMS for ' + type + ' application ID: ' + id);
     

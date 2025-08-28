@@ -176,6 +176,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/api/stats', [PageTypingController::class, 'getStats'])->name('pagetyping.api.stats');
         Route::get('/api/files', [PageTypingController::class, 'getFilesByStatus'])->name('pagetyping.api.files');
         Route::get('/api/file-details', [PageTypingController::class, 'getFileDetails'])->name('pagetyping.api.file-details');
+        Route::get('/api/next-serial-for-page-type', [PageTypingController::class, 'getNextSerialForPageType'])->name('pagetyping.api.next-serial-for-page-type');
         
         // PageType More routes
         Route::get('/api/pagetype-more', [PageTypingController::class, 'pageTypeMore'])->name('pagetyping.api.pagetype-more');

@@ -313,28 +313,42 @@
                 return { id, code, name };
               });
 
-              // Normalize and group PageSubTypes by PageTypeId
-              const rawSubs = data.page_sub_types || [];
-              const grouped = {};
-              rawSubs.forEach(st => {
-                const id = pick(st, ['id','Id']).toString();
-                const code = pick(st, ['code','Code','PageSubType'], 'ST');
-                const name = pick(st, ['name','Name'], code);
-                let ptId = pick(st, ['page_type_id','PageTypeId','pageTypeId']);
-                if (!ptId) {
-                  // If only PageType code was provided, resolve to id via pageTypes
-                  const ptCode = pick(st, ['PageType','page_type']);
-                  if (ptCode) {
-                    const found = pageTypes.find(t => (t.code || '').toString().toLowerCase() === ptCode.toString().toLowerCase());
-                    if (found) ptId = found.id;
+              // Normalize PageSubTypes - handle both grouped object and flat array
+              const rawSubs = data.page_sub_types ?? {};
+              if (Array.isArray(rawSubs)) {
+                const grouped = {};
+                rawSubs.forEach(st => {
+                  const id = pick(st, ['id','Id']).toString();
+                  const code = pick(st, ['code','Code','PageSubType'], 'ST');
+                  const name = pick(st, ['name','Name'], code);
+                  let ptId = pick(st, ['page_type_id','PageTypeId','pageTypeId']);
+                  if (!ptId) {
+                    const ptCode = pick(st, ['PageType','page_type']);
+                    if (ptCode) {
+                      const found = pageTypes.find(t => (t.code || '').toString().toLowerCase() === ptCode.toString().toLowerCase());
+                      if (found) ptId = found.id;
+                    }
                   }
-                }
-                ptId = ptId?.toString();
-                if (!ptId) return; // skip if cannot resolve mapping
-                if (!grouped[ptId]) grouped[ptId] = [];
-                grouped[ptId].push({ id, code, name });
-              });
-              pageSubTypes = grouped;
+                  ptId = ptId?.toString();
+                  if (!ptId) return;
+                  if (!grouped[ptId]) grouped[ptId] = [];
+                  grouped[ptId].push({ id, code, name });
+                });
+                pageSubTypes = grouped;
+              } else {
+                // Already grouped as { [PageTypeId]: [ items ] } - normalize items
+                const grouped = {};
+                Object.keys(rawSubs || {}).forEach(ptId => {
+                  const arr = rawSubs[ptId] || [];
+                  grouped[ptId.toString()] = arr.map(st => {
+                    const id = pick(st, ['id','Id']).toString();
+                    const code = pick(st, ['code','Code','PageSubType'], 'ST');
+                    const name = pick(st, ['name','Name'], code);
+                    return { id, code, name };
+                  });
+                });
+                pageSubTypes = grouped;
+              }
 
               console.log('Loaded page typing data:', { coverTypes, pageTypes, pageSubTypes });
             } else {
@@ -596,9 +610,19 @@
               state.selectedFileData = data.file;
               state.activeTab = 'typing';
 
-              // Pull initial serial number from backend if provided
-              const initialSerial = (data.file && (data.file.next_serial || data.file.next_serial_no)) || data.next_serial || '01';
-              const serialStr = initialSerial.toString().padStart(2, '0');
+              // Use server-calculated serial number
+              let calculatedSerial = 1;
+              const existingPageTypings = data.file.existing_page_typings || [];
+              
+              if (existingPageTypings.length > 0) {
+                // Find highest serial and add 1
+                const maxSerial = Math.max(...existingPageTypings.map(pt => parseInt(pt.serial_number) || 0), 0);
+                calculatedSerial = maxSerial + 1;
+              }
+              
+              const serialStr = calculatedSerial.toString().padStart(2, '0');
+              
+              console.log('Calculated serial:', calculatedSerial, 'formatted:', serialStr);
               
               // Initialize typing state
               state.typingState = {
@@ -613,6 +637,7 @@
                 pageType: (pageTypes[0]?.id || '1').toString(),
                 pageSubType: '1',
                 serialNo: serialStr,
+                isExistingFile: existingPageTypings.length > 0,
                 batchMode: false,
                 batchTypedPages: {},
                 batchSubmitReady: false,
@@ -975,6 +1000,38 @@
               
               document.querySelectorAll('.view-combined').forEach(btn => {
                 btn.addEventListener('click', () => {
+                  const fileId = btn.getAttribute('data-id');
+                  // For now, open typing view; later this could open a read-only combined preview
+                  startPageTyping(fileId, { pageTypeMore: true });
+                });
+              });
+            } else {
+              elements.pageTypeMoreTableBody.innerHTML = `
+                <tr>
+                  <td colspan="8" class="text-center p-8">
+                    <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                      <i data-lucide="file-plus" class="h-6 w-6"></i>
+                    </div>
+                    <h3 class="mb-2 text-lg font-medium">No files need additional page typing</h3>
+                    <p class="mb-4 text-sm text-muted-foreground">Files with new scans (IsUpdated = 1) will appear here</p>
+                    ${data.message ? `<p class="text-xs text-gray-400">${data.message}</p>` : ''}
+                  </td>
+                </tr>
+              `;
+            }
+            lucide.createIcons();
+          } catch (error) {
+            console.error('Error loading PageType More files:', error);
+            elements.pageTypeMoreTableBody.innerHTML = `
+              <tr>
+                <td colspan="8" class="text-center p-8">
+                  <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                    <i data-lucide="alert-circle" class="h-6 w-6 text-red-600"></i>
+                  </div>
+                  <h3 class="mb-2 text-lg font-medium">Error loading PageType More files</h3>
+                  <p class="mb-4 text-sm text-muted-foreground">Please try refreshing the page</p>
+                </td>
+              </tr>
             `;
             lucide.createIcons();
           }
@@ -1017,7 +1074,7 @@
                       </button>`
                     : ''}
                   <button class="btn btn-outline btn-sm back-button">
-                    ${state.typingState.selectedPageInFolder !== null ? 'Back to Folder' : 'Back to Dashboard'}
+                    ${state.typingState.selectedPageInFolder !== null ? 'Back to Folder' : (state.pageTypeMoreMode ? 'Back to PageType More' : 'Back to Dashboard')}
                   </button>
                 </div>
               </div>
@@ -1081,11 +1138,11 @@
                             </select>
                           </div>
 
-                            <div>
+                          <div>
                             <label for="serial-no" class="block text-sm font-medium mb-1.5">Serial Number</label>
-                            <input id="serial-no" value="${state.typingState.serialNo}" class="input bg-gray-100" maxlength="3" readonly>
-                            <p class="text-xs text-muted-foreground mt-1">Two-digit serial number (from backend)</p>
-                            </div>
+                            <input id="serial-no" value="${state.typingState.serialNo}" class="input" maxlength="2" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+                            <p class="text-xs text-muted-foreground mt-1">Auto-calculated: ${state.typingState.serialNo}</p>
+                          </div>
                         </div>
 
                         <div class="p-4 border rounded-md bg-muted/30">
@@ -1140,7 +1197,7 @@
                                 <span class="badge badge-outline text-xs">${pdf ? 'PDF' : (img ? 'Image' : 'File')}</span>
                               </div>
                               <div class="mt-1 text-xs text-muted-foreground">${file.file_number}-${(index + 1).toString().padStart(2, '0')}</div>
-                              ${isProcessed ? `<div class=\"mt-1\"><span class=\"badge bg-blue-500 text-white text-xs w-full justify-center\">${getCoverTypeById(isProcessed.coverType)?.code}-${getPageTypeById(isProcessed.pageType)?.code}-${getPageSubTypeById(isProcessed.pageType, isProcessed.pageSubType)?.code}-${isProcessed.serialNo}</span></div>` : ''}
+                              ${isProcessed ? `<div class=\"mt-1\"><span class=\"badge bg-blue-500 text-white text-xs w-full justify-center\">${isProcessed.page_code ? isProcessed.page_code : `${getCoverTypeById(isProcessed.coverType)?.code || ''}-${getPageTypeById(isProcessed.pageType)?.code || ''}-${getPageSubTypeById(isProcessed.pageType, isProcessed.pageSubType)?.code || ''}-${isProcessed.serialNo || ''}`}</span></div>` : ''}
                             </div>
                           </div>`;
                       }).join('')}
@@ -1175,7 +1232,8 @@
               state.selectedFile = null;
               state.selectedFileData = null;
               state.typingState = null;
-              state.activeTab = 'pending';
+              state.activeTab = state.pageTypeMoreMode ? 'pagetype-more' : 'pending';
+              state.pageTypeMoreMode = false;
             }
             updateUI();
           });
@@ -1196,9 +1254,27 @@
           });
 
           // Page type change
-          document.querySelector('#page-type')?.addEventListener('change', (e) => {
+          document.querySelector('#page-type')?.addEventListener('change', async (e) => {
             state.typingState.pageType = e.target.value;
             state.typingState.pageSubType = pageSubTypes[parseInt(e.target.value)]?.[0]?.id.toString() || '1';
+            
+            // If this is an existing file, update serial number based on page type
+            if (state.typingState.isExistingFile && e.target.value) {
+              try {
+                const response = await fetch(`{{ route("pagetyping.api.next-serial-for-page-type") }}?file_indexing_id=${file.id}&page_type_id=${e.target.value}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                  state.typingState.serialNo = data.next_serial_formatted;
+                  console.log('Updated serial for existing file page type:', data.next_serial, 'logic:', data.logic_used);
+                } else {
+                  console.warn('Could not get serial for page type:', data.message);
+                }
+              } catch (error) {
+                console.error('Error fetching serial for page type:', error);
+              }
+            }
+            
             updateUI();
           });
 
@@ -1210,7 +1286,10 @@
 
           // Serial number change (keep editable but seeded from backend)
           document.querySelector('#serial-no')?.addEventListener('input', (e) => {
-            state.typingState.serialNo = e.target.value.padStart(2, '0');
+            // keep only digits and enforce two digits
+            const cleaned = (e.target.value || '').replace(/\D/g, '').slice(0, 2);
+            e.target.value = cleaned;
+            state.typingState.serialNo = cleaned.padStart(2, '0');
             updateUI();
           });
 
@@ -1245,12 +1324,13 @@
               const result = await response.json();
               
               if (result.success) {
-                // Mark page as processed
+                // Mark page as processed (store page_code for display)
                 state.typingState.processedPages[state.typingState.selectedPageInFolder] = {
                   coverType: state.typingState.coverType,
                   pageType: state.typingState.pageType,
                   pageSubType: state.typingState.pageSubType,
-                  serialNo: state.typingState.serialNo
+                  serialNo: state.typingState.serialNo,
+                  page_code: pageData.page_code
                 };
 
                 // Increment serial number
@@ -1321,10 +1401,9 @@
           }
 
           if (elements.pageTypeMoreSearch) {
-            elements.pageTypeMoreSearch.addEventListener('input', (e) => {
-              const searchTerm = e.target.value.toLowerCase();
-              // Filter PageType More files based on search
-              // Implementation would filter the displayed files
+            elements.pageTypeMoreSearch.addEventListener('input', () => {
+              // Re-render list with filter
+              renderPageTypeMoreFiles();
             });
           }
 

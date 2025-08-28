@@ -766,7 +766,7 @@
                                 <i data-lucide="receipt" class="w-5 h-5 text-pink-600 mr-2"></i>
                                 <div>
                                   <h3 class="text-sm font-medium text-gray-900">Bills Information</h3>
-                                  <p class="text-xs text-gray-500">Comprehensive application billing details and payment history</p>
+                                  <p class="text-xs text-gray-500">Application billing details</p>
                                 </div>
                               </div>
                             </div>
@@ -821,12 +821,12 @@
                               @endphp
                               
                               <!-- Bills Overview Cards -->
-                              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                              <!-- <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                                 <div class="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-4">
                                   <div class="flex items-center justify-between">
                                     <div>
                                       <p class="text-xs font-medium text-blue-600 uppercase tracking-wide">Initial Bill</p>
-                                      <p class="text-lg font-bold text-blue-900">₦{{ number_format($initialBillData['amount'] ?? 0, 2) }}</p>
+                                      <p class="text-sm text-blue-700">Application billing record</p>
                                     </div>
                                     <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
                                       <i data-lucide="file-text" class="w-5 h-5 text-white"></i>
@@ -844,7 +844,7 @@
                                   <div class="flex items-center justify-between">
                                     <div>
                                       <p class="text-xs font-medium text-purple-600 uppercase tracking-wide">Betterment Bill</p>
-                                      <p class="text-lg font-bold text-purple-900">₦{{ number_format($bettermentBillData['amount'] ?? 0, 2) }}</p>
+                                      <p class="text-sm text-purple-700">Additional charges record</p>
                                     </div>
                                     <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
                                       <i data-lucide="calculator" class="w-5 h-5 text-white"></i>
@@ -857,23 +857,8 @@
                                     </span>
                                   </div>
                                 </div>
-                                
-                                <div class="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl p-4">
-                                  <div class="flex items-center justify-between">
-                                    <div>
-                                      <p class="text-xs font-medium text-green-600 uppercase tracking-wide">Total Amount</p>
-                                      <p class="text-lg font-bold text-green-900">₦{{ number_format(($initialBillData['amount'] ?? 0) + ($bettermentBillData['amount'] ?? 0), 2) }}</p>
-                                    </div>
-                                    <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                                      <i data-lucide="banknote" class="w-5 h-5 text-white"></i>
-                                    </div>
-                                  </div>
-                                  <div class="mt-2">
-                                    <span class="text-xs text-green-700">Combined billing total</span>
-                                  </div>
-                                </div>
                               </div>
-                              
+                               -->
                               <!-- 1. Initial Bill Receipt -->
                               <div class="bg-white border-2 border-blue-100 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300">
                                 <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 rounded-t-xl">
@@ -896,10 +881,6 @@
                                         </div>
                                       </div>
                                       <div class="space-y-4">
-                                        <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                                          <span class="text-sm font-medium text-blue-600">Amount:</span>
-                                          <span class="text-lg font-bold text-blue-900">₦{{ number_format($initialBillData['amount'], 2) }}</span>
-                                        </div>
                                         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                           <span class="text-sm font-medium text-gray-600">Status:</span>
                                           <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
@@ -934,7 +915,7 @@
                                         <span class="text-sm font-medium text-purple-600">Reference ID:</span>
                                         <span class="text-sm font-bold text-purple-900 font-mono">{{ $bettermentBillData['reference_id'] }}</span>
                                       </div>
-                                      <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                      <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hidden">
                                         <span class="text-sm font-medium text-gray-600">Amount:</span>
                                         <span class="text-lg font-bold text-gray-900">₦{{ number_format($bettermentBillData['amount'], 2) }}</span>
                                       </div>
@@ -949,8 +930,14 @@
                                     </div>
                                   @else
                                     <div class="text-center py-8">
-                                      <i data-lucide="file-x" class="w-12 h-12 text-gray-400 mx-auto mb-3"></i>
-                                      <p class="text-sm text-gray-500">No betterment bill data available</p>
+                                        <i data-lucide="file-x" class="w-12 h-12 text-gray-400 mx-auto mb-3"></i>
+                                        <p class="text-sm text-gray-500">No betterment bill data available</p>
+                                        <div class="mt-2">
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                          <i data-lucide="x-circle" class="w-4 h-4 mr-1"></i>
+                                          Unpaid
+                                        </span>
+                                        </div>
                                     </div>
                                   @endif
                                 </div>
@@ -978,7 +965,7 @@
                                         </div>
                                       </div>
                                       <div class="space-y-4">
-                                        <div class="flex items-center justify-between p-3 bg-indigo-50 rounded-lg">
+                                        <div class="flex items-center justify-between p-3 bg-indigo-50 rounded-lg hidden">
                                           <span class="text-sm font-medium text-indigo-600">Amount:</span>
                                           <span class="text-lg font-bold text-indigo-900">₦{{ number_format($bettermentBillData['amount'], 2) }}</span>
                                         </div>
@@ -996,6 +983,12 @@
                                     <div class="text-center py-8">
                                       <i data-lucide="file-x" class="w-12 h-12 text-gray-400 mx-auto mb-3"></i>
                                       <p class="text-sm text-gray-500">No betterment bill receipt data available</p>
+                                      <div class="mt-2">
+                                      <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                        <i data-lucide="x-circle" class="w-4 h-4 mr-1"></i>
+                                        Unpaid
+                                      </span>
+                                      </div>
                                     </div>
                                   @endif
                                 </div>

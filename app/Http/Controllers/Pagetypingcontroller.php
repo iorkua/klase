@@ -643,6 +643,7 @@ class PageTypingController extends Controller
     {
         try {
             $fileIndexingId = $request->get('file_indexing_id');
+            $pageTypeId = $request->get('page_type_id'); // Optional page type for existing files
             
             if (!$fileIndexingId) {
                 return response()->json([
@@ -662,11 +663,12 @@ class PageTypingController extends Controller
                 ], 404);
             }
 
-            // Compute next available serial number for this file (max + 1)
-            $maxSerial = PageTyping::on('sqlsrv')
-                ->where('file_indexing_id', $fileIndexing->id)
-                ->max('serial_number');
-            $nextSerial = ($maxSerial ? (int)$maxSerial : 0) + 1;
+            // Check if this is an existing file (has page typings) or new file
+            $existingPageTypings = $fileIndexing->pagetypings;
+            $isExistingFile = $existingPageTypings->count() > 0;
+            
+            // Calculate next serial number based on file status
+            $nextSerial = $this->calculateNextSerial($fileIndexing, $pageTypeId, $isExistingFile);
             $nextSerialFormatted = str_pad((string)$nextSerial, 2, '0', STR_PAD_LEFT);
 
             // Format scannings with page information
@@ -709,6 +711,7 @@ class PageTypingController extends Controller
             return response()->json([
                 'success' => true,
                 'next_serial' => $nextSerial, // also include at root for convenience
+                'is_existing_file' => $isExistingFile,
                 'file' => [
                     'id' => $fileIndexing->id,
                     'file_number' => $fileIndexing->file_number,
@@ -727,6 +730,16 @@ class PageTypingController extends Controller
                     'is_completed' => $typedPages >= $totalPages && $totalPages > 0,
                     'next_serial' => $nextSerial,
                     'next_serial_formatted' => $nextSerialFormatted,
+                    'existing_page_typings' => $existingPageTypings->map(function ($pt) {
+                        return [
+                            'id' => $pt->id,
+                            'page_number' => $pt->page_number,
+                            'page_type' => $pt->page_type,
+                            'page_subtype' => $pt->page_subtype,
+                            'serial_number' => $pt->serial_number,
+                            'page_code' => $pt->page_code,
+                        ];
+                    })
                 ]
             ]);
         } catch (Exception $e) {
@@ -739,6 +752,44 @@ class PageTypingController extends Controller
                 'success' => false,
                 'message' => 'Error loading file details: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Calculate the next serial number based on file status and page type
+     */
+    private function calculateNextSerial($fileIndexing, $pageTypeId = null, $isExistingFile = false)
+    {
+        try {
+            if ($isExistingFile && $pageTypeId) {
+                // EXISTING FILE: Find serial number based on page type ID
+                $serialFromPageType = PageTyping::on('sqlsrv')
+                    ->where('file_indexing_id', $fileIndexing->id)
+                    ->where('page_type', $pageTypeId)
+                    ->max('serial_number');
+                
+                if ($serialFromPageType) {
+                    return (int)$serialFromPageType;
+                }
+            }
+            
+            // NEW FILE or fallback: Find highest serial number and increment by 1
+            $maxSerial = PageTyping::on('sqlsrv')
+                ->where('file_indexing_id', $fileIndexing->id)
+                ->max('serial_number');
+            
+            return ($maxSerial ? (int)$maxSerial : 0) + 1;
+            
+        } catch (Exception $e) {
+            Log::error('Error calculating next serial number', [
+                'file_indexing_id' => $fileIndexing->id,
+                'page_type_id' => $pageTypeId,
+                'is_existing_file' => $isExistingFile,
+                'error' => $e->getMessage()
+            ]);
+            
+            // Return 1 as fallback
+            return 1;
         }
     }
 
@@ -841,6 +892,70 @@ class PageTypingController extends Controller
                 'cover_types' => [],
                 'page_types' => [],
                 'page_sub_types' => []
+            ], 500);
+        }
+    }
+
+    /**
+     * Get next serial number for a specific page type in an existing file (AJAX)
+     */
+    public function getNextSerialForPageType(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'file_indexing_id' => 'required|integer|exists:sqlsrv.file_indexings,id',
+                'page_type_id' => 'required|string|max:100'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $validated = $validator->validated();
+            $fileIndexingId = $validated['file_indexing_id'];
+            $pageTypeId = $validated['page_type_id'];
+
+            $fileIndexing = FileIndexing::on('sqlsrv')->find($fileIndexingId);
+            
+            if (!$fileIndexing) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File not found'
+                ], 404);
+            }
+
+            // Check if this is an existing file (has page typings)
+            $existingPageTypings = PageTyping::on('sqlsrv')
+                ->where('file_indexing_id', $fileIndexingId)
+                ->count();
+            
+            $isExistingFile = $existingPageTypings > 0;
+            
+            // Calculate next serial number based on file status and page type
+            $nextSerial = $this->calculateNextSerial($fileIndexing, $pageTypeId, $isExistingFile);
+            
+            return response()->json([
+                'success' => true,
+                'next_serial' => $nextSerial,
+                'next_serial_formatted' => str_pad((string)$nextSerial, 2, '0', STR_PAD_LEFT),
+                'is_existing_file' => $isExistingFile,
+                'logic_used' => $isExistingFile ? 'existing_file_by_page_type' : 'new_file_increment'
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error getting next serial for page type', [
+                'file_indexing_id' => $request->get('file_indexing_id'),
+                'page_type_id' => $request->get('page_type_id'),
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error calculating serial number: ' . $e->getMessage()
             ], 500);
         }
     }

@@ -489,6 +489,7 @@ Route::get('/sectionaltitling/primary', [\App\Http\Controllers\SectionalTitlingC
 Route::get('/sectionaltitling/mother', [\App\Http\Controllers\SectionalTitlingController::class, 'mother'])->name('sectionaltitling.mother');
 Route::get('/sectionaltitling/secondary', [\App\Http\Controllers\SectionalTitlingController::class, 'Secondary'])->name('sectionaltitling.secondary');
 Route::get('/sectionaltitling/units', [\App\Http\Controllers\SectionalTitlingController::class, 'Units'])->name('sectionaltitling.units');
+Route::get('/sectionaltitling/conveyance', [\App\Http\Controllers\SectionalTitlingController::class, 'conveyance'])->name('sectionaltitling.conveyance');
 Route::get('/sectionaltitling/buyer-list/{id}', [\App\Http\Controllers\SectionalTitlingController::class, 'getBuyerList'])->name('sectionaltitling.buyerList');
 Route::post('/sectionaltitling/save-cofo-details', [\App\Http\Controllers\SectionalTitlingController::class, 'saveCofoDetails'])->name('sectionaltitling.save-cofo-details');
 // Soft delete sub-application
