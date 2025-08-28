@@ -901,3 +901,7 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'ptq-control'], funct
     Route::post('/override-qc', [App\Http\Controllers\PTQController::class, 'overrideQC'])->name('ptq-control.override-qc');
     Route::get('/qc-stats', [App\Http\Controllers\PTQController::class, 'getQCStats'])->name('ptq-control.qc-stats');
 });
+
+Route::get('/test-serial-api', function() {
+    return view('pagetyping.test_serial_api');
+})->name('pagetyping.test-serial-api');

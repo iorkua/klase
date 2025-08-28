@@ -745,8 +745,8 @@
             <span>Planning Recommendation</span>
           </a>
           <a href="{{ route('programmes.eRegistry') }}?url=pp" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 text-black {{ request()->routeIs('programmes.eRegistry') && request()->query('url') === 'pp' ? 'active' : '' }}">
-            <i data-lucide="folder" class="h-3.5 w-3.5 text-lime-500"></i>
-            <span>eRegistry</span>
+            <i data-lucide="folder" class="h-3.5 w-3.5 text-red-400"></i>
+            <span>ST eRegistry</span>
           </a>
             <a href="{{route('stmemo.siteplan')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('stmemo.siteplan') ? 'active' : '' }}">
             <i data-lucide="clipboard-list" class="h-3.5 w-3.5 text-red-400"></i>
@@ -1081,6 +1081,11 @@
       <span>Director's Approval</span>
     </a>
     @endif
+    <a href="/sectionaltitling/conveyance" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 text-black {{ request()->is('sectionaltitling/conveyance') ? 'active' : '' }}">
+      <i data-lucide="clipboard-list" class="h-3.5 w-3.5 text-lime-500"></i>
+      <span>Final Conveyance</span>
+    </a>
+
     @if($hasRole('ST - ST Memo'))
     <a href="{{route('programmes.memo')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 text-black {{ request()->routeIs('programmes.memo') ? 'active' : '' }}">
     <i data-lucide="clipboard-list" class="h-3.5 w-3.5 text-lime-500"></i>

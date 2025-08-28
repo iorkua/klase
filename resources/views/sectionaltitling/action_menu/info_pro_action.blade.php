@@ -100,36 +100,10 @@
             <span>Capture Extant CofO Details</span>
         </button>
     </li>
-      @if(!($PrimaryApplication->planning_recommendation_status == 'Pending' || 
-        $PrimaryApplication->planning_recommendation_status == 'Declined' || 
-        $PrimaryApplication->application_status == 'Pending' || 
-        $PrimaryApplication->application_status == 'Declined'))
+    
         
-        @if(is_null($PrimaryApplication->final_conveyance_generated) || $PrimaryApplication->final_conveyance_generated == 0)
-          <li>
-            <a href="{{ route('actions.final-conveyance', ['id' => $PrimaryApplication->id]) }}" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
-            <i data-lucide="file-text" class="w-4 h-4 text-orange-500"></i>
-            <span>Generate Final Conveyance</span>
-            </a>
-          </li>
-        @else
-          <li class="opacity-50 cursor-not-allowed">
-            <a href="#" class="w-full text-left px-4 py-2 flex items-center space-x-2" 
-               title="Final Conveyance has already been generated">
-            <i data-lucide="check-circle" class="w-4 h-4 text-gray-500"></i>
-            <span>Generate Final Conveyance</span>
-            </a>
-          </li>
-        @endif
-      @else
-        <li class="opacity-50 cursor-not-allowed">
-          <a href="#" class="w-full text-left px-4 py-2 flex items-center space-x-2"
-             title="Both Application Status and Planning Recommendation must be approved">
-          <i data-lucide="file-text" class="w-4 h-4 text-gray-500"></i>
-          <span>Generate Final Conveyance</span>
-          </a>
-        </li>
-      @endif
+    
+    
 
       <hr class="my-2 border-gray-200">
 

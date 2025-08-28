@@ -165,11 +165,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [PageTypingController::class, 'index'])->name('pagetyping.index');
         Route::get('/create', [PageTypingController::class, 'create'])->name('pagetyping.create');
         Route::post('/store', [PageTypingController::class, 'store'])->name('pagetyping.store');
-        Route::get('/{id}', [PageTypingController::class, 'show'])->name('pagetyping.show');
-        Route::get('/{id}/edit', [PageTypingController::class, 'edit'])->name('pagetyping.edit');
-        Route::put('/{id}', [PageTypingController::class, 'update'])->name('pagetyping.update');
-        Route::delete('/{id}', [PageTypingController::class, 'destroy'])->name('pagetyping.destroy');
         
+        // IMPORTANT: Specific routes MUST come before parameterized routes
         // AJAX routes
         Route::post('/save-single', [PageTypingController::class, 'saveSingle'])->name('pagetyping.save-single');
         Route::get('/list/page-typings', [PageTypingController::class, 'getPageTypings'])->name('pagetyping.list');
@@ -183,6 +180,12 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/pagetype-more/store', [PageTypingController::class, 'storePageTypeMore'])->name('pagetyping.pagetype-more.store');
         Route::get('/api/pagetype-more-files', [PageTypingController::class, 'getPageTypeMoreFiles'])->name('pagetyping.api.pagetype-more-files');
         Route::get('/api/typing-data', [PageTypingController::class, 'getTypingData'])->name('pagetyping.api.typing-data');
+        
+        // Parameterized routes MUST come last
+        Route::get('/{id}', [PageTypingController::class, 'show'])->name('pagetyping.show');
+        Route::get('/{id}/edit', [PageTypingController::class, 'edit'])->name('pagetyping.edit');
+        Route::put('/{id}', [PageTypingController::class, 'update'])->name('pagetyping.update');
+        Route::delete('/{id}', [PageTypingController::class, 'destroy'])->name('pagetyping.destroy');
     });
     
     Route::prefix('profile')->group(function () {

@@ -427,6 +427,18 @@ class  SectionalTitlingController extends Controller
             ], 500);
         }
     }
+
+    public function conveyance(Request $request)
+    {
+        $PageTitle = 'Final Conveyance';
+        $PageDescription = 'Generate Final Conveyance for Sectional Titling Applications';
+        
+        $PrimaryApplications = DB::connection('sqlsrv')->table('dbo.mother_applications')
+            ->orderBy('id', 'desc')
+            ->get();
+        
+        return view('sectionaltitling.conveyance', compact('PrimaryApplications', 'PageTitle', 'PageDescription'));
+    }
   
 }
 

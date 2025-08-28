@@ -610,19 +610,13 @@
               state.selectedFileData = data.file;
               state.activeTab = 'typing';
 
-              // Use server-calculated serial number
-              let calculatedSerial = 1;
-              const existingPageTypings = data.file.existing_page_typings || [];
-              
-              if (existingPageTypings.length > 0) {
-                // Find highest serial and add 1
-                const maxSerial = Math.max(...existingPageTypings.map(pt => parseInt(pt.serial_number) || 0), 0);
-                calculatedSerial = maxSerial + 1;
-              }
-              
-              const serialStr = calculatedSerial.toString().padStart(2, '0');
-              
-              console.log('Calculated serial:', calculatedSerial, 'formatted:', serialStr);
+              // Use server-calculated serial number directly from the API response
+              @php
+                // Global serial number calculation - increment across all files
+                $maxSerial = \App\Models\PageTyping::on('sqlsrv')->max('serial_number');
+                $nextSerial = ($maxSerial ? $maxSerial : 0) + 1;
+                @endphp
+                serialNo: '{{ str_pad($nextSerial, 2, "0", STR_PAD_LEFT) }}',
               
               // Initialize typing state
               state.typingState = {
@@ -636,8 +630,8 @@
                 coverType: (coverTypes[0]?.id || '1').toString(),
                 pageType: (pageTypes[0]?.id || '1').toString(),
                 pageSubType: '1',
-                serialNo: serialStr,
-                isExistingFile: existingPageTypings.length > 0,
+                serialNo: '{{ str_pad($nextSerial, 2, "0", STR_PAD_LEFT) }}',
+                isExistingFile: {{ isset($selectedFileIndexing) && $selectedFileIndexing->pagetypings->count() > 0 ? 'true' : 'false' }},
                 batchMode: false,
                 batchTypedPages: {},
                 batchSubmitReady: false,

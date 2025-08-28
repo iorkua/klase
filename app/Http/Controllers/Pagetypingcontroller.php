@@ -761,19 +761,7 @@ class PageTypingController extends Controller
     private function calculateNextSerial($fileIndexing, $pageTypeId = null, $isExistingFile = false)
     {
         try {
-            if ($isExistingFile && $pageTypeId) {
-                // EXISTING FILE: Find serial number based on page type ID
-                $serialFromPageType = PageTyping::on('sqlsrv')
-                    ->where('file_indexing_id', $fileIndexing->id)
-                    ->where('page_type', $pageTypeId)
-                    ->max('serial_number');
-                
-                if ($serialFromPageType) {
-                    return (int)$serialFromPageType;
-                }
-            }
-            
-            // NEW FILE or fallback: Find highest serial number and increment by 1
+            // SIMPLIFIED LOGIC: Always find highest serial number across all files and increment by 1
             $maxSerial = PageTyping::on('sqlsrv')
                 ->where('file_indexing_id', $fileIndexing->id)
                 ->max('serial_number');
@@ -956,6 +944,293 @@ class PageTypingController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error calculating serial number: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Display the specified page typing
+     */
+    public function show($id)
+    {
+        try {
+            $pageTyping = PageTyping::on('sqlsrv')
+                ->with(['fileIndexing', 'typedBy'])
+                ->find($id);
+
+            if (!$pageTyping) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Page typing not found'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'page_typing' => [
+                    'id' => $pageTyping->id,
+                    'page_number' => $pageTyping->page_number,
+                    'page_type' => $pageTyping->page_type,
+                    'page_subtype' => $pageTyping->page_subtype,
+                    'serial_number' => $pageTyping->serial_number,
+                    'page_code' => $pageTyping->page_code,
+                    'file_path' => $pageTyping->file_path,
+                    'scanning_id' => $pageTyping->scanning_id,
+                    'file_indexing' => $pageTyping->fileIndexing ? [
+                        'id' => $pageTyping->fileIndexing->id,
+                        'file_number' => $pageTyping->fileIndexing->file_number,
+                        'file_title' => $pageTyping->fileIndexing->file_title,
+                    ] : null,
+                    'typed_by' => $pageTyping->typedBy ? $pageTyping->typedBy->name : 'Unknown',
+                    'created_at' => $pageTyping->created_at ? $pageTyping->created_at->format('M d, Y H:i') : 'Unknown',
+                ]
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error showing page typing', [
+                'id' => $id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading page typing: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Show the form for editing the specified page typing
+     */
+    public function edit($id)
+    {
+        try {
+            $pageTyping = PageTyping::on('sqlsrv')
+                ->with(['fileIndexing'])
+                ->find($id);
+
+            if (!$pageTyping) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Page typing not found'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'page_typing' => $pageTyping
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error loading page typing for editing', [
+                'id' => $id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading page typing: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update the specified page typing
+     */
+    public function update(Request $request, $id)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'page_type' => 'required|string|max:100',
+                'page_subtype' => 'nullable|string|max:100',
+                'serial_number' => 'required|integer|min:1',
+                'page_code' => 'nullable|string|max:100',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $pageTyping = PageTyping::on('sqlsrv')->find($id);
+
+            if (!$pageTyping) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Page typing not found'
+                ], 404);
+            }
+
+            $pageTyping->update([
+                'page_type' => $request->page_type,
+                'page_subtype' => $request->page_subtype,
+                'serial_number' => $request->serial_number,
+                'page_code' => $request->page_code,
+                'typed_by' => Auth::id(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Page typing updated successfully!',
+                'page_typing' => $pageTyping
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error updating page typing', [
+                'id' => $id,
+                'error' => $e->getMessage(),
+                'request_data' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating page typing: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove the specified page typing
+     */
+    public function destroy($id)
+    {
+        try {
+            $pageTyping = PageTyping::on('sqlsrv')->find($id);
+
+            if (!$pageTyping) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Page typing not found'
+                ], 404);
+            }
+
+            $pageTyping->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Page typing deleted successfully!'
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error deleting page typing', [
+                'id' => $id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting page typing: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Show the form for creating a new page typing
+     */
+    public function create()
+    {
+        try {
+            // Load data needed for creating page typing
+            $fileIndexings = FileIndexing::on('sqlsrv')
+                ->whereHas('scannings')
+                ->with(['mainApplication'])
+                ->limit(50)
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'file_indexings' => $fileIndexings
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error loading create page typing data', [
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Store a newly created page typing
+     */
+    public function store(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'file_indexing_id' => 'required|integer|exists:sqlsrv.file_indexings,id',
+                'page_types' => 'required|array',
+                'page_types.*.scanning_id' => 'required|integer',
+                'page_types.*.page_number' => 'required|integer|min:1',
+                'page_types.*.page_type' => 'required|string|max:100',
+                'page_types.*.page_subtype' => 'nullable|string|max:100',
+                'page_types.*.serial_number' => 'required|integer|min:1',
+                'page_types.*.page_code' => 'nullable|string|max:100',
+                'page_types.*.file_path' => 'required|string|max:255',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $fileIndexingId = $request->file_indexing_id;
+            $pageTypes = $request->page_types;
+            $createdPageTypings = [];
+
+            foreach ($pageTypes as $pageTypeData) {
+                // Check if page typing already exists
+                $existingPageTyping = PageTyping::on('sqlsrv')
+                    ->where('file_indexing_id', $fileIndexingId)
+                    ->where('file_path', $pageTypeData['file_path'])
+                    ->where('page_number', $pageTypeData['page_number'])
+                    ->first();
+
+                if ($existingPageTyping) {
+                    // Update existing record
+                    $existingPageTyping->update([
+                        'page_type' => $pageTypeData['page_type'],
+                        'page_subtype' => $pageTypeData['page_subtype'],
+                        'serial_number' => $pageTypeData['serial_number'],
+                        'page_code' => $pageTypeData['page_code'],
+                        'typed_by' => Auth::id(),
+                    ]);
+                    $createdPageTypings[] = $existingPageTyping;
+                } else {
+                    // Create new record
+                    $pageTyping = PageTyping::on('sqlsrv')->create(array_merge($pageTypeData, [
+                        'file_indexing_id' => $fileIndexingId,
+                        'typed_by' => Auth::id()
+                    ]));
+                    $createdPageTypings[] = $pageTyping;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Page typing completed successfully!',
+                'created_count' => count($createdPageTypings),
+                'redirect' => route('pagetyping.index')
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error storing page typing', [
+                'error' => $e->getMessage(),
+                'request_data' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error saving page typing: ' . $e->getMessage()
             ], 500);
         }
     }
