@@ -16,9 +16,13 @@
           $commercialProcessingFee  = '50000.00';
           $commercialSitePlanFee    = '10000.00';
 
-          // Mixed total = Residential + Commercial
-          $totalFee = floatval($residentialApplicationFee) + floatval($residentialProcessingFee) + floatval($residentialSitePlanFee)
-                    + floatval($commercialApplicationFee) + floatval($commercialProcessingFee) + floatval($commercialSitePlanFee);
+          // Aggregate Mixed fees (Residential + Commercial)
+          $applicationFee = floatval($residentialApplicationFee) + floatval($commercialApplicationFee);
+          $processingFee  = floatval($residentialProcessingFee)  + floatval($commercialProcessingFee);
+          $sitePlanFee    = floatval($residentialSitePlanFee)    + floatval($commercialSitePlanFee);
+
+          // Mixed total from aggregated fees
+          $totalFee = $applicationFee + $processingFee + $sitePlanFee;
       } else {
           // Single land use (Commercial/Industrial => commercial rates; else residential)
           if ($landUse === 'Commercial' || $landUse === 'Industrial') {
@@ -35,60 +39,35 @@
   @endphp
 
   @if ($landUse === 'Mixed')
-    <h4 class="font-medium text-center mb-2">Residential INITIAL BILL</h4>
+    <h4 class="font-medium text-center mb-2"> </h4>
     <div class="grid grid-cols-3 gap-4 mb-6">
       <div>
         <label class="flex items-center text-sm mb-1">
           <i data-lucide="file-text" class="w-4 h-4 mr-1 text-green-600"></i>
           Application fee (₦)
         </label>
-        <input type="text" class="w-full p-2 border border-gray-300 rounded-md fee-input bg-blue-50" name="residential_application_fee" value="{{ number_format($residentialApplicationFee, 2) }}" readonly>
+        <input type="text" class="w-full p-2 border border-gray-300 rounded-md fee-input bg-blue-50" name="application_fee" value="{{ number_format($applicationFee, 2) }}" readonly>
       </div>
       <div>
         <label class="flex items-center text-sm mb-1">
           <i data-lucide="file-check" class="w-4 h-4 mr-1 text-green-600"></i>
           Processing fee (₦)
         </label>
-        <input type="text" class="w-full p-2 border border-gray-300 rounded-md fee-input bg-blue-50" name="residential_processing_fee" value="{{ number_format($residentialProcessingFee, 2) }}" readonly>
+        <input type="text" class="w-full p-2 border border-gray-300 rounded-md fee-input bg-blue-50" name="processing_fee" value="{{ number_format($processingFee, 2) }}" readonly>
       </div>
       <div>
         <label class="flex items-center text-sm mb-1">
           <i data-lucide="map" class="w-4 h-4 mr-1 text-green-600"></i>
           Site Plan (₦)
         </label>
-        <input type="text" class="w-full p-2 border border-gray-300 rounded-md fee-input bg-blue-50" name="residential_site_plan_fee" value="{{ number_format($residentialSitePlanFee, 2) }}" readonly>
-      </div>
-    </div>
-
-    <h4 class="font-medium text-center mb-2">Commercial INITIAL BILL</h4>
-    <div class="grid grid-cols-3 gap-4 mb-6">
-      <div>
-        <label class="flex items-center text-sm mb-1">
-          <i data-lucide="file-text" class="w-4 h-4 mr-1 text-green-600"></i>
-          Application fee (₦)
-        </label>
-        <input type="text" class="w-full p-2 border border-gray-300 rounded-md fee-input bg-blue-50" name="commercial_application_fee" value="{{ number_format($commercialApplicationFee, 2) }}" readonly>
-      </div>
-      <div>
-        <label class="flex items-center text-sm mb-1">
-          <i data-lucide="file-check" class="w-4 h-4 mr-1 text-green-600"></i>
-          Processing fee (₦)
-        </label>
-        <input type="text" class="w-full p-2 border border-gray-300 rounded-md fee-input bg-blue-50" name="commercial_processing_fee" value="{{ number_format($commercialProcessingFee, 2) }}" readonly>
-      </div>
-      <div>
-        <label class="flex items-center text-sm mb-1">
-          <i data-lucide="map" class="w-4 h-4 mr-1 text-green-600"></i>
-          Site Plan (₦)
-        </label>
-        <input type="text" class="w-full p-2 border border-gray-300 rounded-md fee-input bg-blue-50" name="commercial_site_plan_fee" value="{{ number_format($commercialSitePlanFee, 2) }}" readonly>
+        <input type="text" class="w-full p-2 border border-gray-300 rounded-md fee-input bg-blue-50" name="site_plan_fee" value="{{ number_format($sitePlanFee, 2) }}" readonly>
       </div>
     </div>
 
     <div class="flex justify-between items-center mb-4">
       <div class="flex items-center">
         <i data-lucide="file-text" class="w-4 h-4 mr-1 text-green-600"></i>
-        <span>Mixed Initial Bill (Residential + Commercial):</span>
+        <span>Total Mixed Initial Bill (Residential + Commercial):</span>
       </div>
       <span class="font-bold" id="total-amount">₦{{ number_format($totalFee, 2) }}</span>
     </div>
