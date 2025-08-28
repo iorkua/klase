@@ -648,7 +648,7 @@
 
     <!-- Scanning -->
     @if($hasRole('EDMS - Blind Scanning'))
-    <a href="#" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 ">
+    <a href="{{route('blind-scanning.index')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 ">
       <i data-lucide="eye-off" class="h-3.5 w-3.5 text-orange-400"></i>
       <span>Blind Scanning</span>
     </a>
@@ -678,7 +678,7 @@
 
     <!-- PT Quality Control -->
     @if($hasRole('EDMS - PT Quality Control'))
-    <a href="#" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 ">
+    <a href="{{ route('ptq-control.index') }}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('ptq-control.index') ? 'active' : '' }}">
     <i data-lucide="shield-check" class="h-3.5 w-3.5 text-orange-400"></i>
     <span>PT Quality Control</span>
     </a>

@@ -19,14 +19,70 @@
       padding: 0.5rem 1rem;
       border-radius: 0.25rem;
       cursor: pointer;
-      transition: background-color 0.2s;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+      color: #6b7280;
     }
-    .tab-button.active {
-      background-color: #f3f4f6;
-      font-weight: 500;
+    
+    /* Individual tab colors */
+    .tab-button[data-tab="summary"] {
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+      border-color: #3b82f6;
     }
+    .tab-button[data-tab="summary"].active {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      color: white;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    
+    .tab-button[data-tab="detterment"] {
+      background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+      border-color: #10b981;
+    }
+    .tab-button[data-tab="detterment"].active {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    
+    .tab-button[data-tab="edms"] {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border-color: #f59e0b;
+    }
+    .tab-button[data-tab="edms"].active {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: white;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+    
+    .tab-button[data-tab="bills"] {
+      background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+      border-color: #ec4899;
+    }
+    .tab-button[data-tab="bills"].active {
+      background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+      color: white;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+    }
+    
+    .tab-button[data-tab="approval"] {
+      background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+      border-color: #8b5cf6;
+    }
+    .tab-button[data-tab="approval"].active {
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+      color: white;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+    }
+    
     .tab-button:hover:not(.active) {
-      background-color: #f9fafb;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
     
     /* Document File Card Styles */
@@ -705,11 +761,16 @@
                         <!-- Bills Tab -->
                         <div id="bills-tab" class="tab-content">
                           <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
-                            <div class="p-4 border-b">
-                              <h3 class="text-sm font-medium">Bills Information</h3>
-                              <p class="text-xs text-gray-500">Application bill details</p>
+                            <div class="p-4 border-b bg-gradient-to-r from-pink-50 to-rose-50">
+                              <div class="flex items-center">
+                                <i data-lucide="receipt" class="w-5 h-5 text-pink-600 mr-2"></i>
+                                <div>
+                                  <h3 class="text-sm font-medium text-gray-900">Bills Information</h3>
+                                  <p class="text-xs text-gray-500">Comprehensive application billing details and payment history</p>
+                                </div>
+                              </div>
                             </div>
-                            <div class="p-4 space-y-4">
+                            <div class="p-6 space-y-6">
                               
                               @php
                                 // Get bill data directly from database
@@ -759,91 +820,198 @@
                                 }
                               @endphp
                               
-                              <!-- 1. Initial Bill Receipt -->
-                              <div class="border rounded-lg p-4">
-                                <h4 class="text-sm font-medium mb-3">Initial Bill Receipt</h4>
-                                @if($initialBillData)
-                                  <div class="grid grid-cols-2 gap-4 text-sm">
+                              <!-- Bills Overview Cards -->
+                              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                <div class="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-4">
+                                  <div class="flex items-center justify-between">
                                     <div>
-                                      <span class="font-medium">Receipt Number:</span>
-                                      <span>{{ $initialBillData['receipt_number'] }}</span>
+                                      <p class="text-xs font-medium text-blue-600 uppercase tracking-wide">Initial Bill</p>
+                                      <p class="text-lg font-bold text-blue-900">₦{{ number_format($initialBillData['amount'] ?? 0, 2) }}</p>
                                     </div>
-                                    <div>
-                                      <span class="font-medium">Amount:</span>
-                                      <span>₦{{ number_format($initialBillData['amount'], 2) }}</span>
-                                    </div>
-                                    <div>
-                                      <span class="font-medium">Payment Date:</span>
-                                      <span>{{ $initialBillData['payment_date'] }}</span>
-                                    </div>
-                                    <div>
-                                      <span class="font-medium">Status:</span>
-                                      <span>{{ $initialBillData['status'] }}</span>
+                                    <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                                      <i data-lucide="file-text" class="w-5 h-5 text-white"></i>
                                     </div>
                                   </div>
-                                @else
-                                  <p class="text-sm">No initial bill data available</p>
-                                @endif
-                              </div>
-
-                              <!-- 2. Better Bill Reference ID -->
-                              <div class="border rounded-lg p-4">
-                                <h4 class="text-sm font-medium mb-3">Better Bill Reference ID</h4>
-                                @if($bettermentBillData)
-                                  <div class="grid grid-cols-2 gap-4 text-sm">
+                                  <div class="mt-2">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                                      {{ ($initialBillData['status'] ?? '') === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                      {{ $initialBillData['status'] ?? 'Pending' }}
+                                    </span>
+                                  </div>
+                                </div>
+                                
+                                <div class="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-xl p-4">
+                                  <div class="flex items-center justify-between">
                                     <div>
-                                      <span class="font-medium">Reference ID:</span>
-                                      <span>{{ $bettermentBillData['reference_id'] }}</span>
+                                      <p class="text-xs font-medium text-purple-600 uppercase tracking-wide">Betterment Bill</p>
+                                      <p class="text-lg font-bold text-purple-900">₦{{ number_format($bettermentBillData['amount'] ?? 0, 2) }}</p>
                                     </div>
-                                    <div>
-                                      <span class="font-medium">Amount:</span>
-                                      <span>₦{{ number_format($bettermentBillData['amount'], 2) }}</span>
-                                    </div>
-                                    <div>
-                                      <span class="font-medium">Status:</span>
-                                      <span>{{ $bettermentBillData['status'] }}</span>
+                                    <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
+                                      <i data-lucide="calculator" class="w-5 h-5 text-white"></i>
                                     </div>
                                   </div>
-                                @else
-                                  <p class="text-sm">No betterment bill data available</p>
-                                @endif
-                              </div>
-
-                              <!-- 3. Better Bill Receipt -->
-                              <div class="border rounded-lg p-4">
-                                <h4 class="text-sm font-medium mb-3">Better Bill Receipt</h4>
-                                @if($bettermentBillData && $bettermentBillData['receipt_number'] !== 'N/A')
-                                  <div class="grid grid-cols-2 gap-4 text-sm">
+                                  <div class="mt-2">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                                      {{ ($bettermentBillData['status'] ?? '') === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                      {{ $bettermentBillData['status'] ?? 'Pending' }}
+                                    </span>
+                                  </div>
+                                </div>
+                                
+                                <div class="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl p-4">
+                                  <div class="flex items-center justify-between">
                                     <div>
-                                      <span class="font-medium">Receipt Number:</span>
-                                      <span>{{ $bettermentBillData['receipt_number'] }}</span>
+                                      <p class="text-xs font-medium text-green-600 uppercase tracking-wide">Total Amount</p>
+                                      <p class="text-lg font-bold text-green-900">₦{{ number_format(($initialBillData['amount'] ?? 0) + ($bettermentBillData['amount'] ?? 0), 2) }}</p>
                                     </div>
-                                    <div>
-                                      <span class="font-medium">Receipt Date:</span>
-                                      <span>{{ $bettermentBillData['receipt_date'] }}</span>
-                                    </div>
-                                    <div>
-                                      <span class="font-medium">Amount:</span>
-                                      <span>₦{{ number_format($bettermentBillData['amount'], 2) }}</span>
-                                    </div>
-                                    <div>
-                                      <span class="font-medium">Status:</span>
-                                      <span>{{ $bettermentBillData['status'] }}</span>
+                                    <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                                      <i data-lucide="banknote" class="w-5 h-5 text-white"></i>
                                     </div>
                                   </div>
-                                @else
-                                  <p class="text-sm">No better bill receipt data available</p>
-                                @endif
+                                  <div class="mt-2">
+                                    <span class="text-xs text-green-700">Combined billing total</span>
+                                  </div>
+                                </div>
                               </div>
-
-                              <hr class="my-4">
                               
-                              <div class="flex justify-between items-center">
-                                <div class="flex gap-2">
-                                  <button type="button" onclick="window.history.back()" class="flex items-center px-3 py-1 text-xs border border-gray-300 rounded-md bg-white hover:bg-gray-50">
-                                    <i data-lucide="undo-2" class="w-3.5 h-3.5 mr-1.5"></i>
+                              <!-- 1. Initial Bill Receipt -->
+                              <div class="bg-white border-2 border-blue-100 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300">
+                                <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 rounded-t-xl">
+                                  <div class="flex items-center">
+                                    <i data-lucide="receipt" class="w-5 h-5 text-white mr-3"></i>
+                                    <h4 class="text-sm font-semibold text-white">Initial Bill Receipt</h4>
+                                  </div>
+                                </div>
+                                <div class="p-6">
+                                  @if($initialBillData)
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                      <div class="space-y-4">
+                                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                          <span class="text-sm font-medium text-gray-600">Receipt Number:</span>
+                                          <span class="text-sm font-semibold text-gray-900 font-mono">{{ $initialBillData['receipt_number'] }}</span>
+                                        </div>
+                                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                          <span class="text-sm font-medium text-gray-600">Payment Date:</span>
+                                          <span class="text-sm font-semibold text-gray-900">{{ $initialBillData['payment_date'] }}</span>
+                                        </div>
+                                      </div>
+                                      <div class="space-y-4">
+                                        <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                                          <span class="text-sm font-medium text-blue-600">Amount:</span>
+                                          <span class="text-lg font-bold text-blue-900">₦{{ number_format($initialBillData['amount'], 2) }}</span>
+                                        </div>
+                                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                          <span class="text-sm font-medium text-gray-600">Status:</span>
+                                          <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                                            {{ $initialBillData['status'] === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                            <i data-lucide="{{ $initialBillData['status'] === 'Paid' ? 'check-circle' : 'clock' }}" class="w-4 h-4 mr-1"></i>
+                                            {{ $initialBillData['status'] }}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  @else
+                                    <div class="text-center py-8">
+                                      <i data-lucide="file-x" class="w-12 h-12 text-gray-400 mx-auto mb-3"></i>
+                                      <p class="text-sm text-gray-500">No initial bill data available</p>
+                                    </div>
+                                  @endif
+                                </div>
+                              </div>
+
+                              <!-- 2. Betterment Bill Reference ID -->
+                              <div class="bg-white border-2 border-purple-100 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300">
+                                <div class="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-4 rounded-t-xl">
+                                  <div class="flex items-center">
+                                    <i data-lucide="hash" class="w-5 h-5 text-white mr-3"></i>
+                                    <h4 class="text-sm font-semibold text-white">Betterment Bill Reference ID</h4>
+                                  </div>
+                                </div>
+                                <div class="p-6">
+                                  @if($bettermentBillData)
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                      <div class="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-200">
+                                        <span class="text-sm font-medium text-purple-600">Reference ID:</span>
+                                        <span class="text-sm font-bold text-purple-900 font-mono">{{ $bettermentBillData['reference_id'] }}</span>
+                                      </div>
+                                      <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                        <span class="text-sm font-medium text-gray-600">Amount:</span>
+                                        <span class="text-lg font-bold text-gray-900">₦{{ number_format($bettermentBillData['amount'], 2) }}</span>
+                                      </div>
+                                      <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                        <span class="text-sm font-medium text-gray-600">Status:</span>
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                                          {{ $bettermentBillData['status'] === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                          <i data-lucide="{{ $bettermentBillData['status'] === 'Paid' ? 'check-circle' : 'clock' }}" class="w-4 h-4 mr-1"></i>
+                                          {{ $bettermentBillData['status'] }}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  @else
+                                    <div class="text-center py-8">
+                                      <i data-lucide="file-x" class="w-12 h-12 text-gray-400 mx-auto mb-3"></i>
+                                      <p class="text-sm text-gray-500">No betterment bill data available</p>
+                                    </div>
+                                  @endif
+                                </div>
+                              </div>
+
+                              <!-- 3. Betterment Bill Receipt -->
+                              <div class="bg-white border-2 border-indigo-100 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300">
+                                <div class="bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-4 rounded-t-xl">
+                                  <div class="flex items-center">
+                                    <i data-lucide="file-check" class="w-5 h-5 text-white mr-3"></i>
+                                    <h4 class="text-sm font-semibold text-white">Betterment Bill Receipt</h4>
+                                  </div>
+                                </div>
+                                <div class="p-6">
+                                  @if($bettermentBillData && $bettermentBillData['receipt_number'] !== 'N/A')
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                      <div class="space-y-4">
+                                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                          <span class="text-sm font-medium text-gray-600">Receipt Number:</span>
+                                          <span class="text-sm font-semibold text-gray-900 font-mono">{{ $bettermentBillData['receipt_number'] }}</span>
+                                        </div>
+                                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                          <span class="text-sm font-medium text-gray-600">Receipt Date:</span>
+                                          <span class="text-sm font-semibold text-gray-900">{{ $bettermentBillData['receipt_date'] }}</span>
+                                        </div>
+                                      </div>
+                                      <div class="space-y-4">
+                                        <div class="flex items-center justify-between p-3 bg-indigo-50 rounded-lg">
+                                          <span class="text-sm font-medium text-indigo-600">Amount:</span>
+                                          <span class="text-lg font-bold text-indigo-900">₦{{ number_format($bettermentBillData['amount'], 2) }}</span>
+                                        </div>
+                                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                          <span class="text-sm font-medium text-gray-600">Status:</span>
+                                          <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                                            {{ $bettermentBillData['status'] === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                            <i data-lucide="{{ $bettermentBillData['status'] === 'Paid' ? 'check-circle' : 'clock' }}" class="w-4 h-4 mr-1"></i>
+                                            {{ $bettermentBillData['status'] }}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  @else
+                                    <div class="text-center py-8">
+                                      <i data-lucide="file-x" class="w-12 h-12 text-gray-400 mx-auto mb-3"></i>
+                                      <p class="text-sm text-gray-500">No betterment bill receipt data available</p>
+                                    </div>
+                                  @endif
+                                </div>
+                              </div>
+
+                              <hr class="my-6 border-gray-200">
+                              
+                              <div class="flex justify-between items-center bg-gray-50 rounded-lg p-4">
+                                <div class="flex gap-3">
+                                  <button type="button" onclick="window.history.back()" class="flex items-center px-4 py-2 text-sm border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition-colors duration-200">
+                                    <i data-lucide="undo-2" class="w-4 h-4 mr-2"></i>
                                     Back
                                   </button>
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                  Last updated: {{ now()->format('M d, Y H:i') }}
                                 </div>
                               </div>
                             </div>

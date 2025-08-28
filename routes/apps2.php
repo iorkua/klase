@@ -176,6 +176,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/api/stats', [PageTypingController::class, 'getStats'])->name('pagetyping.api.stats');
         Route::get('/api/files', [PageTypingController::class, 'getFilesByStatus'])->name('pagetyping.api.files');
         Route::get('/api/file-details', [PageTypingController::class, 'getFileDetails'])->name('pagetyping.api.file-details');
+        
+        // PageType More routes
+        Route::get('/api/pagetype-more', [PageTypingController::class, 'pageTypeMore'])->name('pagetyping.api.pagetype-more');
+        Route::post('/pagetype-more/store', [PageTypingController::class, 'storePageTypeMore'])->name('pagetyping.pagetype-more.store');
+        Route::get('/api/pagetype-more-files', [PageTypingController::class, 'getPageTypeMoreFiles'])->name('pagetyping.api.pagetype-more-files');
+        Route::get('/api/typing-data', [PageTypingController::class, 'getTypingData'])->name('pagetyping.api.typing-data');
     });
     
     Route::prefix('profile')->group(function () {
@@ -328,3 +334,4 @@ Route::get('/attribution/edit/{id}', [App\Http\Controllers\AttributionController
 Route::put('/attribution/update/{id}', [App\Http\Controllers\AttributionController::class, 'update'])->name('attribution.update');
 Route::get('/attribution/view-plan/{id}', [App\Http\Controllers\AttributionController::class, 'viewPlan'])->name('attribution.view-plan');
 Route::delete('/attribution/{id}', [App\Http\Controllers\AttributionController::class, 'destroy'])->name('attribution.destroy');
+

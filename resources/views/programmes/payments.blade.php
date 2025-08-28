@@ -331,7 +331,7 @@
                     <div class="relative inline-block text-left" x-data="{ open: false }">
                       <button type="button" @click="open = !open" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                         <i data-lucide="more-horizontal" class="w-4 h-4"></i>
-                        <span class="ml-1">Actions</span>
+                        <span class="ml-1">.....</span>
                         <i data-lucide="chevron-down" class="ml-2 -mr-1 h-4 w-4"></i>
                       </button>
                       
@@ -339,11 +339,11 @@
                         <div class="py-1" role="menu">
                           <button type="button" @click="viewInitialBillReceipt('{{ $payment->Sectional_Title_File_No }}')" class="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left">
                             <i data-lucide="file-text" class="mr-3 h-4 w-4 text-gray-400 group-hover:text-gray-500"></i>
-                            View Initial Bill Receipt
+                            View Initial Bill Receipt No
                           </button>
                           <button type="button" @click="viewBetterBillReference('{{ $payment->Sectional_Title_File_No }}')" class="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left">
                             <i data-lucide="hash" class="mr-3 h-4 w-4 text-gray-400 group-hover:text-gray-500"></i>
-                            View Better Bill Reference ID
+                            View Betterment Bill Reference ID
                           </button>
                           @php
                             // Check if betterment receipt already exists
@@ -351,7 +351,7 @@
                           @endphp
                           <button type="button" @click="enterBetterBillReceipt('{{ $payment->Sectional_Title_File_No }}')" class="group flex items-center px-4 py-2 text-sm w-full text-left {{ $hasBettermentReceipt ? 'text-gray-400 cursor-not-allowed bg-gray-50' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900' }}" {{ $hasBettermentReceipt ? 'disabled' : '' }}>
                             <i data-lucide="plus-circle" class="mr-3 h-4 w-4 {{ $hasBettermentReceipt ? 'text-gray-300' : 'text-gray-400 group-hover:text-gray-500' }}"></i>
-                            {{ $hasBettermentReceipt ? 'Better Bill Receipt Entered' : 'Enter Better Bill Receipt' }}
+                            {{ $hasBettermentReceipt ? 'Betterment Bill Receipt Entered' : 'Enter Betterment Bill Receipt' }}
                           </button>
                         </div>
                       </div>

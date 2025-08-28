@@ -32,6 +32,7 @@ class FileIndexing extends Model
         'has_transaction',
         'is_problematic',
         'is_co_owned_plot',
+        'is_updated',
         'created_by',
         'updated_by',
     ];
@@ -42,6 +43,7 @@ class FileIndexing extends Model
         'has_transaction' => 'boolean',
         'is_problematic' => 'boolean',
         'is_co_owned_plot' => 'boolean',
+        'is_updated' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

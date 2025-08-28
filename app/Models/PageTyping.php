@@ -12,6 +12,7 @@ class PageTyping extends Model
     
     protected $fillable = [
         'file_indexing_id',
+        'scanning_id',
         'page_type',
         'page_subtype',
         'serial_number',
@@ -19,21 +20,18 @@ class PageTyping extends Model
         'file_path',
         'typed_by',
         'page_number',
-        'scanning_id',
-        'notes',
-        'is_important',
         'qc_status',
         'qc_reviewed_by',
         'qc_reviewed_at',
         'qc_overridden',
         'qc_override_note',
         'has_qc_issues',
+        'deleted_at',
     ];
 
     protected $casts = [
         'serial_number' => 'integer',
         'page_number' => 'integer',
-        'is_important' => 'boolean',
         'qc_overridden' => 'boolean',
         'has_qc_issues' => 'boolean',
         'created_at' => 'datetime',

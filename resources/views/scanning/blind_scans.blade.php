@@ -69,9 +69,9 @@
             <!-- Tabs -->
             <div class="tabs">
               <div class="tabs-list grid w-full md:w-auto grid-cols-4">
-                <button class="tab" role="tab" aria-selected="true" data-tab="pending">Pending Scans</button>
+                <!-- <button class="tab" role="tab" aria-selected="true" data-tab="pending">Pending Scans</button>
                 <button class="tab" role="tab" aria-selected="false" data-tab="converted">Converted</button>
-                <button class="tab" role="tab" aria-selected="false" data-tab="archived">Archived</button>
+                <button class="tab" role="tab" aria-selected="false" data-tab="archived">Archived</button> -->
                 <button class="tab" role="tab" aria-selected="false" data-tab="upload" id="upload-tab">Upload Scans</button>
               </div>
         
