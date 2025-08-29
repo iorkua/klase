@@ -331,28 +331,27 @@
                     <div class="relative inline-block text-left" x-data="{ open: false }">
                       <button type="button" @click="open = !open" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                         <i data-lucide="more-horizontal" class="w-4 h-4"></i>
-                        <span class="ml-1">.....</span>
-                        <i data-lucide="chevron-down" class="ml-2 -mr-1 h-4 w-4"></i>
+                        
                       </button>
                       
                       <div x-show="open" @click.away="open = false" x-transition class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:within:outline-none z-10">
                         <div class="py-1" role="menu">
-                          <button type="button" @click="viewInitialBillReceipt('{{ $payment->Sectional_Title_File_No }}')" class="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left">
-                            <i data-lucide="file-text" class="mr-3 h-4 w-4 text-gray-400 group-hover:text-gray-500"></i>
-                            View Initial Bill Receipt No
-                          </button>
-                          <button type="button" @click="viewBetterBillReference('{{ $payment->Sectional_Title_File_No }}')" class="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left">
-                            <i data-lucide="hash" class="mr-3 h-4 w-4 text-gray-400 group-hover:text-gray-500"></i>
-                            View Betterment Bill Reference ID
-                          </button>
-                          @php
+                            <button type="button" @click="viewInitialBillReceipt('{{ $payment->Sectional_Title_File_No }}')" class="group flex items-center px-3 py-1 text-xs text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left">
+                            <i data-lucide="file-text" class="mr-2 h-3.5 w-3.5 text-gray-400 group-hover:text-gray-500"></i>
+                            View Initial Bill Receipt
+                            </button>
+                            <button type="button" @click="viewBettermentBillReference('{{ $payment->Sectional_Title_File_No }}')" class="group flex items-center px-3 py-1 text-xs text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left">
+                            <i data-lucide="hash" class="mr-2 h-3.5 w-3.5 text-gray-400 group-hover:text-gray-500"></i>
+                            View Betterment Bill Reference
+                            </button>
+                            @php
                             // Check if betterment receipt already exists
                             $hasBettermentReceipt = !empty($payment->Betterment_receipt);
-                          @endphp
-                          <button type="button" @click="enterBetterBillReceipt('{{ $payment->Sectional_Title_File_No }}')" class="group flex items-center px-4 py-2 text-sm w-full text-left {{ $hasBettermentReceipt ? 'text-gray-400 cursor-not-allowed bg-gray-50' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900' }}" {{ $hasBettermentReceipt ? 'disabled' : '' }}>
-                            <i data-lucide="plus-circle" class="mr-3 h-4 w-4 {{ $hasBettermentReceipt ? 'text-gray-300' : 'text-gray-400 group-hover:text-gray-500' }}"></i>
-                            {{ $hasBettermentReceipt ? 'Betterment Bill Receipt Entered' : 'Enter Betterment Bill Receipt' }}
-                          </button>
+                            @endphp
+                            <button type="button" @click="enterBettermentBillReceipt('{{ $payment->Sectional_Title_File_No }}')" class="group flex items-center px-3 py-1 text-xs w-full text-left {{ $hasBettermentReceipt ? 'text-gray-400 cursor-not-allowed bg-gray-50' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900' }}" {{ $hasBettermentReceipt ? 'disabled' : '' }}>
+                            <i data-lucide="plus-circle" class="mr-2 h-3.5 w-3.5 {{ $hasBettermentReceipt ? 'text-gray-300' : 'text-gray-400 group-hover:text-gray-500' }}"></i>
+                            {{ $hasBettermentReceipt ? 'Betterment Receipt Entered' : 'Enter Betterment Receipt' }}
+                            </button>
                         </div>
                       </div>
                     </div>
@@ -414,6 +413,7 @@
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
@@ -515,10 +515,40 @@
                       <span class="text-lg text-purple-600">₦{{ number_format($total, 2) }}</span>
                     </div>
                   </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <div class="relative inline-block text-left" x-data="{ open: false }">
+                      <button type="button" @click="open = !open" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <i data-lucide="more-horizontal" class="w-4 h-4"></i>
+                        <span class="ml-1">.....</span>
+                        <i data-lucide="chevron-down" class="ml-2 -mr-1 h-4 w-4"></i>
+                      </button>
+                      
+                      <div x-show="open" @click.away="open = false" x-transition class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:within:outline-none z-10">
+                        <div class="py-1" role="menu">
+                          <button type="button" @click="viewInitialBillReceipt('{{ $payment->Sectional_Title_File_No }}')" class="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left">
+                            <i data-lucide="file-text" class="mr-3 h-4 w-4 text-gray-400 group-hover:text-gray-500"></i>
+                            View Initial Bill Receipt No
+                          </button>
+                          <button type="button" @click="viewBillBalanceReference('{{ $payment->Sectional_Title_File_No }}')" class="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left">
+                            <i data-lucide="hash" class="mr-3 h-4 w-4 text-gray-400 group-hover:text-gray-500"></i>
+                            View Bill Balance Receipt
+                          </button>
+                          @php
+                            // Check if bill balance receipt already exists
+                            $hasBillBalanceReceipt = !empty($payment->Bill_Balance_receipt);
+                          @endphp
+                          <button type="button" @click="enterBillBalanceReceipt('{{ $payment->Sectional_Title_File_No }}')" class="group flex items-center px-4 py-2 text-sm w-full text-left {{ $hasBillBalanceReceipt ? 'text-gray-400 cursor-not-allowed bg-gray-50' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900' }}" {{ $hasBillBalanceReceipt ? 'disabled' : '' }}>
+                            <i data-lucide="plus-circle" class="mr-3 h-4 w-4 {{ $hasBillBalanceReceipt ? 'text-gray-300' : 'text-gray-400 group-hover:text-gray-500' }}"></i>
+                            {{ $hasBillBalanceReceipt ? 'Bill Balance Receipt Entered' : 'Enter Bill Balance Receipt' }}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
                 </tr>
                 @empty
                 <tr>
-                  <td colspan="11" class="px-6 py-8 text-center text-gray-500">
+                  <td colspan="14" class="px-6 py-8 text-center text-gray-500">
                     <div class="flex flex-col items-center">
                       <i data-lucide="inbox" class="w-12 h-12 text-gray-300 mb-2"></i>
                       <p class="text-sm">No unit application payment records found</p>
@@ -546,7 +576,130 @@
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script>
-  // Global Alpine.js functions for action menu
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize Lucide icons
+  if (typeof lucide !== 'undefined') {
+    lucide.createIcons();
+  }
+  
+  // Tab switching functionality
+  const primaryTab = document.getElementById('primary-tab');
+  const unitTab = document.getElementById('unit-tab');
+  const primaryContent = document.getElementById('primary-content');
+  const unitContent = document.getElementById('unit-content');
+  
+  // Function to switch to primary tab
+  function showPrimaryTab() {
+    // Update tab styles
+    primaryTab.classList.remove('tab-inactive');
+    primaryTab.classList.add('tab-active');
+    unitTab.classList.remove('tab-active');
+    unitTab.classList.add('tab-inactive');
+    
+    // Show/hide content
+    primaryContent.classList.remove('hidden');
+    unitContent.classList.add('hidden');
+  }
+  
+  // Function to switch to unit tab
+  function showUnitTab() {
+    // Update tab styles
+    unitTab.classList.remove('tab-inactive');
+    unitTab.classList.add('tab-active');
+    primaryTab.classList.remove('tab-active');
+    primaryTab.classList.add('tab-inactive');
+    
+    // Show/hide content
+    unitContent.classList.remove('hidden');
+    primaryContent.classList.add('hidden');
+  }
+  
+  // Add event listeners
+  primaryTab.addEventListener('click', showPrimaryTab);
+  unitTab.addEventListener('click', showUnitTab);
+  
+  // Set default tab (primary)
+  showPrimaryTab();
+  
+  // Filter functionality
+  document.getElementById('primary-filter').addEventListener('change', function() {
+    filterTable('primary', this.value);
+  });
+  
+  document.getElementById('unit-filter').addEventListener('change', function() {
+    filterTable('unit', this.value);
+  });
+  
+  // Print functionality
+  document.getElementById('print-primary-btn').addEventListener('click', function() {
+    printTable('primary');
+  });
+  
+  document.getElementById('print-unit-btn').addEventListener('click', function() {
+    printTable('unit');
+  });
+});
+
+// Filter table function
+function filterTable(type, status) {
+  const tableId = type === 'primary' ? 'primary-content' : 'unit-content';
+  const table = document.querySelector(`#${tableId} table tbody`);
+  const rows = table.querySelectorAll('tr');
+  
+  rows.forEach(row => {
+    if (status === 'all') {
+      row.style.display = '';
+    } else {
+      const statusCell = row.querySelector('.inline-flex');
+      if (statusCell) {
+        const statusText = statusCell.textContent.toLowerCase().trim();
+        const shouldShow = 
+          (status === 'paid' && (statusText.includes('complete') || statusText.includes('paid'))) ||
+          (status === 'pending' && (statusText.includes('incomplete') || statusText.includes('pending'))) ||
+          (status === 'overdue' && statusText.includes('overdue'));
+        
+        row.style.display = shouldShow ? '' : 'none';
+      }
+    }
+  });
+}
+
+// Print table function
+function printTable(type) {
+  const contentId = type === 'primary' ? 'primary-content' : 'unit-content';
+  const content = document.getElementById(contentId);
+  const printWindow = window.open('', '_blank');
+  
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>${type === 'primary' ? 'Primary' : 'Unit'} Application Payments</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; font-weight: bold; }
+        .print-header { text-align: center; margin-bottom: 20px; }
+        .no-print { display: none; }
+      </style>
+    </head>
+    <body>
+      <div class="print-header">
+        <h1>${type === 'primary' ? 'Primary' : 'Unit'} Application Payments Report</h1>
+        <p>Generated on: ${new Date().toLocaleDateString()}</p>
+      </div>
+      ${content.innerHTML}
+    </body>
+    </html>
+  `);
+  
+  printWindow.document.close();
+  printWindow.print();
+}
+
+// Global Alpine.js functions for action menu
   window.viewInitialBillReceipt = function(fileNo) {
     // Show loading
     showModal('Loading...', '<div class="text-center"><div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div></div>');
@@ -599,19 +752,20 @@
       });
   };
 
-  window.viewBetterBillReference = function(fileNo) {
+  // Updated function to handle both primary and unit applications
+  window.viewBettermentBillReference = function(fileNo) {
     // Show loading
     showModal('Loading...', '<div class="text-center"><div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div></div>');
     
-    // Fetch better bill reference data
-    fetch(`/programmes/payments/better-bill-reference/${fileNo}`)
+    // Fetch betterment bill reference data
+    fetch(`/programmes/payments/betterment-bill-reference/${fileNo}`)
       .then(response => response.json())
       .then(data => {
         if (data.success) {
           const content = `
             <div class="space-y-4">
               <div class="bg-green-50 p-4 rounded-lg">
-                <h4 class="font-semibold text-green-900">Better Bill Reference Details</h4>
+                <h4 class="font-semibold text-green-900">Betterment Bill Reference Details</h4>
                 <p class="text-sm text-green-700 mt-1">File No: ${fileNo}</p>
               </div>
               <div class="grid grid-cols-1 gap-4">
@@ -634,22 +788,70 @@
               </div>
             </div>
           `;
-          showModal('Better Bill Reference ID', content);
+          showModal('Betterment Bill Reference ID', content);
         } else {
-          showModal('Error', `<p class="text-red-600">${data.message || 'Failed to load better bill reference'}</p>`);
+          showModal('Error', `<p class="text-red-600">${data.message || 'Failed to load betterment bill reference'}</p>`);
         }
       })
       .catch(error => {
         console.error('Error:', error);
-        showModal('Error', '<p class="text-red-600">An error occurred while loading the better bill reference</p>');
+        showModal('Error', '<p class="text-red-600">An error occurred while loading the betterment bill reference</p>');
       });
   };
 
-  window.enterBetterBillReceipt = function(fileNo) {
+  // New function for bill balance reference (unit applications)
+  window.viewBillBalanceReference = function(fileNo) {
+    // Show loading
+    showModal('Loading...', '<div class="text-center"><div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div></div>');
+    
+    // Fetch bill balance reference data
+    fetch(`/programmes/payments/bill-balance-reference/${fileNo}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          const content = `
+            <div class="space-y-4">
+              <div class="bg-orange-50 p-4 rounded-lg">
+                <h4 class="font-semibold text-orange-900">Bill Balance Reference Details</h4>
+                <p class="text-sm text-orange-700 mt-1">File No: ${fileNo}</p>
+              </div>
+              <div class="grid grid-cols-1 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Reference ID</label>
+                  <p class="mt-1 text-lg font-mono text-gray-900 bg-gray-100 p-2 rounded">${data.reference_id || 'N/A'}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Generated Date</label>
+                  <p class="mt-1 text-sm text-gray-900">${data.generated_date || 'N/A'}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Amount</label>
+                  <p class="mt-1 text-sm text-gray-900">₦${data.amount ? parseFloat(data.amount).toLocaleString() : 'N/A'}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Status</label>
+                  <p class="mt-1 text-sm text-gray-900">${data.status || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+          `;
+          showModal('Bill Balance Reference ID', content);
+        } else {
+          showModal('Error', `<p class="text-red-600">${data.message || 'Failed to load bill balance reference'}</p>`);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showModal('Error', '<p class="text-red-600">An error occurred while loading the bill balance reference</p>');
+      });
+  };
+
+  // Updated function for betterment bill receipt
+  window.enterBettermentBillReceipt = function(fileNo) {
     const content = `
-      <form id="better-bill-form" class="space-y-4">
+      <form id="betterment-bill-form" class="space-y-4">
         <div class="bg-yellow-50 p-4 rounded-lg">
-          <h4 class="font-semibold text-yellow-900">Enter Better Bill Receipt</h4>
+          <h4 class="font-semibold text-yellow-900">Enter Betterment Bill Receipt</h4>
           <p class="text-sm text-yellow-700 mt-1">File No: ${fileNo}</p>
         </div>
         <div>
@@ -680,10 +882,10 @@
       </form>
     `;
     
-    showModal('Enter Better Bill Receipt', content);
+    showModal('Enter Betterment Bill Receipt', content);
     
     // Handle form submission
-    document.getElementById('better-bill-form').addEventListener('submit', function(e) {
+    document.getElementById('betterment-bill-form').addEventListener('submit', function(e) {
       e.preventDefault();
       
       const formData = new FormData(this);
@@ -695,7 +897,7 @@
       submitBtn.textContent = 'Saving...';
       submitBtn.disabled = true;
       
-      fetch('/programmes/payments/save-better-bill-receipt', {
+      fetch('/programmes/payments/save-betterment-bill-receipt', {
         method: 'POST',
         body: formData,
         headers: {
@@ -706,7 +908,7 @@
       .then(data => {
         if (data.success) {
           closeModal();
-          showSuccessMessage('Better bill receipt saved successfully!');
+          showSuccessMessage('Betterment bill receipt saved successfully!');
           // Refresh the page to update the button state
           setTimeout(() => {
             window.location.reload();
@@ -726,1046 +928,195 @@
     });
   };
 
-  // Modal functions
-  window.showModal = function(title, content) {
-    // Remove existing modal if any
-    const existingModal = document.getElementById('action-modal');
-    if (existingModal) {
-      existingModal.remove();
-    }
-    
-    const modal = document.createElement('div');
-    modal.id = 'action-modal';
-    modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50';
-    modal.innerHTML = `
-      <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-medium text-gray-900">${title}</h3>
-          <button type="button" onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
-            <i data-lucide="x" class="w-5 h-5"></i>
+  // New function for bill balance receipt (unit applications)
+  window.enterBillBalanceReceipt = function(fileNo) {
+    const content = `
+      <form id="bill-balance-form" class="space-y-4">
+        <div class="bg-blue-50 p-4 rounded-lg">
+          <h4 class="font-semibold text-blue-900">Enter Bill Balance Receipt</h4>
+          <p class="text-sm text-blue-700 mt-1">File No: ${fileNo}</p>
+        </div>
+        <div>
+          <label for="receipt-number" class="block text-sm font-medium text-gray-700">Receipt Number *</label>
+          <input type="text" id="receipt-number" name="receipt_number" required 
+                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label for="receipt-date" class="block text-sm font-medium text-gray-700">Receipt Date *</label>
+          <input type="date" id="receipt-date" name="receipt_date" required 
+                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label for="receipt-notes" class="block text-sm font-medium text-gray-700">Notes</label>
+          <textarea id="receipt-notes" name="notes" rows="3" 
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+        </div>
+        <div class="flex justify-end space-x-3 pt-4">
+          <button type="button" onclick="closeModal()" 
+                  class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200">
+            Cancel
+          </button>
+          <button type="submit" 
+                  class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700">
+            Save Receipt
           </button>
         </div>
-        <div class="mt-2">
-          ${content}
-        </div>
-      </div>
+      </form>
     `;
     
-    document.body.appendChild(modal);
+    showModal('Enter Bill Balance Receipt', content);
     
-    // Initialize Lucide icons for the modal
-    if (typeof lucide !== 'undefined') {
-      lucide.createIcons();
-    }
-  };
-  
-  window.closeModal = function() {
-    const modal = document.getElementById('action-modal');
-    if (modal) {
-      modal.remove();
-    }
-  };
-  
-  window.showSuccessMessage = function(message) {
-    const successDiv = document.createElement('div');
-    successDiv.className = 'fixed top-4 right-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-lg z-50';
-    successDiv.innerHTML = `
-      <div class="flex items-center">
-        <i data-lucide="check-circle" class="w-5 h-5 mr-2"></i>
-        <span>${message}</span>
-      </div>
-    `;
-    
-    document.body.appendChild(successDiv);
-    
-    // Initialize Lucide icons
-    if (typeof lucide !== 'undefined') {
-      lucide.createIcons();
-    }
-    
-    // Auto remove after 3 seconds
-    setTimeout(() => {
-      successDiv.remove();
-    }, 3000);
-  };
-
-  // Debug: Check if page is loading
-  console.log('Script is loading...');
-  
-  // Make sure everything is wrapped in a DOMContentLoaded event
-  document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM Content Loaded!');
-    
-    // Initialize Lucide icons
-    if (typeof lucide !== 'undefined') {
-      lucide.createIcons();
-      console.log('Lucide icons initialized');
-    } else {
-      console.error('Lucide is not loaded!');
-    }
-    
-    // Check if action buttons exist
-    const actionButtons = document.querySelectorAll('.action-menu-btn');
-    console.log('Found action buttons:', actionButtons.length);
-    actionButtons.forEach((btn, index) => {
-      console.log(`Action button ${index}:`, btn);
-    });
-    // Initialize date pickers
-    flatpickr("#start-date", {
-      dateFormat: "Y-m-d",
-      maxDate: "today"
-    });
-    
-    flatpickr("#end-date", {
-      dateFormat: "Y-m-d",
-      maxDate: "today"
-    });
-    
-    // Tab Functionality - Attach event listeners properly
-    const primaryTab = document.getElementById('primary-tab');
-    const unitTab = document.getElementById('unit-tab');
-    const primaryContent = document.getElementById('primary-content');
-    const unitContent = document.getElementById('unit-content');
-    
-    // Handle tab clicks through event listeners instead of inline onclick
-    primaryTab.addEventListener('click', function() {
-      showTab('primary');
-    });
-    
-    unitTab.addEventListener('click', function() {
-      showTab('unit');
-    });
-    
-    // Tab switching function
-    function showTab(tabName) {
-      // Hide all content and reset tab styles
-      primaryContent.classList.add('hidden');
-      unitContent.classList.add('hidden');
-      primaryTab.classList.remove('tab-active');
-      unitTab.classList.remove('tab-active');
-      primaryTab.classList.add('tab-inactive');
-      unitTab.classList.add('tab-inactive');
-      
-      // Show selected content and update tab style
-      if (tabName === 'primary') {
-        primaryContent.classList.remove('hidden');
-        primaryTab.classList.remove('tab-inactive');
-        primaryTab.classList.add('tab-active');
-      } else {
-        unitContent.classList.remove('hidden');
-        unitTab.classList.remove('tab-inactive');
-        unitTab.classList.add('tab-active');
-      }
-    }
-    
-    // Create error handler for chart initialization
-    function initializeChartWithErrorHandling(chartId, chartConfig) {
-      const canvas = document.getElementById(chartId);
-      if (!canvas) {
-        console.error(`Canvas element '${chartId}' not found!`);
-        return null;
-      }
-      
-      try {
-        const ctx = canvas.getContext('2d');
-        return new Chart(ctx, chartConfig);
-      } catch (error) {
-        console.error(`Error initializing chart '${chartId}':`, error);
-        const container = canvas.parentElement;
-        const errorMsg = document.createElement('div');
-        errorMsg.className = 'text-red-500 text-center mt-4';
-        errorMsg.textContent = 'Chart failed to load. Please try refreshing the page.';
-        container.appendChild(errorMsg);
-        return null;
-      }
-    }
-    
-    // Store chart instances for updating later
-    let statusChart, trendsChart, comparisonChart;
-    
-    // Filter form submission handler
-    document.getElementById('payment-filter-form').addEventListener('submit', function(e) {
+    // Handle form submission
+    document.getElementById('bill-balance-form').addEventListener('submit', function(e) {
       e.preventDefault();
       
-      // Show loading spinner
-      document.body.classList.add('cursor-wait');
-      const loadingEl = document.createElement('div');
-      loadingEl.id = 'loading-overlay';
-      loadingEl.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-      loadingEl.innerHTML = '<div class="bg-white p-5 rounded-lg shadow-lg">Loading filtered data...</div>';
-      document.body.appendChild(loadingEl);
-      
-      // Get form data
       const formData = new FormData(this);
-      const params = new URLSearchParams(formData);
+      formData.append('file_no', fileNo);
       
-      // Fetch filtered data
-      fetch(`{{ route('programmes.payments.filter') }}?${params.toString()}`)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
-          }
-          return response.json().catch(() => {
-            // If JSON parsing fails, throw a more specific error
-            throw new Error('Invalid response format. Expected JSON but received something else.');
-          });
-        })
-        .then(data => {
-          // Update payment summary statistics
-          updatePaymentSummary(data);
-          
-          // Update charts
-          updateCharts(data);
-          
-          // Update tables
-          updateTables(data);
-          
-          // Remove loading overlay
-          document.body.classList.remove('cursor-wait');
-          document.getElementById('loading-overlay').remove();
-        })
-        .catch(error => {
-          console.error('Error fetching filtered data:', error);
-          
-          // Show a more user-friendly error message with debugging info
-          const errorMessage = `An error occurred while filtering data: ${error.message}.<br><br>
-            <small>If this problem persists, please contact the administrator with the following information:<br>
-            - Time: ${new Date().toLocaleTimeString()}<br>
-            - Error: ${error.message}</small>`;
-          
-          // Create error notification
-          const errorEl = document.createElement('div');
-          errorEl.id = 'error-notification';
-          errorEl.className = 'fixed top-4 right-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 max-w-md shadow-md rounded z-50';
-          errorEl.innerHTML = `
+      // Show loading
+      const submitBtn = this.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.textContent = 'Saving...';
+      submitBtn.disabled = true;
+      
+      fetch('/programmes/payments/save-bill-balance-receipt', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          closeModal();
+          showSuccessMessage('Bill balance receipt saved successfully!');
+          // Refresh the page to update the button state
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else {
+          showModal('Error', `<p class="text-red-600">${data.message || 'Failed to save receipt'}</p>`);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showModal('Error', '<p class="text-red-600">An error occurred while saving the receipt</p>');
+      })
+      .finally(() => {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+      });
+    });
+  };
+
+// Modal utility functions
+function showModal(title, content) {
+  // Remove any existing modal
+  const existingModal = document.getElementById('dynamic-modal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+  
+  // Create modal HTML
+  const modalHtml = `
+    <div id="dynamic-modal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+          <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
             <div class="flex items-start">
-              <div class="flex-shrink-0">
-                <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                </svg>
-              </div>
-              <div class="ml-3">
-                <p class="text-sm">${errorMessage}</p>
-                <div class="mt-4">
-                  <button type="button" id="close-error-btn" class="text-sm text-red-700 font-medium hover:underline">
-                    Dismiss
-                  </button>
+              <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4" id="modal-title">
+                  ${title}
+                </h3>
+                <div class="mt-2">
+                  ${content}
                 </div>
               </div>
             </div>
-          `;
-          document.body.appendChild(errorEl);
-          
-          // Add event listener to close button
-          document.getElementById('close-error-btn').addEventListener('click', function() {
-            document.getElementById('error-notification').remove();
-          });
-          
-          // Auto-close after 15 seconds
-          setTimeout(() => {
-            if (document.getElementById('error-notification')) {
-              document.getElementById('error-notification').remove();
-            }
-          }, 15000);
-          
-          // Remove loading overlay
-          document.body.classList.remove('cursor-wait');
-          if (document.getElementById('loading-overlay')) {
-            document.getElementById('loading-overlay').remove();
-          }
-        });
-    });
-    
-    // Update payment summary with filtered data
-    function updatePaymentSummary(data) {
-      document.querySelector('.stat-card:nth-child(1) .text-3xl').textContent = 
-        `₦${parseFloat(data.totalPaymentSum).toLocaleString('en-NG', {minimumFractionDigits: 2})}`;
-      
-      document.querySelector('.stat-card:nth-child(2) .text-3xl').textContent = 
-        data.totalPayments;
-      
-      document.querySelector('.stat-card:nth-child(3) .text-3xl').textContent = 
-        `${data.paidPayments} / ${data.pendingPayments}`;
-      
-      // Update payment type breakdown
-      const paymentBreakdown = document.querySelector('.payment-type-breakdown');
-      if (paymentBreakdown) {
-        document.querySelector('[data-payment="scheme"] .text-xl').textContent = 
-          `₦${parseFloat(data.schemeApplicationFeeSum).toLocaleString('en-NG', {minimumFractionDigits: 2})}`;
-        
-        document.querySelector('[data-payment="site"] .text-xl').textContent = 
-          `₦${parseFloat(data.sitePlanFeeSum).toLocaleString('en-NG', {minimumFractionDigits: 2})}`;
-        
-        document.querySelector('[data-payment="processing"] .text-xl').textContent = 
-          `₦${parseFloat(data.processingFeeSum).toLocaleString('en-NG', {minimumFractionDigits: 2})}`;
-        
-        document.querySelector('[data-payment="betterment"] .text-xl').textContent = 
-          `₦${parseFloat(data.bettermentChargesSum).toLocaleString('en-NG', {minimumFractionDigits: 2})}`;
-        
-        document.querySelector('[data-payment="unit"] .text-xl').textContent = 
-          `₦${parseFloat(data.unitApplicationFeesSum).toLocaleString('en-NG', {minimumFractionDigits: 2})}`;
-        
-        document.querySelector('[data-payment="landuse"] .text-xl').textContent = 
-          `₦${parseFloat(data.landUseChargeSum).toLocaleString('en-NG', {minimumFractionDigits: 2})}`;
-        
-        document.querySelector('[data-payment="penalty"] .text-xl').textContent = 
-          `₦${parseFloat(data.penaltyFeesSum).toLocaleString('en-NG', {minimumFractionDigits: 2})}`;
-      }
-    }
-    
-    // Update charts with filtered data
-    function updateCharts(data) {
-      // Status Distribution Chart
-      if (statusChart) {
-        statusChart.data.datasets[0].data = [data.paidPayments, data.pendingPayments];
-        statusChart.update();
-      }
-      
-      // Payment Trends Chart
-      if (trendsChart) {
-        const months = Object.keys(data.paymentsByMonth);
-        const counts = Object.values(data.paymentsByMonth);
-        
-        trendsChart.data.labels = months;
-        trendsChart.data.datasets[0].data = counts;
-        trendsChart.update();
-      }
-      
-      // Payment Comparison Chart
-      if (comparisonChart) {
-        comparisonChart.data.datasets[0].data = [data.primaryTotalSum, data.unitTotalSum];
-        comparisonChart.update();
-      }
-    }
-    
-    // Update tables with filtered data
-    function updateTables(data) {
-      // Update primary payments table
-      const primaryTable = document.querySelector('#primary-content table tbody');
-      if (primaryTable) {
-        primaryTable.innerHTML = '';
-        
-        if (data.primaryPayments.length > 0) {
-          data.primaryPayments.forEach(payment => {
-            const paymentStatus = payment.Payment_Status ? payment.Payment_Status.toLowerCase() : '';
-            const statusClass = paymentStatus === 'paid' || paymentStatus === 'complete' ? 'approved' : 
-                               (paymentStatus === 'pending' || paymentStatus === 'incomplete' ? 'pending' : 'declined');
-            
-            primaryTable.innerHTML += `
-              <tr>
-                <td class="table-cell">${payment.Sectional_Title_File_No}</td>
-                <td class="table-cell">${payment.owner_name}</td>
-                <td class="table-cell">₦${parseFloat(payment.Scheme_Application_Fee || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}</td>
-                <td class="table-cell">₦${parseFloat(payment.Processing_Fee || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}</td>
-                <td class="table-cell">₦${parseFloat(payment.Site_Plan_Fee || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}</td>
-                <td class="table-cell">₦${parseFloat(payment.Recertification_Fee || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}</td>
-                <td class="table-cell">₦${parseFloat(payment.Assignment_Fee || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}</td>
-                <td class="table-cell">₦${parseFloat(payment.Development_Charges || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}</td>
-                <td class="table-cell">₦${parseFloat(payment.Penalty_Fees || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}</td>
-                <td class="table-cell">${payment.created_at ? new Date(payment.created_at).toISOString().split('T')[0] : ''}</td>
-                <td class="table-cell">
-                  <span class="badge badge-${statusClass}">
-                    ${payment.Payment_Status}
-                  </span>
-                </td>
-              </tr>
-            `;
-          });
-        } else {
-          primaryTable.innerHTML = `
-            <tr>
-              <td colspan="12" class="table-cell text-center py-4">No primary application payment records found</td>
-            </tr>
-          `;
-        }
-      }
-      
-      // Update unit payments table
-      const unitTable = document.querySelector('#unit-content table tbody');
-      if (unitTable) {
-        unitTable.innerHTML = '';
-        
-        if (data.unitPayments.length > 0) {
-          data.unitPayments.forEach(payment => {
-            const paymentStatus = payment.Payment_Status ? payment.Payment_Status.toLowerCase() : '';
-            const statusClass = paymentStatus === 'paid' || paymentStatus === 'complete' ? 'approved' : 
-                              (paymentStatus === 'pending' || paymentStatus === 'incomplete' ? 'pending' : 'declined');
-            
-            unitTable.innerHTML += `
-              <tr>
-                <td class="table-cell">${payment.Sectional_Title_File_No}</td>
-                <td class="table-cell">${payment.owner_name}</td>
-                <td class="table-cell">₦${parseFloat(payment.Scheme_Application_Fee || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}</td>
-                <td class="table-cell">₦${parseFloat(payment.Processing_Fee || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}</td>
-                <td class="table-cell">₦${parseFloat(payment.Site_Plan_Fee || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}</td>
-                <td class="table-cell">₦${parseFloat(payment.Recertification_Fee || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}</td>
-                <td class="table-cell">₦${parseFloat(payment.Assignment_Fee || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}</td>
-                <td class="table-cell">₦${parseFloat(payment.Development_Charges || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}</td>
-                <td class="table-cell">₦${parseFloat(payment.Penalty_Fees || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}</td>
-                <td class="table-cell">${payment.created_at ? new Date(payment.created_at).toISOString().split('T')[0] : ''}</td>
-                <td class="table-cell">
-                  <span class="badge badge-${statusClass}">
-                    ${payment.Payment_Status}
-                  </span>
-                </td>
-              </tr>
-            `;
-          });
-        } else {
-          unitTable.innerHTML = `
-            <tr>
-              <td colspan="12" class="table-cell text-center py-4">No unit application payment records found</td>
-            </tr>
-          `;
-        }
-      }
-      
-      // Update counts in tabs
-      document.getElementById('primary-tab').innerHTML = `Primary Applications (${data.primaryPayments.length})`;
-      document.getElementById('unit-tab').innerHTML = `Unit Applications (${data.unitPayments.length})`;
-    }
-    
-    try {
-      // Chart Data
-      const paidCount = {{ $paidPayments ?? 0 }};
-      const pendingCount = {{ $pendingPayments ?? 0 }};
-      const totalCount = {{ $totalPayments ?? 0 }};
-      const primaryTotal = {{ $primaryTotalSum ?? 0 }};
-      const unitTotal = {{ $unitTotalSum ?? 0 }};
-      
-      // Status Distribution Chart (Donut)
-      const statusChartConfig = {
-        type: 'doughnut',
-        data: {
-          labels: ['Complete', 'Incomplete'],
-          datasets: [{
-            data: [paidCount, pendingCount],
-            backgroundColor: ['#22c55e', '#f97316'],
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'bottom',
-            }
-          },
-          cutout: '70%'
-        }
-      };
-      statusChart = initializeChartWithErrorHandling('statusChart', statusChartConfig);
-      
-      // Payment Trends Chart (Line)
-      const monthsData = @json($paymentsByMonth ?? []);
-      const months = Object.keys(monthsData);
-      const counts = Object.values(monthsData);
-      
-      const trendsChartConfig = {
-        type: 'line',
-        data: {
-          labels: months,
-          datasets: [{
-            label: 'Payments',
-            data: counts,
-            borderColor: '#3b82f6',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            tension: 0.3,
-            fill: true
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          }
-        }
-      };
-      trendsChart = initializeChartWithErrorHandling('trendsChart', trendsChartConfig);
-      
-      // Payment Comparison Chart (Bar)
-      const comparisonChartConfig = {
-        type: 'bar',
-        data: {
-          labels: ['Primary Applications', 'Unit Applications'],
-          datasets: [{
-            label: 'Total Payments (₦)',
-            data: [primaryTotal, unitTotal],
-            backgroundColor: ['#4ade80', '#60a5fa'],
-            borderWidth: 0,
-            borderRadius: 4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
-            },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  return '₦' + context.raw.toLocaleString();
-                }
-              }
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                callback: function(value) {
-                  return '₦' + value.toLocaleString();
-                }
-              }
-            }
-          }
-        }
-      };
-      comparisonChart = initializeChartWithErrorHandling('comparisonChart', comparisonChartConfig);
-    } catch (e) {
-      console.error('Error initializing charts:', e);
-    }
-    
-    // Filter Functionality
-    try {
-      document.getElementById('primary-filter').addEventListener('change', function() {
-        // Future implementation for filtering
-        console.log('Primary filter:', this.value);
-      });
-      
-      document.getElementById('unit-filter').addEventListener('change', function() {
-        // Future implementation for filtering
-        console.log('Unit filter:', this.value);
-      });
-    } catch (e) {
-      console.error('Error setting up filters:', e);
-    }
-
-    // Print functionality - Updated approach
-    function createReportHeader(title) {
-      return `
-        <div class="flex flex-col items-center mb-6">
-          <img src="{{ asset('assets/logo/logo3.jpeg') }}" alt="Kano State Coat of Arms" class="w-16 h-16 object-contain mb-2">
-          <div class="text-center">
-            <p class="font-bold text-sm uppercase">KANO STATE MINISTRY OF LAND AND PHYSICAL PLANNING</p>
-            <p class="text-sm">NO 2 DR BALA MUHAMMAD ROAD</p>
-            <p class="text-sm">PHYSICAL PLANNING DEPARTMENT.</p>
           </div>
         </div>
-        <h1 class="text-2xl font-bold text-center mb-6">${title}</h1>
-        <p class="text-right mb-4">Generated on: ${new Date().toLocaleDateString()}</p>
-      `;
+      </div>
+    </div>
+  `;
+  
+  // Add modal to page
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  
+  // Add close functionality
+  const modal = document.getElementById('dynamic-modal');
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal || e.target.getAttribute('aria-hidden') === 'true') {
+      closeModal();
     }
-    
-    function showPrintLoading() {
-      document.getElementById('print-loading').style.display = 'flex';
-    }
-    
-    function hidePrintLoading() {
-      document.getElementById('print-loading').style.display = 'none';
-    }
-    
-    // Print Primary Application Payments
-    document.getElementById('print-primary-btn').addEventListener('click', function() {
-      showPrintLoading();
-      
-      setTimeout(function() {
-        try {
-          const printArea = document.getElementById('print-area');
-          const primaryTable = document.querySelector('#primary-content table').cloneNode(true);
-          
-          // Create content
-          printArea.innerHTML = '';
-          printArea.innerHTML = createReportHeader('Primary Application Payments Report');
-          
-          // Apply filter if selected
-          const filterValue = document.getElementById('primary-filter').value;
-          if (filterValue !== 'all') {
-            applyTableFilter(primaryTable, filterValue);
-          }
-          
-          // Add the table to print area
-          printArea.appendChild(primaryTable);
-          
-          // Show print area, hide main content (visually, not with CSS)
-          document.getElementById('main-content').style.display = 'none';
-          printArea.style.display = 'block';
-          
-          // Wait a bit to ensure rendering
-          setTimeout(function() {
-            hidePrintLoading();
-            window.print();
-            
-            // After printing
-            printArea.style.display = 'none';
-            document.getElementById('main-content').style.display = 'block';
-            printArea.innerHTML = '';
-          }, 300);
-        } catch (e) {
-          console.error('Print error:', e);
-          hidePrintLoading();
-          alert('An error occurred while preparing the document for printing.');
-          document.getElementById('main-content').style.display = 'block';
-        }
-      }, 200);
-    });
-    
-    // Print Unit Application Payments
-    document.getElementById('print-unit-btn').addEventListener('click', function() {
-      showPrintLoading();
-      
-      setTimeout(function() {
-        try {
-          const printArea = document.getElementById('print-area');
-          const unitTable = document.querySelector('#unit-content table').cloneNode(true);
-          
-          // Create content
-          printArea.innerHTML = '';
-          printArea.innerHTML = createReportHeader('Unit Application Payments Report');
-          
-          // Apply filter if selected
-          const filterValue = document.getElementById('unit-filter').value;
-          if (filterValue !== 'all') {
-            applyTableFilter(unitTable, filterValue);
-          }
-          
-          // Add the table to print area
-          printArea.appendChild(unitTable);
-          
-          // Show print area, hide main content (visually, not with CSS)
-          document.getElementById('main-content').style.display = 'none';
-          printArea.style.display = 'block';
-          
-          // Wait a bit to ensure rendering
-          setTimeout(function() {
-            hidePrintLoading();
-            window.print();
-            
-            // After printing
-            printArea.style.display = 'none';
-            document.getElementById('main-content').style.display = 'block';
-            printArea.innerHTML = '';
-          }, 300);
-        } catch (e) {
-          console.error('Print error:', e);
-          hidePrintLoading();
-          alert('An error occurred while preparing the document for printing.');
-          document.getElementById('main-content').style.display = 'block';
-        }
-      }, 200);
-    });
-    
-    // Print Payment Summary (charts and breakdown)
-    document.getElementById('print-charts-btn').addEventListener('click', function() {
-      showPrintLoading();
-      
-      setTimeout(function() {
-        try {
-          const printArea = document.getElementById('print-area');
-          
-          // Create content
-          printArea.innerHTML = '';
-          printArea.innerHTML = createReportHeader('Payment Summary Report');
-          
-          // Copy payment breakdown
-          const breakdownDiv = document.querySelector('.bg-white.rounded-md.shadow-sm.border.border-gray-200.p-6.mb-6').cloneNode(true);
-          printArea.appendChild(breakdownDiv);
-          
-          // Create a container for charts
-          const chartsContainer = document.createElement('div');
-          chartsContainer.className = 'grid grid-cols-1 gap-6 mb-6';
-          
-          // Get canvas elements and convert to images
-          ['statusChart', 'trendsChart', 'comparisonChart'].forEach(function(chartId) {
-            try {
-              const canvas = document.getElementById(chartId);
-              const chartContainer = document.createElement('div');
-              chartContainer.className = 'mb-6';
-              
-              // Add chart title
-              const title = document.createElement('h3');
-              title.className = 'text-lg font-semibold mb-4';
-              title.textContent = canvas.closest('.bg-white').querySelector('h3').textContent;
-              chartContainer.appendChild(title);
-              
-              // Convert canvas to image
-              const img = document.createElement('img');
-              img.src = canvas.toDataURL('image/png');
-              img.style.width = '100%';
-              img.style.maxWidth = '500px';
-              img.style.margin = '0 auto';
-              img.style.display = 'block';
-              chartContainer.appendChild(img);
-              
-              chartsContainer.appendChild(chartContainer);
-            } catch (err) {
-              console.error(`Error processing chart ${chartId}:`, err);
-            }
-          });
-          
-          // Add charts to print area
-          printArea.appendChild(chartsContainer);
-          
-          // Show print area, hide main content (visually, not with CSS)
-          document.getElementById('main-content').style.display = 'none';
-          printArea.style.display = 'block';
-          
-          // Wait a bit to ensure rendering
-          setTimeout(function() {
-            hidePrintLoading();
-            window.print();
-            
-            // After printing
-            printArea.style.display = 'none';
-            document.getElementById('main-content').style.display = 'block';
-            printArea.innerHTML = '';
-          }, 300);
-        } catch (e) {
-          console.error('Print error:', e);
-          hidePrintLoading();
-          alert('An error occurred while preparing the charts for printing.');
-          document.getElementById('main-content').style.display = 'block';
-        }
-      }, 200);
-    });
-    
-    // Filter function for tables when printing
-    function applyTableFilter(table, filterValue) {
-      const rows = table.querySelectorAll('tbody tr');
-      rows.forEach(row => {
-        const statusCell = row.querySelector('td:last-child');
-        if (!statusCell) return;
-        
-        const status = statusCell.textContent.trim().toLowerCase();
-        const matchesPaid = (filterValue === 'paid' && (status === 'paid' || status === 'complete'));
-        const matchesPending = (filterValue === 'pending' && (status === 'pending' || status === 'incomplete'));
-        const matchesOverdue = (filterValue === 'overdue' && status === 'overdue');
-        
-        if (filterValue !== 'all' && !matchesPaid && !matchesPending && !matchesOverdue) {
-          row.style.display = 'none';
-        } else {
-          row.style.display = '';
-        }
-      });
-    }
-    
-    // Action Menu Functionality
-    document.addEventListener('click', function(e) {
-      console.log('Click detected on:', e.target);
-      
-      // Handle action menu button clicks
-      if (e.target.closest('.action-menu-btn')) {
-        console.log('Action menu button clicked!');
-        e.preventDefault();
-        const button = e.target.closest('.action-menu-btn');
-        const dropdown = button.nextElementSibling;
-        
-        console.log('Button:', button);
-        console.log('Dropdown:', dropdown);
-        
-        // Close all other dropdowns
-        document.querySelectorAll('.action-dropdown').forEach(dd => {
-          if (dd !== dropdown) {
-            dd.classList.add('hidden');
-          }
-        });
-        
-        // Toggle current dropdown
-        dropdown.classList.toggle('hidden');
-        console.log('Dropdown toggled, hidden class:', dropdown.classList.contains('hidden'));
-      }
-      
-      // Close dropdowns when clicking outside
-      else if (!e.target.closest('.action-dropdown')) {
-        document.querySelectorAll('.action-dropdown').forEach(dd => {
-          dd.classList.add('hidden');
-        });
-      }
-      
-      // Handle View Initial Bill Receipt
-      else if (e.target.closest('.view-initial-bill-btn')) {
-        e.preventDefault();
-        const fileNo = e.target.closest('.view-initial-bill-btn').dataset.fileNo;
-        viewInitialBillReceipt(fileNo);
-      }
-      
-      // Handle View Better Bill Reference ID
-      else if (e.target.closest('.view-better-bill-ref-btn')) {
-        e.preventDefault();
-        const fileNo = e.target.closest('.view-better-bill-ref-btn').dataset.fileNo;
-        viewBetterBillReference(fileNo);
-      }
-      
-      // Handle Enter Better Bill Receipt
-      else if (e.target.closest('.enter-better-bill-btn') && !e.target.closest('.enter-better-bill-btn').disabled) {
-        e.preventDefault();
-        const fileNo = e.target.closest('.enter-better-bill-btn').dataset.fileNo;
-        enterBetterBillReceipt(fileNo);
-      }
-    });
-    
-    // Function to view Initial Bill Receipt from mother application
-    function viewInitialBillReceipt(fileNo) {
-      // Show loading
-      showModal('Loading...', '<div class="text-center"><div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div></div>');
-      
-      // Fetch initial bill receipt data from mother_applications table
-      fetch(`/programmes/payments/initial-bill-receipt/${fileNo}`)
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            const content = `
-              <div class="space-y-4">
-                <div class="bg-blue-50 p-4 rounded-lg">
-                  <h4 class="font-semibold text-blue-900">Initial Bill Receipt Details</h4>
-                  <p class="text-sm text-blue-700 mt-1">File No: ${fileNo}</p>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700">Receipt Number</label>
-                    <p class="mt-1 text-sm text-gray-900">${data.receipt_number || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700">Amount</label>
-                    <p class="mt-1 text-sm text-gray-900">₦${data.amount ? parseFloat(data.amount).toLocaleString() : 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700">Payment Date</label>
-                    <p class="mt-1 text-sm text-gray-900">${data.payment_date || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700">Status</label>
-                    <p class="mt-1 text-sm text-gray-900">${data.status || 'N/A'}</p>
-                  </div>
-                </div>
-                ${data.notes ? `
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700">Notes</label>
-                    <p class="mt-1 text-sm text-gray-900">${data.notes}</p>
-                  </div>
-                ` : ''}
-              </div>
-            `;
-            showModal('Initial Bill Receipt', content);
-          } else {
-            showModal('Error', `<p class="text-red-600">${data.message || 'Failed to load initial bill receipt'}</p>`);
-          }
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          showModal('Error', '<p class="text-red-600">An error occurred while loading the initial bill receipt</p>');
-        });
-    }
-    
-    // Function to view Better Bill Reference ID
-    function viewBetterBillReference(fileNo) {
-      // Show loading
-      showModal('Loading...', '<div class="text-center"><div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div></div>');
-      
-      // Fetch better bill reference data
-      fetch(`/programmes/payments/better-bill-reference/${fileNo}`)
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            const content = `
-              <div class="space-y-4">
-                <div class="bg-green-50 p-4 rounded-lg">
-                  <h4 class="font-semibold text-green-900">Better Bill Reference Details</h4>
-                  <p class="text-sm text-green-700 mt-1">File No: ${fileNo}</p>
-                </div>
-                <div class="grid grid-cols-1 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700">Reference ID</label>
-                    <p class="mt-1 text-lg font-mono text-gray-900 bg-gray-100 p-2 rounded">${data.reference_id || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700">Generated Date</label>
-                    <p class="mt-1 text-sm text-gray-900">${data.generated_date || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700">Amount</label>
-                    <p class="mt-1 text-sm text-gray-900">₦${data.amount ? parseFloat(data.amount).toLocaleString() : 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700">Status</label>
-                    <p class="mt-1 text-sm text-gray-900">${data.status || 'N/A'}</p>
-                  </div>
-                </div>
-              </div>
-            `;
-            showModal('Better Bill Reference ID', content);
-          } else {
-            showModal('Error', `<p class="text-red-600">${data.message || 'Failed to load better bill reference'}</p>`);
-          }
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          showModal('Error', '<p class="text-red-600">An error occurred while loading the better bill reference</p>');
-        });
-    }
-    
-    // Function to enter Better Bill Receipt
-    function enterBetterBillReceipt(fileNo) {
-      const content = `
-        <form id="better-bill-form" class="space-y-4">
-          <div class="bg-yellow-50 p-4 rounded-lg">
-            <h4 class="font-semibold text-yellow-900">Enter Better Bill Receipt</h4>
-            <p class="text-sm text-yellow-700 mt-1">File No: ${fileNo}</p>
-          </div>
-          <div>
-            <label for="receipt-number" class="block text-sm font-medium text-gray-700">Receipt Number *</label>
-            <input type="text" id="receipt-number" name="receipt_number" required 
-                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-          </div>
-          <div>
-            <label for="receipt-date" class="block text-sm font-medium text-gray-700">Receipt Date *</label>
-            <input type="date" id="receipt-date" name="receipt_date" required 
-                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-          </div>
-          <div>
-            <label for="receipt-notes" class="block text-sm font-medium text-gray-700">Notes</label>
-            <textarea id="receipt-notes" name="notes" rows="3" 
-                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
-          </div>
-          <div class="flex justify-end space-x-3 pt-4">
-            <button type="button" onclick="closeModal()" 
-                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200">
-              Cancel
-            </button>
-            <button type="submit" 
-                    class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700">
-              Save Receipt
-            </button>
-          </div>
-        </form>
-      `;
-      
-      showModal('Enter Better Bill Receipt', content);
-      
-      // Handle form submission
-      document.getElementById('better-bill-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(this);
-        formData.append('file_no', fileNo);
-        
-        // Show loading
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const originalText = submitBtn.textContent;
-        submitBtn.textContent = 'Saving...';
-        submitBtn.disabled = true;
-        
-        fetch('/programmes/payments/save-better-bill-receipt', {
-          method: 'POST',
-          body: formData,
-          headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-          }
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            closeModal();
-            showSuccessMessage('Better bill receipt saved successfully!');
-            // Refresh the page to update the button state
-            setTimeout(() => {
-              window.location.reload();
-            }, 1500);
-          } else {
-            showModal('Error', `<p class="text-red-600">${data.message || 'Failed to save receipt'}</p>`);
-          }
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          showModal('Error', '<p class="text-red-600">An error occurred while saving the receipt</p>');
-        })
-        .finally(() => {
-          submitBtn.textContent = originalText;
-          submitBtn.disabled = false;
-        });
-      });
-    }
-    
-    // Modal functions
-    function showModal(title, content) {
-      // Remove existing modal if any
-      const existingModal = document.getElementById('action-modal');
-      if (existingModal) {
-        existingModal.remove();
-      }
-      
-      const modal = document.createElement('div');
-      modal.id = 'action-modal';
-      modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50';
-      modal.innerHTML = `
-        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-medium text-gray-900">${title}</h3>
-            <button type="button" onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
-              <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
-          </div>
-          <div class="mt-2">
-            ${content}
-          </div>
-        </div>
-      `;
-      
-      document.body.appendChild(modal);
-      
-      // Initialize Lucide icons for the modal
-      if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-      }
-    }
-    
-    function closeModal() {
-      const modal = document.getElementById('action-modal');
-      if (modal) {
-        modal.remove();
-      }
-    }
-    
-    function showSuccessMessage(message) {
-      const successDiv = document.createElement('div');
-      successDiv.className = 'fixed top-4 right-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-lg z-50';
-      successDiv.innerHTML = `
-        <div class="flex items-center">
-          <i data-lucide="check-circle" class="w-5 h-5 mr-2"></i>
-          <span>${message}</span>
-        </div>
-      `;
-      
-      document.body.appendChild(successDiv);
-      
-      // Initialize Lucide icons
-      if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-      }
-      
-      // Auto remove after 3 seconds
-      setTimeout(() => {
-        successDiv.remove();
-      }, 3000);
-    }
-    
-    // Close modal when clicking outside
-    document.addEventListener('click', function(e) {
-      if (e.target.id === 'action-modal') {
-        closeModal();
-      }
-    });
   });
+  
+  // Focus trap and ESC key handler
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeModal();
+    }
+  });
+}
+
+function closeModal() {
+  const modal = document.getElementById('dynamic-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+function showSuccessMessage(message) {
+  // Create success toast
+  const toast = document.createElement('div');
+  toast.className = 'fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2 transition-all duration-300';
+  toast.innerHTML = `
+    <i data-lucide="check-circle" class="w-5 h-5"></i>
+    <span>${message}</span>
+  `;
+  
+  document.body.appendChild(toast);
+  
+  // Initialize lucide icon
+  if (typeof lucide !== 'undefined') {
+    lucide.createIcons();
+  }
+  
+  // Auto remove after 3 seconds
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100%)';
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }, 300);
+  }, 3000);
+}
 </script>
+
+<!-- Add required CSS for tabs -->
+<style>
+.tab-active {
+  background-color: white;
+  border-bottom: 2px solid #3b82f6;
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.tab-inactive {
+  background-color: #f8fafc;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tab-active:hover,
+.tab-inactive:hover {
+  background-color: #f1f5f9;
+  cursor: pointer;
+}
+</style>
+
 @endsection

@@ -3,14 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\PageTyping;
-use App\Models\FileIndexing;
-use App\Models\FileTracking;
-use App\Models\UserActivityLog;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Storage;
 
 class PTQController extends Controller
 {
@@ -20,21 +15,46 @@ class PTQController extends Controller
     public function index()
     {
         try {
-            // Get QC statistics - count files that have page typings but no QC review
+            // Get QC statistics using SQL Server connection
             $stats = [
-                'pending_qc' => FileIndexing::whereHas('pagetypings')
-                    ->whereDoesntHave('pagetypings', function($q) {
-                        $q->whereNotNull('qc_reviewed_at');
-                    })->count(),
-                'qc_in_progress' => FileIndexing::whereHas('pagetypings', function($q) {
-                        $q->whereNotNull('qc_reviewed_at');
+                'pending_qc' => DB::connection('sqlsrv')->table('file_indexings')
+                    ->whereExists(function($query) {
+                        $query->select(DB::raw(1))
+                              ->from('pagetypings')
+                              ->whereRaw('pagetypings.file_indexing_id = file_indexings.id');
                     })
-                    ->whereHas('pagetypings', function($q) {
-                        $q->whereNull('qc_reviewed_at');
+                    ->whereNotExists(function($query) {
+                        $query->select(DB::raw(1))
+                              ->from('pagetypings')
+                              ->whereRaw('pagetypings.file_indexing_id = file_indexings.id')
+                              ->whereNotNull('qc_reviewed_at');
                     })->count(),
-                'qc_completed' => FileIndexing::whereHas('pagetypings')
-                    ->whereDoesntHave('pagetypings', function($q) {
-                        $q->whereNull('qc_reviewed_at');
+                    
+                'qc_in_progress' => DB::connection('sqlsrv')->table('file_indexings')
+                    ->whereExists(function($query) {
+                        $query->select(DB::raw(1))
+                              ->from('pagetypings')
+                              ->whereRaw('pagetypings.file_indexing_id = file_indexings.id')
+                              ->whereNotNull('qc_reviewed_at');
+                    })
+                    ->whereExists(function($query) {
+                        $query->select(DB::raw(1))
+                              ->from('pagetypings')
+                              ->whereRaw('pagetypings.file_indexing_id = file_indexings.id')
+                              ->whereNull('qc_reviewed_at');
+                    })->count(),
+                    
+                'qc_completed' => DB::connection('sqlsrv')->table('file_indexings')
+                    ->whereExists(function($query) {
+                        $query->select(DB::raw(1))
+                              ->from('pagetypings')
+                              ->whereRaw('pagetypings.file_indexing_id = file_indexings.id');
+                    })
+                    ->whereNotExists(function($query) {
+                        $query->select(DB::raw(1))
+                              ->from('pagetypings')
+                              ->whereRaw('pagetypings.file_indexing_id = file_indexings.id')
+                              ->whereNull('qc_reviewed_at');
                     })->count(),
             ];
 
@@ -55,67 +75,70 @@ class PTQController extends Controller
     public function listPending(Request $request)
     {
         try {
-            // Query for files that have been pagetyped but not QC reviewed
-            $query = FileIndexing::with(['pagetypings' => function($q) {
-                $q->orderBy('page_number');
-            }, 'pagetypings.typedBy:id,first_name,last_name'])
-            ->whereHas('pagetypings') // Must have page typings (pagetyped files)
-            ->whereDoesntHave('pagetypings', function($q) {
-                $q->whereNotNull('qc_reviewed_at'); // No QC review done yet
-            });
+            // Query using SQL Server connection
+            $query = DB::connection('sqlsrv')->table('file_indexings')
+                ->leftJoin('pagetypings', 'file_indexings.id', '=', 'pagetypings.file_indexing_id')
+                ->leftJoin('users', 'pagetypings.typed_by', '=', 'users.id')
+                ->select([
+                    'file_indexings.id',
+                    'file_indexings.file_number',
+                    'file_indexings.file_title',
+                    'file_indexings.land_use_type',
+                    'file_indexings.created_at',
+                    'file_indexings.updated_at',
+                    DB::raw('COUNT(pagetypings.id) as total_pages_count'),
+                    DB::raw('COUNT(CASE WHEN pagetypings.qc_reviewed_at IS NULL THEN 1 END) as pending_pages_count'),
+                    DB::raw('MAX(pagetypings.updated_at) as last_pagetyped_at'),
+                    DB::raw('COALESCE(users.first_name + \' \' + users.last_name, \'Unknown\') as pagetyped_by_name')
+                ])
+                ->whereExists(function($subquery) {
+                    $subquery->select(DB::raw(1))
+                            ->from('pagetypings')
+                            ->whereRaw('pagetypings.file_indexing_id = file_indexings.id');
+                })
+                ->whereExists(function($subquery) {
+                    $subquery->select(DB::raw(1))
+                            ->from('pagetypings')
+                            ->whereRaw('pagetypings.file_indexing_id = file_indexings.id')
+                            ->whereNull('qc_reviewed_at');
+                })
+                ->groupBy([
+                    'file_indexings.id',
+                    'file_indexings.file_number',
+                    'file_indexings.file_title',
+                    'file_indexings.land_use_type',
+                    'file_indexings.created_at',
+                    'file_indexings.updated_at',
+                    'users.first_name',
+                    'users.last_name'
+                ]);
 
             // Apply filters
             if ($request->has('search') && $request->search !== '') {
                 $search = $request->search;
                 $query->where(function($q) use ($search) {
-                    $q->where('file_number', 'like', "%{$search}%")
-                      ->orWhere('file_title', 'like', "%{$search}%")
-                      ->orWhere('batch_no', 'like', "%{$search}%");
-                });
-            }
-
-            if ($request->has('batch_no') && $request->batch_no !== '') {
-                $query->where('batch_no', $request->batch_no);
-            }
-
-            if ($request->has('date_from') && $request->date_from !== '') {
-                $query->whereHas('pagetypings', function($q) use ($request) {
-                    $q->whereDate('created_at', '>=', $request->date_from);
-                });
-            }
-
-            if ($request->has('date_to') && $request->date_to !== '') {
-                $query->whereHas('pagetypings', function($q) use ($request) {
-                    $q->whereDate('created_at', '<=', $request->date_to);
+                    $q->where('file_indexings.file_number', 'like', "%{$search}%")
+                      ->orWhere('file_indexings.file_title', 'like', "%{$search}%")
+                      ->orWhere('file_indexings.batch_no', 'like', "%{$search}%");
                 });
             }
 
             // Sort
-            $sortBy = $request->get('sort_by', 'updated_at');
+            $sortBy = $request->get('sort_by', 'file_indexings.updated_at');
             $sortOrder = $request->get('sort_order', 'desc');
             $query->orderBy($sortBy, $sortOrder);
 
-            // Paginate
-            $perPage = $request->get('per_page', 15);
-            $files = $query->paginate($perPage);
-
-            // Add additional data for each file
-            $files->getCollection()->transform(function ($file) {
-                $file->pending_pages_count = $file->pagetypings->whereNull('qc_reviewed_at')->count();
-                $file->total_pages_count = $file->pagetypings->count();
-                $file->last_pagetyped_at = $file->pagetypings->max('updated_at');
-                $file->pagetyped_by_name = $file->pagetypings->first()?->typedBy?->name ?? 'Unknown';
-                return $file;
-            });
+            // Get results
+            $files = $query->get();
 
             return response()->json([
                 'success' => true,
-                'data' => $files->items(),
+                'data' => $files->toArray(),
                 'pagination' => [
-                    'current_page' => $files->currentPage(),
-                    'last_page' => $files->lastPage(),
-                    'per_page' => $files->perPage(),
-                    'total' => $files->total(),
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => $files->count(),
+                    'total' => $files->count(),
                 ]
             ]);
 
@@ -138,54 +161,72 @@ class PTQController extends Controller
     public function listInProgress(Request $request)
     {
         try {
-            $query = FileIndexing::with(['pagetypings' => function($q) {
-                $q->orderBy('page_number');
-            }])
-            ->whereHas('pagetypings', function($q) {
-                $q->whereNotNull('qc_reviewed_at'); // Some pages reviewed
-            })
-            ->whereHas('pagetypings', function($q) {
-                $q->whereNull('qc_reviewed_at'); // Some pages not reviewed
-            });
+            $query = DB::connection('sqlsrv')->table('file_indexings')
+                ->leftJoin('pagetypings', 'file_indexings.id', '=', 'pagetypings.file_indexing_id')
+                ->select([
+                    'file_indexings.id',
+                    'file_indexings.file_number',
+                    'file_indexings.file_title',
+                    'file_indexings.land_use_type',
+                    'file_indexings.created_at',
+                    'file_indexings.updated_at',
+                    DB::raw('COUNT(pagetypings.id) as total_pages_count'),
+                    DB::raw('COUNT(CASE WHEN pagetypings.qc_reviewed_at IS NULL THEN 1 END) as pending_pages_count'),
+                    DB::raw('COUNT(CASE WHEN pagetypings.qc_reviewed_at IS NOT NULL THEN 1 END) as reviewed_pages_count'),
+                    DB::raw('MAX(pagetypings.updated_at) as last_pagetyped_at')
+                ])
+                ->whereExists(function($subquery) {
+                    $subquery->select(DB::raw(1))
+                            ->from('pagetypings')
+                            ->whereRaw('pagetypings.file_indexing_id = file_indexings.id')
+                            ->whereNotNull('qc_reviewed_at');
+                })
+                ->whereExists(function($subquery) {
+                    $subquery->select(DB::raw(1))
+                            ->from('pagetypings')
+                            ->whereRaw('pagetypings.file_indexing_id = file_indexings.id')
+                            ->whereNull('qc_reviewed_at');
+                })
+                ->groupBy([
+                    'file_indexings.id',
+                    'file_indexings.file_number',
+                    'file_indexings.file_title',
+                    'file_indexings.land_use_type',
+                    'file_indexings.created_at',
+                    'file_indexings.updated_at'
+                ]);
 
             // Apply filters
             if ($request->has('search') && $request->search !== '') {
                 $search = $request->search;
                 $query->where(function($q) use ($search) {
-                    $q->where('file_number', 'like', "%{$search}%")
-                      ->orWhere('file_title', 'like', "%{$search}%")
-                      ->orWhere('batch_no', 'like', "%{$search}%");
+                    $q->where('file_indexings.file_number', 'like', "%{$search}%")
+                      ->orWhere('file_indexings.file_title', 'like', "%{$search}%")
+                      ->orWhere('file_indexings.batch_no', 'like', "%{$search}%");
                 });
             }
 
             // Sort
-            $sortBy = $request->get('sort_by', 'updated_at');
+            $sortBy = $request->get('sort_by', 'file_indexings.updated_at');
             $sortOrder = $request->get('sort_order', 'desc');
             $query->orderBy($sortBy, $sortOrder);
 
-            // Paginate
-            $perPage = $request->get('per_page', 15);
-            $files = $query->paginate($perPage);
-
-            // Add additional data for each file
-            $files->getCollection()->transform(function ($file) {
-                $file->pending_pages_count = $file->pagetypings->whereNull('qc_reviewed_at')->count();
-                $file->reviewed_pages_count = $file->pagetypings->whereNotNull('qc_reviewed_at')->count();
-                $file->total_pages_count = $file->pagetypings->count();
+            $files = $query->get()->map(function($file) {
                 $file->qc_progress = $file->total_pages_count > 0 
                     ? round(($file->reviewed_pages_count / $file->total_pages_count) * 100, 1) 
                     : 0;
+                $file->pagetyped_by_name = 'Unknown';
                 return $file;
             });
 
             return response()->json([
                 'success' => true,
-                'data' => $files->items(),
+                'data' => $files->toArray(),
                 'pagination' => [
-                    'current_page' => $files->currentPage(),
-                    'last_page' => $files->lastPage(),
-                    'per_page' => $files->perPage(),
-                    'total' => $files->total(),
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => $files->count(),
+                    'total' => $files->count(),
                 ]
             ]);
 
@@ -208,65 +249,75 @@ class PTQController extends Controller
     public function listCompleted(Request $request)
     {
         try {
-            $query = FileIndexing::with(['pagetypings' => function($q) {
-                $q->orderBy('page_number');
-            }, 'pagetypings.qcReviewer:id,first_name,last_name'])
-            ->whereHas('pagetypings') // Must have page typings
-            ->whereDoesntHave('pagetypings', function($q) {
-                $q->whereNull('qc_reviewed_at'); // All pages must be QC reviewed
-            });
+            $query = DB::connection('sqlsrv')->table('file_indexings')
+                ->leftJoin('pagetypings', 'file_indexings.id', '=', 'pagetypings.file_indexing_id')
+                ->leftJoin('users', 'pagetypings.qc_reviewed_by', '=', 'users.id')
+                ->select([
+                    'file_indexings.id',
+                    'file_indexings.file_number',
+                    'file_indexings.file_title',
+                    'file_indexings.land_use_type',
+                    'file_indexings.created_at',
+                    'file_indexings.updated_at',
+                    DB::raw('COUNT(pagetypings.id) as total_pages_count'),
+                    DB::raw('COUNT(CASE WHEN pagetypings.qc_status = \'passed\' THEN 1 END) as passed_pages_count'),
+                    DB::raw('COUNT(CASE WHEN pagetypings.qc_status = \'failed\' THEN 1 END) as failed_pages_count'),
+                    DB::raw('COUNT(CASE WHEN pagetypings.qc_overridden = 1 THEN 1 END) as overridden_pages_count'),
+                    DB::raw('MAX(pagetypings.qc_reviewed_at) as qc_completed_at'),
+                    DB::raw('COALESCE(users.first_name + \' \' + users.last_name, \'Unknown\') as qc_reviewed_by_name')
+                ])
+                ->whereExists(function($subquery) {
+                    $subquery->select(DB::raw(1))
+                            ->from('pagetypings')
+                            ->whereRaw('pagetypings.file_indexing_id = file_indexings.id');
+                })
+                ->whereNotExists(function($subquery) {
+                    $subquery->select(DB::raw(1))
+                            ->from('pagetypings')
+                            ->whereRaw('pagetypings.file_indexing_id = file_indexings.id')
+                            ->whereNull('qc_reviewed_at');
+                })
+                ->groupBy([
+                    'file_indexings.id',
+                    'file_indexings.file_number',
+                    'file_indexings.file_title',
+                    'file_indexings.land_use_type',
+                    'file_indexings.created_at',
+                    'file_indexings.updated_at',
+                    'users.first_name',
+                    'users.last_name'
+                ]);
 
             // Apply filters
             if ($request->has('search') && $request->search !== '') {
                 $search = $request->search;
                 $query->where(function($q) use ($search) {
-                    $q->where('file_number', 'like', "%{$search}%")
-                      ->orWhere('file_title', 'like', "%{$search}%")
-                      ->orWhere('batch_no', 'like', "%{$search}%");
+                    $q->where('file_indexings.file_number', 'like', "%{$search}%")
+                      ->orWhere('file_indexings.file_title', 'like', "%{$search}%")
+                      ->orWhere('file_indexings.batch_no', 'like', "%{$search}%");
                 });
             }
 
             // Sort
-            $sortBy = $request->get('sort_by', 'updated_at');
+            $sortBy = $request->get('sort_by', 'file_indexings.updated_at');
             $sortOrder = $request->get('sort_order', 'desc');
             $query->orderBy($sortBy, $sortOrder);
 
-            // Paginate
-            $perPage = $request->get('per_page', 15);
-            $files = $query->paginate($perPage);
-
-            // Add additional data for each file
-            $files->getCollection()->transform(function ($file) {
-                $file->total_pages_count = $file->pagetypings->count();
-                $file->passed_pages_count = $file->pagetypings->where('qc_status', 'passed')->count();
-                $file->failed_pages_count = $file->pagetypings->where('qc_status', 'failed')->count();
-                $file->overridden_pages_count = $file->pagetypings->where('qc_overridden', true)->count();
-                $file->qc_completed_at = $file->pagetypings->max('qc_reviewed_at');
-                $file->qc_reviewed_by_name = $file->pagetypings->whereNotNull('qc_reviewed_by')->first()?->qcReviewer?->name ?? 'Unknown';
-                
+            $files = $query->get()->map(function($file) {
                 // Create processed pages array for frontend
-                $file->processedPages = $file->pagetypings->map(function($page, $index) {
-                    return [
-                        'pageNumber' => $index + 1,
-                        'pageCode' => $page->page_code,
-                        'pageType' => $page->page_type,
-                        'pageSubType' => $page->page_subtype,
-                        'qcStatus' => $page->qc_overridden ? 'overridden' : ($page->qc_status === 'passed' ? 'passed' : 'rejected'),
-                        'overrideNote' => $page->qc_override_note
-                    ];
-                })->toArray();
-                
+                $file->processedPages = [];
+                $file->pagetyped_by_name = 'Unknown';
                 return $file;
             });
 
             return response()->json([
                 'success' => true,
-                'data' => $files->items(),
+                'data' => $files->toArray(),
                 'pagination' => [
-                    'current_page' => $files->currentPage(),
-                    'last_page' => $files->lastPage(),
-                    'per_page' => $files->perPage(),
-                    'total' => $files->total(),
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => $files->count(),
+                    'total' => $files->count(),
                 ]
             ]);
 
@@ -289,32 +340,41 @@ class PTQController extends Controller
     public function getQCDetails($fileIndexingId)
     {
         try {
-            $fileIndexing = FileIndexing::with([
-                'pagetypings' => function($q) {
-                    $q->orderBy('page_number');
-                },
-                'scannings'
-            ])->findOrFail($fileIndexingId);
+            // Get file indexing details using SQL Server
+            $fileIndexing = DB::connection('sqlsrv')->table('file_indexings')
+                ->where('id', $fileIndexingId)
+                ->first();
+
+            if (!$fileIndexing) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File not found'
+                ], 404);
+            }
 
             // Get page typing details with QC status
-            $pageTypings = $fileIndexing->pagetypings->map(function ($pageTyping) {
-                return [
-                    'id' => $pageTyping->id,
-                    'page_number' => $pageTyping->page_number,
-                    'page_type' => $pageTyping->page_type,
-                    'page_subtype' => $pageTyping->page_subtype,
-                    'serial_number' => $pageTyping->serial_number,
-                    'page_code' => $pageTyping->page_code,
-                    'file_path' => $pageTyping->file_path,
-                    'qc_status' => $pageTyping->qc_status,
-                    'qc_reviewed_by' => $pageTyping->qc_reviewed_by,
-                    'qc_reviewed_at' => $pageTyping->qc_reviewed_at,
-                    'qc_overridden' => $pageTyping->qc_overridden,
-                    'qc_override_note' => $pageTyping->qc_override_note,
-                    'has_qc_issues' => $pageTyping->has_qc_issues,
-                    'file_url' => asset('storage/' . $pageTyping->file_path),
-                ];
-            });
+            $pageTypings = DB::connection('sqlsrv')->table('pagetypings')
+                ->where('file_indexing_id', $fileIndexingId)
+                ->orderBy('page_number')
+                ->get()
+                ->map(function ($pageTyping) {
+                    return [
+                        'id' => $pageTyping->id,
+                        'page_number' => $pageTyping->page_number,
+                        'page_type' => $pageTyping->page_type,
+                        'page_subtype' => $pageTyping->page_subtype,
+                        'serial_number' => $pageTyping->serial_number,
+                        'page_code' => $pageTyping->page_code,
+                        'file_path' => $pageTyping->file_path,
+                        'qc_status' => $pageTyping->qc_status,
+                        'qc_reviewed_by' => $pageTyping->qc_reviewed_by,
+                        'qc_reviewed_at' => $pageTyping->qc_reviewed_at,
+                        'qc_overridden' => $pageTyping->qc_overridden,
+                        'qc_override_note' => $pageTyping->qc_override_note,
+                        'has_qc_issues' => $pageTyping->has_qc_issues,
+                        'file_url' => $pageTyping->file_path ? url('storage/app/public/' . $pageTyping->file_path) : null,
+                    ];
+                });
 
             return response()->json([
                 'success' => true,
@@ -352,7 +412,7 @@ class PTQController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'page_typing_ids' => 'required|array|min:1',
-            'page_typing_ids.*' => 'required|exists:pagetypings,id',
+            'page_typing_ids.*' => 'required|integer',
             'qc_status' => 'required|in:passed,failed',
             'notes' => 'nullable|string|max:1000',
         ]);
@@ -365,80 +425,54 @@ class PTQController extends Controller
             ], 422);
         }
 
-        DB::beginTransaction();
+        DB::connection('sqlsrv')->beginTransaction();
 
         try {
             $pageTypingIds = $request->page_typing_ids;
             $qcStatus = $request->qc_status;
             $notes = $request->notes;
 
-            // Update page typings
-            $updatedCount = PageTyping::whereIn('id', $pageTypingIds)
+            // Update page typings using SQL Server
+            $updatedCount = DB::connection('sqlsrv')->table('pagetypings')
+                ->whereIn('id', $pageTypingIds)
                 ->update([
                     'qc_status' => $qcStatus,
                     'qc_reviewed_by' => auth()->id(),
                     'qc_reviewed_at' => now(),
-                    'has_qc_issues' => $qcStatus === 'failed',
+                    'has_qc_issues' => $qcStatus === 'failed' ? 1 : 0,
                     'qc_override_note' => $qcStatus === 'failed' ? $notes : null,
                 ]);
 
             // Get affected file indexings
-            $fileIndexingIds = PageTyping::whereIn('id', $pageTypingIds)
+            $fileIndexingIds = DB::connection('sqlsrv')->table('pagetypings')
+                ->whereIn('id', $pageTypingIds)
                 ->distinct()
                 ->pluck('file_indexing_id');
 
             // Update file indexing workflow status and QC issues flag
             foreach ($fileIndexingIds as $fileIndexingId) {
-                $fileIndexing = FileIndexing::find($fileIndexingId);
-                if ($fileIndexing) {
-                    $hasFailedPages = $fileIndexing->pagetypings()
-                        ->where('qc_status', 'failed')
-                        ->exists();
-                    
-                    $allPagesReviewed = !$fileIndexing->pagetypings()
-                        ->whereNull('qc_reviewed_at')
-                        ->exists();
+                $hasFailedPages = DB::connection('sqlsrv')->table('pagetypings')
+                    ->where('file_indexing_id', $fileIndexingId)
+                    ->where('qc_status', 'failed')
+                    ->exists();
+                
+                $allPagesReviewed = !DB::connection('sqlsrv')->table('pagetypings')
+                    ->where('file_indexing_id', $fileIndexingId)
+                    ->whereNull('qc_reviewed_at')
+                    ->exists();
 
-                    $fileIndexing->update([
-                        'has_qc_issues' => $hasFailedPages,
+                DB::connection('sqlsrv')->table('file_indexings')
+                    ->where('id', $fileIndexingId)
+                    ->update([
+                        'has_qc_issues' => $hasFailedPages ? 1 : 0,
                         'workflow_status' => $allPagesReviewed && !$hasFailedPages ? 'qc_passed' : 'pagetyped',
                     ]);
-
-                    // Update file tracking
-                    $tracking = FileTracking::where('file_indexing_id', $fileIndexingId)->first();
-                    if ($tracking) {
-                        if ($allPagesReviewed && !$hasFailedPages) {
-                            $tracking->updateStatus('qc_passed', 'All pages passed QC review');
-                        } elseif ($hasFailedPages) {
-                            $tracking->updateStatus('qc_failed', 'Some pages failed QC review');
-                        }
-                        
-                        $tracking->addMovementEntry([
-                            'action' => 'qc_review',
-                            'qc_status' => $qcStatus,
-                            'pages_reviewed' => count($pageTypingIds),
-                            'notes' => $notes,
-                        ]);
-                    }
-                }
             }
 
-            // Log activity
-            UserActivityLog::create([
-                'user_id' => auth()->id(),
-                'action' => 'qc_review',
-                'description' => "Marked {$updatedCount} pages as {$qcStatus} in QC review",
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-                'additional_info' => json_encode([
-                    'page_typing_ids' => $pageTypingIds,
-                    'qc_status' => $qcStatus,
-                    'file_indexing_ids' => $fileIndexingIds->toArray(),
-                    'notes' => $notes,
-                ])
-            ]);
+            // Log activity - Removed due to missing 'action' column in user_activity_logs table
+            // DB::connection('sqlsrv')->table('user_activity_logs')->insert([...]);
 
-            DB::commit();
+            DB::connection('sqlsrv')->commit();
 
             return response()->json([
                 'success' => true,
@@ -450,7 +484,7 @@ class PTQController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            DB::rollBack();
+            DB::connection('sqlsrv')->rollBack();
             
             Log::error('Error marking QC status', [
                 'error' => $e->getMessage(),
@@ -472,7 +506,7 @@ class PTQController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'page_typing_ids' => 'required|array|min:1',
-            'page_typing_ids.*' => 'required|exists:pagetypings,id',
+            'page_typing_ids.*' => 'required|integer',
             'override_note' => 'required|string|max:1000',
         ]);
 
@@ -484,71 +518,45 @@ class PTQController extends Controller
             ], 422);
         }
 
-        DB::beginTransaction();
+        DB::connection('sqlsrv')->beginTransaction();
 
         try {
             $pageTypingIds = $request->page_typing_ids;
             $overrideNote = $request->override_note;
 
-            // Update page typings with override
-            $updatedCount = PageTyping::whereIn('id', $pageTypingIds)
+            // Update page typings with override using SQL Server
+            $updatedCount = DB::connection('sqlsrv')->table('pagetypings')
+                ->whereIn('id', $pageTypingIds)
                 ->update([
                     'qc_status' => 'passed',
-                    'qc_overridden' => true,
+                    'qc_overridden' => 1,
                     'qc_override_note' => $overrideNote,
                     'qc_reviewed_by' => auth()->id(),
                     'qc_reviewed_at' => now(),
-                    'has_qc_issues' => false,
+                    'has_qc_issues' => 0,
                 ]);
 
             // Get affected file indexings and update their status
-            $fileIndexingIds = PageTyping::whereIn('id', $pageTypingIds)
+            $fileIndexingIds = DB::connection('sqlsrv')->table('pagetypings')
+                ->whereIn('id', $pageTypingIds)
                 ->distinct()
                 ->pluck('file_indexing_id');
 
             foreach ($fileIndexingIds as $fileIndexingId) {
-                $fileIndexing = FileIndexing::find($fileIndexingId);
-                if ($fileIndexing) {
-                    $allPagesReviewed = !$fileIndexing->pagetypings()
-                        ->whereNull('qc_reviewed_at')
-                        ->exists();
+                $allPagesReviewed = !DB::connection('sqlsrv')->table('pagetypings')
+                    ->where('file_indexing_id', $fileIndexingId)
+                    ->whereNull('qc_reviewed_at')
+                    ->exists();
 
-                    $fileIndexing->update([
-                        'has_qc_issues' => false,
+                DB::connection('sqlsrv')->table('file_indexings')
+                    ->where('id', $fileIndexingId)
+                    ->update([
+                        'has_qc_issues' => 0,
                         'workflow_status' => $allPagesReviewed ? 'qc_passed' : 'pagetyped',
                     ]);
-
-                    // Update file tracking
-                    $tracking = FileTracking::where('file_indexing_id', $fileIndexingId)->first();
-                    if ($tracking) {
-                        if ($allPagesReviewed) {
-                            $tracking->updateStatus('qc_passed', 'QC completed with override');
-                        }
-                        
-                        $tracking->addMovementEntry([
-                            'action' => 'qc_override',
-                            'pages_overridden' => count($pageTypingIds),
-                            'override_note' => $overrideNote,
-                        ]);
-                    }
-                }
             }
 
-            // Log activity
-            UserActivityLog::create([
-                'user_id' => auth()->id(),
-                'action' => 'qc_override',
-                'description' => "Overrode QC status for {$updatedCount} pages",
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-                'additional_info' => json_encode([
-                    'page_typing_ids' => $pageTypingIds,
-                    'file_indexing_ids' => $fileIndexingIds->toArray(),
-                    'override_note' => $overrideNote,
-                ])
-            ]);
-
-            DB::commit();
+            DB::connection('sqlsrv')->commit();
 
             return response()->json([
                 'success' => true,
@@ -560,7 +568,7 @@ class PTQController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            DB::rollBack();
+            DB::connection('sqlsrv')->rollBack();
             
             Log::error('Error overriding QC status', [
                 'error' => $e->getMessage(),
@@ -584,21 +592,27 @@ class PTQController extends Controller
             $dateFrom = $request->get('date_from', now()->subDays(30)->format('Y-m-d'));
             $dateTo = $request->get('date_to', now()->format('Y-m-d'));
 
-            // Overall QC statistics
+            // Overall QC statistics using SQL Server
             $stats = [
-                'total_pages_reviewed' => PageTyping::whereBetween('qc_reviewed_at', [$dateFrom, $dateTo])
+                'total_pages_reviewed' => DB::connection('sqlsrv')->table('pagetypings')
+                    ->whereBetween('qc_reviewed_at', [$dateFrom, $dateTo])
                     ->whereNotNull('qc_reviewed_at')
                     ->count(),
-                'passed_pages' => PageTyping::whereBetween('qc_reviewed_at', [$dateFrom, $dateTo])
+                'passed_pages' => DB::connection('sqlsrv')->table('pagetypings')
+                    ->whereBetween('qc_reviewed_at', [$dateFrom, $dateTo])
                     ->where('qc_status', 'passed')
                     ->count(),
-                'failed_pages' => PageTyping::whereBetween('qc_reviewed_at', [$dateFrom, $dateTo])
+                'failed_pages' => DB::connection('sqlsrv')->table('pagetypings')
+                    ->whereBetween('qc_reviewed_at', [$dateFrom, $dateTo])
                     ->where('qc_status', 'failed')
                     ->count(),
-                'overridden_pages' => PageTyping::whereBetween('qc_reviewed_at', [$dateFrom, $dateTo])
-                    ->where('qc_overridden', true)
+                'overridden_pages' => DB::connection('sqlsrv')->table('pagetypings')
+                    ->whereBetween('qc_reviewed_at', [$dateFrom, $dateTo])
+                    ->where('qc_overridden', 1)
                     ->count(),
-                'pending_pages' => PageTyping::whereNull('qc_reviewed_at')->count(),
+                'pending_pages' => DB::connection('sqlsrv')->table('pagetypings')
+                    ->whereNull('qc_reviewed_at')
+                    ->count(),
             ];
 
             return response()->json([

@@ -501,8 +501,12 @@ Route::get('/programmes/payments/filter', [App\Http\Controllers\ProgrammesContro
 
 // Payment action menu routes
 Route::get('/programmes/payments/initial-bill-receipt/{fileNo}', [App\Http\Controllers\ProgrammesController::class, 'getInitialBillReceipt'])->name('programmes.payments.initial-bill-receipt');
-Route::get('/programmes/payments/better-bill-reference/{fileNo}', [App\Http\Controllers\ProgrammesController::class, 'getBetterBillReference'])->name('programmes.payments.better-bill-reference');
-Route::post('/programmes/payments/save-better-bill-receipt', [App\Http\Controllers\ProgrammesController::class, 'saveBetterBillReceipt'])->name('programmes.payments.save-better-bill-receipt');
+Route::get('/programmes/payments/betterment-bill-reference/{fileNo}', [App\Http\Controllers\ProgrammesController::class, 'getBettermentBillReference'])->name('programmes.payments.betterment-bill-reference');
+Route::post('/programmes/payments/save-betterment-bill-receipt', [App\Http\Controllers\ProgrammesController::class, 'saveBettermentBillReceipt'])->name('programmes.payments.save-betterment-bill-receipt');
+
+// Unit application action menu routes
+Route::get('/programmes/payments/bill-balance-reference/{fileNo}', [App\Http\Controllers\ProgrammesController::class, 'getBillBalanceReference'])->name('programmes.payments.bill-balance-reference');
+Route::post('/programmes/payments/save-bill-balance-receipt', [App\Http\Controllers\ProgrammesController::class, 'saveBillBalanceReceipt'])->name('programmes.payments.save-bill-balance-receipt');
 
 Route::get('/programmes/memo/{id}', 'App\Http\Controllers\ProgrammeController@viewMemo')->name('programmes.view_memo_detail');
 //landing page
@@ -813,7 +817,8 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'propertycard'], func
     Route::get('/capture', [App\Http\Controllers\PropertyCardController::class, 'capture'])->name('propertycard.capture');
 
     // AI Assistant routes
-    Route::get('/ai', [App\Http\Controllers\PropertyCardAiController::class, 'index'])->name('propertycard.ai');
+    Route::get('/ai', [App\Http\Controllers\PropertyCardController::class, 'aiIndex'])->name('propertycard.ai');
+    Route::post('/ai/save', [App\Http\Controllers\PropertyCardController::class, 'saveAiPropertyRecord'])->name('propertycard.ai.save');
 });
 
 // File Indexing routes - Dynamic API endpoints
@@ -906,6 +911,16 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'ptq-control'], funct
     Route::post('/archive-file', [App\Http\Controllers\PTQController::class, 'archiveFile'])->name('ptq-control.archive-file');
     Route::get('/qc-audit-trail/{fileIndexingId}', [App\Http\Controllers\PTQController::class, 'getQCAuditTrail'])->name('ptq-control.qc-audit-trail');
     Route::get('/qc-stats', [App\Http\Controllers\PTQController::class, 'getQCStats'])->name('ptq-control.qc-stats');
+});
+
+// Unindexed Scanning Routes
+Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'unindexed-scanning'], function () {
+    Route::get('/', [App\Http\Controllers\UnindexedScanningController::class, 'index'])->name('unindexed-scanning.index');
+    Route::post('/upload', [App\Http\Controllers\UnindexedScanningController::class, 'upload'])->name('unindexed-scanning.upload');
+    Route::post('/process-ocr', [App\Http\Controllers\UnindexedScanningController::class, 'processOcr'])->name('unindexed-scanning.process-ocr');
+    Route::post('/create-indexing-entry', [App\Http\Controllers\UnindexedScanningController::class, 'createIndexingEntry'])->name('unindexed-scanning.create-indexing-entry');
+    Route::get('/files', [App\Http\Controllers\UnindexedScanningController::class, 'getUnindexedFiles'])->name('unindexed-scanning.files');
+    Route::delete('/files/{id}', [App\Http\Controllers\UnindexedScanningController::class, 'deleteUnindexedFile'])->name('unindexed-scanning.delete-file');
 });
 
 Route::get('/test-serial-api', function() {

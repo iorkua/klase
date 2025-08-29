@@ -1734,4 +1734,220 @@ class ProgrammesController extends Controller
         }
     }
 
+    /**
+     * Get bill balance reference ID for unit applications
+     */
+    public function getBillBalanceReference($fileNo)
+    {
+        try {
+            // Check in final_bills table for bill balance - only for unit applications
+            $billBalanceRecord = DB::connection('sqlsrv')->table('final_bills')
+                ->leftJoin('subapplications', 'final_bills.sub_application_id', '=', 'subapplications.id')
+                ->where('subapplications.fileno', $fileNo)
+                ->whereNotNull('final_bills.bill_balance')
+                ->select(
+                    'final_bills.id',
+                    'final_bills.bill_balance',
+                    'final_bills.created_at',
+                    'final_bills.bill_status'
+                )
+                ->first();
+
+            if ($billBalanceRecord) {
+                // Generate reference ID based on file number and bill ID
+                $referenceId = 'BBL-' . strtoupper($fileNo) . '-' . date('Ymd') . '-' . str_pad($billBalanceRecord->id, 4, '0', STR_PAD_LEFT);
+
+                return response()->json([
+                    'success' => true,
+                    'reference_id' => $referenceId,
+                    'amount' => floatval($billBalanceRecord->bill_balance ?? 0),
+                    'generated_date' => $billBalanceRecord->created_at ? 
+                        \Carbon\Carbon::parse($billBalanceRecord->created_at)->format('Y-m-d') : 'N/A',
+                    'status' => $billBalanceRecord->bill_status ?? 'Pending'
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'No bill balance reference found for file number: ' . $fileNo
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving bill balance reference: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Save bill balance receipt for unit applications
+     */
+    public function saveBillBalanceReceipt(Request $request)
+    {
+        try {
+            // Validate the request
+            $request->validate([
+                'file_no' => 'required|string',
+                'receipt_number' => 'required|string',
+                'receipt_date' => 'required|date',
+                'notes' => 'nullable|string'
+            ]);
+
+            $fileNo = $request->input('file_no');
+
+            // Find the final_bills record for this file number - only check subapplications
+            $billRecord = DB::connection('sqlsrv')->table('final_bills')
+                ->leftJoin('subapplications', 'final_bills.sub_application_id', '=', 'subapplications.id')
+                ->where('subapplications.fileno', $fileNo)
+                ->whereNotNull('final_bills.bill_balance')
+                ->select('final_bills.id')
+                ->first();
+
+            if (!$billRecord) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No bill balance found for file number: ' . $fileNo
+                ]);
+            }
+
+            // Update the final_bills record with receipt information
+            $updateData = [
+                'Bill_Balance_receipt' => $request->input('receipt_number'),
+                'Bill_Balance_receipt_date' => $request->input('receipt_date'),
+                'Bill_Balance_receipt_notes' => $request->input('notes'),
+                'updated_at' => now()
+            ];
+
+            DB::connection('sqlsrv')->table('final_bills')
+                ->where('id', $billRecord->id)
+                ->update($updateData);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Bill balance receipt saved successfully'
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error saving bill balance receipt: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get betterment bill reference ID (updated from getBetterBillReference)
+     */
+    public function getBettermentBillReference($fileNo)
+    {
+        try {
+            // Check in billing table for betterment charges - only for primary applications
+            $bettermentBill = DB::connection('sqlsrv')->table('billing')
+                ->leftJoin('mother_applications', 'billing.application_id', '=', 'mother_applications.id')
+                ->where('mother_applications.fileno', $fileNo)
+                ->whereNotNull('billing.Betterment_Charges')
+                ->select(
+                    'billing.id',
+                    'billing.Betterment_Charges',
+                    'billing.created_at',
+                    'billing.Payment_Status'
+                )
+                ->first();
+
+            if ($bettermentBill) {
+                // Generate reference ID based on file number and billing ID
+                $referenceId = 'BTR-' . strtoupper($fileNo) . '-' . date('Ymd') . '-' . str_pad($bettermentBill->id, 4, '0', STR_PAD_LEFT);
+
+                return response()->json([
+                    'success' => true,
+                    'reference_id' => $referenceId,
+                    'amount' => floatval($bettermentBill->Betterment_Charges ?? 0),
+                    'generated_date' => $bettermentBill->created_at ? 
+                        \Carbon\Carbon::parse($bettermentBill->created_at)->format('Y-m-d') : 'N/A',
+                    'status' => $bettermentBill->Payment_Status ?? 'Pending'
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'No betterment bill reference found for file number: ' . $fileNo
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving betterment bill reference: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Save betterment bill receipt (updated from saveBetterBillReceipt)
+     */
+    public function saveBettermentBillReceipt(Request $request)
+    {
+        try {
+            // Validate the request
+            $request->validate([
+                'file_no' => 'required|string',
+                'receipt_number' => 'required|string',
+                'receipt_date' => 'required|date',
+                'notes' => 'nullable|string'
+            ]);
+
+            $fileNo = $request->input('file_no');
+
+            // Find the billing record for this file number - only check mother_applications
+            $billingRecord = DB::connection('sqlsrv')->table('billing')
+                ->leftJoin('mother_applications', 'billing.application_id', '=', 'mother_applications.id')
+                ->where('mother_applications.fileno', $fileNo)
+                ->whereNotNull('billing.Betterment_Charges')
+                ->select('billing.id')
+                ->first();
+
+            if (!$billingRecord) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No betterment bill found for file number: ' . $fileNo
+                ]);
+            }
+
+            // Update the billing record with receipt information
+            $updateData = [
+                'Betterment_receipt' => $request->input('receipt_number'),
+                'Betterment_receipt_date' => $request->input('receipt_date'),
+                'Betterment_receipt_notes' => $request->input('notes'),
+                'updated_at' => now()
+            ];
+
+            DB::connection('sqlsrv')->table('billing')
+                ->where('id', $billingRecord->id)
+                ->update($updateData);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Betterment bill receipt saved successfully'
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error saving betterment bill receipt: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

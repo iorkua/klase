@@ -521,4 +521,119 @@ public function search(Request $request)
             return response()->json(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()]);
         }
     }
+
+    public function aiIndex()
+    {
+        return view('propertycard.ai.index');
+    }
+
+    public function saveAiPropertyRecord(Request $request)
+    {
+        \Log::info('AI Property Record save request received:', $request->all());
+
+        try {
+            // Validate and sanitize the input
+            $validatedData = $request->validate([
+                'mlsfNo'                     => 'nullable|string|max:255',
+                'kangisFileNo'               => 'nullable|string|max:255',
+                'NewKANGISFileno'            => 'nullable|string|max:255',
+                'plotNo'                     => 'nullable|string|max:255',
+                'blockNo'                    => 'nullable|string|max:255',
+                'houseNo'                    => 'nullable|string|max:255',
+                'streetName'                 => 'nullable|string|max:255',
+                'districtName'               => 'nullable|string|max:255',
+                'lgaName'                    => 'nullable|string|max:255',
+                'layoutName'                 => 'nullable|string|max:255',
+                'property_description'       => 'nullable|string',
+                'originalAllottee'           => 'nullable|string|max:255',
+                'currentAllottee'            => 'nullable|string|max:255',
+                'addressOfOriginalAllottee'  => 'nullable|string|max:255',
+                'addressOfCurrentAllottee'   => 'nullable|string|max:255',
+                'oldTitleSerialNo'           => 'nullable|string|max:255',
+                'oldTitlePageNo'             => 'nullable|string|max:255',
+                'oldTitleVolumeNo'           => 'nullable|string|max:255',
+                'deedsDate'                  => 'nullable|date',
+                'certificateDate'            => 'nullable|date',
+                'titleIssuedYear'            => 'nullable|string|max:255',
+                'currentYearTitleOwned'      => 'nullable|string|max:255',
+                'phoneNo'                    => 'nullable|string|max:255',
+                'landUse'                    => 'nullable|string|max:255',
+                'specifically'               => 'nullable|string|max:255',
+                'tenancy'                    => 'nullable|string|max:255',
+                'areaInHectares'             => 'nullable|string|max:255',
+                'titleStatus'                => 'nullable|string|max:255',
+                // Instruments data
+                'instruments'                => 'nullable|array',
+                'instruments.*.type'         => 'nullable|string|max:255',
+                'instruments.*.number'       => 'nullable|string|max:255',
+                'instruments.*.date'         => 'nullable|date',
+                'instruments.*.parties'      => 'nullable|string|max:255',
+                'instruments.*.consideration' => 'nullable|string|max:255',
+            ]);
+
+            // Handle street name and district name "Other" options
+            if ($request->filled('streetNameOther') && $request->streetName === 'Other') {
+                $validatedData['streetName'] = $request->streetNameOther;
+            }
+            
+            if ($request->filled('districtNameOther') && $request->districtName === 'Other') {
+                $validatedData['districtName'] = $request->districtNameOther;
+            }
+
+            // Create the property record
+            $propertyRecord = new PropertyRecord();
+            
+            // Fill the basic property data
+            foreach ($validatedData as $key => $value) {
+                if ($key !== 'instruments' && $propertyRecord->isFillable($key)) {
+                    $propertyRecord->$key = $value;
+                }
+            }
+
+            // Set additional metadata for AI records
+            $propertyRecord->source = 'ai_extraction';
+            $propertyRecord->created_by = Auth::id() ?? 1; // Default to user ID 1 if not authenticated
+
+            // Save the property record
+            $propertyRecord->save();
+
+            // Handle instruments data if provided
+            if (!empty($validatedData['instruments'])) {
+                foreach ($validatedData['instruments'] as $instrument) {
+                    if (!empty($instrument['type']) || !empty($instrument['number'])) {
+                        // Create instrument record (you may need to create an instruments table)
+                        // For now, we'll store it as JSON in a field or create separate records
+                        // This depends on your database structure
+                        
+                        \Log::info('Instrument data:', $instrument);
+                    }
+                }
+            }
+
+            \Log::info('AI Property Record saved successfully with ID: ' . $propertyRecord->id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Property record saved successfully',
+                'record_id' => $propertyRecord->id
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation error in AI Property Record save:', $e->errors());
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            \Log::error('Error saving AI Property Record: ' . $e->getMessage());
+            \Log::error('Error trace: ' . $e->getTraceAsString());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while saving the record: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
