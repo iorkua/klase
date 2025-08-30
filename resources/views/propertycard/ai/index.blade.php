@@ -466,6 +466,24 @@
                     this.pageNo = value;
                 });
                 
+                // Enable only the active file-number mode (smart vs manual)
+                const syncFileNoMode = () => {
+                    const smartEl = document.getElementById('smart-fileno-container');
+                    const manualEl = document.getElementById('manual-fileno-container');
+                    const setDisabled = (root, disabled) => {
+                        if (!root) return;
+                        root.querySelectorAll('input[name], select[name], textarea[name]').forEach(el => {
+                            el.disabled = disabled;
+                        });
+                    };
+                    // If manual is active, disable smart inputs; otherwise disable manual inputs
+                    setDisabled(smartEl, this.showManualEntry);
+                    setDisabled(manualEl, !this.showManualEntry);
+                };
+                this.$watch('showManualEntry', () => syncFileNoMode());
+                // Initial sync
+                setTimeout(syncFileNoMode, 0);
+                
                 // Watch for property details changes and update description
                 this.$watch('houseNo', () => {
                     this.updatePropertyDescription();
@@ -897,12 +915,12 @@
             <input type="hidden" name="titleStatus" id="title-status" />
             <input type="hidden" name="instruments" id="instruments-data" />
             
-            <!-- Additional hidden fields for file number handling -->
-            <input type="hidden" name="fileno" id="fileno" />
-            <input type="hidden" name="file-prefix" id="file-prefix" />
-            <input type="hidden" name="file-serial-no" id="file-serial-no" />
-            <input type="hidden" name="complete-file-no" id="complete-file-no" />
-            <input type="hidden" name="file-number-type" id="file-number-type" />
+            <!-- Additional hidden fields for file number handling (keep IDs for JS, avoid name collisions) -->
+            <!-- Removed duplicate fileno field to prevent overriding smart selector value -->
+            <input type="hidden" id="file-prefix" />
+            <input type="hidden" id="file-serial-no" />
+            <input type="hidden" id="complete-file-no" />
+            <input type="hidden" id="file-number-type" />
             
             <!-- Additional hidden fields for location data -->
             <input type="hidden" name="otherStreetName" id="other-street-name" />

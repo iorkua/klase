@@ -2,7 +2,7 @@
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-<div class="smart-fileno-selector" x-data="smartFilenoSelector()">
+<div class="smart-fileno-selector">
     <!-- Hidden input for the main fileno field that gets submitted -->
     <input type="hidden" id="fileno" name="fileno" value="">
     <!-- Hidden inputs to mirror manual entry names so both modes are identical -->
@@ -54,7 +54,7 @@
         </select>
         <p class="text-xs text-gray-500 mt-1">Search and select file numbers from fileNumber database</p>
         
-        <!-- Selected File Number Display (in dropdown mode) -->
+        <!-- Selected File Number Display -->
         <div id="selected-fileno-display" class="hidden mt-3">
             <div class="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-4 shadow-sm">
                 <div class="flex items-center justify-between">
@@ -91,235 +91,152 @@
 </div>
 
 <script>
-function smartFilenoSelector() {
-    return {
-        selectedFileno: '',
-        selectedApplication: null,
+// Simple, direct JavaScript implementation
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Smart File Selector Loading...');
+    
+    // Wait for jQuery and Select2 to load
+    let initAttempts = 0;
+    function tryInitialize() {
+        initAttempts++;
         
-        init() {
-            console.log('Smart CT Fileno Selector initialized');
-            // Wait for DOM to be fully loaded and jQuery to be available
-            this.$nextTick(() => {
-                setTimeout(() => {
-                    this.initializeSelect2();
-                }, 100);
-            });
-        },
-        
-        initializeSelect2() {
-            // Check if jQuery and Select2 are available
-            if (typeof $ === 'undefined') {
-                console.error('jQuery is not loaded');
+        if (typeof $ === 'undefined' || typeof $.fn.select2 === 'undefined') {
+            if (initAttempts < 20) {
+                console.log('Waiting for jQuery/Select2... attempt', initAttempts);
+                setTimeout(tryInitialize, 200);
+                return;
+            } else {
+                console.error('jQuery or Select2 not loaded after 4 seconds');
                 return;
             }
-            
-            if (typeof $.fn.select2 === 'undefined') {
-                console.error('Select2 is not loaded');
-                return;
-            }
-            
-            const selectElement = $('#fileno-select');
-            if (!selectElement.length) {
-                console.error('Select element #fileno-select not found');
-                return;
-            }
-            
-            // Store reference to Alpine component
-            const alpineComponent = this;
-            
-            // Destroy existing Select2 instance if it exists
-            if (selectElement.hasClass('select2-hidden-accessible')) {
-                selectElement.select2('destroy');
-            }
-            
-            try {
-                // Initialize Select2 with search functionality
-                selectElement.select2({
-                    placeholder: 'Search and select file number...',
-                    allowClear: true,
-                    width: '100%',
-                    minimumInputLength: 1,
-                    // Remove dropdownParent to let it append to body automatically
-                    templateResult: function(option) {
-                        if (!option.id) {
-                            return option.text;
-                        }
-                        
-                        // Custom template for dropdown options
-                        const fileno = option.element.dataset.fileno || '';
-                        
-                        var $option = $(
-                            '<div class="select2-result-option">' +
-                                '<div class="font-medium text-blue-800">' + fileno + '</div>' +
-                            '</div>'
-                        );
-                        return $option;
-                    },
-                    templateSelection: function(option) {
-                        if (!option.id) {
-                            return option.text;
-                        }
-                        return option.element.dataset.fileno || option.text;
-                    }
-                });
-                
-                // Handle selection change - use stored reference
-                selectElement.on('select2:select', function(e) {
-                    const selectedOption = e.params.data.element;
-                    if (selectedOption) {
-                        console.log('Select2 selection triggered', selectedOption);
-                        
-                        const fileno = selectedOption.getAttribute('data-fileno') || '';
-                        console.log('Selected fileno:', fileno);
-                        
-                        // Update Alpine component properties
-                        alpineComponent.selectedFileno = fileno;
-                        alpineComponent.selectedApplication = {
-                            id: selectedOption.getAttribute('data-id'),
-                            fileno: fileno,
-                            kangisFileNo: selectedOption.getAttribute('data-kangis-fileno'),
-                            mlsfNo: selectedOption.getAttribute('data-mls-fileno'),
-                            NewKANGISFileNo: selectedOption.getAttribute('data-newkangis-fileno')
-                        };
-                        
-                        console.log('Alpine component application set to:', alpineComponent.selectedApplication);
-                        
-                        // Call handleSelection directly
-                        alpineComponent.handleSelection();
-                    }
-                });
-                
-                // Handle clear selection - use stored reference
-                selectElement.on('select2:clear', function() {
-                    console.log('Select2 clear triggered');
-                    alpineComponent.clearSelection();
-                });
-                
-                console.log('Select2 initialized successfully');
-                
-            } catch (error) {
-                console.error('Error initializing Select2:', error);
-            }
-        },
-        
-        handleSelection() {
-            console.log('handleSelection called with application:', this.selectedApplication);
-            
-            // Set main fileno input
-            const filenoInput = document.getElementById('fileno');
-            if (filenoInput) {
-                filenoInput.value = this.selectedFileno;
-                console.log('Set fileno to:', this.selectedFileno);
-            }
-
-            // Mirror fields used by manual entry so backend receives identical names
-            const mlsHidden = document.getElementById('mlsFNo');
-            const kangisHidden = document.getElementById('kangisFileNo');
-            const newKangisHidden = document.getElementById('NewKANGISFileno');
-            const activeTabHidden = document.getElementById('activeFileTab');
-            
-            // Clear all first
-            if (mlsHidden) mlsHidden.value = '';
-            if (kangisHidden) kangisHidden.value = '';
-            if (newKangisHidden) newKangisHidden.value = '';
-            
-            // Populate the specific file number field based on what we have
-            if (this.selectedApplication?.mlsfNo && this.selectedApplication.mlsfNo.trim() !== '') {
-                if (mlsHidden) mlsHidden.value = this.selectedApplication.mlsfNo;
-                if (activeTabHidden) activeTabHidden.value = 'mls';
-                console.log('Set MLS file number:', this.selectedApplication.mlsfNo);
-            } else if (this.selectedApplication?.kangisFileNo && this.selectedApplication.kangisFileNo.trim() !== '') {
-                if (kangisHidden) kangisHidden.value = this.selectedApplication.kangisFileNo;
-                if (activeTabHidden) activeTabHidden.value = 'kangis';
-                console.log('Set KANGIS file number:', this.selectedApplication.kangisFileNo);
-            } else if (this.selectedApplication?.NewKANGISFileNo && this.selectedApplication.NewKANGISFileNo.trim() !== '') {
-                if (newKangisHidden) newKangisHidden.value = this.selectedApplication.NewKANGISFileNo;
-                if (activeTabHidden) activeTabHidden.value = 'newkangis';
-                console.log('Set New KANGIS file number:', this.selectedApplication.NewKANGISFileNo);
-            }
-            
-            // Debug log all hidden field values
-            console.log('Hidden field values after selection:');
-            console.log('fileno:', filenoInput?.value);
-            console.log('mlsFNo:', mlsHidden?.value);
-            console.log('kangisFileNo:', kangisHidden?.value);
-            console.log('NewKANGISFileno:', newKangisHidden?.value);
-            console.log('activeFileTab:', activeTabHidden?.value);
-            
-            // Show selected display
-            const selectedDisplay = document.getElementById('selected-fileno-display');
-            const selectedText = document.getElementById('selected-fileno-text');
-            const fileTypeBadge = document.getElementById('file-type-badge');
-            
-            if (selectedText) selectedText.textContent = this.selectedFileno;
-            if (fileTypeBadge) fileTypeBadge.textContent = `✓ Selected`;
-            if (selectedDisplay) selectedDisplay.classList.remove('hidden');
-            
-            // Dispatch event for other components
-            this.$dispatch('ct-fileno-selected', {
-                fileno: this.selectedFileno,
-                application: this.selectedApplication
-            });
-            
-            console.log('CT File selected:', this.selectedApplication);
-        },
-        
-        clearSelection() {
-            this.selectedFileno = '';
-            this.selectedApplication = null;
-            
-            // Clear hidden input
-            const filenoInput = document.getElementById('fileno');
-            if (filenoInput) {
-                filenoInput.value = '';
-            }
-            const mlsHidden = document.getElementById('mlsFNo');
-            const kangisHidden = document.getElementById('kangisFileNo');
-            const newKangisHidden = document.getElementById('NewKANGISFileno');
-            const activeTabHidden = document.getElementById('activeFileTab');
-            if (mlsHidden) mlsHidden.value = '';
-            if (kangisHidden) kangisHidden.value = '';
-            if (newKangisHidden) newKangisHidden.value = '';
-            if (activeTabHidden) activeTabHidden.value = '';
-            
-            // Hide selected display
-            const selectedDisplay = document.getElementById('selected-fileno-display');
-            if (selectedDisplay) selectedDisplay.classList.add('hidden');
-            
-            // Clear dropdown
-            const filenoSelect = document.getElementById('fileno-select');
-            if (filenoSelect) {
-                filenoSelect.value = '';
-            }
-            
-            // Dispatch clear event
-            this.$dispatch('ct-fileno-cleared');
         }
+        
+        initializeFileSelector();
     }
+    
+    // Start initialization
+    setTimeout(tryInitialize, 100);
+});
+
+function initializeFileSelector() {
+    console.log('Initializing File Selector...');
+    
+    const selectElement = $('#fileno-select');
+    if (!selectElement.length) {
+        console.error('Select element not found');
+        return;
+    }
+    
+    // Destroy existing Select2 if present
+    if (selectElement.hasClass('select2-hidden-accessible')) {
+        selectElement.select2('destroy');
+    }
+    
+    // Initialize Select2
+    selectElement.select2({
+        placeholder: 'Search and select file number...',
+        allowClear: true,
+        width: '100%',
+        minimumInputLength: 1
+    });
+    
+    // Handle selection change
+    selectElement.on('select2:select', function(e) {
+        console.log('File number selected!');
+        
+        const selectedOption = e.params.data.element;
+        handleFileSelection(selectedOption);
+    });
+    
+    // Handle clear
+    selectElement.on('select2:clear', function() {
+        console.log('Selection cleared');
+        clearFileSelection();
+    });
+    
+    // Clear button
+    $('#clear-selection').on('click', function() {
+        selectElement.val(null).trigger('change');
+        clearFileSelection();
+    });
+    
+    console.log('File Selector initialized successfully');
 }
 
-// Initialize clear button functionality when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
-    // Delay the initialization to ensure all scripts are loaded
-    setTimeout(() => {
-        const clearBtn = document.getElementById('clear-selection');
-        if (clearBtn) {
-            clearBtn.addEventListener('click', function() {
-                // Check if jQuery and Select2 are available
-                if (typeof $ !== 'undefined' && typeof $.fn.select2 !== 'undefined') {
-                    // Clear Select2 selection
-                    $('#fileno-select').val(null).trigger('change');
-                }
-                
-                // Trigger Alpine.js clear method
-                const component = document.querySelector('[x-data*="smartFilenoSelector"]');
-                if (component && component._x_dataStack) {
-                    component._x_dataStack[0].clearSelection();
-                }
-            });
-        }
-    }, 200);
-});
+function handleFileSelection(selectedOption) {
+    if (!selectedOption) {
+        console.error('No option selected');
+        return;
+    }
+    
+    console.log('Processing selection:', selectedOption);
+    
+    // Get file number data
+    const fileno = selectedOption.getAttribute('data-fileno') || '';
+    const mlsFileno = selectedOption.getAttribute('data-mls-fileno') || '';
+    const kangisFileno = selectedOption.getAttribute('data-kangis-fileno') || '';
+    const newKangisFileno = selectedOption.getAttribute('data-newkangis-fileno') || '';
+    
+    console.log('File number data:', {
+        fileno: fileno,
+        mlsFileno: mlsFileno,
+        kangisFileno: kangisFileno,
+        newKangisFileno: newKangisFileno
+    });
+    
+    // Clear all hidden fields first
+    document.getElementById('fileno').value = '';
+    document.getElementById('mlsFNo').value = '';
+    document.getElementById('kangisFileNo').value = '';
+    document.getElementById('NewKANGISFileno').value = '';
+    document.getElementById('activeFileTab').value = '';
+    
+    // Set the main fileno field
+    document.getElementById('fileno').value = fileno;
+    
+    // Set the appropriate specific field and active tab
+    if (mlsFileno && mlsFileno.trim() !== '') {
+        document.getElementById('mlsFNo').value = mlsFileno;
+        document.getElementById('activeFileTab').value = 'mls';
+        console.log('Set MLS file number:', mlsFileno);
+    } else if (kangisFileno && kangisFileno.trim() !== '') {
+        document.getElementById('kangisFileNo').value = kangisFileno;
+        document.getElementById('activeFileTab').value = 'kangis';
+        console.log('Set KANGIS file number:', kangisFileno);
+    } else if (newKangisFileno && newKangisFileno.trim() !== '') {
+        document.getElementById('NewKANGISFileno').value = newKangisFileno;
+        document.getElementById('activeFileTab').value = 'newkangis';
+        console.log('Set New KANGIS file number:', newKangisFileno);
+    }
+    
+    // Show selection display
+    document.getElementById('selected-fileno-text').textContent = fileno;
+    document.getElementById('selected-fileno-display').classList.remove('hidden');
+    
+    // Debug: Log all field values
+    console.log('Final field values:');
+    console.log('fileno:', document.getElementById('fileno').value);
+    console.log('mlsFNo:', document.getElementById('mlsFNo').value);
+    console.log('kangisFileNo:', document.getElementById('kangisFileNo').value);
+    console.log('NewKANGISFileno:', document.getElementById('NewKANGISFileno').value);
+    console.log('activeFileTab:', document.getElementById('activeFileTab').value);
+}
+
+function clearFileSelection() {
+    console.log('Clearing file selection');
+    
+    // Clear all hidden fields
+    document.getElementById('fileno').value = '';
+    document.getElementById('mlsFNo').value = '';
+    document.getElementById('kangisFileNo').value = '';
+    document.getElementById('NewKANGISFileno').value = '';
+    document.getElementById('activeFileTab').value = '';
+    
+    // Hide selection display
+    document.getElementById('selected-fileno-display').classList.add('hidden');
+    
+    console.log('File selection cleared');
+}
 </script>
 
 <style>
@@ -354,10 +271,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .select2-container--default .select2-results__option--highlighted[aria-selected] {
     background-color: #3b82f6;
-}
-
-.select2-result-option {
-    padding: 4px 0;
 }
 
 .select2-container--default .select2-selection--single:focus {
