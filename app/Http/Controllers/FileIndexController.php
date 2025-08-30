@@ -1887,4 +1887,209 @@ class FileIndexController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get selected files data for AI insights (AJAX endpoint)
+     */
+    public function getSelectedFilesForAiInsights(Request $request)
+    {
+        try {
+            $fileIds = $request->get('files', []);
+            
+            if (empty($fileIds)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No file IDs provided'
+                ], 422);
+            }
+
+            if (is_string($fileIds)) {
+                $fileIds = explode(',', $fileIds);
+            }
+
+            // Get pending files data for AI insights
+            $selectedFilesData = [];
+
+            foreach ($fileIds as $fileId) {
+                // Parse the fileId format (e.g., "mother-123" or "sub-456")
+                if (strpos($fileId, '-') !== false) {
+                    [$sourceTable, $applicationId] = explode('-', $fileId, 2);
+                    
+                    if ($sourceTable === 'mother') {
+                        $application = DB::connection('sqlsrv')
+                            ->table('mother_applications')
+                            ->where('id', $applicationId)
+                            ->first();
+                            
+                        if ($application) {
+                            $selectedFilesData[] = [
+                                'id' => $fileId,
+                                'file_number' => $application->np_fileno ?? $application->fileno ?? "APP-{$application->id}",
+                                'applicant_name' => $this->getApplicantNameFromRecord($application),
+                                'document_type' => $this->getDocumentTypeFromLandUse($application->land_use ?? 'Residential'),
+                                'land_use' => $application->land_use ?? 'Residential',
+                                'plot_number' => $application->property_plot_no ?? 'PL-' . str_pad(rand(1000, 9999), 4, '0', STR_PAD_LEFT),
+                                'district' => $application->property_district ?? 'Unknown',
+                                'lga' => $application->property_lga ?? 'Kano Municipal',
+                                'confidence' => rand(85, 95), // Simulated AI confidence
+                                'extracted_data' => $this->generateAiExtractedData($application),
+                                'ai_findings' => $this->generateAiFindings(),
+                                'suggested_keywords' => $this->generateSuggestedKeywords($application),
+                                'potential_issues' => $this->generatePotentialIssues($application),
+                            ];
+                        }
+                    } elseif ($sourceTable === 'sub') {
+                        $application = DB::connection('sqlsrv')
+                            ->table('subapplications')
+                            ->leftJoin('mother_applications', 'subapplications.main_application_id', '=', 'mother_applications.id')
+                            ->where('subapplications.id', $applicationId)
+                            ->select([
+                                'subapplications.*',
+                                'mother_applications.land_use',
+                                'mother_applications.property_district',
+                                'mother_applications.property_lga'
+                            ])
+                            ->first();
+                            
+                        if ($application) {
+                            $selectedFilesData[] = [
+                                'id' => $fileId,
+                                'file_number' => $application->fileno ?? "SUB-{$application->id}",
+                                'applicant_name' => $this->getApplicantNameFromRecord($application),
+                                'document_type' => 'Unit Certificate',
+                                'land_use' => $application->land_use ?? 'Residential',
+                                'plot_number' => isset($application->unit_number) && $application->unit_number ? "Unit {$application->unit_number}" : 'Unit TBA',
+                                'district' => $application->property_district ?? 'Unknown',
+                                'lga' => $application->property_lga ?? 'Kano Municipal',
+                                'confidence' => rand(85, 95), // Simulated AI confidence
+                                'extracted_data' => $this->generateAiExtractedData($application),
+                                'ai_findings' => $this->generateAiFindings(),
+                                'suggested_keywords' => $this->generateSuggestedKeywords($application),
+                                'potential_issues' => $this->generatePotentialIssues($application),
+                            ];
+                        }
+                    }
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'selected_files' => $selectedFilesData
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error getting selected files for AI insights', [
+                'file_ids' => $fileIds,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading selected files data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get document type from land use
+     */
+    private function getDocumentTypeFromLandUse($landUse)
+    {
+        $types = [
+            'Residential' => 'Certificate of Occupancy',
+            'Commercial' => 'Commercial Certificate',
+            'Industrial' => 'Industrial Certificate',
+            'Mixed Development' => 'Mixed Use Certificate',
+            'Educational' => 'Educational Use Certificate',
+            'Religious' => 'Religious Use Certificate',
+            'Agricultural' => 'Agricultural Certificate',
+        ];
+
+        return $types[$landUse] ?? 'Certificate of Occupancy';
+    }
+
+    /**
+     * Generate AI extracted data simulation
+     */
+    private function generateAiExtractedData($application)
+    {
+        return [
+            'text_quality' => rand(85, 98),
+            'document_structure' => rand(2, 5) > 3 ? 'Complete sections' : 'Missing sections',
+            'signature_detected' => rand(1, 10) > 6 ? 'Detected' : 'Not detected',
+            'stamp_detected' => rand(1, 10) > 4 ? 'Official stamp detected' : 'No stamp detected',
+            'gis_verification' => rand(1, 10) > 3 ? 'Matched with parcel data' : 'No GIS match found',
+        ];
+    }
+
+    /**
+     * Generate AI findings simulation
+     */
+    private function generateAiFindings()
+    {
+        $findings = [
+            ['label' => 'Text Quality', 'value' => rand(85, 98) . '%'],
+            ['label' => 'Document Structure', 'value' => rand(2, 5) > 3 ? 'Complete sections' : 'Missing sections'],
+            ['label' => 'Signature', 'value' => rand(1, 10) > 6 ? 'Detected' : 'Not detected'],
+            ['label' => 'Stamp', 'value' => rand(1, 10) > 4 ? 'Official stamp detected' : 'No stamp detected'],
+            ['label' => 'GIS Verification', 'value' => rand(1, 10) > 3 ? 'Matched with parcel data' : 'No GIS match found'],
+        ];
+
+        return $findings;
+    }
+
+    /**
+     * Generate suggested keywords simulation
+     */
+    private function generateSuggestedKeywords($application)
+    {
+        $baseKeywords = ['Property', 'Kano State'];
+        
+        $landUse = $application->land_use ?? 'Residential';
+        $district = $application->property_district ?? $application->district ?? '';
+        
+        $keywords = array_merge($baseKeywords, [$landUse]);
+        
+        if ($district) {
+            $keywords[] = $district;
+        }
+
+        // Add document type keyword
+        if ($landUse === 'Residential') {
+            $keywords[] = 'Certificate of Occupancy';
+            $keywords[] = 'Housing';
+        } elseif ($landUse === 'Commercial') {
+            $keywords[] = 'Business';
+            $keywords[] = 'Commercial Certificate';
+        }
+
+        $keywords[] = 'Land Document';
+
+        return array_unique($keywords);
+    }
+
+    /**
+     * Generate potential issues simulation
+     */
+    private function generatePotentialIssues($application)
+    {
+        $possibleIssues = [
+            'Plot boundaries not specified',
+            'Ownership information unclear',
+            'Parcel data needs updating',
+            'Missing signature verification',
+            'Incomplete document sections',
+            'GIS coordinates require validation',
+            'Land use designation needs confirmation',
+            'Title verification pending',
+        ];
+
+        // Randomly select 1-3 issues
+        $numIssues = rand(1, 3);
+        $selectedIssues = array_rand(array_flip($possibleIssues), $numIssues);
+        
+        return is_array($selectedIssues) ? $selectedIssues : [$selectedIssues];
+    }
+
+    // ...existing code...
 }

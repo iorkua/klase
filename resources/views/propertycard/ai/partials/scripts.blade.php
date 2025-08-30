@@ -1,4 +1,3 @@
-
 <script>
       // Global state
       let selectedFile = null;
@@ -77,10 +76,10 @@
           .getElementById("file-number-type")
           .addEventListener("change", handleFileNumberTypeChange);
 
-        // Save record
+        // Save record - handle form submission
         document
-          .getElementById("save-record-btn")
-          .addEventListener("click", handleSaveRecord);
+          .getElementById("property-form")
+          .addEventListener("submit", handleSaveRecord);
       }
 
       async function handleFileChange(event) {
@@ -774,7 +773,7 @@
           /(DEED\s+OF\s+ASSENT)/i,
           /(DEED\s+OF\s+RELEASE)/i,
           /(POWER\s+OF\s+ATTORNEY)/i,
-          /(IRREVOCABLE\s+POWER\s+ATTORNEY)/i,
+          /(IRREVOCABLE\s+POWER\s+OF\s+ATTORNEY)/i,
           /(DEED\s+OF\s+SUB-DIVISION)/i,
           /(DEED\s+OF\s+MERGER)/i,
           /(SURVEY\s+PLAN)/i,
@@ -1781,12 +1780,16 @@
         lucide.createIcons();
       }
 
-      async function handleSaveRecord() {
+      async function handleSaveRecord(event) {
+        event.preventDefault();
+        
         if (!extractedPropertyData) {
-          showToast(
-            "Nothing to save yet. Please run AI extraction first.",
-            "warning"
-          );
+          Swal.fire({
+            icon: 'warning',
+            title: 'No Data to Save',
+            text: 'Please run AI extraction first to generate property data.',
+            confirmButtonColor: '#3b82f6'
+          });
           return;
         }
 
@@ -1796,98 +1799,225 @@
         saveBtn.innerHTML = '<div class="loading-spinner mr-2"></div>Saving...';
 
         try {
-          // 1) Upload the raw file (optional but useful for traceability)
-          let uploaded = null;
-          try {
-            uploaded = await uploadDocument(selectedFile); // may be null if no file or upload disabled
-          } catch (e) {
-            // If your flow requires the file upload, rethrow; otherwise just warn and proceed
-            console.warn("File upload failed:", e);
-            showToast(
-              "File upload failed. Saving record without file link...",
-              "warning"
-            );
+          // UPDATED: More robust file number validation that matches backend logic
+          const fileNumberFieldIds = [
+            'mlsFNo',
+            'kangisFileNo', 
+            'NewKANGISFileno',
+            'fileno',
+            'complete-file-no'
+          ];
+          
+          // Check if ANY file number field has a value (even partial values)
+          const hasAnyFileNumber = fileNumberFieldIds.some(id => {
+            const el = document.getElementById(id);
+            const value = el ? (el.value || '').trim() : '';
+            return value.length > 0;
+          });
+
+          // Also check for file components that can build a complete file number
+          const hasFileComponents = (() => {
+            const prefix = document.getElementById('file-prefix');
+            const serial = document.getElementById('file-serial-no');
+            return (prefix && prefix.value.trim()) || (serial && serial.value.trim());
+          })();
+
+          if (!hasAnyFileNumber && !hasFileComponents) {
+            // Restore button state
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalBtnHtml;
+
+            // Guide the user and prevent submission
+            Swal.fire({
+              icon: 'warning',
+              title: 'File Number Required',
+              text: 'Please select or enter at least one file number (MLS, KANGIS, New KANGIS, or a complete file number) before saving.',
+              confirmButtonColor: '#f59e0b'
+            });
+
+            // Try to bring the File Number section into view
+            const fileNoSection = document.getElementById('smart-fileno-container') || document.getElementById('manual-fileno-container');
+            if (fileNoSection && typeof fileNoSection.scrollIntoView === 'function') {
+              fileNoSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            return;
           }
 
-          // 2) Build the payload (collecting everything you already capture)
-          const payload = {
-            // Core file/AI info
-            originalFileName: extractedPropertyData.originalFileName,
-            fileType: extractedPropertyData.fileType,
-            fileSize: extractedPropertyData.fileSize,
-            pageCount: extractedPropertyData.pageCount,
-            // Link to uploaded file if available
-            fileUrl: uploaded?.fileUrl || null,
-            fileId: uploaded?.fileId || null,
+          // Populate hidden fields with extracted data
+          populateHiddenFields();
+          
+          // Populate instruments data as JSON
+          const instrumentsDataField = document.getElementById("instruments-data");
+          if (instrumentsDataField) {
+            instrumentsDataField.value = JSON.stringify(instruments);
+          }
 
-            // Raw OCR text (so you can re-parse server-side if needed)
-            // rawText: rawExtractedText || '',
+          // Create FormData and submit via AJAX
+          const form = document.getElementById("property-form");
+          const formData = new FormData(form);
 
-            // Confidence & status
-            confidence: extractedPropertyData.confidence,
-            extractionStatus: extractedPropertyData.extractionStatus,
+          // Debug log all form data
+          console.log('Form data being sent:');
+          for (let [key, value] of formData.entries()) {
+            console.log(`${key}: ${value}`);
+          }
 
-            // Property fields (UI values take precedence over AI guesses)
-            fileNumberType:
-              document.getElementById("file-number-type")?.value ||
-              extractedPropertyData.fileNumberType ||
-              "",
-            filePrefix:
-              document.getElementById("file-prefix")?.value ||
-              extractedPropertyData.filePrefix ||
-              "",
-            fileSerialNo:
-              document.getElementById("file-serial-no")?.value ||
-              extractedPropertyData.fileSerialNo ||
-              "",
-            fileNo:
-              document.getElementById("complete-file-no")?.value ||
-              extractedPropertyData.fileNo ||
-              "",
-            oldFileNo: extractedPropertyData.oldFileNo || "",
-            plotNo:
-              document.getElementById("plot-no")?.value ||
-              extractedPropertyData.plotNo ||
-              "",
-            lgsaOrCity:
-              document.getElementById("lga")?.value ||
-              extractedPropertyData.lgsaOrCity ||
-              "",
-            propertyHolder:
-              document.getElementById("property-holder")?.value ||
-              extractedPropertyData.propertyHolder ||
-              "",
-            description:
-              document.getElementById("property-description")?.value ||
-              extractedPropertyData.description ||
-              "",
+          const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          });
 
-            // Any keyword detections per page (useful for audit)
-            keywordFindings,
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
 
-            // All instruments (exact structure you render/edit in UI)
-            instruments,
+          const result = await response.json();
 
-            // Optional: keep the entire extractedPropertyData snapshot for auditing
-            extractedSnapshot: extractedPropertyData,
-          };
+          if (result.success || result.status === 'success') {
+            await Swal.fire({
+              icon: 'success',
+              title: 'Success!',
+              text: result.message || 'Property record saved successfully',
+              confirmButtonColor: '#10b981',
+              confirmButtonText: 'View Records'
+            });
+            
+            // Redirect to property records index
+            if (result.redirect) {
+              window.location.href = result.redirect;
+            } else {
+              window.location.href = '{{ route("propertycard.index") }}';
+            }
+          } else {
+            throw new Error(result.message || 'Failed to save record');
+          }
 
-          // 3) POST to your backend (UN-COMMENT WHEN WORKING WITH THE BACKEND)
-          // const saved = await postJSON(CONFIG.saveRecordUrl, payload);
-
-          showToast("Property record saved successfully!", "success");
-          console.log("Saved property record response:", saved);
-
-          // If server returns an ID, you might store it or show it in UI
-          // e.g., showToast(`Record ID: ${saved.id}`, 'info');
         } catch (err) {
           console.error("Save error:", err);
-          showToast(err.message || "Failed to save record.", "error");
-        } finally {
+          
+          Swal.fire({
+            icon: 'error',
+            title: 'Save Failed',
+            text: err.message || 'Failed to save property record. Please try again.',
+            confirmButtonColor: '#ef4444'
+          });
+          
           saveBtn.disabled = false;
           saveBtn.innerHTML = originalBtnHtml;
         }
       }
+
+      function populateHiddenFields() {
+        // Populate hidden fields with extracted data
+        const data = extractedPropertyData;
+        
+        // Log what data we're working with
+        console.log('Populating hidden fields with data:', data);
+        
+        // Property holder information
+        if (data.assignor || data.propertyHolder) {
+          const originalAllotteeField = document.getElementById("original-allottee");
+          if (originalAllotteeField) {
+            originalAllotteeField.value = data.assignor || data.propertyHolder || "";
+          }
+        }
+
+        if (data.assignee || data.propertyHolder) {
+          const currentAllotteeField = document.getElementById("current-allottee");
+          if (currentAllotteeField) {
+            currentAllotteeField.value = data.assignee || data.propertyHolder || "";
+          }
+        }
+
+        // Registration details from extracted data
+        if (data.serialNo) {
+          const oldTitleSerialField = document.getElementById("old-title-serial-no");
+          if (oldTitleSerialField) {
+            oldTitleSerialField.value = data.serialNo;
+          }
+        }
+
+        if (data.page) {
+          const oldTitlePageField = document.getElementById("old-title-page-no");
+          if (oldTitlePageField) {
+            oldTitlePageField.value = data.page;
+          }
+        }
+
+        if (data.vol) {
+          const oldTitleVolumeField = document.getElementById("old-title-volume-no");
+          if (oldTitleVolumeField) {
+            oldTitleVolumeField.value = data.vol;
+          }
+        }
+
+        // Land use inference
+        if (data.instrument) {
+          const landUseField = document.getElementById("land-use");
+          if (landUseField && !landUseField.value) {
+            // Set land use based on instrument type
+            if (data.instrument.includes("COMMERCIAL")) {
+              landUseField.value = "COMMERCIAL";
+            } else if (data.instrument.includes("RESIDENTIAL")) {
+              landUseField.value = "RESIDENTIAL";
+            } else if (data.instrument.includes("INDUSTRIAL")) {
+              landUseField.value = "INDUSTRIAL";
+            } else {
+              landUseField.value = "RESIDENTIAL"; // Default
+            }
+          }
+        }
+
+        // Property description
+        if (data.description) {
+          const specificallyField = document.getElementById("specifically");
+          if (specificallyField) {
+            specificallyField.value = data.description;
+          }
+        }
+
+        // File number fields - ensure all variations are captured
+        if (data.fileNo) {
+          const filenoField = document.getElementById("fileno");
+          if (filenoField) {
+            filenoField.value = data.fileNo;
+          }
+        }
+
+        // File number type specific fields
+        if (data.mlsFileNo) {
+          const mlsField = document.getElementById("mlsFNo");
+          if (mlsField) {
+            mlsField.value = data.mlsFileNo;
+          }
+        }
+
+        if (data.kangisFileNo) {
+          const kangisField = document.getElementById("kangisFileNo");
+          if (kangisField) {
+            kangisField.value = data.kangisFileNo;
+          }
+        }
+
+        if (data.newKangisFileNo) {
+          const newKangisField = document.getElementById("NewKANGISFileno");
+          if (newKangisField) {
+            newKangisField.value = data.newKangisFileNo;
+          }
+        }
+
+        // Active file tab
+        if (data.fileNumberType) {
+          const activeTabField = document.getElementById("activeFileTab");
+          if (activeTabField) {
+            activeTabField.value = data.fileNumberType;
+          }
+        }
+      }
+
       function resetState() {
         selectedFile = null;
         previewUrl = null;

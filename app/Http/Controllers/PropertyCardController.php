@@ -531,109 +531,94 @@ public function search(Request $request)
     {
         \Log::info('AI Property Record save request received:', $request->all());
 
-        try {
-            // Validate and sanitize the input
-            $validatedData = $request->validate([
-                'mlsfNo'                     => 'nullable|string|max:255',
-                'kangisFileNo'               => 'nullable|string|max:255',
-                'NewKANGISFileno'            => 'nullable|string|max:255',
-                'plotNo'                     => 'nullable|string|max:255',
-                'blockNo'                    => 'nullable|string|max:255',
-                'houseNo'                    => 'nullable|string|max:255',
-                'streetName'                 => 'nullable|string|max:255',
-                'districtName'               => 'nullable|string|max:255',
-                'lgaName'                    => 'nullable|string|max:255',
-                'layoutName'                 => 'nullable|string|max:255',
-                'property_description'       => 'nullable|string',
-                'originalAllottee'           => 'nullable|string|max:255',
-                'currentAllottee'            => 'nullable|string|max:255',
-                'addressOfOriginalAllottee'  => 'nullable|string|max:255',
-                'addressOfCurrentAllottee'   => 'nullable|string|max:255',
-                'oldTitleSerialNo'           => 'nullable|string|max:255',
-                'oldTitlePageNo'             => 'nullable|string|max:255',
-                'oldTitleVolumeNo'           => 'nullable|string|max:255',
-                'deedsDate'                  => 'nullable|date',
-                'certificateDate'            => 'nullable|date',
-                'titleIssuedYear'            => 'nullable|string|max:255',
-                'currentYearTitleOwned'      => 'nullable|string|max:255',
-                'phoneNo'                    => 'nullable|string|max:255',
-                'landUse'                    => 'nullable|string|max:255',
-                'specifically'               => 'nullable|string|max:255',
-                'tenancy'                    => 'nullable|string|max:255',
-                'areaInHectares'             => 'nullable|string|max:255',
-                'titleStatus'                => 'nullable|string|max:255',
-                // Instruments data
-                'instruments'                => 'nullable|array',
-                'instruments.*.type'         => 'nullable|string|max:255',
-                'instruments.*.number'       => 'nullable|string|max:255',
-                'instruments.*.date'         => 'nullable|date',
-                'instruments.*.parties'      => 'nullable|string|max:255',
-                'instruments.*.consideration' => 'nullable|string|max:255',
-            ]);
+        // Transform the AI form data to match the PropertyRecordController's expected format
+        $transformedRequest = new Request();
+        
+        // Copy all original data first
+        $transformedRequest->replace($request->all());
+        
+        // Robust file number handling (mirror manual behavior)
+        // If caller already provided any of these, respect them
+        $mlsExisting = trim((string) $request->input('mlsFNo', ''));
+        $kangisExisting = trim((string) $request->input('kangisFileNo', ''));
+        $newKangisExisting = trim((string) $request->input('NewKANGISFileno', ''));
 
-            // Handle street name and district name "Other" options
-            if ($request->filled('streetNameOther') && $request->streetName === 'Other') {
-                $validatedData['streetName'] = $request->streetNameOther;
-            }
-            
-            if ($request->filled('districtNameOther') && $request->districtName === 'Other') {
-                $validatedData['districtName'] = $request->districtNameOther;
-            }
-
-            // Create the property record
-            $propertyRecord = new PropertyRecord();
-            
-            // Fill the basic property data
-            foreach ($validatedData as $key => $value) {
-                if ($key !== 'instruments' && $propertyRecord->isFillable($key)) {
-                    $propertyRecord->$key = $value;
-                }
-            }
-
-            // Set additional metadata for AI records
-            $propertyRecord->source = 'ai_extraction';
-            $propertyRecord->created_by = Auth::id() ?? 1; // Default to user ID 1 if not authenticated
-
-            // Save the property record
-            $propertyRecord->save();
-
-            // Handle instruments data if provided
-            if (!empty($validatedData['instruments'])) {
-                foreach ($validatedData['instruments'] as $instrument) {
-                    if (!empty($instrument['type']) || !empty($instrument['number'])) {
-                        // Create instrument record (you may need to create an instruments table)
-                        // For now, we'll store it as JSON in a field or create separate records
-                        // This depends on your database structure
-                        
-                        \Log::info('Instrument data:', $instrument);
-                    }
-                }
-            }
-
-            \Log::info('AI Property Record saved successfully with ID: ' . $propertyRecord->id);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Property record saved successfully',
-                'record_id' => $propertyRecord->id
-            ]);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            \Log::error('Validation error in AI Property Record save:', $e->errors());
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $e->errors()
-            ], 422);
-
-        } catch (\Exception $e) {
-            \Log::error('Error saving AI Property Record: ' . $e->getMessage());
-            \Log::error('Error trace: ' . $e->getTraceAsString());
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred while saving the record: ' . $e->getMessage()
-            ], 500);
+        // Derive a complete file number if needed
+        $fileNumber = $request->input('complete-file-no') ?: $request->input('fileno');
+        if (!$fileNumber && $request->filled('file-prefix') && $request->filled('file-serial-no')) {
+            $fileNumber = trim($request->input('file-prefix') . ' ' . $request->input('file-serial-no'));
         }
+
+        // Determine which column to target
+        $fileNumberType = $request->input('file-number-type');
+        // Fallback to activeFileTab from AI UI (values like 'mls', 'kangis', 'newkangis')
+        if (!$fileNumberType) {
+            $aft = $request->input('activeFileTab');
+            if ($aft) {
+                $map = [
+                    'mls' => 'mlsFileNo',
+                    'mlsFNo' => 'mlsFileNo',
+                    'kangis' => 'kangisFileNo',
+                    'kangisFileNo' => 'kangisFileNo',
+                    'newkangis' => 'newKangisFileNo',
+                    'NewKANGISFileno' => 'newKangisFileNo',
+                ];
+                $fileNumberType = $map[$aft] ?? null;
+            }
+        }
+
+        // If specific file number fields are missing, populate based on detected type
+        if (!$mlsExisting && !$kangisExisting && !$newKangisExisting && $fileNumber) {
+            switch ($fileNumberType) {
+                case 'mlsFileNo':
+                    $transformedRequest->merge(['mlsFNo' => $fileNumber]);
+                    break;
+                case 'newKangisFileNo':
+                    $transformedRequest->merge(['NewKANGISFileno' => $fileNumber]);
+                    break;
+                case 'kangisFileNo':
+                default:
+                    $transformedRequest->merge(['kangisFileNo' => $fileNumber]);
+                    break;
+            }
+        }
+        // Otherwise, leave any provided mlsFNo/kangisFileNo/NewKANGISFileno as-is
+        
+        // Normalize street/district selections
+        $streetName = $request->input('streetName');
+        if ($streetName === 'other' && $request->input('otherStreetName')) {
+            $streetName = $request->input('otherStreetName');
+        }
+        $district = $request->input('district');
+        if ($district === 'other' && $request->input('otherDistrict')) {
+            $district = $request->input('otherDistrict');
+        }
+
+        // Keep lgsaOrCity provided by caller; fallback to legacy "lga" param if needed
+        $lgsaOrCity = $request->input('lgsaOrCity');
+        if (!$lgsaOrCity) {
+            $lgsaOrCity = $request->input('lga');
+        }
+
+        // Build location string similar to manual assistant
+        $location = trim(implode(', ', array_filter([
+            $request->input('house_no'),
+            $streetName,
+            $district,
+            $lgsaOrCity,
+            $request->input('state', 'Kano')
+        ], function ($v) { return !is_null($v) && $v !== ''; })));        
+        
+        // Merge normalized fields
+        $transformedRequest->merge([
+            'location' => $location,
+            'lgsaOrCity' => $lgsaOrCity, // do not overwrite with null
+            'title_type' => $request->input('title_type') ?: 'STATUTORY RIGHT OF OCCUPANCY',
+            'instrumentType' => $request->input('instrumentType') ?: $request->input('transactionType'),
+        ]);
+        
+        // Use the PropertyRecordController's store method which has the correct database mapping
+        $propertyRecordController = new \App\Http\Controllers\PropertyRecordController();
+        return $propertyRecordController->store($transformedRequest);
     }
 }

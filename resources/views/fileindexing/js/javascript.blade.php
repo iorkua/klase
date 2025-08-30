@@ -1,35 +1,15 @@
 <!-- JavaScript -->
 <script>
-  // Initialize Lucide icons
-  lucide.createIcons();
+  // Initialize Lucide icons safely
+  if (typeof lucide !== 'undefined' && lucide.createIcons) {
+    lucide.createIcons();
+  }
   
   // State variables
   let selectedFiles = []; // Initialize empty - no pre-selected files
   let selectedIndexedFiles = []; // Track selected indexed files
   let pendingFiles = []; // Will be loaded from API
-  let indexedFiles = [
-    // Sample indexed files for testing
-    {
-      id: 'INDEXED-001',
-      fileNumber: 'KNGP-12345',
-      name: 'Alhaji Ibrahim Dantata Property',
-      type: 'Certificate of Occupancy',
-      source: 'Indexed',
-      date: '2024-01-15',
-      landUseType: 'Residential',
-      district: 'Nasarawa'
-    },
-    {
-      id: 'INDEXED-002',
-      fileNumber: 'KNGP-12346',
-      name: 'Hajiya Amina Yusuf Commercial Plot',
-      type: 'Site Plan',
-      source: 'Indexed',
-      date: '2024-01-16',
-      landUseType: 'Commercial',
-      district: 'Fagge'
-    }
-  ]; // Sample data for testing
+  let indexedFiles = []; // Start empty; will be loaded from API
   let indexingProgress = 0; // Set to 0% initially
   let currentStage = "extract"; // Current stage in the AI pipeline
   
@@ -171,7 +151,9 @@
         `;
         
         // Initialize Lucide icons for the new content
-        lucide.createIcons();
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+          lucide.createIcons();
+        }
         
         // Log progress
         console.log(`AI Integration - Stage ${currentStageIndex + 1}/${stages.length}: ${stages[currentStageIndex]}`);
@@ -367,7 +349,9 @@
     `;
     
     // Initialize Lucide icons for the new content
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined' && lucide.createIcons) {
+      lucide.createIcons();
+    }
   }
   
   // Function to complete the indexing process
@@ -444,111 +428,152 @@
   
   // Render indexed files
   function renderIndexedFiles() {
-    const indexedFilesList = document.getElementById('indexed-files-list');
-    indexedFilesList.innerHTML = '';
-    
-    if (indexedFiles.length === 0) {
-      indexedFilesList.innerHTML = `
-        <div class="p-8 text-center text-gray-500">
-          <i data-lucide="file-question" class="h-12 w-12 mx-auto mb-4 text-gray-400"></i>
-          <p>No indexed files yet. Start by indexing files from the File Index tab.</p>
-        </div>
-      `;
-      lucide.createIcons();
-      return;
-    }
-    
-    // Update "Select All" checkbox state
-    const selectAllCheckbox = document.getElementById('select-all-indexed-checkbox');
-    if (selectAllCheckbox) {
-      selectAllCheckbox.checked = selectedIndexedFiles.length === indexedFiles.length && indexedFiles.length > 0;
-    }
-    
-    indexedFiles.forEach(file => {
-      const isSelected = selectedIndexedFiles.includes(file.id);
-      const fileItem = document.createElement('div');
-      fileItem.className = 'p-4 border-b last:border-b-0';
-      
-      fileItem.innerHTML = `
-        <div class="flex items-center justify-between">
-          <div class="flex items-center">
-            <input type="checkbox" 
-                   ${isSelected ? 'checked' : ''} 
-                   data-id="${file.id}" 
-                   class="indexed-file-checkbox mr-4"
-                   title="Select for batch tracking operations">
-            <div class="file-icon">
-              <i data-lucide="file-check" class="h-6 w-6 text-green-500"></i>
-            </div>
-            <div class="file-details ml-4">
-              <div class="file-number">${file.fileNumber}</div>
-              <div class="file-name">${file.name}</div>
-              <div class="file-tags">
-                <span class="file-tag">${file.source}</span>
-                <span class="file-tag">${file.landUseType}</span>
-                <span class="file-tag">${file.district}</span>
-                <span class="file-tag">${file.date}</span>
-              </div>
-            </div>
-          </div>
-          <div class="flex items-center">
-            <span class="badge badge-green mr-3">
-              <i data-lucide="check" class="h-3 w-3 mr-1"></i>
+    const tableBody = document.getElementById('indexed-files-table-body');
+    const emptyState = document.getElementById('indexed-empty-state');
+    const tableContainer = document.getElementById('indexed-table-container');
+
+    // Prefer table-based rendering if present
+    if (tableBody) {
+      // Toggle empty state visibility
+      if (!indexedFiles || indexedFiles.length === 0) {
+        if (tableContainer) tableContainer.style.display = 'none';
+        if (emptyState) emptyState.style.display = 'block';
+        // Update select-all checkbox and counts
+        const selectAllCheckbox = document.getElementById('select-all-indexed-checkbox');
+        if (selectAllCheckbox) selectAllCheckbox.checked = false;
+        updateSelectedIndexedFilesCount();
+        updateTrackingButton();
+        return;
+      } else {
+        if (tableContainer) tableContainer.style.display = 'block';
+        if (emptyState) emptyState.style.display = 'none';
+      }
+
+      tableBody.innerHTML = '';
+
+      // Update "Select All" checkbox state
+      const selectAllCheckbox = document.getElementById('select-all-indexed-checkbox');
+      if (selectAllCheckbox) {
+        selectAllCheckbox.checked = selectedIndexedFiles.length === indexedFiles.length && indexedFiles.length > 0;
+      }
+
+      indexedFiles.forEach(file => {
+        const fileIdStr = String(file.id);
+        const isSelected = selectedIndexedFiles.includes(fileIdStr);
+        const tr = document.createElement('tr');
+        tr.setAttribute('data-id', fileIdStr);
+        tr.className = `border-b hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`;
+        tr.innerHTML = `
+          <td class="p-3 w-10">
+            <input type="checkbox" class="row-indexed-checkbox" data-file-id="${fileIdStr}" ${isSelected ? 'checked' : ''} />
+          </td>
+          <td class="p-3">${file.fileNumber || '-'}</td>
+          <td class="p-3">${file.name || '-'}</td>
+          <td class="p-3">${file.registry || '-'}</td>
+          <td class="p-3">${file.date || '-'}</td>
+          <td class="p-3">
+            <span class="badge badge-green">
+              <i data-lucide="check" class="h-3 w-3 mr-1 inline"></i>
               Indexed
             </span>
-            <div class="relative">
-              <button class="action-menu-btn p-1 rounded-md hover:bg-gray-100" 
-                      data-file-id="${file.id}" title="More Options">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01"></path>
-                </svg>
+          </td>
+          <td class="p-3">${file.location || '-'}</td>
+          <td class="p-3">${file.landUseType || '-'}</td>
+          <td class="p-3">${file.district || '-'}</td>
+          <td class="p-3 text-right">
+            <div class="inline-flex gap-2">
+              <button class="view-file-btn px-2 py-1 rounded hover:bg-gray-100" data-file-id="${fileIdStr}" title="View Details">
+                <i data-lucide="eye" class="h-4 w-4"></i>
               </button>
-              <div class="action-dropdown hidden absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10 border">
-                <div class="py-1">
-                  <button class="view-file-btn w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-file-id="${file.id}">
-                    <i data-lucide="eye" class="h-4 w-4 mr-2 inline"></i>
-                    View Details
-                  </button>
-                  <button class="generate-tracking-btn w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-file-id="${file.id}">
-                    <i data-lucide="file-text" class="h-4 w-4 mr-2 inline"></i>
-                    Generate Tracking Sheet
-                  </button>
-                  <button class="print-tracking-btn w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-file-id="${file.id}">
-                    <i data-lucide="printer" class="h-4 w-4 mr-2 inline"></i>
-                    Print Tracking Sheet
-                  </button>
-                </div>
-              </div>
+              <button class="generate-tracking-btn px-2 py-1 rounded hover:bg-gray-100" data-file-id="${fileIdStr}" title="Generate Tracking Sheet">
+                <i data-lucide="file-text" class="h-4 w-4"></i>
+              </button>
+              <button class="print-tracking-btn px-2 py-1 rounded hover:bg-gray-100" data-file-id="${fileIdStr}" title="Print Tracking Sheet">
+                <i data-lucide="printer" class="h-4 w-4"></i>
+              </button>
             </div>
-          </div>
-        </div>
-      `;
-      
-      indexedFilesList.appendChild(fileItem);
-    });
-    
-    // Initialize Lucide icons for the new rows
-    lucide.createIcons();
-    
-    // Add event listeners for individual indexed file checkboxes
-    document.querySelectorAll('.indexed-file-checkbox').forEach(checkbox => {
-      checkbox.addEventListener('change', function() {
-        const fileId = this.getAttribute('data-id');
-        toggleIndexedFileSelection(fileId);
+          </td>
+        `;
+        tableBody.appendChild(tr);
       });
-    });
-    
-    // Update selected indexed files count
-    updateSelectedIndexedFilesCount();
-    
-    // Add event listeners for action menus
-    addActionMenuListeners();
+
+      // Initialize Lucide icons for the new rows
+      if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        lucide.createIcons();
+      }
+
+      // Row click toggles selection (ignore clicks on action buttons and checkboxes)
+      tableBody.querySelectorAll('tr[data-id]').forEach(row => {
+        row.addEventListener('click', function(e) {
+          if (e.target.closest('button') || e.target.closest('input[type="checkbox"]')) return;
+          const fileId = this.getAttribute('data-id');
+          toggleIndexedFileSelection(fileId);
+        });
+      });
+
+      // Row checkbox change handler
+      tableBody.querySelectorAll('.row-indexed-checkbox').forEach(cb => {
+        cb.addEventListener('click', e => e.stopPropagation());
+        cb.addEventListener('change', function(e) {
+          const id = this.dataset.fileId;
+          toggleIndexedFileSelection(id);
+        });
+      });
+
+      // Action buttons
+      tableBody.querySelectorAll('.view-file-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const fileId = this.dataset.fileId;
+          const file = indexedFiles.find(f => String(f.id) === fileId);
+          if (file) {
+            alert(`File Details:\n\nFile Number: ${file.fileNumber}\nName: ${file.name}\nType: ${file.type || '-'}\nDistrict: ${file.district || '-'}\nLand Use: ${file.landUseType || '-'}\nDate: ${file.date || '-'}`);
+          }
+        });
+      });
+
+      tableBody.querySelectorAll('.generate-tracking-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const fileId = this.dataset.fileId;
+          if (!/^\d+$/.test(fileId)) {
+            alert('This is a demo file. Tracking sheet generation is not available for demo files.');
+            return;
+          }
+          const trackingUrl = `/fileindexing/tracking-sheet/${fileId}`;
+          window.open(trackingUrl, '_blank');
+        });
+      });
+
+      tableBody.querySelectorAll('.print-tracking-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const fileId = this.dataset.fileId;
+          if (!/^\d+$/.test(fileId)) {
+            alert('This is a demo file. Print tracking is not available for demo files.');
+            return;
+          }
+          printTrackingSheet(fileId);
+        });
+      });
+
+      // Update counts and button state
+      updateSelectedIndexedFilesCount();
+      updateTrackingButton();
+      return; // Done with table-based rendering
+    }
+
+    // Fallback: do nothing if no known container is present to avoid runtime errors
+    // (prevents breaking other UI like tabs)
   }
   
   // Switch between tabs
   function switchTab(tabName) {
+    // Query tabs fresh in case DOM changed
+    const tabElements = document.querySelectorAll('.tab');
+
     // Update active tab
-    tabs.forEach(t => {
+    tabElements.forEach(t => {
       if (t.getAttribute('data-tab') === tabName) {
         t.classList.add('active');
       } else {
@@ -558,15 +583,18 @@
 
     // Enable/disable new file button based on active tab
     const newFileBtn = document.getElementById('new-file-index-btn');
-    if (tabName === 'pending') {
-      newFileBtn.removeAttribute('disabled');
-      newFileBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-    } else {
-      newFileBtn.setAttribute('disabled', 'true');
-      newFileBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    if (newFileBtn) {
+      if (tabName === 'pending') {
+        newFileBtn.removeAttribute('disabled');
+        newFileBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      } else {
+        newFileBtn.setAttribute('disabled', 'true');
+        newFileBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
     }
 
     // Update visible content
+    const tabContents = document.querySelectorAll('.tab-content');
     tabContents.forEach(content => {
       content.classList.add('hidden');
       content.classList.remove('active');
@@ -628,7 +656,9 @@
     });
     
     // Initialize Lucide icons for the new rows
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined' && lucide.createIcons) {
+      lucide.createIcons();
+    }
     
     // Update selected files count
     updateSelectedFilesCount();
@@ -694,10 +724,11 @@
   
   // Function to toggle indexed file selection
   function toggleIndexedFileSelection(fileId) {
-    if (selectedIndexedFiles.includes(fileId)) {
-      selectedIndexedFiles = selectedIndexedFiles.filter(id => id !== fileId);
+    const idStr = String(fileId);
+    if (selectedIndexedFiles.includes(idStr)) {
+      selectedIndexedFiles = selectedIndexedFiles.filter(id => id !== idStr);
     } else {
-      selectedIndexedFiles.push(fileId);
+      selectedIndexedFiles.push(idStr);
     }
     
     renderIndexedFiles();
@@ -714,7 +745,7 @@
     
     if (selectAllCheckbox.checked) {
       // Select all files
-      selectedIndexedFiles = indexedFiles.map(file => file.id);
+      selectedIndexedFiles = indexedFiles.map(file => String(file.id));
     } else {
       // Deselect all files
       selectedIndexedFiles = [];
@@ -737,18 +768,42 @@
   function updateTrackingButton() {
     const trackingBtn = document.getElementById('generate-tracking-sheets-btn');
     const trackingBtnText = document.getElementById('tracking-btn-text');
+    const trackingBtnIcon = trackingBtn ? trackingBtn.querySelector('i') : null;
     
-    if (trackingBtn && trackingBtnText) {
-      if (selectedIndexedFiles.length === 0) {
-        trackingBtnText.textContent = 'New File Index';
-        trackingBtn.onclick = () => showNewFileDialog();
-      } else if (selectedIndexedFiles.length === 1) {
-        trackingBtnText.textContent = 'Generate Tracking Sheet';
-        trackingBtn.onclick = () => generateSingleTrackingSheet();
-      } else {
-        trackingBtnText.textContent = 'Generate Batch Tracking Sheets';
-        trackingBtn.onclick = () => openSmartBatchInterface();
-      }
+    if (!trackingBtn || !trackingBtnText) return;
+
+    // Helper to reset click handler
+    function resetClick() {
+      // Using property assignment avoids multiple listeners stacking
+      trackingBtn.onclick = null;
+    }
+
+    if (selectedIndexedFiles.length >= 2) {
+      // Enabled state for batch
+      trackingBtnText.textContent = 'Generate Batch Tracking Sheets';
+      trackingBtn.removeAttribute('disabled');
+      trackingBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      trackingBtn.classList.add('btn-primary');
+      if (trackingBtnIcon) trackingBtnIcon.setAttribute('data-lucide', 'file-check');
+
+      resetClick();
+      trackingBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        generateBatchTrackingSheets();
+      };
+    } else {
+      // Disabled state for fewer than 2 selections
+      trackingBtnText.textContent = 'Batch Tracking Sheets';
+      trackingBtn.setAttribute('disabled', 'true');
+      trackingBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      if (trackingBtnIcon) trackingBtnIcon.setAttribute('data-lucide', 'file-text');
+      resetClick();
+    }
+
+    // Refresh lucide icons after attribute changes
+    if (typeof lucide !== 'undefined' && lucide.createIcons) {
+      lucide.createIcons();
     }
   }
   
@@ -760,10 +815,10 @@
   
   // Function to generate single tracking sheet
   function generateSingleTrackingSheet() {
-    const selectedFile = indexedFiles.find(file => file.id === selectedIndexedFiles[0]);
+    const selectedFile = indexedFiles.find(file => String(file.id) === selectedIndexedFiles[0]);
     if (selectedFile) {
       // Extract numeric ID if the file ID contains non-numeric characters
-      let fileId = selectedFile.id;
+      let fileId = String(selectedFile.id);
       
       // If the ID is not purely numeric, try to extract a numeric part or use a timestamp
       if (!/^\d+$/.test(fileId)) {
@@ -964,35 +1019,26 @@
     // Make sure File Index tab is active by default
     switchTab('pending');
     
-    // Render the pending files list
+    // Render lists and counters
     renderPendingFiles();
-    
-    // Render the indexed files list
     renderIndexedFiles();
-    
-    // Update counters
     updateCounters();
     
-    // Add event listeners
-    tabs.forEach(tab => {
+    // Tabs click handling (ignore disabled tabs)
+    document.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => {
+        if (tab.classList.contains('disabled')) return;
         const tabName = tab.getAttribute('data-tab');
         switchTab(tabName);
       });
     });
-    
-    // Add event listener for select all checkbox
-    const selectAllCheckbox = document.getElementById('select-all-checkbox');
-    if (selectAllCheckbox) {
-      selectAllCheckbox.addEventListener('click', toggleSelectAll);
+
+    // Empty-state button to go to Pending
+    const goToPendingBtn = document.getElementById('go-to-pending');
+    if (goToPendingBtn) {
+      goToPendingBtn.addEventListener('click', () => switchTab('pending'));
     }
-    
-    // Add event listener for select all indexed files checkbox
-    const selectAllIndexedCheckbox = document.getElementById('select-all-indexed-checkbox');
-    if (selectAllIndexedCheckbox) {
-      selectAllIndexedCheckbox.addEventListener('click', toggleSelectAllIndexed);
-    }
-    
+
     if (beginIndexingBtn) {
       beginIndexingBtn.addEventListener('click', () => {
         // Only switch tabs if files are selected
@@ -1057,6 +1103,21 @@
     // Load initial data
     loadPendingFiles();
     loadIndexedFiles();
+
+    // Ensure tracking button reflects initial selection state
+    updateTrackingButton();
+
+    // Select All (Pending)
+    const selectAllPending = document.getElementById('select-all-checkbox');
+    if (selectAllPending) {
+      selectAllPending.addEventListener('change', toggleSelectAll);
+    }
+
+    // Select All (Indexed)
+    const selectAllIndexed = document.getElementById('select-all-indexed-checkbox');
+    if (selectAllIndexed) {
+      selectAllIndexed.addEventListener('change', toggleSelectAllIndexed);
+    }
   });
 
  

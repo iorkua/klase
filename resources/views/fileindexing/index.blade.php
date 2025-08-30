@@ -16,18 +16,7 @@
         <div class="p-6">
 
      {{-- updatig....  --}}
-      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-        <div class="flex items-center">
-          <svg class="animate-spin h-5 w-5 text-blue-600 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <div>
-            <h4 class="text-blue-800 font-medium">System Update in Progress</h4>
-            <p class="text-blue-600 text-sm">Please wait while we update the file indexing system...</p>
-          </div>
-        </div>
-      </div>
+        
 
      <div class="container py-6">
     <!-- Stats Cards -->
@@ -61,13 +50,19 @@
     <div class="flex justify-between items-center mb-6">
       <div class="tabs" id="main-tabs">
         <div class="tab active" data-tab="pending">File Index</div>
-        <div class="tab" data-tab="indexing">Digital Index (AI)</div>
+        <div class="tab disabled" data-tab="indexing">Digital Index (AI)</div>
         <div class="tab" data-tab="indexed">Indexed Files</div>
       </div>
-      <button class="btn btn-primary" id="new-file-index-btn">
-        <i data-lucide="folder-plus" class="h-4 w-4 mr-2"></i>
-        New File Index
-      </button>
+      <div class="flex items-center gap-3">
+        <a href="/unindexed-scanning" class="btn btn-outline">
+          <i data-lucide="upload" class="h-4 w-4 mr-2"></i>
+          Go to Unindexed Files
+        </a>
+        <button class="btn btn-primary" id="new-file-index-btn">
+          <i data-lucide="folder-plus" class="h-4 w-4 mr-2"></i>
+          New File Index
+        </button>
+      </div>
     </div>
 
     <!-- Pending Files Tab Content -->
@@ -118,10 +113,10 @@
           <div class="card p-6 mb-4">
             <div class="flex items-center mb-4">
               <i data-lucide="brain" class="h-5 w-5 text-purple-600 mr-2"></i>
-              <h3 class="text-lg font-medium">AI Indexing: 2 Files</h3>
+              <h3 class="text-lg font-medium">AI Indexing: <span id="ai-indexing-files-count">0</span> Files</h3>
             </div>
             
-            <p class="mb-6">Ready to begin AI-powered indexing for 2 selected files.</p>
+            <p class="mb-6">Ready to begin AI-powered indexing for <span id="ai-selected-files-count">0</span> selected files.</p>
             
             <div class="flex justify-center">
               <button class="btn btn-primary" id="start-ai-indexing-btn">
@@ -139,7 +134,7 @@
       <div class="card p-6 mb-4">
         <div class="flex items-center mb-4">
           <i data-lucide="layers" class="h-5 w-5 text-green-500 mr-2"></i>
-          <h3 class="text-lg font-medium">AI Indexing: 2 Files</h3>
+          <h3 class="text-lg font-medium">AI Indexing: <span id="ai-processing-files-count">0</span> Files</h3>
         </div>
         
         <div class="mb-4">
@@ -231,42 +226,143 @@
 
     <!-- Indexed Files Tab Content -->
     <div class="tab-content hidden" id="indexed-tab">
-  <div class="card">
-    <div class="p-6">
-      <div class="flex justify-between items-center mb-4">
-        <div>
-          <h2 class="text-xl font-bold">Indexed Files</h2>
-          <p class="text-sm text-gray-500">Files that have been digitally indexed</p>
-        </div>
-        <div class="relative">
-          <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500"></i>
-          <input type="search" placeholder="Search indexed files..." class="input pl-10" id="search-indexed-files">
-        </div>
-      </div>
-
-      <div class="border rounded-md">
-        <div class="flex justify-between items-center p-4 border-b bg-gray-50">
-          <div class="flex items-center">
-            <input type="checkbox" id="select-all-indexed-checkbox" class="mr-2">
-            <label for="select-all-indexed-checkbox" class="text-sm font-medium">Select All</label>
+      <div class="card">
+        <div class="card-header">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h3 class="card-title">Indexed Files Report</h3>
+              <p class="text-sm text-gray-500">Comprehensive report of all successfully indexed files.</p>
+            </div>
+            <div class="flex items-center gap-4 w-full md:w-auto">
+              <div class="relative flex-1">
+                <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500"></i>
+                <input type="search" placeholder="Search indexed files..." class="input pl-10" id="search-indexed-files">
+              </div>
+              <button class="btn btn-primary opacity-50 cursor-not-allowed ml-4" id="generate-tracking-sheets-btn" disabled>
+                <i data-lucide="file-text" class="h-4 w-4 mr-2"></i>
+                <span id="tracking-btn-text">Batch Tracking Sheets</span>
+              </button>
+              <button class="btn btn-outline gap-2" id="download-report">
+                <i data-lucide="download" class="h-4 w-4"></i>
+                Download Report
+              </button>
+            </div>
           </div>
-          <div class="flex items-center">
-            <span class="text-sm text-gray-500" id="selected-indexed-files-count">0 selected</span>
-            <button class="btn btn-primary ml-4" id="generate-tracking-sheets-btn">
-              <i data-lucide="file-plus" class="h-4 w-4 mr-2"></i>
-              <span id="tracking-btn-text">New File Index</span>
+        </div>
+        <div class="card-content">
+          <div id="indexed-empty-state" class="rounded-md border p-8 text-center" style="display: none;">
+            <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
+              <i data-lucide="file-text" class="h-6 w-6 text-gray-400"></i>
+            </div>
+            <h3 class="mb-2 text-lg font-medium">No indexed files yet</h3>
+            <p class="mb-4 text-sm text-gray-500">
+              Complete the indexing process to see files here
+            </p>
+            <button class="btn btn-primary gap-2" id="go-to-pending">
+              Go to Pending Files
             </button>
           </div>
+          
+          <div id="indexed-table-container" class="rounded-md border overflow-x-auto">
+            <div class="flex justify-between items-center p-4 border-b bg-gray-50">
+              <div class="flex items-center">
+                <input type="checkbox" id="select-all-indexed-checkbox" class="mr-2">
+                <label for="select-all-indexed-checkbox" class="text-sm font-medium">Select All</label>
+              </div>
+              <div class="flex items-center">
+                <span class="text-sm text-gray-500" id="selected-indexed-files-count">0 selected</span>
+              </div>
+            </div>
+            
+            <table class="w-full text-sm text-left border-collapse">
+              <thead class="bg-gray-50">
+                <tr class="border-b">
+                  <th class="p-3 w-10">
+                    <!-- Row checkbox column -->
+                    <span class="sr-only">Select</span>
+                  </th>
+                  <th class="p-3 font-medium text-gray-600 uppercase text-xs tracking-wide cursor-pointer min-w-150" data-sort="fileNumber">
+                    <div class="flex items-center">
+                      File Number
+                      <i data-lucide="arrow-up-down" class="ml-2 h-4 w-4"></i>
+                    </div>
+                  </th>
+                  <th class="p-3 font-medium text-gray-600 uppercase text-xs tracking-wide cursor-pointer min-w-200" data-sort="name">
+                    <div class="flex items-center">
+                      Name
+                      <i data-lucide="arrow-up-down" class="ml-2 h-4 w-4"></i>
+                    </div>
+                  </th>
+                  <th class="p-3 font-medium text-gray-600 uppercase text-xs tracking-wide cursor-pointer min-w-150" data-sort="registry">
+                    <div class="flex items-center">
+                      Registry
+                      <i data-lucide="arrow-up-down" class="ml-2 h-4 w-4"></i>
+                    </div>
+                  </th>
+                  <th class="p-3 font-medium text-gray-600 uppercase text-xs tracking-wide cursor-pointer min-w-120" data-sort="date">
+                    <div class="flex items-center">
+                      Indexed Date
+                      <i data-lucide="arrow-up-down" class="ml-2 h-4 w-4"></i>
+                    </div>
+                  </th>
+                  <th class="p-3 font-medium text-gray-600 uppercase text-xs tracking-wide min-w-120">
+                    Status
+                  </th>
+                  <th class="p-3 font-medium text-gray-600 uppercase text-xs tracking-wide cursor-pointer min-w-150" data-sort="location">
+                    <div class="flex items-center">
+                      Location
+                      <i data-lucide="arrow-up-down" class="ml-2 h-4 w-4"></i>
+                    </div>
+                  </th>
+                  <th class="p-3 font-medium text-gray-600 uppercase text-xs tracking-wide cursor-pointer min-w-120" data-sort="landUseType">
+                    <div class="flex items-center">
+                      Land Use
+                      <i data-lucide="arrow-up-down" class="ml-2 h-4 w-4"></i>
+                    </div>
+                  </th>
+                  <th class="p-3 font-medium text-gray-600 uppercase text-xs tracking-wide cursor-pointer min-w-120" data-sort="district">
+                    <div class="flex items-center">
+                      District
+                      <i data-lucide="arrow-up-down" class="ml-2 h-4 w-4"></i>
+                    </div>
+                  </th>
+                  <th class="p-3 font-medium text-gray-600 uppercase text-xs tracking-wide text-right min-w-100">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="indexed-files-table-body">
+                <!-- Table rows will be inserted here by JavaScript -->
+              </tbody>
+            </table>
+          </div>
         </div>
-
-        <div id="indexed-files-list">
-          <!-- Indexed file items will be populated here by JavaScript -->
+        <div id="indexed-card-footer" class="flex justify-between items-center p-6 border-t" style="display: none;">
+          <button class="btn btn-outline" id="index-more-files">
+            Index More Files
+          </button>
+          <button class="btn btn-primary" id="print-labels">
+            <i data-lucide="printer" class="h-4 w-4 mr-2"></i>
+            Print Labels
+          </button>
         </div>
       </div>
     </div>
-  </div>
-</div>
-  </div>
+
+    <!-- Modal for file details -->
+    <div id="file-details-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+      <div class="bg-white rounded-lg max-w-2xl w-full max-h-90vh overflow-y-auto m-4">
+        <div class="flex justify-between items-center p-6 border-b">
+          <h3 class="text-lg font-semibold" id="modal-title">File Details</h3>
+          <button class="text-gray-400 hover:text-gray-600" id="close-modal" onclick="closeFileDetailsModal()">
+            <i data-lucide="x" class="h-6 w-6"></i>
+          </button>
+        </div>
+        <div id="modal-content" class="p-6">
+          <!-- File details will be inserted here -->
+        </div>
+      </div>
+    </div>
 
   {{-- Replace old inline dialog with the new partial --}}
   @include('fileindexing.partial.file_indexing_dialog')

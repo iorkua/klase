@@ -71,7 +71,7 @@
                             <div class="flex items-center space-x-2">
                                 <span class="text-lg font-bold text-green-900 font-mono bg-white px-3 py-1 rounded border border-green-200" id="selected-fileno-text"></span>
                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800" id="file-type-badge">
-                                    ✓ CT Ready
+                                    ✓ Selected
                                 </span>
                             </div>
                         </div>
@@ -85,22 +85,6 @@
                         </button>
                     </div>
                 </div>
-                
-                <!-- Show all available file numbers for this record -->
-                <!-- <div class="mt-3 pt-3 border-t border-green-200">
-                    <h4 class="text-xs font-medium text-green-700 mb-2">Available File Numbers:</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
-                        <div id="mls-file-display" class="hidden">
-                            <span class="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded font-mono">MLS: <span id="mls-file-text"></span></span>
-                        </div>
-                        <div id="kangis-file-display" class="hidden">
-                            <span class="inline-block bg-purple-100 text-purple-800 px-2 py-1 rounded font-mono">KANGIS: <span id="kangis-file-text"></span></span>
-                        </div>
-                        <div id="newkangis-file-display" class="hidden">
-                            <span class="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded font-mono">New KANGIS: <span id="newkangis-file-text"></span></span>
-                        </div>
-                    </div>
-                </div> -->
             </div>
         </div>
     </div>
@@ -114,63 +98,97 @@ function smartFilenoSelector() {
         
         init() {
             console.log('Smart CT Fileno Selector initialized');
-            this.initializeSelect2();
+            // Wait for DOM to be fully loaded and jQuery to be available
+            this.$nextTick(() => {
+                setTimeout(() => {
+                    this.initializeSelect2();
+                }, 100);
+            });
         },
         
         initializeSelect2() {
-            // Initialize Select2 with search functionality
-            $('#fileno-select').select2({
-                placeholder: 'Search and select file number...',
-                allowClear: true,
-                width: '100%',
-                minimumInputLength: 1,
-                dropdownParent: $('#property-form-dialog'),
-                templateResult: function(option) {
-                    if (!option.id) {
-                        return option.text;
-                    }
-                    
-                    // Custom template for dropdown options
-                    const fileno = option.element.dataset.fileno || '';
-                    
-                    var $option = $(
-                        '<div class="select2-result-option">' +
-                            '<div class="font-medium text-blue-800">' + fileno + '</div>' +
-                        '</div>'
-                    );
-                    return $option;
-                },
-                templateSelection: function(option) {
-                    if (!option.id) {
-                        return option.text;
-                    }
-                    return option.element.dataset.fileno || option.text;
-                }
-            });
+            // Check if jQuery and Select2 are available
+            if (typeof $ === 'undefined') {
+                console.error('jQuery is not loaded');
+                return;
+            }
             
-            // Handle selection change
-            $('#fileno-select').on('select2:select', (e) => {
-                const selectedOption = e.params.data.element;
-                if (selectedOption) {
-                    this.selectedFileno = selectedOption.getAttribute('data-fileno') || '';
-                    
-                    // Create application object from data attributes
-                    this.selectedApplication = {
-                        id: selectedOption.getAttribute('data-id'),
-                        fileno: selectedOption.getAttribute('data-fileno'),
-                        kangisFileNo: selectedOption.getAttribute('data-kangis-fileno'),
-                        mlsfNo: selectedOption.getAttribute('data-mls-fileno'),
-                        NewKANGISFileNo: selectedOption.getAttribute('data-newkangis-fileno')
-                    };
-                    
-                    this.handleSelection();
-                }
-            });
+            if (typeof $.fn.select2 === 'undefined') {
+                console.error('Select2 is not loaded');
+                return;
+            }
             
-            // Handle clear selection
-            $('#fileno-select').on('select2:clear', () => {
-                this.clearSelection();
-            });
+            const selectElement = $('#fileno-select');
+            if (!selectElement.length) {
+                console.error('Select element #fileno-select not found');
+                return;
+            }
+            
+            // Destroy existing Select2 instance if it exists
+            if (selectElement.hasClass('select2-hidden-accessible')) {
+                selectElement.select2('destroy');
+            }
+            
+            try {
+                // Initialize Select2 with search functionality
+                selectElement.select2({
+                    placeholder: 'Search and select file number...',
+                    allowClear: true,
+                    width: '100%',
+                    minimumInputLength: 1,
+                    // Remove dropdownParent to let it append to body automatically
+                    templateResult: function(option) {
+                        if (!option.id) {
+                            return option.text;
+                        }
+                        
+                        // Custom template for dropdown options
+                        const fileno = option.element.dataset.fileno || '';
+                        
+                        var $option = $(
+                            '<div class="select2-result-option">' +
+                                '<div class="font-medium text-blue-800">' + fileno + '</div>' +
+                            '</div>'
+                        );
+                        return $option;
+                    },
+                    templateSelection: function(option) {
+                        if (!option.id) {
+                            return option.text;
+                        }
+                        return option.element.dataset.fileno || option.text;
+                    }
+                });
+                
+                // Handle selection change
+                selectElement.on('select2:select', (e) => {
+                    const selectedOption = e.params.data.element;
+                    if (selectedOption) {
+                        this.selectedFileno = selectedOption.getAttribute('data-fileno') || '';
+                        
+                        // Create application object from data attributes
+                        this.selectedApplication = {
+                            id: selectedOption.getAttribute('data-id'),
+                            fileno: selectedOption.getAttribute('data-fileno'),
+                            kangisFileNo: selectedOption.getAttribute('data-kangis-fileno'),
+                            mlsfNo: selectedOption.getAttribute('data-mls-fileno'),
+                            NewKANGISFileNo: selectedOption.getAttribute('data-newkangis-fileno')
+                        };
+                        
+                        this.handleSelection();
+                    }
+                });
+                
+                // Handle clear selection
+                selectElement.on('select2:clear', () => {
+                    this.clearSelection();
+                });
+                
+                console.log('Select2 initialized successfully');
+                
+            } catch (error) {
+                console.error('Error initializing Select2:', error);
+            }
         },
         
         handleSelection() {
@@ -204,9 +222,6 @@ function smartFilenoSelector() {
             if (fileTypeBadge) fileTypeBadge.textContent = `✓ Selected`;
             if (selectedDisplay) selectedDisplay.classList.remove('hidden');
             
-            // Show individual file numbers
-            this.displayAllFileNumbers();
-            
             // Dispatch event for other components
             this.$dispatch('ct-fileno-selected', {
                 fileno: this.selectedFileno,
@@ -214,40 +229,6 @@ function smartFilenoSelector() {
             });
             
             console.log('CT File selected:', this.selectedApplication);
-        },
-        
-        displayAllFileNumbers() {
-            const app = this.selectedApplication;
-            
-            // MLS File Number
-            const mlsDisplay = document.getElementById('mls-file-display');
-            const mlsText = document.getElementById('mls-file-text');
-            if (app.mlsfNo) {
-                if (mlsText) mlsText.textContent = app.mlsfNo;
-                if (mlsDisplay) mlsDisplay.classList.remove('hidden');
-            } else {
-                if (mlsDisplay) mlsDisplay.classList.add('hidden');
-            }
-            
-            // KANGIS File Number
-            const kangisDisplay = document.getElementById('kangis-file-display');
-            const kangisText = document.getElementById('kangis-file-text');
-            if (app.kangisFileNo) {
-                if (kangisText) kangisText.textContent = app.kangisFileNo;
-                if (kangisDisplay) kangisDisplay.classList.remove('hidden');
-            } else {
-                if (kangisDisplay) kangisDisplay.classList.add('hidden');
-            }
-            
-            // New KANGIS File Number
-            const newKangisDisplay = document.getElementById('newkangis-file-display');
-            const newKangisText = document.getElementById('newkangis-file-text');
-            if (app.NewKANGISFileNo) {
-                if (newKangisText) newKangisText.textContent = app.NewKANGISFileNo;
-                if (newKangisDisplay) newKangisDisplay.classList.remove('hidden');
-            } else {
-                if (newKangisDisplay) newKangisDisplay.classList.add('hidden');
-            }
         },
         
         clearSelection() {
@@ -272,11 +253,6 @@ function smartFilenoSelector() {
             const selectedDisplay = document.getElementById('selected-fileno-display');
             if (selectedDisplay) selectedDisplay.classList.add('hidden');
             
-            // Hide all file number displays
-            document.getElementById('mls-file-display')?.classList.add('hidden');
-            document.getElementById('kangis-file-display')?.classList.add('hidden');
-            document.getElementById('newkangis-file-display')?.classList.add('hidden');
-            
             // Clear dropdown
             const filenoSelect = document.getElementById('fileno-select');
             if (filenoSelect) {
@@ -289,21 +265,27 @@ function smartFilenoSelector() {
     }
 }
 
-// Initialize clear button functionality
+// Initialize clear button functionality when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    const clearBtn = document.getElementById('clear-selection');
-    if (clearBtn) {
-        clearBtn.addEventListener('click', function() {
-            // Clear Select2 selection
-            $('#fileno-select').val(null).trigger('change');
-            
-            // Trigger Alpine.js clear method
-            const component = document.querySelector('[x-data*="smartFilenoSelector"]');
-            if (component && component._x_dataStack) {
-                component._x_dataStack[0].clearSelection();
-            }
-        });
-    }
+    // Delay the initialization to ensure all scripts are loaded
+    setTimeout(() => {
+        const clearBtn = document.getElementById('clear-selection');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                // Check if jQuery and Select2 are available
+                if (typeof $ !== 'undefined' && typeof $.fn.select2 !== 'undefined') {
+                    // Clear Select2 selection
+                    $('#fileno-select').val(null).trigger('change');
+                }
+                
+                // Trigger Alpine.js clear method
+                const component = document.querySelector('[x-data*="smartFilenoSelector"]');
+                if (component && component._x_dataStack) {
+                    component._x_dataStack[0].clearSelection();
+                }
+            });
+        }
+    }, 200);
 });
 </script>
 

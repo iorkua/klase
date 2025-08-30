@@ -135,11 +135,198 @@ function handleFileSelect(e) {
 
 async function handleFiles(files) {
     selectedFiles = files;
-    
-    // filePreviewData is no longer needed as original file reference is stored in uploadedFiles
-    
     updateSelectedFilesDisplay();
     updateUploadButtons();
+    
+    // Generate client-side preview for the first selected file
+    if (files.length > 0) {
+        await generateClientSidePreview(files[0]);
+    }
+}
+
+// Generate client-side preview for selected files before upload
+async function generateClientSidePreview(file) {
+    const previewContainer = document.getElementById('client-preview-container');
+    if (!previewContainer) return;
+    
+    // Show preview container
+    previewContainer.classList.remove('hidden');
+    
+    const previewContent = document.getElementById('client-preview-content');
+    const previewTitle = document.getElementById('client-preview-title');
+    
+    if (previewTitle) {
+        previewTitle.textContent = `Preview: ${file.name}`;
+    }
+    
+    if (!previewContent) return;
+    
+    try {
+        if (file.type === 'application/pdf') {
+            await loadClientPDFPreview(file, previewContent);
+        } else if (file.type.startsWith('image/')) {
+            await loadClientImagePreview(file, previewContent);
+        } else {
+            previewContent.innerHTML = `
+                <div class="text-center py-8">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">${file.name}</h3>
+                    <p class="mt-1 text-sm text-gray-500">File Type: ${file.type}</p>
+                    <p class="mt-1 text-sm text-gray-500">Size: ${formatFileSize(file.size)}</p>
+                    <p class="mt-1 text-xs text-gray-400">Preview not available for this file type</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error generating client preview:', error);
+        previewContent.innerHTML = `
+            <div class="text-center py-8">
+                <svg class="mx-auto h-12 w-12 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">Preview Error</h3>
+                <p class="mt-1 text-sm text-gray-500">Could not generate preview for ${file.name}</p>
+                <p class="mt-1 text-xs text-gray-400">${error.message}</p>
+            </div>
+        `;
+    }
+}
+
+// Load PDF preview from client-side file
+async function loadClientPDFPreview(file, container) {
+    container.innerHTML = `
+        <div class="text-center py-8">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p class="mt-2 text-sm text-gray-600">Loading PDF preview...</p>
+        </div>
+    `;
+    
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        
+        // Get first page
+        const page = await pdf.getPage(1);
+        
+        // Calculate appropriate scale for preview
+        const viewport = page.getViewport({ scale: 1.0 });
+        const maxWidth = 400; // Maximum width for preview
+        const scale = Math.min(maxWidth / viewport.width, 1.5);
+        const scaledViewport = page.getViewport({ scale });
+        
+        // Create canvas for PDF rendering
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.height = scaledViewport.height;
+        canvas.width = scaledViewport.width;
+        
+        // Render page
+        await page.render({
+            canvasContext: context,
+            viewport: scaledViewport
+        }).promise;
+        
+        // Create preview HTML with the rendered canvas
+        container.innerHTML = `
+            <div class="text-center">
+                <div class="border rounded-lg p-4 bg-white inline-block shadow-sm">
+                    <div class="mb-3">
+                        <canvas class="max-w-full h-auto border rounded" style="max-height: 400px;"></canvas>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        <p class="font-medium text-gray-900">${file.name}</p>
+                        <p class="text-xs">Page 1 of ${pdf.numPages} • ${formatFileSize(file.size)}</p>
+                        <p class="text-xs text-green-600 mt-1">✓ PDF Preview Ready</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Copy the rendered canvas to the DOM canvas
+        const displayCanvas = container.querySelector('canvas');
+        displayCanvas.width = canvas.width;
+        displayCanvas.height = canvas.height;
+        const displayContext = displayCanvas.getContext('2d');
+        displayContext.drawImage(canvas, 0, 0);
+        
+    } catch (error) {
+        console.error('PDF preview error:', error);
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <svg class="mx-auto h-12 w-12 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">PDF Preview Failed</h3>
+                <p class="mt-1 text-sm text-gray-500">${file.name}</p>
+                <p class="mt-1 text-xs text-red-600">${error.message}</p>
+            </div>
+        `;
+    }
+}
+
+// Load image preview from client-side file
+async function loadClientImagePreview(file, container) {
+    container.innerHTML = `
+        <div class="text-center py-8">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p class="mt-2 text-sm text-gray-600">Loading image preview...</p>
+        </div>
+    `;
+    
+    try {
+        const imageUrl = URL.createObjectURL(file);
+        
+        // Create image element to get dimensions
+        const img = new Image();
+        
+        await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+            img.src = imageUrl;
+        });
+        
+        // Create preview HTML with the loaded image
+        container.innerHTML = `
+            <div class="text-center">
+                <div class="border rounded-lg p-4 bg-white inline-block shadow-sm">
+                    <div class="mb-3">
+                        <img src="${imageUrl}" alt="${file.name}" class="max-w-full h-auto border rounded" style="max-height: 400px; max-width: 400px;">
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        <p class="font-medium text-gray-900">${file.name}</p>
+                        <p class="text-xs">${img.width} × ${img.height} pixels • ${formatFileSize(file.size)}</p>
+                        <p class="text-xs text-green-600 mt-1">✓ Image Preview Ready</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Clean up object URL after a delay to ensure image is loaded
+        setTimeout(() => URL.revokeObjectURL(imageUrl), 5000);
+        
+    } catch (error) {
+        console.error('Image preview error:', error);
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <svg class="mx-auto h-12 w-12 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">Image Preview Failed</h3>
+                <p class="mt-1 text-sm text-gray-500">${file.name}</p>
+                <p class="mt-1 text-xs text-red-600">${error.message}</p>
+            </div>
+        `;
+    }
+}
+
+// Hide client preview
+function hideClientPreview() {
+    const previewContainer = document.getElementById('client-preview-container');
+    if (previewContainer) {
+        previewContainer.classList.add('hidden');
+    }
 }
 
 function updateSelectedFilesDisplay() {
@@ -176,7 +363,6 @@ function updateSelectedFilesDisplay() {
 }
 
 function removeSelectedFile(index) {
-    // No need to delete from filePreviewData anymore
     selectedFiles.splice(index, 1);
     updateSelectedFilesDisplay();
     updateUploadButtons();
@@ -184,9 +370,9 @@ function removeSelectedFile(index) {
 
 function clearAllFiles() {
     selectedFiles = [];
-    // filePreviewData = {}; // No longer needed
     updateSelectedFilesDisplay();
     updateUploadButtons();
+    hideClientPreview();
 }
 
 function updateUploadButtons() {
@@ -210,11 +396,22 @@ function updateUploadButtons() {
     }
 }
 
-// Upload functionality
-function startUpload() {
+// Upload functionality with backend integration
+async function startUpload(event) {
+    // Prevent any default form submission behavior
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
     if (selectedFiles.length === 0) {
-        alert('Please select files to upload');
-        return;
+        Swal.fire({
+            icon: 'warning',
+            title: 'No Files Selected',
+            text: 'Please select files to upload first.',
+            confirmButtonColor: '#3b82f6'
+        });
+        return false;
     }
 
     uploadStatus = 'uploading';
@@ -226,48 +423,79 @@ function startUpload() {
     const progressDiv = document.getElementById('upload-progress');
     if (progressDiv) progressDiv.classList.remove('hidden');
 
-    // Add files to uploaded list with original file references immediately
-    const newFiles = selectedFiles.map((file, index) => ({
-        id: `UPLOAD-${Date.now()}-${index}`, // Unique ID for each uploaded file
-        name: file.name,
-        size: formatFileSize(file.size),
-        type: file.type || getFileTypeFromName(file.name),
-        status: 'Uploading...', // Initial status
-        date: new Date().toLocaleDateString(),
-        file: file // Store original file reference
-    }));
+    try {
+        // First, upload files to the server
+        const formData = new FormData();
+        selectedFiles.forEach((file, index) => {
+            formData.append(`files[${index}]`, file);
+        });
 
-    uploadedFiles = [...newFiles, ...uploadedFiles];
-    filteredFiles = uploadedFiles; // Initialize filtered files
-    updateUploadedFilesDisplay(); // Update display to show new files as 'Uploading...'
+        // Show uploading progress
+        updateUploadProgress();
+        const uploadInterval = setInterval(() => {
+            if (uploadProgress < 30) {
+                uploadProgress += 2;
+                updateUploadProgress();
+            }
+        }, 100);
 
-    // Simulate upload progress
-    const interval = setInterval(() => {
-        uploadProgress += 5;
+        const uploadResponse = await fetch('/unindexed-scanning/upload', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        });
+
+        clearInterval(uploadInterval);
+        uploadProgress = 40;
         updateUploadProgress();
 
-        if (uploadProgress >= 100) {
-            clearInterval(interval);
-            uploadStatus = 'complete';
-            updateUploadStatus();
-            updateUploadButtons();
+        const uploadResult = await uploadResponse.json();
 
-            // Update status of newly uploaded files to 'Ready for analysis'
-            newFiles.forEach(file => {
-                const index = uploadedFiles.findIndex(f => f.id === file.id);
-                if (index !== -1) {
-                    uploadedFiles[index].status = 'Ready for analysis';
-                }
-            });
-            updateUploadedFilesDisplay(); // Refresh table with new status
-            updateStats();
-
-            // Start AI processing for the newly uploaded files
-            setTimeout(() => {
-                startAiProcessing(newFiles.map(f => f.id)); // Pass IDs of files to process
-            }, 500);
+        if (!uploadResult.success) {
+            throw new Error(uploadResult.message || 'Upload failed');
         }
-    }, 200);
+
+        // Add uploaded files to the list with backend data
+        const newFiles = uploadResult.files.map(file => ({
+            id: file.id, // Use the actual scanning ID from backend
+            scanning_id: file.id,
+            file_indexing_id: file.file_indexing_id,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            status: 'Uploaded - Processing...',
+            date: file.date,
+            originalFile: selectedFiles.find(f => f.name === file.name) // Keep reference for OCR
+        }));
+
+        uploadedFiles = [...newFiles, ...uploadedFiles];
+        filteredFiles = uploadedFiles;
+        updateUploadedFilesDisplay();
+
+        uploadProgress = 50;
+        updateUploadProgress();
+
+        // Start AI processing for the newly uploaded files
+        await startAiProcessing(newFiles);
+
+    } catch (error) {
+        console.error('Upload error:', error);
+        uploadStatus = 'error';
+        updateUploadStatus();
+        updateUploadButtons();
+        
+        const progressDiv = document.getElementById('upload-progress');
+        if (progressDiv) progressDiv.classList.add('hidden');
+
+        Swal.fire({
+            icon: 'error',
+            title: 'Upload Failed',
+            text: error.message || 'An error occurred while uploading files.',
+            confirmButtonColor: '#3b82f6'
+        });
+    }
 }
 
 function cancelUpload() {
@@ -283,7 +511,6 @@ function resetUpload() {
     uploadStatus = 'idle';
     uploadProgress = 0;
     selectedFiles = [];
-    // filePreviewData = {}; // No longer needed
     aiProcessingStage = 'idle';
     aiProgress = 0;
     extractedMetadata = {}; // Clear extracted metadata
@@ -294,7 +521,7 @@ function resetUpload() {
     
     const progressDiv = document.getElementById('upload-progress');
     const aiDiv = document.getElementById('ai-processing');
-    if (progressDiv) aiDiv.classList.add('hidden');
+    if (aiDiv) aiDiv.classList.add('hidden');
     if (progressDiv) progressDiv.classList.add('hidden');
 }
 
@@ -347,13 +574,13 @@ function updateStats() {
     const pendingEl = document.getElementById('pendingIndexing');
     
     if (todaysEl) todaysEl.textContent = uploadedFiles.length;
-    if (pendingEl) pendingEl.textContent = uploadedFiles.filter(f => f.status !== 'Indexed').length; // Count files not yet indexed
+    if (pendingEl) pendingEl.textContent = uploadedFiles.filter(f => f.status !== 'Indexed').length;
 }
 
 // AI Processing functionality with real OCR
-async function startAiProcessing(fileIdsToProcess) {
+async function startAiProcessing(newFiles) {
     aiProcessingStage = 'analyzing';
-    aiProgress = 0;
+    aiProgress = 50; // Start from 50% since upload is complete
     
     const aiDiv = document.getElementById('ai-processing');
     if (aiDiv) aiDiv.classList.remove('hidden');
@@ -367,14 +594,14 @@ async function startAiProcessing(fileIdsToProcess) {
     try {
         const newExtractedMetadata = {};
 
-        for (let i = 0; i < fileIdsToProcess.length; i++) {
-            const fileId = fileIdsToProcess[i];
-            const fileEntry = uploadedFiles.find(f => f.id === fileId);
-            if (!fileEntry || !fileEntry.file) {
-                console.warn(`File entry not found for ID: ${fileId}`);
+        for (let i = 0; i < newFiles.length; i++) {
+            const fileEntry = newFiles[i];
+            const file = fileEntry.originalFile;
+            
+            if (!file) {
+                console.warn(`Original file not found for: ${fileEntry.name}`);
                 continue;
             }
-            const file = fileEntry.file;
             
             // Update current file being processed
             const currentFileEl = document.getElementById('ocr-current-file');
@@ -382,7 +609,7 @@ async function startAiProcessing(fileIdsToProcess) {
                 currentFileEl.textContent = `Processing: ${file.name}`;
             }
             
-            updateOcrProgress((i / fileIdsToProcess.length) * 25);
+            updateOcrProgress(25 + (i / newFiles.length) * 25);
 
             let extractedText = '';
 
@@ -394,20 +621,20 @@ async function startAiProcessing(fileIdsToProcess) {
                 extractedText = `Unsupported file type: ${file.type}`;
             }
 
-            updateOcrProgress(50 + (i / fileIdsToProcess.length) * 50);
+            updateOcrProgress(50 + (i / newFiles.length) * 50);
 
             const fileMetadata = extractMetadataFromText(extractedText, file.name);
-            newExtractedMetadata[fileId] = { // Key by the uploadedFile's ID
+            newExtractedMetadata[fileEntry.id] = {
                 ...fileMetadata,
                 originalFileName: file.name,
                 extractedText: extractedText,
                 fileSize: formatFileSize(file.size),
                 fileType: file.type,
-                file: file // Store original file reference
+                file_indexing_id: fileEntry.file_indexing_id
             };
 
             // Update the status of the file in the main uploadedFiles array
-            const uploadedFileIndex = uploadedFiles.findIndex(f => f.id === fileId);
+            const uploadedFileIndex = uploadedFiles.findIndex(f => f.id === fileEntry.id);
             if (uploadedFileIndex !== -1) {
                 uploadedFiles[uploadedFileIndex].status = 'Analysis Complete';
             }
@@ -421,7 +648,7 @@ async function startAiProcessing(fileIdsToProcess) {
             if (ocrModal) ocrModal.classList.add('hidden');
             
             aiProcessingStage = 'extracting';
-            aiProgress = 60;
+            aiProgress = 70;
             updateAiProgress();
 
             setTimeout(() => {
@@ -432,19 +659,28 @@ async function startAiProcessing(fileIdsToProcess) {
                 setTimeout(() => {
                     aiProcessingStage = 'complete';
                     aiProgress = 100;
+                    uploadStatus = 'complete';
+                    updateUploadStatus();
+                    updateUploadButtons();
                     updateAiProgress();
                     showAnalysisResults();
-                    updateUploadedFilesDisplay(); // Refresh the table after analysis
+                    updateUploadedFilesDisplay();
                     updateStats();
-                }, 2000);
-            }, 2000);
+                }, 1000);
+            }, 1000);
         }, 1000);
 
     } catch (error) {
         console.error('Error processing documents:', error);
         if (ocrModal) ocrModal.classList.add('hidden');
         aiProcessingStage = 'idle';
-        alert('Error processing documents. Please try again.');
+        
+        Swal.fire({
+            icon: 'error',
+            title: 'Processing Failed',
+            text: 'Error processing documents. Please try again.',
+            confirmButtonColor: '#3b82f6'
+        });
     }
 }
 
@@ -596,6 +832,78 @@ function generateMetadataResultHTML(fileId, data) {
             </div>
         </div>
     `;
+}
+
+// Create indexing entries with backend integration
+async function createIndexingEntries() {
+    try {
+        // Prepare entries data for backend
+        const entries = Object.entries(extractedMetadata).map(([fileId, data]) => ({
+            file_indexing_id: data.file_indexing_id,
+            file_number: data.extractedFileNumber || `AUTO-${Date.now()}`,
+            file_title: data.detectedOwner || data.originalFileName,
+            plot_number: data.plotNumber || null,
+            land_use_type: data.landUseType || 'Unknown',
+            district: data.district || 'Unknown',
+            lga: data.district || 'Unknown'
+        }));
+
+        if (entries.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'No Data to Save',
+                text: 'No extracted metadata found to create indexing entries.',
+                confirmButtonColor: '#3b82f6'
+            });
+            return;
+        }
+
+        // Show loading
+        Swal.fire({
+            title: 'Creating Indexing Entries...',
+            text: 'Please wait while we save the extracted data.',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        const response = await fetch('/unindexed-scanning/create-indexing-entry', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ entries })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: result.message,
+                confirmButtonColor: '#3b82f6'
+            }).then(() => {
+                // Reset the upload interface
+                resetUpload();
+                // Optionally redirect to page typing or file indexing
+                // window.location.href = '/pagetyping';
+            });
+        } else {
+            throw new Error(result.message || 'Failed to create indexing entries');
+        }
+
+    } catch (error) {
+        console.error('Error creating indexing entries:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: error.message || 'An error occurred while creating indexing entries.',
+            confirmButtonColor: '#3b82f6'
+        });
+    }
 }
 
 // Real PDF text extraction using PDF.js
@@ -874,7 +1182,7 @@ function calculateConfidenceScore(newFileNumberFound, ownerFound, landUseFound, 
     let score = 0;
     if (newFileNumberFound) score += 25;
     if (ownerFound) score += 20;
-    if (plotNumberFound) score += 15; // Added for Plot No:
+    if (plotNumberFound) score += 15;
     if (landUseFound) score += 10;
     if (districtFound) score += 5;
     if (documentTypeFound) score += 5;
@@ -915,297 +1223,561 @@ function getFileIcon(fileType) {
         return '<svg class="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>';
     }
     if (fileType.includes('image')) {
-        return '<svg class="h-5 w-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>';
+        return '<svg class="h-5 w-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>';
     }
     return '<svg class="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>';
 }
 
-// Unified function to open metadata edit modal with preview
-function openMetadataEditModal(fileId) {
-    currentEditingFile = fileId;
-    
-    const fileEntry = uploadedFiles.find(f => f.id === fileId);
-    if (!fileEntry || !fileEntry.file) {
-        alert('File not found or not available for editing/preview.');
-        return;
-    }
-
-    const metadataEntry = extractedMetadata[fileId] || {
-        extractedFileNumber: '',
-        plotNumber: '', 
-        detectedOwner: '',
-        landUseType: '',
-        extractedText: 'Text extraction not yet performed or available.'
-    };
-    
-    const form = document.getElementById('metadata-form');
-    const extractedTextPreview = document.getElementById('metadata-extracted-text-preview');
-    const modalTitle = document.getElementById('metadata-modal-title');
-    
-    // Preview elements
-    const pdfPreviewWrapper = document.getElementById('pdf-preview-wrapper');
-    const imagePreviewWrapper = document.getElementById('image-preview-wrapper');
-    const unsupportedPreviewMessage = document.getElementById('unsupported-preview-message');
-    const pdfPreviewCanvas = document.getElementById('pdf-preview-canvas');
-    const pdfLoadingPlaceholder = document.getElementById('pdf-loading-placeholder');
-    const pdfNavigationControls = document.getElementById('pdf-navigation-controls');
-    const imagePreviewImg = document.getElementById('image-preview-img');
-    const imageLoadingPlaceholder = document.getElementById('image-loading-placeholder');
-
-
-    if (!form || !extractedTextPreview || !modalTitle || !pdfPreviewWrapper || !imagePreviewWrapper || !unsupportedPreviewMessage || !pdfPreviewCanvas || !pdfLoadingPlaceholder || !pdfNavigationControls || !imagePreviewImg || !imageLoadingPlaceholder) {
-        console.error("One or more modal elements not found.");
-        return;
-    }
-
-    modalTitle.textContent = `Edit Metadata - ${fileEntry.name}`;
-    
-    // Populate the metadata form
-    form.innerHTML = `
-        <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">File Number</label>
-            <input type="text" id="edit-fileNumber" value="${metadataEntry.extractedFileNumber}" 
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                   placeholder="Enter file number">
-        </div>
-        <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">Plot No:</label>
-            <input type="text" id="edit-plotNumber" value="${metadataEntry.plotNumber}" 
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                   placeholder="Enter plot number">
-        </div>
-        <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">File Name</label>
-            <input type="text" id="edit-owner" value="${metadataEntry.detectedOwner}"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                   placeholder="Enter file name">
-        </div>
-        <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">Land Use Type</label>
-            <select id="edit-landUse" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                <option value="">Select land use</option>
-                <option value="Commercial" ${metadataEntry.landUseType === 'Commercial' ? 'selected' : ''}>Commercial</option>
-                <option value="Residential" ${metadataEntry.landUseType === 'Residential' ? 'selected' : ''}>Residential</option>
-                <option value="Industrial" ${metadataEntry.landUseType === 'Industrial' ? 'selected' : ''}>Industrial</option>
-                <option value="Agricultural" ${metadataEntry.landUseType === 'Agricultural' ? 'selected' : ''}>Agricultural</option>
-            </select>
-        </div>
-    `;
-    
-    // Populate extracted text preview
-    extractedTextPreview.textContent = metadataEntry.extractedText;
-    
-    // Reset and hide all preview elements first
-    pdfPreviewWrapper.classList.add('hidden');
-    imagePreviewWrapper.classList.add('hidden');
-    unsupportedPreviewMessage.classList.add('hidden');
-
-    // Render document preview based on file type
-    if (fileEntry.file.type === 'application/pdf') {
-        pdfPreviewWrapper.classList.remove('hidden');
-        pdfPreviewCanvas.classList.add('hidden'); // Hide canvas until rendered
-        pdfLoadingPlaceholder.classList.remove('hidden'); // Show loading message
-        pdfNavigationControls.classList.add('hidden'); // Hide controls until PDF is loaded
-
-        currentPDFDocument = null; // Reset document for new file
-        currentPageNumber = 1; // Reset to first page
-        loadAndRenderPDFPreview(fileEntry.file);
-    } else if (fileEntry.file.type.startsWith('image/')) {
-        imagePreviewWrapper.classList.remove('hidden');
-        imagePreviewImg.classList.add('hidden'); // Hide img until loaded
-        imageLoadingPlaceholder.classList.remove('hidden'); // Show loading message
-        renderImagePreview(fileEntry.file);
-    } else {
-        unsupportedPreviewMessage.classList.remove('hidden');
-    }
-
-    const modal = document.getElementById('metadata-modal');
-    if (modal) modal.classList.remove('hidden');
-}
-
-async function loadAndRenderPDFPreview(file) {
-    const pdfLoadingPlaceholder = document.getElementById('pdf-loading-placeholder');
-    const pdfPreviewCanvas = document.getElementById('pdf-preview-canvas');
-    const pdfNavigationControls = document.getElementById('pdf-navigation-controls');
-
-    pdfLoadingPlaceholder.classList.remove('hidden'); // Show loading message
-    pdfPreviewCanvas.classList.add('hidden');     // Hide canvas
-    pdfNavigationControls.classList.add('hidden'); // Hide controls
-
+// Modal and metadata editing functions
+async function openMetadataEditModal(fileId) {
     try {
-        if (typeof pdfjsLib === 'undefined') {
-            throw new Error("PDF.js library is not loaded.");
+        const modal = document.getElementById('metadata-modal');
+        const modalTitle = document.getElementById('metadata-modal-title');
+        const metadataForm = document.getElementById('metadata-form');
+        const previewContent = document.getElementById('metadata-preview-content');
+        const extractedTextPreview = document.getElementById('metadata-extracted-text-preview');
+        
+        if (!modal || !modalTitle || !metadataForm || !previewContent) {
+            console.error('Modal elements not found');
+            return;
         }
-        const arrayBuffer = await file.arrayBuffer();
-        currentPDFDocument = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        currentPageNumber = 1; // Ensure it starts on page 1
-        renderSinglePDFPage(); // Render the first page
+
+        // Get uploaded file data from local array (optional)
+        const uploadedFile = uploadedFiles.find(f => f.id === fileId);
+        
+        // Get or create file metadata from local storage
+        let fileData = extractedMetadata[fileId];
+        
+        // If no metadata exists yet, create default structure
+        if (!fileData) {
+            const fileName = uploadedFile ? uploadedFile.name : `Document ${fileId}`;
+            fileData = {
+                extractedFileNumber: '',
+                fileNumberFound: false,
+                detectedOwner: fileName.replace(/\.[^/.]+$/, ""), // Use filename without extension as default
+                ownerFound: false,
+                plotNumber: '',
+                plotNumberFound: false,
+                landUseType: '',
+                landUseFound: false,
+                district: '',
+                districtFound: false,
+                documentType: 'Land Document',
+                documentTypeFound: false,
+                confidence: 0,
+                originalFileName: fileName,
+                extractedText: 'You can edit the metadata manually. OCR data will be merged when processing completes.',
+                fileSize: uploadedFile ? uploadedFile.size : 'Unknown',
+                fileType: uploadedFile ? uploadedFile.type : 'Unknown',
+                file_indexing_id: uploadedFile ? uploadedFile.file_indexing_id : null
+            };
+            
+            // Store the default metadata
+            extractedMetadata[fileId] = fileData;
+        }
+
+        // Set current editing file
+        currentEditingFile = fileId;
+        
+        // Update modal title
+        modalTitle.textContent = `Edit Metadata - ${fileData.originalFileName}`;
+        
+        // Generate metadata form
+        generateMetadataForm(fileData, metadataForm);
+        
+        // Load document preview using the original file data
+        await loadModalDocumentPreview(fileId, uploadedFile, previewContent);
+        
+        // Show extracted text
+        if (extractedTextPreview) {
+            if (fileData.extractedText) {
+                extractedTextPreview.textContent = fileData.extractedText.substring(0, 2000) + 
+                    (fileData.extractedText.length > 2000 ? '...\n\n[Text truncated for display]' : '');
+            } else {
+                extractedTextPreview.textContent = 'You can edit the metadata manually. OCR data will be merged when available.';
+            }
+        }
+        
+        // Show modal
+        modal.classList.remove('hidden');
+        
     } catch (error) {
-        console.error('Error loading PDF document:', error);
-        pdfLoadingPlaceholder.textContent = 'Error loading PDF preview.';
-        pdfLoadingPlaceholder.classList.remove('hidden');
+        console.error('Error opening metadata modal:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to open metadata editor.',
+            confirmButtonColor: '#3b82f6'
+        });
     }
 }
 
-async function renderSinglePDFPage() {
-    const pdfPreviewCanvas = document.getElementById('pdf-preview-canvas');
-    const pdfNavigationControls = document.getElementById('pdf-navigation-controls');
-    const pageInfoSpan = document.getElementById('page-info');
-    const prevPageBtn = document.getElementById('prev-page-btn');
-    const nextPageBtn = document.getElementById('next-page-btn');
-    const pdfLoadingPlaceholder = document.getElementById('pdf-loading-placeholder');
+function generateMetadataForm(fileData, container) {
+    const formFields = [
+        {
+            key: 'extractedFileNumber',
+            label: 'File Number (KANGIS)',
+            type: 'text',
+            placeholder: 'e.g., MLKN 123456',
+            required: true
+        },
+        {
+            key: 'detectedOwner',
+            label: 'Property Owner/File Title',
+            type: 'text',
+            placeholder: 'e.g., ALH. JOHN DOE',
+            required: true
+        },
+        {
+            key: 'plotNumber',
+            label: 'Plot Number',
+            type: 'text',
+            placeholder: 'e.g., A/123/45'
+        },
+        {
+            key: 'landUseType',
+            label: 'Land Use Type',
+            type: 'select',
+            options: ['', 'RESIDENTIAL', 'AGRICULTURAL', 'COMMERCIAL', 'COMMERCIAL (WARE HOUSE)', 
+                 'COMMERCIAL (OFFICES)', 'COMMERCIAL (PETROL FILLING STATION)', 'COMMERCIAL (RICE PROCESSING)',
+                 'COMMERCIAL (SCHOOL)', 'COMMERCIAL (SHOPS & PUBLIC CONVINIENCE)', 'COMMERCIAL (SHOPS AND OFFICES)',
+                 'COMMERCIAL (SHOPS)', 'COMMERCIAL (WAREHOUSE)', 'COMMERCIAL (WORKSHOP AND OFFICES)',
+                 'COMMERCIAL AND RESIDENTIAL', 'INDUSTRIAL', 'INDUSTRIAL (SMALL SCALE)', 
+                 'RESIDENTIAL AND COMMERCIAL', 'RESIDENTIAL/COMMERCIAL', 'RESIDENTIAL/COMMERCIAL LAYOUT']
+        },
+        {
+            key: 'district',
+            label: 'LGA',
+            type: 'select',
+            options: ['', 'Fagge', 'Nasarawa', 'Bompai', 'Kano Municipal', 'Dala', 'Gwale', 'Tarauni', 'Ajingi', 'Albasu', 'Bagwai', 'Bebeji', 'Bichi', 'Bunkure', 'Dambatta', 'Dawakin Kudu', 'Dawakin Tofa', 'Doguwa', 'Gabasawa', 'Garko', 'Garun Mallam', 'Gaya', 'Gezawa', 'Gwarzo', 'Kabo', 'Karaye', 'Kibiya', 'Kiru', 'Kumbotso', 'Kunchi', 'Kura', 'Madobi', 'Makoda', 'Minjibir', 'Rano', 'Rimin Gado', 'Rogo', 'Shanono', 'Sumaila', 'Takai', 'Tofa', 'Tsanyawa', 'Tudun Wada', 'Ungogo', 'Warawa', 'Wudil']
+        },
+        {
+            key: 'documentType',
+            label: 'Document Type',
+            type: 'select',
+            options: ['', 'Certificate of Occupancy', 'Deed of Assignment', 'Survey Plan', 'Recertification Document', 'Other']
+        }
+    ];
 
-    if (!currentPDFDocument || !pdfPreviewCanvas || !pageInfoSpan || !prevPageBtn || !nextPageBtn || !pdfNavigationControls || !pdfLoadingPlaceholder) {
-        console.error("PDF preview elements not found or PDF not loaded.");
+    const formHTML = formFields.map(field => {
+        const value = fileData[field.key] || '';
+        
+        if (field.type === 'select') {
+            const optionsHTML = field.options.map(option => 
+                `<option value="${option}" ${option === value ? 'selected' : ''}>${option}</option>`
+            ).join('');
+            
+            return `
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700" for="${field.key}">
+                        ${field.label} ${field.required ? '<span class="text-red-500">*</span>' : ''}
+                    </label>
+                    <select id="${field.key}" name="${field.key}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" ${field.required ? 'required' : ''}>
+                        ${optionsHTML}
+                    </select>
+                </div>
+            `;
+        } else {
+            return `
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700" for="${field.key}">
+                        ${field.label} ${field.required ? '<span class="text-red-500">*</span>' : ''}
+                    </label>
+                    <input type="${field.type}" id="${field.key}" name="${field.key}" value="${value}" placeholder="${field.placeholder || ''}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" ${field.required ? 'required' : ''}>
+                </div>
+            `;
+        }
+    }).join('');
+
+    container.innerHTML = formHTML;
+}
+
+// New function for modal document preview using original file data
+async function loadModalDocumentPreview(fileId, uploadedFile, container) {
+    try {
+        // Hide all preview wrappers first
+        const pdfWrapper = document.getElementById('pdf-preview-wrapper');
+        const imageWrapper = document.getElementById('image-preview-wrapper');
+        const unsupportedMessage = document.getElementById('unsupported-preview-message');
+        
+        [pdfWrapper, imageWrapper, unsupportedMessage].forEach(el => {
+            if (el) el.classList.add('hidden');
+        });
+
+        // Get the original file from the uploaded file data
+        const originalFile = uploadedFile ? uploadedFile.originalFile : null;
+        
+        if (originalFile) {
+            // Use client-side preview functions with the original file
+            if (originalFile.type === 'application/pdf') {
+                await loadModalPDFPreview(originalFile, pdfWrapper);
+            } else if (originalFile.type.startsWith('image/')) {
+                await loadModalImagePreview(originalFile, imageWrapper);
+            } else {
+                if (unsupportedMessage) {
+                    unsupportedMessage.classList.remove('hidden');
+                    unsupportedMessage.textContent = `Preview not available for ${originalFile.type}`;
+                }
+            }
+        } else {
+            // Fallback: try backend preview if original file not available
+            if (uploadedFile && uploadedFile.type === 'application/pdf') {
+                await loadPDFPreview(fileId, uploadedFile, pdfWrapper);
+            } else if (uploadedFile && uploadedFile.type.startsWith('image/')) {
+                await loadImagePreview(fileId, uploadedFile, imageWrapper);
+            } else {
+                if (unsupportedMessage) {
+                    unsupportedMessage.classList.remove('hidden');
+                    unsupportedMessage.textContent = 'Document preview not available';
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error loading modal document preview:', error);
+        const unsupportedMessage = document.getElementById('unsupported-preview-message');
+        if (unsupportedMessage) {
+            unsupportedMessage.classList.remove('hidden');
+            unsupportedMessage.textContent = 'Error loading document preview';
+        }
+    }
+}
+
+async function loadDocumentPreview(fileId, uploadedFile, container) {
+    try {
+        // Hide all preview wrappers first
+        const pdfWrapper = document.getElementById('pdf-preview-wrapper');
+        const imageWrapper = document.getElementById('image-preview-wrapper');
+        const unsupportedMessage = document.getElementById('unsupported-preview-message');
+        
+        [pdfWrapper, imageWrapper, unsupportedMessage].forEach(el => {
+            if (el) el.classList.add('hidden');
+        });
+
+        if (uploadedFile.type === 'application/pdf') {
+            await loadPDFPreview(fileId, uploadedFile, pdfWrapper);
+        } else if (uploadedFile.type.startsWith('image/')) {
+            await loadImagePreview(fileId, uploadedFile, imageWrapper);
+        } else {
+            if (unsupportedMessage) {
+                unsupportedMessage.classList.remove('hidden');
+                unsupportedMessage.textContent = `Preview not available for ${uploadedFile.type}`;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading document preview:', error);
+        const unsupportedMessage = document.getElementById('unsupported-preview-message');
+        if (unsupportedMessage) {
+            unsupportedMessage.classList.remove('hidden');
+            unsupportedMessage.textContent = 'Error loading document preview';
+        }
+    }
+}
+
+async function loadPDFPreview(fileId, uploadedFile, wrapper) {
+    if (!wrapper) return;
+    
+    wrapper.classList.remove('hidden');
+    const canvas = document.getElementById('pdf-preview-canvas');
+    const loadingPlaceholder = document.getElementById('pdf-loading-placeholder');
+    const navigationControls = document.getElementById('pdf-navigation-controls');
+    const pageInfo = document.getElementById('page-info');
+    
+    if (loadingPlaceholder) {
+        loadingPlaceholder.classList.remove('hidden');
+        loadingPlaceholder.textContent = 'Loading PDF preview...';
+    }
+
+    try {
+        // Use the file ID directly as it's now the scanning ID
+        const previewUrl = `/unindexed-scanning/preview/${fileId}`;
+        
+        // Try to load the PDF using PDF.js
+        const loadingTask = pdfjsLib.getDocument(previewUrl);
+        const pdf = await loadingTask.promise;
+        
+        currentPDFDocument = pdf;
+        currentPageNumber = 1;
+        
+        // Render first page
+        await renderPDFPage(1);
+        
+        // Show navigation controls if more than one page
+        if (pdf.numPages > 1) {
+            if (navigationControls) navigationControls.classList.remove('hidden');
+            if (pageInfo) pageInfo.textContent = `Page 1 of ${pdf.numPages}`;
+            
+            // Update navigation buttons
+            const prevBtn = document.getElementById('prev-page-btn');
+            const nextBtn = document.getElementById('next-page-btn');
+            if (prevBtn) prevBtn.disabled = true;
+            if (nextBtn) nextBtn.disabled = pdf.numPages <= 1;
+        }
+        
+        if (loadingPlaceholder) loadingPlaceholder.classList.add('hidden');
+        if (canvas) canvas.classList.remove('hidden');
+        
+    } catch (error) {
+        console.error('Error loading PDF preview:', error);
+        
+        // Fallback to placeholder
+        if (loadingPlaceholder) {
+            loadingPlaceholder.innerHTML = `
+                <div class="text-center py-8">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">PDF Document</h3>
+                    <p class="mt-1 text-sm text-gray-500">${uploadedFile.name}</p>
+                    <p class="mt-1 text-xs text-gray-400">Preview not available - ${error.message}</p>
+                </div>
+            `;
+        }
+        
+        if (navigationControls) navigationControls.classList.add('hidden');
+        if (canvas) canvas.classList.add('hidden');
+    }
+}
+
+async function loadImagePreview(fileId, uploadedFile, wrapper) {
+    if (!wrapper) return;
+    
+    wrapper.classList.remove('hidden');
+    const img = document.getElementById('image-preview-img');
+    const loadingPlaceholder = document.getElementById('image-loading-placeholder');
+    
+    if (loadingPlaceholder) {
+        loadingPlaceholder.classList.remove('hidden');
+        loadingPlaceholder.textContent = 'Loading image preview...';
+    }
+
+    try {
+        // Use the file ID directly as it's now the scanning ID
+        const previewUrl = `/unindexed-scanning/preview/${fileId}`;
+        
+        if (img) {
+            img.onload = function() {
+                if (loadingPlaceholder) loadingPlaceholder.classList.add('hidden');
+                img.classList.remove('hidden');
+            };
+            
+            img.onerror = function() {
+                // Fallback to placeholder on error
+                if (loadingPlaceholder) {
+                    loadingPlaceholder.innerHTML = `
+                        <div class="text-center py-8">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">Image Document</h3>
+                            <p class="mt-1 text-sm text-gray-500">${uploadedFile.name}</p>
+                            <p class="mt-1 text-xs text-gray-400">Preview not available</p>
+                        </div>
+                    `;
+                }
+                img.classList.add('hidden');
+            };
+            
+            img.src = previewUrl;
+        }
+        
+    } catch (error) {
+        console.error('Error loading image preview:', error);
+        if (loadingPlaceholder) {
+            loadingPlaceholder.innerHTML = `
+                <div class="text-center py-8">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">Image Document</h3>
+                    <p class="mt-1 text-sm text-gray-500">${uploadedFile.name}</p>
+                    <p class="mt-1 text-xs text-gray-400">Error loading preview</p>
+                </div>
+            `;
+        }
+        if (img) img.classList.add('hidden');
+    }
+}
+
+function closeMetadataModal() {
+    const modal = document.getElementById('metadata-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        currentEditingFile = null;
+        currentPDFDocument = null;
+        currentPageNumber = 1;
+    }
+}
+
+function applyMetadata() {
+    if (!currentEditingFile) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No file selected for editing.',
+            confirmButtonColor: '#3b82f6'
+        });
         return;
     }
 
-    // Hide placeholder and show canvas
-    pdfLoadingPlaceholder.classList.add('hidden');
-    pdfPreviewCanvas.classList.remove('hidden');
-    pdfNavigationControls.classList.remove('hidden');
-
     try {
-        const page = await currentPDFDocument.getPage(currentPageNumber);
-        const viewport = page.getViewport({ scale: 1.5 }); // Slightly larger scale for better preview
-        const context = pdfPreviewCanvas.getContext('2d');
+        // Get form container (not form element)
+        const formContainer = document.getElementById('metadata-form');
+        if (!formContainer) {
+            throw new Error('Metadata form not found');
+        }
 
-        // Set canvas dimensions to fit container, maintaining aspect ratio
-        const containerWidth = pdfPreviewCanvas.parentElement.offsetWidth - (2 * 16); // Account for padding
-        const scale = containerWidth / viewport.width;
-        const scaledViewport = page.getViewport({ scale: scale });
+        // Collect values from input fields manually
+        const updatedData = {};
+        const inputs = formContainer.querySelectorAll('input, select');
+        
+        inputs.forEach(input => {
+            if (input.name) {
+                updatedData[input.name] = input.value.trim();
+            }
+        });
 
-        pdfPreviewCanvas.height = scaledViewport.height;
-        pdfPreviewCanvas.width = scaledViewport.width;
+        // Validate required fields
+        if (!updatedData.extractedFileNumber || !updatedData.detectedOwner) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Missing Required Fields',
+                text: 'Please fill in the File Number and Property Owner fields.',
+                confirmButtonColor: '#3b82f6'
+            });
+            return;
+        }
 
-        await page.render({
-            canvasContext: context,
-            viewport: scaledViewport
-        }).promise;
+        // Update local metadata
+        const currentData = extractedMetadata[currentEditingFile] || {};
+        extractedMetadata[currentEditingFile] = {
+            ...currentData,
+            ...updatedData,
+            fileNumberFound: !!updatedData.extractedFileNumber,
+            ownerFound: !!updatedData.detectedOwner,
+            plotNumberFound: !!updatedData.plotNumber,
+            landUseFound: !!updatedData.landUseType,
+            districtFound: !!updatedData.district,
+            documentTypeFound: !!updatedData.documentType,
+            confidence: calculateConfidenceScore(
+                !!updatedData.extractedFileNumber,
+                !!updatedData.detectedOwner,
+                !!updatedData.landUseType,
+                !!updatedData.district,
+                !!updatedData.documentType,
+                !!updatedData.plotNumber
+            )
+        };
 
-        pageInfoSpan.textContent = `Page ${currentPageNumber} of ${currentPDFDocument.numPages}`;
-        prevPageBtn.disabled = currentPageNumber <= 1;
-        nextPageBtn.disabled = currentPageNumber >= currentPDFDocument.numPages;
+        // Update uploaded file status
+        const uploadedFileIndex = uploadedFiles.findIndex(f => f.id === currentEditingFile);
+        if (uploadedFileIndex !== -1) {
+            uploadedFiles[uploadedFileIndex].status = 'Metadata Updated';
+        }
+
+        // Update the Document Analysis Results section
+        updateAnalysisResultsDisplay();
+        
+        // Update the uploaded files display
+        updateUploadedFilesDisplay();
+
+        // Show success message
+        Swal.fire({
+            icon: 'success',
+            title: 'Applied!',
+            text: 'Metadata changes have been applied successfully.',
+            confirmButtonColor: '#3b82f6',
+            timer: 1500,
+            showConfirmButton: false
+        });
+
+        // Close modal
+        closeMetadataModal();
 
     } catch (error) {
-        console.error('Error rendering PDF page:', error);
-        pdfPreviewCanvas.classList.add('hidden');
-        pdfLoadingPlaceholder.textContent = 'Error rendering page. Please try again.';
-        pdfLoadingPlaceholder.classList.remove('hidden');
-        pdfNavigationControls.classList.add('hidden'); // Hide controls on error
+        console.error('Error applying metadata:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to apply metadata changes.',
+            confirmButtonColor: '#3b82f6'
+        });
+    }
+}
+
+// Update the analysis results display to reflect changes
+function updateAnalysisResultsDisplay() {
+    showAnalysisResults();
+}
+
+// PDF navigation functions (for when PDF preview is fully implemented)
+function goToPreviousPage() {
+    if (currentPageNumber > 1) {
+        currentPageNumber--;
+        renderPDFPage(currentPageNumber);
     }
 }
 
 function goToNextPage() {
     if (currentPDFDocument && currentPageNumber < currentPDFDocument.numPages) {
         currentPageNumber++;
-        renderSinglePDFPage();
+        renderPDFPage(currentPageNumber);
     }
 }
 
-function goToPreviousPage() {
-    if (currentPDFDocument && currentPageNumber > 1) {
-        currentPageNumber--;
-        renderSinglePDFPage();
-    }
-}
-
-function renderImagePreview(file) {
-    const imagePreviewImg = document.getElementById('image-preview-img');
-    const imageLoadingPlaceholder = document.getElementById('image-loading-placeholder');
-
-    if (!imagePreviewImg || !imageLoadingPlaceholder) {
-        console.error("Image preview elements not found.");
-        return;
-    }
-
-    imagePreviewImg.classList.add('hidden'); // Hide img until loaded
-    imageLoadingPlaceholder.classList.remove('hidden'); // Show loading message
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        imagePreviewImg.src = e.target.result;
-        imagePreviewImg.onload = () => {
-            imageLoadingPlaceholder.classList.add('hidden');
-            imagePreviewImg.classList.remove('hidden');
+async function renderPDFPage(pageNumber) {
+    if (!currentPDFDocument) return;
+    
+    try {
+        const page = await currentPDFDocument.getPage(pageNumber);
+        const canvas = document.getElementById('pdf-preview-canvas');
+        const context = canvas.getContext('2d');
+        
+        // Calculate scale to fit the canvas container
+        const containerWidth = canvas.parentElement.clientWidth - 40; // Account for padding
+        const viewport = page.getViewport({ scale: 1 });
+        const scale = Math.min(containerWidth / viewport.width, 1.5); // Max scale of 1.5
+        const scaledViewport = page.getViewport({ scale });
+        
+        canvas.height = scaledViewport.height;
+        canvas.width = scaledViewport.width;
+        
+        const renderContext = {
+            canvasContext: context,
+            viewport: scaledViewport
         };
-        imagePreviewImg.onerror = () => {
-            imageLoadingPlaceholder.textContent = 'Error loading image preview.';
-            imageLoadingPlaceholder.classList.remove('hidden');
-            imagePreviewImg.classList.add('hidden');
-        };
-    };
-    reader.readAsDataURL(file);
-}
-
-// These functions now simply call the unified openMetadataEditModal
-function showDocumentPreviewFromTable(fileId) {
-    openMetadataEditModal(fileId);
-}
-
-function editMetadataFromTable(fileId) {
-    openMetadataEditModal(fileId);
-}
-
-function editMetadata(fileId) { // For calls from analysis results section
-    openMetadataEditModal(fileId);
-}
-
-function closeMetadataModal() {
-    const modal = document.getElementById('metadata-modal');
-    if (modal) modal.classList.add('hidden');
-    // Reset PDF state when closing modal
-    currentPDFDocument = null;
-    currentPageNumber = 1;
-}
-
-function saveMetadata() {
-    if (!currentEditingFile) return;
-    
-    const fileNumber = document.getElementById('edit-fileNumber')?.value || '';
-    const plotNumber = document.getElementById('edit-plotNumber')?.value || '';
-    const owner = document.getElementById('edit-owner')?.value || '';
-    const landUse = document.getElementById('edit-landUse')?.value || '';
-    
-    // Update extractedMetadata using currentEditingFile (which is the UPLOAD- ID)
-    if (extractedMetadata[currentEditingFile]) {
-        extractedMetadata[currentEditingFile] = {
-            ...extractedMetadata[currentEditingFile],
-            extractedFileNumber: fileNumber,
-            plotNumber: plotNumber, 
-            detectedOwner: owner,
-            landUseType: landUse
-        };
-    } 
-    
-    // Always update the status in uploadedFiles if the file exists there
-    const fileIndex = uploadedFiles.findIndex(f => f.id === currentEditingFile);
-    if (fileIndex !== -1) {
-        uploadedFiles[fileIndex].status = 'Metadata updated';
-        updateUploadedFilesDisplay(); // Re-render uploaded files table
+        
+        await page.render(renderContext).promise;
+        
+        // Update page info and navigation buttons
+        const pageInfo = document.getElementById('page-info');
+        const prevBtn = document.getElementById('prev-page-btn');
+        const nextBtn = document.getElementById('next-page-btn');
+        
+        if (pageInfo) {
+            pageInfo.textContent = `Page ${pageNumber} of ${currentPDFDocument.numPages}`;
+        }
+        
+        if (prevBtn) {
+            prevBtn.disabled = pageNumber <= 1;
+        }
+        
+        if (nextBtn) {
+            nextBtn.disabled = pageNumber >= currentPDFDocument.numPages;
+        }
+        
+    } catch (error) {
+        console.error('Error rendering PDF page:', error);
     }
-    
-    // Re-render analysis results if the modal was opened from there
-    showAnalysisResults(); 
-
-    closeMetadataModal();
-}
-
-function createIndexingEntries() {
-    const entries = Object.values(extractedMetadata).map(data => ({
-        id: `FILE-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
-        fileNumber: data.extractedFileNumber || 'UNIDENTIFIED',
-        name: data.detectedOwner || 'Unknown Owner',
-        type: data.documentType || 'Unclassified Document'
-    }));
-    
-    alert(`Successfully created ${entries.length} entries in File Indexing Assistant!\n\nFiles are now ready for Page Typing workflow.`);
-    resetUpload();
 }
 
 function sendToIndexing() {
     if (uploadedFiles.length === 0) {
-        alert('No files to send to indexing');
+        Swal.fire({
+            icon: 'warning',
+            title: 'No Files',
+            text: 'No files to send to indexing',
+            confirmButtonColor: '#3b82f6'
+        });
         return;
     }
     window.location.href = '/file-digital-registry/indexing-assistant';
@@ -1282,30 +1854,18 @@ function updateUploadedFilesDisplay() {
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex items-center space-x-2">
-                                    <button class="inline-flex items-center px-2 py-1 text-xs border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors" onclick="showDocumentPreviewFromTable('${file.id}')">
+                                    <button class="inline-flex items-center px-2 py-1 text-xs border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors" onclick="openMetadataEditModal('${file.id}')">
                                         <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                                         </svg>
                                         Preview
                                     </button>
-                                    <button class="inline-flex items-center px-2 py-1 text-xs border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors" onclick="editMetadataFromTable('${file.id}')">
+                                    <button class="inline-flex items-center px-2 py-1 text-xs border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors" onclick="openMetadataEditModal('${file.id}')">
                                         <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                         </svg>
                                         Edit
-                                    </button>
-                                    <button class="inline-flex items-center px-2 py-1 text-xs border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors" onclick="indexFile('${file.id}')">
-                                        <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
-                                        </svg>
-                                        Index
-                                    </button>
-                                    <button class="inline-flex items-center px-2 py-1 text-xs text-red-600 hover:text-red-800 transition-colors" onclick="deleteFile('${file.id}')">
-                                        <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                        </svg>
-                                        Delete
                                     </button>
                                 </div>
                             </td>
@@ -1319,18 +1879,218 @@ function updateUploadedFilesDisplay() {
 }
 
 function deleteFile(fileId) {
-    if (confirm('Are you sure you want to delete this file?')) {
-        uploadedFiles = uploadedFiles.filter(file => file.id !== fileId);
-        filteredFiles = filteredFiles.filter(file => file.id !== fileId);
-        // Also remove from extractedMetadata
-        delete extractedMetadata[fileId];
-        updateUploadedFilesDisplay();
-        updateStats();
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            uploadedFiles = uploadedFiles.filter(file => file.id !== fileId);
+            filteredFiles = filteredFiles.filter(file => file.id !== fileId);
+            delete extractedMetadata[fileId];
+            updateUploadedFilesDisplay();
+            updateStats();
+            
+            Swal.fire(
+                'Deleted!',
+                'Your file has been deleted.',
+                'success'
+            );
+        }
+    });
+}
+
+// Modal-specific PDF preview function using original file
+async function loadModalPDFPreview(originalFile, wrapper) {
+    if (!wrapper) return;
+    
+    wrapper.classList.remove('hidden');
+    const canvas = document.getElementById('pdf-preview-canvas');
+    const loadingPlaceholder = document.getElementById('pdf-loading-placeholder');
+    const navigationControls = document.getElementById('pdf-navigation-controls');
+    const pageInfo = document.getElementById('page-info');
+    
+    if (loadingPlaceholder) {
+        loadingPlaceholder.classList.remove('hidden');
+        loadingPlaceholder.innerHTML = `
+            <div class="text-center py-8">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p class="mt-2 text-sm text-gray-600">Loading PDF preview...</p>
+            </div>
+        `;
+    }
+
+    try {
+        const arrayBuffer = await originalFile.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        
+        currentPDFDocument = pdf;
+        currentPageNumber = 1;
+        
+        // Get first page
+        const page = await pdf.getPage(1);
+        
+        // Calculate appropriate scale for modal preview
+        const viewport = page.getViewport({ scale: 1.0 });
+        const maxWidth = 500; // Larger for modal
+        const scale = Math.min(maxWidth / viewport.width, 1.5);
+        const scaledViewport = page.getViewport({ scale });
+        
+        // Create canvas for PDF rendering
+        const tempCanvas = document.createElement('canvas');
+        const context = tempCanvas.getContext('2d');
+        tempCanvas.height = scaledViewport.height;
+        tempCanvas.width = scaledViewport.width;
+        
+        // Render page
+        await page.render({
+            canvasContext: context,
+            viewport: scaledViewport
+        }).promise;
+        
+        // Update the modal canvas
+        if (canvas) {
+            canvas.width = tempCanvas.width;
+            canvas.height = tempCanvas.height;
+            const displayContext = canvas.getContext('2d');
+            displayContext.drawImage(tempCanvas, 0, 0);
+            canvas.classList.remove('hidden');
+        }
+        
+        // Show navigation controls if more than one page
+        if (pdf.numPages > 1) {
+            if (navigationControls) navigationControls.classList.remove('hidden');
+            if (pageInfo) pageInfo.textContent = `Page 1 of ${pdf.numPages}`;
+            
+            // Update navigation buttons
+            const prevBtn = document.getElementById('prev-page-btn');
+            const nextBtn = document.getElementById('next-page-btn');
+            if (prevBtn) prevBtn.disabled = true;
+            if (nextBtn) nextBtn.disabled = pdf.numPages <= 1;
+        }
+        
+        if (loadingPlaceholder) loadingPlaceholder.classList.add('hidden');
+        
+    } catch (error) {
+        console.error('Error loading modal PDF preview:', error);
+        
+        // Show error placeholder
+        if (loadingPlaceholder) {
+            loadingPlaceholder.innerHTML = `
+                <div class="text-center py-8">
+                    <svg class="mx-auto h-12 w-12 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">PDF Preview Failed</h3>
+                    <p class="mt-1 text-sm text-gray-500">${originalFile.name}</p>
+                    <p class="mt-1 text-xs text-red-600">${error.message}</p>
+                </div>
+            `;
+        }
+        
+        if (navigationControls) navigationControls.classList.add('hidden');
+        if (canvas) canvas.classList.add('hidden');
+    }
+}
+
+// Modal-specific image preview function using original file
+async function loadModalImagePreview(originalFile, wrapper) {
+    if (!wrapper) return;
+    
+    wrapper.classList.remove('hidden');
+    const img = document.getElementById('image-preview-img');
+    const loadingPlaceholder = document.getElementById('image-loading-placeholder');
+    
+    if (loadingPlaceholder) {
+        loadingPlaceholder.classList.remove('hidden');
+        loadingPlaceholder.innerHTML = `
+            <div class="text-center py-8">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p class="mt-2 text-sm text-gray-600">Loading image preview...</p>
+            </div>
+        `;
+    }
+
+    try {
+        const imageUrl = URL.createObjectURL(originalFile);
+        
+        // Create image element to get dimensions
+        const tempImg = new Image();
+        
+        await new Promise((resolve, reject) => {
+            tempImg.onload = resolve;
+            tempImg.onerror = reject;
+            tempImg.src = imageUrl;
+        });
+        
+        // Update the modal image
+        if (img) {
+            img.onload = function() {
+                if (loadingPlaceholder) loadingPlaceholder.classList.add('hidden');
+                img.classList.remove('hidden');
+            };
+            
+            img.onerror = function() {
+                // Show error placeholder
+                if (loadingPlaceholder) {
+                    loadingPlaceholder.innerHTML = `
+                        <div class="text-center py-8">
+                            <svg class="mx-auto h-12 w-12 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">Image Preview Failed</h3>
+                            <p class="mt-1 text-sm text-gray-500">${originalFile.name}</p>
+                            <p class="mt-1 text-xs text-red-600">Failed to load image</p>
+                        </div>
+                    `;
+                }
+                img.classList.add('hidden');
+            };
+            
+            img.src = imageUrl;
+        }
+        
+        // Clean up object URL after a delay
+        setTimeout(() => URL.revokeObjectURL(imageUrl), 5000);
+        
+    } catch (error) {
+        console.error('Error loading modal image preview:', error);
+        
+        // Show error placeholder
+        if (loadingPlaceholder) {
+            loadingPlaceholder.innerHTML = `
+                <div class="text-center py-8">
+                    <svg class="mx-auto h-12 w-12 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">Image Preview Failed</h3>
+                    <p class="mt-1 text-sm text-gray-500">${originalFile.name}</p>
+                    <p class="mt-1 text-xs text-red-600">${error.message}</p>
+                </div>
+            `;
+        }
+        
+        if (img) img.classList.add('hidden');
     }
 }
 
 function indexFile(fileId) {
-    alert(`Sending file to indexing...`);
-    window.location.href = '/file-digital-registry/indexing-assistant';
+    Swal.fire({
+        title: 'Send to Indexing?',
+        text: 'This will send the file to the indexing workflow.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, send it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = '/file-digital-registry/indexing-assistant';
+        }
+    });
 }
 </script>

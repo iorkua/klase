@@ -365,9 +365,7 @@
                 </div>
 
                 <!-- Unindexed Upload Content (Hidden by default) -->
-                <div id="unindexed-upload-content" class="hidden">
-                    @include('scanning.unindexedFiles')
-                </div>
+               
 
                 <!-- File Selector Dialog -->
                 <div id="file-selector-dialog" class="dialog-backdrop hidden" aria-hidden="true">

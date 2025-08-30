@@ -171,7 +171,7 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">LGA/City</label>
+                            <label class="form-label">LGA</label>
                             <select id="lga-city" class="input">
                                 <option value="Albasu">Albasu</option>
                                 <option value="Bagwai">Bagwai</option>
@@ -236,10 +236,10 @@
                                 <input type="checkbox" id="has-transaction">
                                 <label for="has-transaction">Has Transaction</label>
                             </div>
-                            <div class="form-checkbox">
+                            <!-- <div class="form-checkbox">
                                 <input type="checkbox" id="is-problematic">
                                 <label for="is-problematic">Problematic File</label>
-                            </div>
+                            </div> -->
                         </div>
                         <div>
                             <div class="form-checkbox">

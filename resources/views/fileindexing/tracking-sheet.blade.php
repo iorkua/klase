@@ -5,298 +5,68 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kano State Land Registry - File Tracking Sheet</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'kano-green': '#22c55e',
+                        'kano-dark-green': '#16a34a',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Added print styles for landscape orientation and single page fit -->
     <style>
-        /* Optimized print styles for single A4 landscape page */
         @media print {
             @page {
                 size: A4 landscape;
-                margin: 0.25in;
+                margin: 0.5in;
             }
-            
             body {
-                -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
-                font-size: 10px !important;
-                line-height: 1.2 !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                width: 100% !important;
-                height: 100% !important;
+                -webkit-print-color-adjust: exact;
             }
-            
-            .no-print {
-                display: none !important;
-            }
-            
             .print-container {
                 max-width: none !important;
                 width: 100% !important;
-                padding: 0 !important;
                 margin: 0 !important;
-                height: 100vh !important;
-                max-height: 7.8in !important;
-                display: flex !important;
-                flex-direction: column !important;
-                box-sizing: border-box !important;
-                background: white !important;
+                padding: 0 !important;
                 box-shadow: none !important;
-            }
-            
-            /* Make content use full width */
-            .max-w-5xl {
-                max-width: none !important;
-            }
-            
-            .mx-auto {
-                margin-left: 0 !important;
-                margin-right: 0 !important;
-            }
-            
-            /* Header section - compact */
-            .header-section {
-                margin-bottom: 0.75rem !important;
-                padding-bottom: 0.5rem !important;
-                flex-shrink: 0 !important;
-                width: 100% !important;
-            }
-            
-            .print-header {
-                font-size: 18px !important;
-                margin-bottom: 0.25rem !important;
-            }
-            
-            .print-subheader {
-                font-size: 14px !important;
-            }
-            
-            /* File details section - compact and full width */
-            .file-details-section {
-                margin-bottom: 1rem !important;
-                flex-shrink: 0 !important;
-                width: 100% !important;
-            }
-            
-            .file-details-table th,
-            .file-details-table td {
-                padding: 0.5rem 0.75rem !important;
-                font-size: 10px !important;
-                line-height: 1.2 !important;
-            }
-            
-            /* Signing section - optimized to fit remaining space and full width */
-            .signing-section {
-                flex-grow: 1 !important;
-                margin-bottom: 0.75rem !important;
-                display: flex !important;
-                flex-direction: column !important;
-                min-height: 0 !important;
-                width: 100% !important;
-            }
-            
-            .signing-section h2 {
-                margin-bottom: 0.5rem !important;
-                font-size: 14px !important;
-                flex-shrink: 0 !important;
-            }
-            
-            .signing-table {
-                flex-grow: 1 !important;
-                height: 100% !important;
-                min-height: 120px !important;
-                max-height: 180px !important;
-                width: 100% !important;
-            }
-            
-            .signing-table th {
-                padding: 0.5rem 0.25rem !important;
-                font-size: 10px !important;
-                font-weight: bold !important;
-            }
-            
-            .signing-table td {
-                padding: 1.25rem 0.25rem !important;
-                font-size: 8px !important;
-                height: auto !important;
-                min-height: 40px !important;
-                vertical-align: top !important;
-            }
-            
-            /* QR code section - smaller */
-            .qr-section {
-                padding: 0.75rem !important;
-            }
-            
-            .qr-code {
-                width: 4rem !important;
-                height: 4rem !important;
-            }
-            
-            .qr-section h3 {
-                font-size: 12px !important;
-                margin-bottom: 0.5rem !important;
-            }
-            
-            /* Government seal - compact */
-            .govt-seal-container {
-                width: 3rem !important;
-                height: 3rem !important;
-            }
-            
-            .government-seal {
-                width: 2.5rem !important;
-                height: 2.5rem !important;
-            }
-            
-            .government-seal .text-center div {
-                font-size: 7px !important;
-                line-height: 1 !important;
-            }
-            
-            /* Tracking ID section - compact */
-            .tracking-section {
-                padding: 0.75rem !important;
-            }
-            
-            .tracking-section p {
-                font-size: 10px !important;
-                margin-bottom: 0.25rem !important;
-            }
-            
-            /* Authorization section - compact and full width */
-            .auth-section {
-                padding: 0.75rem !important;
-                margin-bottom: 0.5rem !important;
-                flex-shrink: 0 !important;
-                width: 100% !important;
-            }
-            
-            .auth-section p {
-                font-size: 10px !important;
-            }
-            
-            /* Footer section - minimal and full width */
-            .footer-section {
-                margin-top: 0.5rem !important;
-                padding-top: 0.5rem !important;
-                flex-shrink: 0 !important;
-                width: 100% !important;
-            }
-            
-            .footer-section p {
-                font-size: 11px !important;
-                margin-bottom: 0.25rem !important;
-            }
-            
-            /* Section headers - smaller */
-            h2 {
-                font-size: 13px !important;
-                margin-bottom: 0.5rem !important;
-                font-weight: bold !important;
-            }
-            
-            h3 {
-                font-size: 11px !important;
-                margin-bottom: 0.5rem !important;
-            }
-            
-            /* Form inputs - compact */
-            .form-input {
-                min-width: 4rem !important;
-                border-bottom: 1px solid #374151 !important;
-                font-size: 10px !important;
-                padding: 0.125rem !important;
-            }
-            
-            /* Remove rounded corners and shadows for print */
-            .rounded-lg {
                 border-radius: 0 !important;
             }
-            
-            .shadow-xl, .shadow-md, .shadow-lg {
-                box-shadow: none !important;
-            }
-            
-            /* Ensure borders are visible */
-            .border-2 {
-                border-width: 1px !important;
-            }
-            
-            .border {
-                border-width: 1px !important;
-            }
-            
-            /* Force table to use full width */
-            table {
-                width: 100% !important;
-                border-collapse: collapse !important;
-            }
-            
-            /* Flex adjustments for print */
-            .flex {
-                display: flex !important;
-            }
-            
-            .justify-between {
-                justify-content: space-between !important;
-            }
-            
-            .items-center {
-                align-items: center !important;
-            }
-            
-            .gap-8 {
-                gap: 1.5rem !important;
-            }
-            
-            /* Reduce all margins globally */
-            .mb-10, .mb-8, .mb-6 {
-                margin-bottom: 0.75rem !important;
-            }
-            
-            .mt-12 {
-                margin-top: 0.5rem !important;
-            }
-            
-            .pt-6 {
-                padding-top: 0.5rem !important;
-            }
-            
-            .pb-6 {
-                padding-bottom: 0.5rem !important;
-            }
-            
-            /* Force single page */
-            .print-container, .print-container * {
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
-            }
-            
-            /* Prevent overflow */
-            * {
-                overflow: visible !important;
-            }
-            
-            /* Remove all centering classes */
-            .text-center {
-                text-align: left !important;
-            }
-            
-            /* Only keep text-center for specific elements that should be centered */
-            .footer-section .text-center,
-            .signing-section h2.text-center,
-            .qr-section .text-center {
-                text-align: center !important;
+            .no-print {
+                display: none !important;
             }
         }
         
-        /* Added custom styles for better visual hierarchy */
-        .government-seal {
-            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        /* Enhanced gradient backgrounds for headers */
+        .enhanced-header {
+            background: linear-gradient(135deg, #16a34a 0%, #22c55e 50%, #4ade80 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .enhanced-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shimmer 3s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
         }
     </style>
 </head>
-<body class="bg-gray-50 p-4 font-serif">
-    <!-- Added print button with improved styling -->
+<body class="bg-gray-50 p-2 font-sans">
+    <!-- Print button -->
     <div class="no-print mb-6 text-center">
         <button 
             onclick="window.print()" 
@@ -307,91 +77,139 @@
             </svg>
             Print Document
         </button>
+        
+        <!-- Generate Batch Tracking Sheets button -->
+        <div class="mt-3">
+            <button 
+                onclick="openBatchTrackingSheets()" 
+                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-colors duration-200 inline-flex items-center gap-2"
+                title="Generate batch tracking sheets using this file (and optionally others)"
+            >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h10m4-11V7a2 2 0 00-2-2h-5l-2-2H6a2 2 0 00-2 2v3m0 0h16M4 9v7a2 2 0 002 2h10a2 2 0 002-2V9H4z" />
+                </svg>
+                Generate Batch Tracking Sheets
+            </button>
+        </div>
     </div>
 
-    <div class="print-container max-w-5xl mx-auto bg-white shadow-xl rounded-lg p-8">
+    <script class="no-print">
+        function openBatchTrackingSheets(additionalIds) {
+            try {
+                const baseUrl = "{{ route('fileindexing.batch-tracking-sheet') }}";
+                const currentId = "{{ $fileIndexing->id }}";
+                let ids = [currentId];
+                if (additionalIds && typeof additionalIds === 'string') {
+                    additionalIds.split(',').map(s => s.trim()).filter(Boolean).forEach(id => ids.push(id));
+                }
+                const url = `${baseUrl}?files=${encodeURIComponent(ids.join(','))}`;
+                window.open(url, '_blank');
+            } catch (e) {
+                console.error('Failed to open batch tracking sheets:', e);
+                alert('Unable to open batch tracking sheets.');
+            }
+        }
+    </script>
+
+    <div class="print-container max-w-7xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
         <!-- Header Section -->
-        <div class="header-section flex items-center justify-between mb-10 pb-6 border-b-2 border-green-600">
-            <div class="flex-1">
-                <h1 class="print-header text-2xl font-bold text-gray-800 mb-2 tracking-wide">KANO STATE LAND REGISTRY</h1>
-                <p class="print-subheader text-lg text-green-700 font-semibold">FILE TRACKING SHEET</p>
-            </div>
-            
-            <div class="flex-shrink-0 mx-8">
-                <div class="govt-seal-container w-20 h-20 border-3 border-green-600 rounded-full flex items-center justify-center bg-white shadow-lg">
-                    <div class="government-seal w-16 h-16 rounded-full flex items-center justify-center text-white shadow-inner">
-                        <div class="text-center">
-                            <div class="text-xs font-bold">KANO</div>
-                            <div class="text-xs">STATE</div>
-                        </div>
+        <div class="border-b-2 border-gray-200 p-4">
+            <div class="flex items-center justify-between mb-3">
+                <!-- Left Logo - Kano State Logo -->
+                <div class="w-16 h-16 border-2 border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden">
+                    <img src="http://klaes.com.ng/assets/logo/logo1.jpg" alt="Kano State Logo" class="w-14 h-14 object-contain" />
+                </div>
+                
+                <!-- Center Title -->
+                <div class="flex-1 mx-6">
+                    <div class="text-center border-2 border-gray-300 py-2 px-4 rounded-lg bg-blue-50">
+                        <h1 class="text-base font-bold text-gray-800">
+                            KANO STATE <span class="text-blue-600">MINISTRY OF LAND AND PHYSICAL PLANNING</span>
+                        </h1>
                     </div>
+                </div>
+                
+                <!-- Right Logo - KLAS Logo -->
+                <div class="w-16 h-16 border-2 border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden">
+                    <img src="http://klaes.com.ng/assets/logo/logo2.jpg" alt="KLAS Logo" class="w-14 h-14 object-contain" />
                 </div>
             </div>
             
-            <div class="flex-1 text-right">
-                <div class="tracking-section bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p class="text-sm text-gray-800 mb-2">
-                        <strong>Tracking ID:</strong> 
-                        <span class="form-input ml-2">{{ $tracker->tracking_id }}</span>
-                    </p>
-                    <p class="text-xs text-gray-600">
-                        Generated: <span class="form-input ml-1" style="min-width: 150px;">{{ $tracker->sheet_generated_at->format('n/j/Y, g:i:s A') }}</span>
-                    </p>
+            <!-- Tracking Info -->
+            <div class="flex items-center justify-between">
+                <div class="text-right text-xs text-gray-600">
+                    <p><span class="font-semibold">Tracking ID:</span> {{ $tracker->tracking_id }}</p>
+                    <p><span class="font-semibold">Generated:</span> {{ $tracker->sheet_generated_at->format('n/j/Y, g:i:s A') }}</p>
                     @if($tracker->total_prints > 0)
-                    <p class="text-xs text-gray-500 mt-1 font-medium">Prints: {{ $tracker->total_prints }}</p>
+                    <p><span class="font-semibold">Prints:</span> {{ $tracker->total_prints }}</p>
                     @endif
                 </div>
             </div>
         </div>
 
         <!-- File Details Section -->
-        <div class="file-details-section mb-10">
-            <div class="flex items-start justify-between gap-8">
+        <div class="p-4">
+            <div class="flex gap-4">
+                <!-- Main Details Table -->
                 <div class="flex-1">
-                    <h2 class="text-xl font-bold text-gray-800 mb-6 text-green-700">File Details</h2>
+                    <h3 class="text-base font-bold text-kano-dark-green mb-3">File Details</h3>
                     
-                    <!-- File Information Table -->
-                    <table class="file-details-table w-full border-2 border-gray-800 shadow-md rounded-lg overflow-hidden">
-                        <thead>
-                            <tr class="bg-green-600 text-white">
-                                <th class="border border-gray-800 px-4 py-3 text-left font-bold">File Information</th>
-                                <th class="border border-gray-800 px-4 py-3 text-left font-bold">Details</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white">
-                            <tr class="hover:bg-gray-50">
-                                <td class="border border-gray-400 px-4 py-4 font-medium">File Number</td>
-                                <td class="border border-gray-400 px-4 py-4">{{ $fileIndexing->file_number }}</td>
-                            </tr>
-                            <tr class="hover:bg-gray-50">
-                                <td class="border border-gray-400 px-4 py-4 font-medium">File Title</td>
-                                <td class="border border-gray-400 px-4 py-4">{{ $fileIndexing->file_title }}</td>
-                            </tr>
-                            <tr class="hover:bg-gray-50">
-                                <td class="border border-gray-400 px-4 py-4 font-medium">Plot Number</td>
-                                <td class="border border-gray-400 px-4 py-4">{{ $fileIndexing->plot_number ?? 'N/A' }}</td>
-                            </tr>
-                            <tr class="hover:bg-gray-50">
-                                <td class="border border-gray-400 px-4 py-4 font-medium">Land Use</td>
-                                <td class="border border-gray-400 px-4 py-4">{{ $fileIndexing->land_use_type ?? 'N/A' }}</td>
-                            </tr>
-                            <tr class="hover:bg-gray-50">
-                                <td class="border border-gray-400 px-4 py-4 font-medium">District</td>
-                                <td class="border border-gray-400 px-4 py-4">{{ $fileIndexing->district ?? 'N/A' }}</td>
-                            </tr>
-                            <tr class="hover:bg-gray-50">
-                                <td class="border border-gray-400 px-4 py-4 font-medium">Date Created</td>
-                                <td class="border border-gray-400 px-4 py-4">{{ $fileIndexing->created_at->format('Y-m-d') }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
+                        <!-- Enhanced table header with gradient, better typography and icons -->
+                        <div class="enhanced-header text-white relative">
+                            <div class="grid grid-cols-2 gap-0 relative z-10">
+                                <div class="px-6 py-4 font-bold text-center border-r border-green-300/50 flex items-center justify-center space-x-2">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h12v8H4V6z"/>
+                                        <path d="M6 8h8v2H6V8zm0 4h8v2H6v-2z"/>
+                                    </svg>
+                                    <span class="text-lg tracking-wide">FILE INFORMATION</span>
+                                </div>
+                                <div class="px-6 py-4 font-bold text-center flex items-center justify-center space-x-2">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                                        <path fill-rule="evenodd" d="M4 5a2 2 0 012-2v1a1 1 0 001 1h6a1 1 0 001-1V3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="text-lg tracking-wide">DETAILS</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Table Rows -->
+                        <div class="divide-y divide-gray-200">
+                            <div class="grid grid-cols-2 gap-0">
+                                <div class="px-4 py-3 bg-gray-50 font-medium border-r border-gray-200">File Number</div>
+                                <div class="px-4 py-3">{{ $fileIndexing->file_number }}</div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-0">
+                                <div class="px-4 py-3 bg-gray-50 font-medium border-r border-gray-200">File Title</div>
+                                <div class="px-4 py-3">{{ $fileIndexing->file_title }}</div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-0">
+                                <div class="px-4 py-3 bg-gray-50 font-medium border-r border-gray-200">Plot Number</div>
+                                <div class="px-4 py-3 {{ empty($fileIndexing->plot_number) ? 'text-gray-500' : '' }}">{{ $fileIndexing->plot_number ?? 'Unknown' }}</div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-0">
+                                <div class="px-4 py-3 bg-gray-50 font-medium border-r border-gray-200">Land Use</div>
+                                <div class="px-4 py-3 {{ empty($fileIndexing->land_use_type) ? 'text-gray-500' : '' }}">{{ $fileIndexing->land_use_type ?? 'Unknown' }}</div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-0">
+                                <div class="px-4 py-3 bg-gray-50 font-medium border-r border-gray-200">District</div>
+                                <div class="px-4 py-3 {{ empty($fileIndexing->district) ? 'text-gray-500' : '' }}">{{ $fileIndexing->district ?? 'Unknown' }}</div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-0">
+                                <div class="px-4 py-3 bg-gray-50 font-medium border-r border-gray-200">Date Created</div>
+                                <div class="px-4 py-3">{{ $fileIndexing->created_at->format('Y-m-d') }}</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- QR Code Section -->
-                <div class="flex-shrink-0">
-                    <div class="qr-section bg-gray-50 p-6 rounded-lg border border-gray-200 text-center">
-                        <h3 class="text-lg font-bold text-gray-800 mb-4">QR Code</h3>
-                        <div class="qr-code w-32 h-32 border-2 border-gray-800 bg-white flex items-center justify-center rounded-lg shadow-md">
+                <div class="w-40">
+                    <div class="border-2 border-gray-300 rounded-lg p-3 text-center">
+                        <!-- QR Code -->
+                        <div class="w-28 h-28 mx-auto mb-2 bg-gray-200 rounded-lg flex items-center justify-center">
                             @php
                                 $qrData = json_encode([
                                     'tracking_id' => $tracker->tracking_id,
@@ -404,66 +222,74 @@
                                 ]);
                                 $qrCodeUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' . urlencode($qrData);
                             @endphp
-                            <img src="{{ $qrCodeUrl }}" alt="QR Code" class="w-28 h-28 rounded" />
+                            <img src="{{ $qrCodeUrl }}" alt="QR Code" class="w-24 h-24 rounded" />
                         </div>
-                        <p class="text-xs mt-2">{{ $fileIndexing->file_number }}</p>
+                        <!-- <div class="text-xs">
+                            <p class="font-bold text-blue-600">SCAN TO VERIFY</p>
+                            <p class="font-bold text-blue-600">FILE STATUS</p>
+                            <p class="text-xs text-gray-500 mt-1">{{ $fileIndexing->file_number }}</p>
+                        </div> -->
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Signing Section -->
-        <div class="signing-section mb-10">
-            <h2 class="text-center text-xl font-bold text-green-700 mb-6 uppercase tracking-wide">Signing Section</h2>
+        <div class="p-4 pt-0">
+            <!-- Enhanced signing section header with better styling -->
+            <div class="text-center mb-3">
+                <div class="inline-flex items-center space-x-2 bg-gradient-to-r from-kano-dark-green to-kano-green text-white px-6 py-2 rounded-full shadow-lg">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="text-lg font-bold tracking-wider">SIGNING SECTION</span>
+                </div>
+            </div>
             
-            <table class="signing-table w-full border-2 border-gray-800 shadow-md rounded-lg overflow-hidden">
-                <thead>
-                    <tr class="bg-green-600 text-white">
-                        <th class="border border-gray-800 px-4 py-3 font-bold">Indexed By:</th>
-                        <th class="border border-gray-800 px-4 py-3 font-bold">Scanned By:</th>
-                        <th class="border border-gray-800 px-4 py-3 font-bold">Page Typed By:</th>
-                        <th class="border border-gray-800 px-4 py-3 font-bold">Supervised By:</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white">
-                    <tr class="signing-row">
-                        <td class="border border-gray-400 px-4 py-12 align-top"></td>
-                        <td class="border border-gray-400 px-4 py-12 align-top"></td>
-                        <td class="border border-gray-400 px-4 py-12 align-top"></td>
-                        <td class="border border-gray-400 px-4 py-12 align-top"></td>
-                    </tr>
-                    <tr class="signing-row">
-                        <td class="border border-gray-400 px-4 py-12 align-top"></td>
-                        <td class="border border-gray-400 px-4 py-12 align-top"></td>
-                        <td class="border border-gray-400 px-4 py-12 align-top"></td>
-                        <td class="border border-gray-400 px-4 py-12 align-top"></td>
-                    </tr>
-                    <tr class="signing-row">
-                        <td class="border border-gray-400 px-4 py-12 align-top"></td>
-                        <td class="border border-gray-400 px-4 py-12 align-top"></td>
-                        <td class="border border-gray-400 px-4 py-12 align-top"></td>
-                        <td class="border border-gray-400 px-4 py-12 align-top"></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Authorization Section -->
-        <div class="mb-8">
-            <div class="auth-section bg-gray-50 p-6 rounded-lg border border-gray-200">
-                <p class="text-base text-gray-800 flex items-center gap-4">
-                    <strong>Authorized Signature:</strong>
-                    <span class="form-input flex-1"></span>
-                    <strong>Date:</strong>
-                    <span class="form-input" style="min-width: 150px;"></span>
-                </p>
+            <div class="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
+                <!-- Enhanced signing header with gradient and better layout -->
+                <div class="enhanced-header text-white relative">
+                    <div class="grid grid-cols-4 gap-0 relative z-10">
+                        <div class="px-4 py-4 font-bold text-center border-r border-green-300/50 flex flex-col items-center space-y-1">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="text-sm tracking-wide">INDEXED BY</span>
+                        </div>
+                        <div class="px-4 py-4 font-bold text-center border-r border-green-300/50 flex flex-col items-center space-y-1">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4 5a2 2 0 012-2v1a1 1 0 001 1h6a1 1 0 001-1V3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="text-sm tracking-wide">SCANNED BY</span>
+                        </div>
+                        <div class="px-4 py-4 font-bold text-center border-r border-green-300/50 flex flex-col items-center space-y-1">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="text-sm tracking-wide">PAGE TYPED BY</span>
+                        </div>
+                        <div class="px-4 py-4 font-bold text-center flex flex-col items-center space-y-1">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="text-sm tracking-wide">SUPERVISED BY</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Signing Fields -->
+                <div class="grid grid-cols-4 gap-0 h-24">
+                    <div class="border-r border-gray-200 p-3"></div>
+                    <div class="border-r border-gray-200 p-3"></div>
+                    <div class="border-r border-gray-200 p-3"></div>
+                    <div class="p-3"></div>
+                </div>
             </div>
         </div>
 
         <!-- Footer -->
-        <div class="footer-section text-center mt-12 pt-6 border-t-2 border-green-600">
-            <p class="text-lg font-bold text-green-700 mb-2">KANO STATE LAND REGISTRY</p>
-            <p class="text-sm text-gray-600 italic">File Tracking System</p>
+        <div class="bg-gray-100 px-4 py-2 text-center">
+            <p class="text-xs text-gray-500">Kano State Ministry of Land and Physical Planning - File Tracking System</p>
         </div>
     </div>
 </body>

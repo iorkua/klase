@@ -19,14 +19,10 @@
                 </div> --}}
         
                 <div class="flex items-center justify-end mb-4">
-                    <label for="assistant-toggle" class="flex items-center cursor-pointer">
-                        <a href="{{ route('propertycard.index') }}" class="mr-3 text-gray-600">Manual Assistant</a>
-                        <div class="assistant-toggle">
-                            <input type="checkbox" id="assistant-toggle">
-                            <span class="slider round"></span>
-                        </div>
-                        <a href="{{ route('propertycard.ai') }}" class="ml-3 text-gray-600">AI Assistant</a>
-                    </label>
+                   
+                    <a href="{{ route('propertycard.ai') }}" class="ml-3 flex items-center text-gray-600">
+                        <i class="fas fa-robot mr-2"></i> AI Assistant
+                    </a>
                 </div>
 
                 <!-- Manual Property Details Content -->

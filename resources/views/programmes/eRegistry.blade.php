@@ -369,10 +369,12 @@
                                                             <i data-lucide="folder-open" class="w-3 h-3 mr-2"></i>
                                                             View File
                                                         </a>
-                                                        <div class="dropdown-item" onclick="updateEdms('primary', '{{ $application->application_id }}')">
-                                                            <i data-lucide="refresh-cw" class="w-3 h-3 mr-2"></i>
-                                                            Update EDMS
-                                                        </div>
+                                                        @if(!request()->has('url') || request()->get('url') !== 'pp')
+                                                            <div class="dropdown-item" onclick="updateEdms('primary', '{{ $application->application_id }}')">
+                                                                <i data-lucide="refresh-cw" class="w-3 h-3 mr-2"></i>
+                                                                Update EDMS
+                                                            </div>
+                                                        @endif
                                                     @else
                                                         <div class="dropdown-item disabled" title="Files not available - Processing {{ strtolower($application->processing_status) }}">
                                                             <i data-lucide="folder-x" class="w-3 h-3 mr-2"></i>
@@ -382,10 +384,12 @@
                                                                 No File
                                                             @endif
                                                         </div>
-                                                        <div class="dropdown-item disabled" title="Update EDMS is only available when status is Completed">
-                                                            <i data-lucide="refresh-cw" class="w-3 h-3 mr-2"></i>
-                                                            Update EDMS
-                                                        </div>
+                                                        @if(!request()->has('url') || request()->get('url') !== 'pp')
+                                                            <div class="dropdown-item disabled" title="Update EDMS is only available when status is Completed">
+                                                                <i data-lucide="refresh-cw" class="w-3 h-3 mr-2"></i>
+                                                                Update EDMS
+                                                            </div>
+                                                        @endif
                                                     @endif
                                                 </div>
                                             </div>
@@ -479,10 +483,12 @@
                                                             <i data-lucide="folder-open" class="w-3 h-3 mr-2"></i>
                                                             View File
                                                         </a>
-                                                        <div class="dropdown-item" onclick="updateEdms('unit', '{{ $application->sub_application_id }}')">
-                                                            <i data-lucide="refresh-cw" class="w-3 h-3 mr-2"></i>
-                                                            Update EDMS
-                                                        </div>
+                                                        @if(!request()->has('url') || request()->get('url') !== 'pp')
+                                                            <div class="dropdown-item" onclick="updateEdms('unit', '{{ $application->sub_application_id }}')">
+                                                                <i data-lucide="refresh-cw" class="w-3 h-3 mr-2"></i>
+                                                                Update EDMS
+                                                            </div>
+                                                        @endif
                                                     @else
                                                         <div class="dropdown-item disabled" title="Files not available - Processing {{ strtolower($application->processing_status) }}">
                                                             <i data-lucide="folder-x" class="w-3 h-3 mr-2"></i>
@@ -492,10 +498,12 @@
                                                                 No File
                                                             @endif
                                                         </div>
-                                                        <div class="dropdown-item disabled" title="Update EDMS is only available when status is Completed">
-                                                            <i data-lucide="refresh-cw" class="w-3 h-3 mr-2"></i>
-                                                            Update EDMS
-                                                        </div>
+                                                        @if(!request()->has('url') || request()->get('url') !== 'pp')
+                                                            <div class="dropdown-item disabled" title="Update EDMS is only available when status is Completed">
+                                                                <i data-lucide="refresh-cw" class="w-3 h-3 mr-2"></i>
+                                                                Update EDMS
+                                                            </div>
+                                                        @endif
                                                     @endif
                                                 </div>
                                             </div>

@@ -287,11 +287,7 @@
                         Generate Final Conveyance
                     </button>
                 @else
-                    <button type="button" disabled
-                        class="flex items-center px-3 py-1 text-xs border border-gray-300 rounded-md bg-gray-400 text-white cursor-not-allowed">
-                        <i data-lucide="check-circle" class="w-3.5 h-3.5 mr-1.5"></i>
-                        Final Conveyance Generated
-                    </button>
+                   
                 @endif
                 
                 <button id="print-conveyance" type="button"

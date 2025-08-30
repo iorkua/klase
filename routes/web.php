@@ -830,6 +830,7 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'fileindexing'], func
     // API endpoints for dynamic data (specific routes first)
     Route::get('/api/pending-files', [App\Http\Controllers\FileIndexController::class, 'getPendingFiles'])->name('fileindexing.api.pending-files');
     Route::get('/api/indexed-files', [App\Http\Controllers\FileIndexController::class, 'getIndexedFiles'])->name('fileindexing.api.indexed-files');
+    Route::get('/api/selected-files-for-ai-insights', [App\Http\Controllers\FileIndexController::class, 'getSelectedFilesForAiInsights'])->name('fileindexing.api.selected-files-for-ai-insights');
     Route::get('/search-applications', [App\Http\Controllers\FileIndexController::class, 'searchApplications'])->name('fileindexing.search-applications');
     Route::get('/check-file-status', [App\Http\Controllers\FileIndexController::class, 'checkFileStatus'])->name('fileindexing.check-file-status');
     Route::get('/list', [App\Http\Controllers\FileIndexController::class, 'getFileIndexingList'])->name('fileindexing.list');
@@ -920,6 +921,12 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'unindexed-scanning']
     Route::post('/process-ocr', [App\Http\Controllers\UnindexedScanningController::class, 'processOcr'])->name('unindexed-scanning.process-ocr');
     Route::post('/create-indexing-entry', [App\Http\Controllers\UnindexedScanningController::class, 'createIndexingEntry'])->name('unindexed-scanning.create-indexing-entry');
     Route::get('/files', [App\Http\Controllers\UnindexedScanningController::class, 'getUnindexedFiles'])->name('unindexed-scanning.files');
+    
+    // Document preview and metadata routes
+    Route::get('/preview/{id}', [App\Http\Controllers\UnindexedScanningController::class, 'getFilePreview'])->name('unindexed-scanning.preview');
+    Route::get('/metadata/{id}', [App\Http\Controllers\UnindexedScanningController::class, 'getFileMetadata'])->name('unindexed-scanning.metadata');
+    Route::put('/metadata/{id}', [App\Http\Controllers\UnindexedScanningController::class, 'updateFileMetadata'])->name('unindexed-scanning.update-metadata');
+    
     Route::delete('/files/{id}', [App\Http\Controllers\UnindexedScanningController::class, 'deleteUnindexedFile'])->name('unindexed-scanning.delete-file');
 });
 
