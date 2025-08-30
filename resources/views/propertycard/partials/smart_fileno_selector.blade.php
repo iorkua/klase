@@ -124,6 +124,9 @@ function smartFilenoSelector() {
                 return;
             }
             
+            // Store reference to Alpine component
+            const alpineComponent = this;
+            
             // Destroy existing Select2 instance if it exists
             if (selectElement.hasClass('select2-hidden-accessible')) {
                 selectElement.select2('destroy');
@@ -160,28 +163,36 @@ function smartFilenoSelector() {
                     }
                 });
                 
-                // Handle selection change
-                selectElement.on('select2:select', (e) => {
+                // Handle selection change - use stored reference
+                selectElement.on('select2:select', function(e) {
                     const selectedOption = e.params.data.element;
                     if (selectedOption) {
-                        this.selectedFileno = selectedOption.getAttribute('data-fileno') || '';
+                        console.log('Select2 selection triggered', selectedOption);
                         
-                        // Create application object from data attributes
-                        this.selectedApplication = {
+                        const fileno = selectedOption.getAttribute('data-fileno') || '';
+                        console.log('Selected fileno:', fileno);
+                        
+                        // Update Alpine component properties
+                        alpineComponent.selectedFileno = fileno;
+                        alpineComponent.selectedApplication = {
                             id: selectedOption.getAttribute('data-id'),
-                            fileno: selectedOption.getAttribute('data-fileno'),
+                            fileno: fileno,
                             kangisFileNo: selectedOption.getAttribute('data-kangis-fileno'),
                             mlsfNo: selectedOption.getAttribute('data-mls-fileno'),
                             NewKANGISFileNo: selectedOption.getAttribute('data-newkangis-fileno')
                         };
                         
-                        this.handleSelection();
+                        console.log('Alpine component application set to:', alpineComponent.selectedApplication);
+                        
+                        // Call handleSelection directly
+                        alpineComponent.handleSelection();
                     }
                 });
                 
-                // Handle clear selection
-                selectElement.on('select2:clear', () => {
-                    this.clearSelection();
+                // Handle clear selection - use stored reference
+                selectElement.on('select2:clear', function() {
+                    console.log('Select2 clear triggered');
+                    alpineComponent.clearSelection();
                 });
                 
                 console.log('Select2 initialized successfully');
@@ -192,10 +203,13 @@ function smartFilenoSelector() {
         },
         
         handleSelection() {
-            // Set hidden input
+            console.log('handleSelection called with application:', this.selectedApplication);
+            
+            // Set main fileno input
             const filenoInput = document.getElementById('fileno');
             if (filenoInput) {
                 filenoInput.value = this.selectedFileno;
+                console.log('Set fileno to:', this.selectedFileno);
             }
 
             // Mirror fields used by manual entry so backend receives identical names
@@ -203,15 +217,34 @@ function smartFilenoSelector() {
             const kangisHidden = document.getElementById('kangisFileNo');
             const newKangisHidden = document.getElementById('NewKANGISFileno');
             const activeTabHidden = document.getElementById('activeFileTab');
-            if (mlsHidden) mlsHidden.value = this.selectedApplication?.mlsfNo || '';
-            if (kangisHidden) kangisHidden.value = this.selectedApplication?.kangisFileNo || '';
-            if (newKangisHidden) newKangisHidden.value = this.selectedApplication?.NewKANGISFileNo || '';
-            if (activeTabHidden) {
-                if (this.selectedApplication?.mlsfNo) activeTabHidden.value = 'mlsFNo';
-                else if (this.selectedApplication?.kangisFileNo) activeTabHidden.value = 'kangisFileNo';
-                else if (this.selectedApplication?.NewKANGISFileNo) activeTabHidden.value = 'NewKANGISFileno';
-                else activeTabHidden.value = '';
+            
+            // Clear all first
+            if (mlsHidden) mlsHidden.value = '';
+            if (kangisHidden) kangisHidden.value = '';
+            if (newKangisHidden) newKangisHidden.value = '';
+            
+            // Populate the specific file number field based on what we have
+            if (this.selectedApplication?.mlsfNo && this.selectedApplication.mlsfNo.trim() !== '') {
+                if (mlsHidden) mlsHidden.value = this.selectedApplication.mlsfNo;
+                if (activeTabHidden) activeTabHidden.value = 'mls';
+                console.log('Set MLS file number:', this.selectedApplication.mlsfNo);
+            } else if (this.selectedApplication?.kangisFileNo && this.selectedApplication.kangisFileNo.trim() !== '') {
+                if (kangisHidden) kangisHidden.value = this.selectedApplication.kangisFileNo;
+                if (activeTabHidden) activeTabHidden.value = 'kangis';
+                console.log('Set KANGIS file number:', this.selectedApplication.kangisFileNo);
+            } else if (this.selectedApplication?.NewKANGISFileNo && this.selectedApplication.NewKANGISFileNo.trim() !== '') {
+                if (newKangisHidden) newKangisHidden.value = this.selectedApplication.NewKANGISFileNo;
+                if (activeTabHidden) activeTabHidden.value = 'newkangis';
+                console.log('Set New KANGIS file number:', this.selectedApplication.NewKANGISFileNo);
             }
+            
+            // Debug log all hidden field values
+            console.log('Hidden field values after selection:');
+            console.log('fileno:', filenoInput?.value);
+            console.log('mlsFNo:', mlsHidden?.value);
+            console.log('kangisFileNo:', kangisHidden?.value);
+            console.log('NewKANGISFileno:', newKangisHidden?.value);
+            console.log('activeFileTab:', activeTabHidden?.value);
             
             // Show selected display
             const selectedDisplay = document.getElementById('selected-fileno-display');

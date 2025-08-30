@@ -1852,9 +1852,17 @@
             instrumentsDataField.value = JSON.stringify(instruments);
           }
 
-          // Create FormData and submit via AJAX
+          // Create FormData and submit via AJAX with proper CSRF token
           const form = document.getElementById("property-form");
           const formData = new FormData(form);
+
+          // Ensure CSRF token is included
+          const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
+                           document.querySelector('input[name="_token"]')?.value;
+          
+          if (csrfToken) {
+            formData.set('_token', csrfToken);
+          }
 
           // Debug log all form data
           console.log('Form data being sent:');
@@ -1866,7 +1874,8 @@
             method: 'POST',
             body: formData,
             headers: {
-              'X-Requested-With': 'XMLHttpRequest'
+              'X-Requested-With': 'XMLHttpRequest',
+              'X-CSRF-TOKEN': csrfToken
             }
           });
 

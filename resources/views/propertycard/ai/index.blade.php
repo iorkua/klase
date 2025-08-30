@@ -540,7 +540,7 @@
           </p>
         </div>
 
-        <form id="property-form" action="{{ route('propertycard.ai.save') }}" method="POST" enctype="multipart/form-data">
+        <form id="property-form" action="{{ route('property-records.store') }}" method="POST" enctype="multipart/form-data">
           @csrf
           <input type="hidden" name="property_id" id="property_id" value="">
           <input type="hidden" name="form_action" id="form_action" value="add">
