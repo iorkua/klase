@@ -883,7 +883,7 @@
                             'type' => 'pdf_page',
                             'document_index' => $docIndex,
                             'page_number' => $page,
-                            'file_path' => $scanning->document_path,
+                            'file_path' => 'EDMS\\PAGETYPING\\' . $fileIndexing->file_number . '.pdf',
                             'display_name' => "Document " . ($docIndex + 1) . " - Page " . $page,
                             'page_index' => $pageIndex++,
                             'scanning_id' => $scanning->id
@@ -895,7 +895,7 @@
                         'type' => 'image',
                         'document_index' => $docIndex,
                         'page_number' => 1,
-                        'file_path' => $scanning->document_path,
+                        'file_path' => 'EDMS\\PAGETYPING\\' . $fileIndexing->file_number . '.pdf',
                         'display_name' => "Document " . ($docIndex + 1),
                         'page_index' => $pageIndex++,
                         'scanning_id' => $scanning->id

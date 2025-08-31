@@ -1024,6 +1024,43 @@ class EdmsController extends Controller
                 ]);
             }
             
+            // Handle file copying to the new location
+            try {
+                if (isset($validated['scanning_id'])) {
+                    $scanning = \DB::connection('sqlsrv')->table('scannings')->find($validated['scanning_id']);
+                    
+                    if ($scanning && $scanning->document_path) {
+                        $originalPath = storage_path('app/public/' . $scanning->document_path);
+                        $newRelativePath = 'EDMS/PAGETYPING/' . basename($validated['file_path']);
+                        $newPath = storage_path('app/public/' . $newRelativePath);
+                        
+                        // Create directory if it doesn't exist
+                        $directory = dirname($newPath);
+                        if (!file_exists($directory)) {
+                            mkdir($directory, 0755, true);
+                        }
+                        
+                        // Copy file to new location if it exists and destination doesn't exist
+                        if (file_exists($originalPath) && !file_exists($newPath)) {
+                            if (!copy($originalPath, $newPath)) {
+                                Log::warning('Failed to copy file to new location in single page save', [
+                                    'original' => $originalPath,
+                                    'new' => $newPath,
+                                    'page_number' => $validated['page_number']
+                                ]);
+                            }
+                        }
+                    }
+                }
+            } catch (Exception $fileException) {
+                Log::error('Error handling file copy in single page typing save', [
+                    'error' => $fileException->getMessage(),
+                    'file_indexing_id' => $fileIndexingId,
+                    'page_number' => $validated['page_number']
+                ]);
+                // Don't fail the entire operation if file copy fails
+            }
+            
             Log::info('Single page typing saved', [
                 'file_indexing_id' => $fileIndexingId,
                 'page_typing_id' => $pageTyping->id,
@@ -1111,6 +1148,42 @@ class EdmsController extends Controller
                             'page_code' => $pageData['page_code'],
                             'typed_by' => Auth::id()
                         ]);
+                    }
+                    
+                    // Handle file copying to the new location for this page
+                    try {
+                        if (isset($pageData['scanning_id'])) {
+                            $scanning = \DB::connection('sqlsrv')->table('scannings')->find($pageData['scanning_id']);
+                            
+                            if ($scanning && $scanning->document_path) {
+                                $originalPath = storage_path('app/public/' . $scanning->document_path);
+                                $newPath = 'EDMS/PAGETYPING/' . basename($pageData['file_path']);
+                                
+                                // Create directory if it doesn't exist
+                                $directory = dirname($newPath);
+                                if (!file_exists($directory)) {
+                                    mkdir($directory, 0755, true);
+                                }
+                                
+                                // Copy file to new location if it exists and destination doesn't exist
+                                if (file_exists($originalPath) && !file_exists($newPath)) {
+                                    if (!copy($originalPath, $newPath)) {
+                                        Log::warning('Failed to copy file to new location in batch save', [
+                                            'original' => $originalPath,
+                                            'new' => $newPath,
+                                            'page_number' => $pageData['page_number']
+                                        ]);
+                                    }
+                                }
+                            }
+                        }
+                    } catch (Exception $fileException) {
+                        Log::error('Error handling file copy in batch page typing save', [
+                            'error' => $fileException->getMessage(),
+                            'file_indexing_id' => $fileIndexingId,
+                            'page_number' => $pageData['page_number'] ?? 'unknown'
+                        ]);
+                        // Don't fail the entire operation if file copy fails
                     }
                     
                     $savedCount++;

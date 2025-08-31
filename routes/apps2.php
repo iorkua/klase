@@ -174,12 +174,18 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/api/files', [PageTypingController::class, 'getFilesByStatus'])->name('pagetyping.api.files');
         Route::get('/api/file-details', [PageTypingController::class, 'getFileDetails'])->name('pagetyping.api.file-details');
         Route::get('/api/next-serial-for-page-type', [PageTypingController::class, 'getNextSerialForPageType'])->name('pagetyping.api.next-serial-for-page-type');
+        Route::post('/api/save-thumbnail', [PageTypingController::class, 'saveThumbnail'])->name('pagetyping.api.save-thumbnail');
+        Route::get('/api/thumbnails', [PageTypingController::class, 'getThumbnails'])->name('pagetyping.api.thumbnails');
         
         // PageType More routes
         Route::get('/api/pagetype-more', [PageTypingController::class, 'pageTypeMore'])->name('pagetyping.api.pagetype-more');
         Route::post('/pagetype-more/store', [PageTypingController::class, 'storePageTypeMore'])->name('pagetyping.pagetype-more.store');
         Route::get('/api/pagetype-more-files', [PageTypingController::class, 'getPageTypeMoreFiles'])->name('pagetyping.api.pagetype-more-files');
         Route::get('/api/typing-data', [PageTypingController::class, 'getTypingData'])->name('pagetyping.api.typing-data');
+        
+        // Thumbnail routes for PDF splitting
+        Route::get('/api/thumbnails', [PageTypingController::class, 'getThumbnails'])->name('pagetyping.api.thumbnails');
+        Route::post('/api/save-thumbnail', [PageTypingController::class, 'saveThumbnail'])->name('pagetyping.api.save-thumbnail');
         
         // Parameterized routes MUST come last
         Route::get('/{id}', [PageTypingController::class, 'show'])->name('pagetyping.show');

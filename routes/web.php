@@ -930,6 +930,24 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'unindexed-scanning']
     Route::delete('/files/{id}', [App\Http\Controllers\UnindexedScanningController::class, 'deleteUnindexedFile'])->name('unindexed-scanning.delete-file');
 });
 
+//-------------------------------Page Typing-------------------------------------------
+Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'pagetyping'], function () {
+    // Main dashboard
+    Route::get('/', [App\Http\Controllers\PageTypingController::class, 'index'])->name('pagetyping.index');
+    
+    // API routes
+    Route::group(['prefix' => 'api'], function () {
+        Route::get('/stats', [App\Http\Controllers\PageTypingController::class, 'getStats'])->name('pagetyping.api.stats');
+        Route::get('/files', [App\Http\Controllers\PageTypingController::class, 'getFilesByStatus'])->name('pagetyping.api.files');
+        Route::get('/pagetype-more-files', [App\Http\Controllers\PageTypingController::class, 'getPageTypeMoreFiles'])->name('pagetyping.api.pagetype-more-files');
+        Route::get('/typing-data', [App\Http\Controllers\PageTypingController::class, 'getTypingData'])->name('pagetyping.api.typing-data');
+        Route::get('/file-details', [App\Http\Controllers\PageTypingController::class, 'getFileDetails'])->name('pagetyping.api.file-details');
+    });
+    
+    // Save routes
+    Route::post('/save-single', [App\Http\Controllers\PageTypingController::class, 'saveSingle'])->name('pagetyping.save-single');
+});
+
 Route::get('/test-serial-api', function() {
     return view('pagetyping.test_serial_api');
 })->name('pagetyping.test-serial-api');

@@ -583,6 +583,11 @@ document.addEventListener('DOMContentLoaded', function() {
     lucide.createIcons();
   }
   
+  // Initialize charts if we're on the report page
+  if (window.location.search.includes('url=report')) {
+    initializeCharts();
+  }
+  
   // Tab switching functionality
   const primaryTab = document.getElementById('primary-tab');
   const unitTab = document.getElementById('unit-tab');
@@ -639,6 +644,14 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('print-unit-btn').addEventListener('click', function() {
     printTable('unit');
   });
+  
+  // Print charts functionality
+  const printChartsBtn = document.getElementById('print-charts-btn');
+  if (printChartsBtn) {
+    printChartsBtn.addEventListener('click', function() {
+      printCharts();
+    });
+  }
 });
 
 // Filter table function
@@ -697,6 +710,142 @@ function printTable(type) {
   
   printWindow.document.close();
   printWindow.print();
+}
+
+// Print charts function
+function printCharts() {
+  const chartsContainer = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-3.gap-6.mb-6');
+  if (!chartsContainer) {
+    alert('Charts not found. Please ensure the charts are loaded.');
+    return;
+  }
+  
+  const printWindow = window.open('', '_blank');
+  
+  // Get chart canvases and convert to images
+  const statusChart = document.getElementById('statusChart');
+  const trendsChart = document.getElementById('trendsChart');
+  const comparisonChart = document.getElementById('comparisonChart');
+  
+  const statusImage = statusChart ? statusChart.toDataURL('image/png') : '';
+  const trendsImage = trendsChart ? trendsChart.toDataURL('image/png') : '';
+  const comparisonImage = comparisonChart ? comparisonChart.toDataURL('image/png') : '';
+  
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Payment Analytics Report</title>
+      <style>
+        body { 
+          font-family: Arial, sans-serif; 
+          margin: 20px; 
+          background: white;
+        }
+        .print-header { 
+          text-align: center; 
+          margin-bottom: 30px; 
+          border-bottom: 2px solid #333;
+          padding-bottom: 20px;
+        }
+        .charts-grid { 
+          display: grid; 
+          grid-template-columns: 1fr; 
+          gap: 30px; 
+          margin-top: 30px;
+        }
+        .chart-container { 
+          text-align: center; 
+          page-break-inside: avoid;
+          margin-bottom: 40px;
+        }
+        .chart-title { 
+          font-size: 18px; 
+          font-weight: bold; 
+          margin-bottom: 15px;
+          color: #333;
+        }
+        .chart-image { 
+          max-width: 100%; 
+          height: auto;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .report-info {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          margin-bottom: 30px;
+          font-size: 14px;
+        }
+        .info-item {
+          display: flex;
+          justify-content: space-between;
+          padding: 8px;
+          background: #f8f9fa;
+          border-radius: 4px;
+        }
+        @media print {
+          body { margin: 0; }
+          .chart-container { page-break-inside: avoid; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="print-header">
+        <h1>Payment Analytics Report</h1>
+        <p>KLAES - Kaduna State Land Administration and Estate System</p>
+        <p style="font-size: 14px; color: #666;">Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
+      </div>
+      
+      <div class="report-info">
+        <div class="info-item">
+          <span><strong>Total Primary Applications:</strong></span>
+          <span>${@json(count($primaryPayments ?? []))}</span>
+        </div>
+        <div class="info-item">
+          <span><strong>Total Unit Applications:</strong></span>
+          <span>${@json(count($unitPayments ?? []))}</span>
+        </div>
+      </div>
+      
+      <div class="charts-grid">
+        ${statusImage ? `
+          <div class="chart-container">
+            <div class="chart-title">Payment Status Distribution</div>
+            <img src="${statusImage}" alt="Payment Status Distribution Chart" class="chart-image">
+          </div>
+        ` : ''}
+        
+        ${trendsImage ? `
+          <div class="chart-container">
+            <div class="chart-title">Payment Trends (Last 6 Months)</div>
+            <img src="${trendsImage}" alt="Payment Trends Chart" class="chart-image">
+          </div>
+        ` : ''}
+        
+        ${comparisonImage ? `
+          <div class="chart-container">
+            <div class="chart-title">Application Type Comparison</div>
+            <img src="${comparisonImage}" alt="Application Type Comparison Chart" class="chart-image">
+          </div>
+        ` : ''}
+      </div>
+      
+      <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ccc; font-size: 12px; color: #666; text-align: center;">
+        <p>This report was automatically generated by KLAES Payment Management System</p>
+      </div>
+    </body>
+    </html>
+  `);
+  
+  printWindow.document.close();
+  
+  // Wait for images to load before printing
+  setTimeout(() => {
+    printWindow.print();
+  }, 1000);
 }
 
 // Global Alpine.js functions for action menu
@@ -1095,6 +1244,328 @@ function showSuccessMessage(message) {
     }, 300);
   }, 3000);
 }
+
+// Initialize charts function
+function initializeCharts() {
+  try {
+    // Check if Chart.js is loaded
+    if (typeof Chart === 'undefined') {
+      console.error('Chart.js is not loaded');
+      return;
+    }
+    
+    // Prepare data from PHP backend
+    const primaryPayments = @json($primaryPayments ?? []);
+    const unitPayments = @json($unitPayments ?? []);
+    
+    console.log('Initializing charts with data:', { 
+      primaryCount: primaryPayments.length, 
+      unitCount: unitPayments.length 
+    });
+    
+    // Payment Status Distribution Chart
+    initializeStatusChart(primaryPayments, unitPayments);
+    
+    // Payment Trends Chart
+    initializeTrendsChart(primaryPayments, unitPayments);
+    
+    // Application Type Comparison Chart
+    initializeComparisonChart(primaryPayments, unitPayments);
+    
+    console.log('Charts initialized successfully');
+  } catch (error) {
+    console.error('Error initializing charts:', error);
+  }
+}
+
+function initializeStatusChart(primaryPayments, unitPayments) {
+  try {
+    const allPayments = [...primaryPayments, ...unitPayments];
+    
+    // Count payment statuses
+    let complete = 0;
+    let incomplete = 0;
+    let overdue = 0;
+    
+    allPayments.forEach(payment => {
+      // Calculate if payment is complete based on main bills
+      const mainPaid = (
+        parseFloat(payment.application_fee || 0) > 0 &&
+        parseFloat(payment.processing_fee || 0) > 0 &&
+        parseFloat(payment.site_plan_fee || 0) > 0 &&
+        parseFloat(payment.Betterment_Charges || 0) > 0
+      );
+      
+      if (mainPaid) {
+        complete++;
+      } else {
+        // Check if overdue (more than 30 days old)
+        const paymentDate = new Date(payment.created_at);
+        const daysDiff = (new Date() - paymentDate) / (1000 * 60 * 60 * 24);
+        
+        if (daysDiff > 30) {
+          overdue++;
+        } else {
+          incomplete++;
+        }
+      }
+    });
+    
+    const ctx = document.getElementById('statusChart');
+    if (ctx) {
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Complete', 'Incomplete', 'Overdue'],
+          datasets: [{
+            data: [complete, incomplete, overdue],
+            backgroundColor: [
+              '#10B981', // Green for complete
+              '#F59E0B', // Yellow for incomplete
+              '#EF4444'  // Red for overdue
+            ],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                padding: 20,
+                usePointStyle: true
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = total > 0 ? ((context.raw / total) * 100).toFixed(1) : '0.0';
+                  return `${context.label}: ${context.raw} (${percentage}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+      console.log('Status chart initialized successfully');
+    } else {
+      console.error('Status chart canvas not found');
+    }
+  } catch (error) {
+    console.error('Error initializing status chart:', error);
+  }
+}
+
+function initializeTrendsChart(primaryPayments, unitPayments) {
+  try {
+    const allPayments = [...primaryPayments, ...unitPayments];
+    
+    // Group payments by month
+    const monthlyData = {};
+    const last6Months = [];
+    const currentDate = new Date();
+    
+    // Generate last 6 months
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const monthKey = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+      last6Months.push(monthKey);
+      monthlyData[monthKey] = { complete: 0, incomplete: 0, total: 0 };
+    }
+    
+    // Process payments
+    allPayments.forEach(payment => {
+      const paymentDate = new Date(payment.created_at);
+      const monthKey = paymentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+      
+      if (monthlyData[monthKey]) {
+        const mainPaid = (
+          parseFloat(payment.application_fee || 0) > 0 &&
+          parseFloat(payment.processing_fee || 0) > 0 &&
+          parseFloat(payment.site_plan_fee || 0) > 0 &&
+          parseFloat(payment.Betterment_Charges || 0) > 0
+        );
+        
+        monthlyData[monthKey].total++;
+        if (mainPaid) {
+          monthlyData[monthKey].complete++;
+        } else {
+          monthlyData[monthKey].incomplete++;
+        }
+      }
+    });
+    
+    const ctx = document.getElementById('trendsChart');
+    if (ctx) {
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: last6Months,
+          datasets: [
+            {
+              label: 'Complete Payments',
+              data: last6Months.map(month => monthlyData[month].complete),
+              borderColor: '#10B981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              fill: true,
+              tension: 0.4
+            },
+            {
+              label: 'Incomplete Payments',
+              data: last6Months.map(month => monthlyData[month].incomplete),
+              borderColor: '#F59E0B',
+              backgroundColor: 'rgba(245, 158, 11, 0.1)',
+              fill: true,
+              tension: 0.4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                padding: 20,
+                usePointStyle: true
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                stepSize: 1
+              }
+            }
+          }
+        }
+      });
+      console.log('Trends chart initialized successfully');
+    } else {
+      console.error('Trends chart canvas not found');
+    }
+  } catch (error) {
+    console.error('Error initializing trends chart:', error);
+  }
+}
+
+function initializeComparisonChart(primaryPayments, unitPayments) {
+  try {
+    // Calculate totals for each application type
+    const primaryTotal = primaryPayments.reduce((sum, payment) => {
+      return sum + (
+        parseFloat(payment.application_fee || 0) +
+        parseFloat(payment.processing_fee || 0) +
+        parseFloat(payment.site_plan_fee || 0) +
+        parseFloat(payment.Betterment_Charges || 0) +
+        parseFloat(payment.Penalty_Fees || 0)
+      );
+    }, 0);
+    
+    const unitTotal = unitPayments.reduce((sum, payment) => {
+      return sum + (
+        parseFloat(payment.application_fee || 0) +
+        parseFloat(payment.processing_fee || 0) +
+        parseFloat(payment.site_plan_fee || 0) +
+        parseFloat(payment.Betterment_Charges || 0) +
+        parseFloat(payment.Penalty_Fees || 0)
+      );
+    }, 0);
+    
+    const ctx = document.getElementById('comparisonChart');
+    if (ctx) {
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Primary Applications', 'Unit Applications'],
+          datasets: [
+            {
+              label: 'Total Count',
+              data: [primaryPayments.length, unitPayments.length],
+              backgroundColor: ['#3B82F6', '#8B5CF6'],
+              borderColor: ['#2563EB', '#7C3AED'],
+              borderWidth: 2,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Total Amount (₦)',
+              data: [primaryTotal, unitTotal],
+              backgroundColor: ['rgba(59, 130, 246, 0.3)', 'rgba(139, 92, 246, 0.3)'],
+              borderColor: ['#2563EB', '#7C3AED'],
+              borderWidth: 2,
+              type: 'line',
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                padding: 20,
+                usePointStyle: true
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  if (context.dataset.label === 'Total Amount (₦)') {
+                    return `${context.dataset.label}: ₦${context.raw.toLocaleString()}`;
+                  }
+                  return `${context.dataset.label}: ${context.raw}`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Count'
+              }
+            },
+            y1: {
+              type: 'linear',
+              display: true,
+              position: 'right',
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Amount (₦)'
+              },
+              grid: {
+                drawOnChartArea: false,
+              },
+              ticks: {
+                callback: function(value) {
+                  return '₦' + value.toLocaleString();
+                }
+              }
+            }
+          }
+        }
+      });
+      console.log('Comparison chart initialized successfully');
+    } else {
+      console.error('Comparison chart canvas not found');
+    }
+  } catch (error) {
+    console.error('Error initializing comparison chart:', error);
+  }
+}
 </script>
 
 <!-- Add required CSS for tabs -->
@@ -1116,6 +1587,27 @@ function showSuccessMessage(message) {
 .tab-inactive:hover {
   background-color: #f1f5f9;
   cursor: pointer;
+}
+
+/* Chart container styles */
+.chart-container {
+  position: relative;
+  height: 300px;
+  width: 100%;
+}
+
+/* Ensure charts are responsive */
+.chart-container canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Print styles for charts */
+@media print {
+  .chart-container {
+    height: 400px;
+    page-break-inside: avoid;
+  }
 }
 </style>
 

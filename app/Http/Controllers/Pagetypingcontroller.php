@@ -10,8 +10,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\FileIndexing;
 use App\Models\Scanning;
 use App\Models\PageTyping;
-use App\Services\PageTypingService;
-use Exception;
+use App\Models\Thumbnail;
 
 class PageTypingController extends Controller
 {
@@ -142,26 +141,33 @@ class PageTypingController extends Controller
         try {
             $status = $request->get('status', 'pending');
             $search = $request->get('search', '');
-            $limit = $request->get('limit', 20);
+            $limit = $request->get('limit', 10);
+            $page = $request->get('page', 1);
 
             switch ($status) {
                 case 'pending':
-                    $files = $this->getPendingFiles($search, $limit);
+                    $result = $this->getPendingFilesPaginated($search, $limit, $page);
                     break;
                 case 'in_progress':
-                    $files = $this->getInProgressFiles($search, $limit);
+                    $result = $this->getInProgressFilesPaginated($search, $limit, $page);
                     break;
                 case 'completed':
-                    $files = $this->getCompletedFiles($search, $limit);
+                    $result = $this->getCompletedFilesPaginated($search, $limit, $page);
                     break;
                 default:
-                    $files = collect();
+                    $result = [
+                        'files' => collect(),
+                        'total' => 0,
+                        'current_page' => $page,
+                        'last_page' => 1,
+                        'per_page' => $limit
+                    ];
             }
 
-            $formattedFiles = $files->map(function ($file) {
+            $formattedFiles = $result['files']->map(function ($file) {
                 $scanningsCount = $file->scannings->count();
                 $pageTypingsCount = $file->pagetypings->count();
-                
+
                 // Calculate progress for in-progress files
                 $progress = $scanningsCount > 0 ? ($pageTypingsCount / $scanningsCount) * 100 : 0;
 
@@ -186,7 +192,15 @@ class PageTypingController extends Controller
 
             return response()->json([
                 'success' => true,
-                'files' => $formattedFiles
+                'files' => $formattedFiles,
+                'pagination' => [
+                    'total' => $result['total'],
+                    'current_page' => $result['current_page'],
+                    'last_page' => $result['last_page'],
+                    'per_page' => $result['per_page'],
+                    'from' => ($result['current_page'] - 1) * $result['per_page'] + 1,
+                    'to' => min($result['current_page'] * $result['per_page'], $result['total'])
+                ]
             ]);
         } catch (Exception $e) {
             Log::error('Error getting files by status', [
@@ -197,7 +211,15 @@ class PageTypingController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error loading files',
-                'files' => []
+                'files' => [],
+                'pagination' => [
+                    'total' => 0,
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => $limit,
+                    'from' => 0,
+                    'to' => 0
+                ]
             ], 500);
         }
     }
@@ -205,7 +227,7 @@ class PageTypingController extends Controller
     /**
      * Get pending files (files with scannings but no page typings)
      */
-    private function getPendingFiles($search = '', $limit = 20)
+    private function getPendingFiles($search = '', $limit = 10)
     {
         try {
             $query = FileIndexing::on('sqlsrv')
@@ -232,9 +254,158 @@ class PageTypingController extends Controller
     }
 
     /**
+     * Get pending files (files with scannings but no page typings) - Paginated
+     */
+    private function getPendingFilesPaginated($search = '', $limit = 10, $page = 1)
+    {
+        try {
+            $query = FileIndexing::on('sqlsrv')
+                ->with(['mainApplication', 'scannings', 'pagetypings'])
+                ->whereHas('scannings')
+                ->whereDoesntHave('pagetypings');
+
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('file_number', 'like', "%{$search}%")
+                      ->orWhere('file_title', 'like', "%{$search}%")
+                      ->orWhere('district', 'like', "%{$search}%")
+                      ->orWhere('lga', 'like', "%{$search}%");
+                });
+            }
+
+            $total = $query->count();
+            $files = $query->orderBy('created_at', 'desc')
+                         ->skip(($page - 1) * $limit)
+                         ->take($limit)
+                         ->get();
+
+            return [
+                'files' => $files,
+                'total' => $total,
+                'current_page' => $page,
+                'last_page' => ceil($total / $limit),
+                'per_page' => $limit
+            ];
+        } catch (Exception $e) {
+            Log::error('Error getting pending files paginated', ['error' => $e->getMessage()]);
+            return [
+                'files' => collect(),
+                'total' => 0,
+                'current_page' => $page,
+                'last_page' => 1,
+                'per_page' => $limit
+            ];
+        }
+    }
+
+    /**
+     * Get in-progress files (files with some page typings but not all pages typed) - Paginated
+     */
+    private function getInProgressFilesPaginated($search = '', $limit = 10, $page = 1)
+    {
+        try {
+            $query = FileIndexing::on('sqlsrv')
+                ->with(['mainApplication', 'scannings', 'pagetypings'])
+                ->whereHas('scannings')
+                ->whereHas('pagetypings');
+
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('file_number', 'like', "%{$search}%")
+                      ->orWhere('file_title', 'like', "%{$search}%")
+                      ->orWhere('district', 'like', "%{$search}%")
+                      ->orWhere('lga', 'like', "%{$search}%");
+                });
+            }
+
+            // Get all potential files first
+            $allFiles = $query->orderBy('updated_at', 'desc')->get();
+
+            // Filter to only include files where not all pages are typed
+            $filteredFiles = $allFiles->filter(function ($file) {
+                $totalPages = $file->scannings->count();
+                $typedPages = $file->pagetypings->count();
+                return $typedPages > 0 && $typedPages < $totalPages;
+            });
+
+            $total = $filteredFiles->count();
+            $files = $filteredFiles->slice(($page - 1) * $limit, $limit);
+
+            return [
+                'files' => $files,
+                'total' => $total,
+                'current_page' => $page,
+                'last_page' => ceil($total / $limit),
+                'per_page' => $limit
+            ];
+        } catch (Exception $e) {
+            Log::error('Error getting in-progress files paginated', ['error' => $e->getMessage()]);
+            return [
+                'files' => collect(),
+                'total' => 0,
+                'current_page' => $page,
+                'last_page' => 1,
+                'per_page' => $limit
+            ];
+        }
+    }
+
+    /**
+     * Get completed files (files where all pages are typed) - Paginated
+     */
+    private function getCompletedFilesPaginated($search = '', $limit = 10, $page = 1)
+    {
+        try {
+            $query = FileIndexing::on('sqlsrv')
+                ->with(['mainApplication', 'scannings', 'pagetypings.typedBy'])
+                ->whereHas('scannings')
+                ->whereHas('pagetypings');
+
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('file_number', 'like', "%{$search}%")
+                      ->orWhere('file_title', 'like', "%{$search}%")
+                      ->orWhere('district', 'like', "%{$search}%")
+                      ->orWhere('lga', 'like', "%{$search}%");
+                });
+            }
+
+            // Get all potential files first
+            $allFiles = $query->orderBy('updated_at', 'desc')->get();
+
+            // Filter to only include files where all pages are typed
+            $filteredFiles = $allFiles->filter(function ($file) {
+                $totalPages = $file->scannings->count();
+                $typedPages = $file->pagetypings->count();
+                return $totalPages > 0 && $typedPages >= $totalPages;
+            });
+
+            $total = $filteredFiles->count();
+            $files = $filteredFiles->slice(($page - 1) * $limit, $limit);
+
+            return [
+                'files' => $files,
+                'total' => $total,
+                'current_page' => $page,
+                'last_page' => ceil($total / $limit),
+                'per_page' => $limit
+            ];
+        } catch (Exception $e) {
+            Log::error('Error getting completed files paginated', ['error' => $e->getMessage()]);
+            return [
+                'files' => collect(),
+                'total' => 0,
+                'current_page' => $page,
+                'last_page' => 1,
+                'per_page' => $limit
+            ];
+        }
+    }
+
+    /**
      * Get in-progress files (files with some page typings but not all pages typed)
      */
-    private function getInProgressFiles($search = '', $limit = 20)
+    private function getInProgressFiles($search = '', $limit = 10)
     {
         try {
             $query = FileIndexing::on('sqlsrv')
@@ -272,7 +443,7 @@ class PageTypingController extends Controller
     /**
      * Get completed files (files where all pages are typed)
      */
-    private function getCompletedFiles($search = '', $limit = 20)
+    private function getCompletedFiles($search = '', $limit = 10)
     {
         try {
             $query = FileIndexing::on('sqlsrv')
@@ -417,7 +588,8 @@ class PageTypingController extends Controller
     {
         try {
             $search = $request->get('search', '');
-            $limit = $request->get('limit', 20);
+            $limit = $request->get('limit', 10);
+            $page = $request->get('page', 1);
 
             // Check if is_updated column exists
             $hasIsUpdatedColumn = DB::connection('sqlsrv')
@@ -448,8 +620,11 @@ class PageTypingController extends Controller
             }
 
             $files = $query->orderBy('updated_at', 'desc')
-                          ->limit($limit)
+                          ->skip(($page - 1) * $limit)
+                          ->take($limit)
                           ->get();
+
+            $total = $query->count();
 
             $formattedFiles = $files->map(function ($file) {
                 $scanningsCount = $file->scannings->count();
@@ -481,7 +656,15 @@ class PageTypingController extends Controller
 
             return response()->json([
                 'success' => true,
-                'files' => $formattedFiles
+                'files' => $formattedFiles,
+                'pagination' => [
+                    'total' => $total,
+                    'current_page' => $page,
+                    'last_page' => ceil($total / $limit),
+                    'per_page' => $limit,
+                    'from' => ($page - 1) * $limit + 1,
+                    'to' => min($page * $limit, $total)
+                ]
             ]);
         } catch (Exception $e) {
             Log::error('Error getting PageType More files', [
@@ -546,6 +729,91 @@ class PageTypingController extends Controller
                 $pageTyping = PageTyping::on('sqlsrv')->create(array_merge($validated, [
                     'typed_by' => Auth::id()
                 ]));
+            }
+
+            // Handle file copying to the new locations
+            try {
+                // Get the original file path from scanning record
+                $scanning = \DB::connection('sqlsrv')->table('scannings')->find($validated['scanning_id']);
+
+                if ($scanning && $scanning->document_path) {
+                    // Get file indexing record to get file number
+                    $fileIndexing = FileIndexing::on('sqlsrv')->find($validated['file_indexing_id']);
+
+                    if ($fileIndexing && $fileIndexing->file_number) {
+                        $fileNumber = $fileIndexing->file_number;
+                        $originalPath = storage_path('app/public/' . $scanning->document_path);
+
+                        // Get file extension from original file
+                        $fileExtension = pathinfo($scanning->original_filename, PATHINFO_EXTENSION);
+                        $fileName = $fileNumber . '.' . strtolower($fileExtension);
+
+                        // Define the two target locations
+                        $pagetypingPath = 'EDMS/PAGETYPING/' . $fileNumber . '/' . $fileName;
+                        $archivePath = 'EDMS/ARCHIVE_Doc_WARE/' . $fileNumber . '/' . $fileName;
+
+                        $pagetypingFullPath = storage_path('app/public/' . $pagetypingPath);
+                        $archiveFullPath = storage_path('app/public/' . $archivePath);
+
+                        // Create directories if they don't exist
+                        $pagetypingDir = dirname($pagetypingFullPath);
+                        $archiveDir = dirname($archiveFullPath);
+
+                        if (!file_exists($pagetypingDir)) {
+                            mkdir($pagetypingDir, 0755, true);
+                        }
+
+                        if (!file_exists($archiveDir)) {
+                            mkdir($archiveDir, 0755, true);
+                        }
+
+                        // Copy file to PAGETYPING location
+                        if (file_exists($originalPath) && !file_exists($pagetypingFullPath)) {
+                            if (!copy($originalPath, $pagetypingFullPath)) {
+                                Log::warning('Failed to copy file to PAGETYPING location', [
+                                    'original' => $originalPath,
+                                    'target' => $pagetypingFullPath
+                                ]);
+                            } else {
+                                Log::info('File copied to PAGETYPING location', [
+                                    'file_number' => $fileNumber,
+                                    'path' => $pagetypingPath
+                                ]);
+                            }
+                        }
+
+                        // Copy file to ARCHIVE location
+                        if (file_exists($originalPath) && !file_exists($archiveFullPath)) {
+                            if (!copy($originalPath, $archiveFullPath)) {
+                                Log::warning('Failed to copy file to ARCHIVE location', [
+                                    'original' => $originalPath,
+                                    'target' => $archiveFullPath
+                                ]);
+                            } else {
+                                Log::info('File copied to ARCHIVE location', [
+                                    'file_number' => $fileNumber,
+                                    'path' => $archivePath
+                                ]);
+                            }
+                        }
+
+                        // Update the page typing record with the new file path
+                        $pageTyping->update([
+                            'file_path' => $pagetypingPath
+                        ]);
+                    } else {
+                        Log::warning('File indexing record not found or missing file number', [
+                            'file_indexing_id' => $validated['file_indexing_id']
+                        ]);
+                    }
+                }
+            } catch (Exception $fileException) {
+                Log::error('Error handling file copy in page typing save', [
+                    'error' => $fileException->getMessage(),
+                    'file_indexing_id' => $validated['file_indexing_id'],
+                    'scanning_id' => $validated['scanning_id']
+                ]);
+                // Don't fail the entire operation if file copy fails
             }
 
             return response()->json([
@@ -718,6 +986,7 @@ class PageTypingController extends Controller
                     'file_title' => $fileIndexing->file_title,
                     'district' => $fileIndexing->district,
                     'lga' => $fileIndexing->lga,
+                    'is_existing_file' => $isExistingFile,
                     'main_application' => $fileIndexing->mainApplication ? [
                         'id' => $fileIndexing->mainApplication->id,
                         'applicant_name' => $fileIndexing->mainApplication->applicant_name ?? 'Unknown'
@@ -1231,6 +1500,123 @@ class PageTypingController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error saving page typing: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get thumbnails for a file
+     */
+    public function getThumbnails(Request $request)
+    {
+        try {
+            $fileIndexingId = $request->get('file_indexing_id');
+            
+            if (!$fileIndexingId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File indexing ID is required'
+                ], 400);
+            }
+
+            $thumbnails = Thumbnail::where('file_indexing_id', $fileIndexingId)
+                ->active()
+                ->orderedByPage()
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'thumbnails' => $thumbnails
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error getting thumbnails: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving thumbnails: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Save a thumbnail for a PDF page
+     */
+    public function saveThumbnail(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'thumbnail' => 'required|image|mimes:jpeg,jpg,png|max:5120', // 5MB max
+                'file_indexing_id' => 'required|integer',
+                'page_number' => 'required|integer',
+                'thumbnail_path' => 'required|string'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $fileIndexingId = $request->input('file_indexing_id');
+            $pageNumber = $request->input('page_number');
+            $thumbnailPath = $request->input('thumbnail_path');
+
+            // Get file number
+            $fileIndexing = FileIndexing::on('sqlsrv')->find($fileIndexingId);
+            if (!$fileIndexing) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File not found'
+                ], 404);
+            }
+
+            // Handle file upload
+            $thumbnailFile = null;
+            if ($request->hasFile('thumbnail')) {
+                $thumbnailFile = $request->file('thumbnail');
+                
+                // Create directory if it doesn't exist
+                $directory = dirname(storage_path('app/public/' . $thumbnailPath));
+                if (!file_exists($directory)) {
+                    mkdir($directory, 0755, true);
+                }
+
+                // Move file to storage
+                $thumbnailFile->move(storage_path('app/public'), $thumbnailPath);
+            }
+
+            // Save to database
+            $thumbnail = Thumbnail::create([
+                'file_indexing_id' => $fileIndexingId,
+                'scanning_id' => $request->input('scanning_id'), // Optional
+                'file_number' => $fileIndexing->file_number,
+                'page_number' => $pageNumber,
+                'page_type_id' => $request->input('page_type_id'), // Optional
+                'thumbnail_path' => $thumbnailPath,
+                'original_filename' => $request->input('original_filename'), // Optional
+                'file_size' => $thumbnailFile ? $thumbnailFile->getSize() : null,
+                'mime_type' => $thumbnailFile ? $thumbnailFile->getMimeType() : null,
+                'is_active' => 1
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Thumbnail saved successfully',
+                'thumbnail' => [
+                    'id' => $thumbnail->id,
+                    'file_number' => $thumbnail->file_number,
+                    'thumbnail_path' => $thumbnail->thumbnail_path,
+                    'page_number' => $thumbnail->page_number
+                ]
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error saving thumbnail: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error saving thumbnail: ' . $e->getMessage()
             ], 500);
         }
     }

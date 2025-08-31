@@ -99,6 +99,25 @@
                         <p class="text-sm text-gray-500">Loading pending files...</p>
                       </div>
                     </div>
+                    <!-- Pagination -->
+                    <div id="pending-pagination" class="mt-6 flex items-center justify-between">
+                      <div class="text-sm text-gray-700">
+                        <span id="pending-showing">Showing 0 to 0 of 0 entries</span>
+                      </div>
+                      <div class="flex items-center space-x-1">
+                        <button id="pending-prev-btn" class="btn btn-outline btn-sm" disabled>
+                          <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                          Previous
+                        </button>
+                        <div id="pending-page-numbers" class="flex items-center space-x-1">
+                          <!-- Page numbers will be inserted here -->
+                        </div>
+                        <button id="pending-next-btn" class="btn btn-outline btn-sm" disabled>
+                          Next
+                          <i data-lucide="chevron-right" class="h-4 w-4"></i>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -124,6 +143,25 @@
                       <div class="p-8 text-center">
                         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
                         <p class="text-sm text-gray-500">Loading in-progress files...</p>
+                      </div>
+                    </div>
+                    <!-- Pagination -->
+                    <div id="in-progress-pagination" class="mt-6 flex items-center justify-between">
+                      <div class="text-sm text-gray-700">
+                        <span id="in-progress-showing">Showing 0 to 0 of 0 entries</span>
+                      </div>
+                      <div class="flex items-center space-x-1">
+                        <button id="in-progress-prev-btn" class="btn btn-outline btn-sm" disabled>
+                          <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                          Previous
+                        </button>
+                        <div id="in-progress-page-numbers" class="flex items-center space-x-1">
+                          <!-- Page numbers will be inserted here -->
+                        </div>
+                        <button id="in-progress-next-btn" class="btn btn-outline btn-sm" disabled>
+                          Next
+                          <i data-lucide="chevron-right" class="h-4 w-4"></i>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -170,6 +208,25 @@
                           </tr>
                         </tbody>
                       </table>
+                    </div>
+                    <!-- Pagination -->
+                    <div id="completed-pagination" class="mt-6 flex items-center justify-between">
+                      <div class="text-sm text-gray-700">
+                        <span id="completed-showing">Showing 0 to 0 of 0 entries</span>
+                      </div>
+                      <div class="flex items-center space-x-1">
+                        <button id="completed-prev-btn" class="btn btn-outline btn-sm" disabled>
+                          <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                          Previous
+                        </button>
+                        <div id="completed-page-numbers" class="flex items-center space-x-1">
+                          <!-- Page numbers will be inserted here -->
+                        </div>
+                        <button id="completed-next-btn" class="btn btn-outline btn-sm" disabled>
+                          Next
+                          <i data-lucide="chevron-right" class="h-4 w-4"></i>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -222,6 +279,25 @@
                         </tbody>
                       </table>
                     </div>
+                    <!-- Pagination -->
+                    <div id="pagetype-more-pagination" class="mt-6 flex items-center justify-between">
+                      <div class="text-sm text-gray-700">
+                        <span id="pagetype-more-showing">Showing 0 to 0 of 0 entries</span>
+                      </div>
+                      <div class="flex items-center space-x-1">
+                        <button id="pagetype-more-prev-btn" class="btn btn-outline btn-sm" disabled>
+                          <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                          Previous
+                        </button>
+                        <div id="pagetype-more-page-numbers" class="flex items-center space-x-1">
+                          <!-- Page numbers will be inserted here -->
+                        </div>
+                        <button id="pagetype-more-next-btn" class="btn btn-outline btn-sm" disabled>
+                          Next
+                          <i data-lucide="chevron-right" class="h-4 w-4"></i>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -250,6 +326,13 @@
 
     <!-- Page Typing Dashboard JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // Configure PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+
+    <!-- SweetAlert2 for better user feedback -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- Enhanced PageTyping JavaScript with CoverType Integration -->
     <script>
@@ -266,7 +349,14 @@
           newScans: [],
           combinedPages: [],
           // Typing interface state
-          typingState: null
+          typingState: null,
+          // Pagination state
+          pagination: {
+            pending: { currentPage: 1, total: 0, lastPage: 1, perPage: 10 },
+            inProgress: { currentPage: 1, total: 0, lastPage: 1, perPage: 10 },
+            completed: { currentPage: 1, total: 0, lastPage: 1, perPage: 10 },
+            pageTypeMore: { currentPage: 1, total: 0, lastPage: 1, perPage: 10 }
+          }
         };
 
         // Cover types, page types and subtypes - will be loaded from backend
@@ -274,12 +364,36 @@
         let pageTypes = [];
         let pageSubTypes = {};
 
-        // Utility to safely get value from various casings/keys
-        function pick(obj, keys, fallback = undefined) {
-          for (const k of keys) {
-            if (obj && obj[k] !== undefined && obj[k] !== null) return obj[k];
+        // Helper function to set form element states
+        function setFormElementsState(enabled, buttonText = 'Process Page') {
+          const coverTypeSelect = document.getElementById('cover-type');
+          const pageTypeSelect = document.getElementById('page-type');
+          const pageSubtypeSelect = document.getElementById('page-subtype');
+          const serialNoInput = document.getElementById('serial-no');
+          const processButton = document.querySelector('.process-page');
+
+          if (coverTypeSelect) {
+            coverTypeSelect.disabled = !enabled;
+            coverTypeSelect.classList.toggle('opacity-50', !enabled);
           }
-          return fallback;
+          if (pageTypeSelect) {
+            pageTypeSelect.disabled = !enabled;
+            pageTypeSelect.classList.toggle('opacity-50', !enabled);
+          }
+          if (pageSubtypeSelect) {
+            pageSubtypeSelect.disabled = !enabled;
+            pageSubtypeSelect.classList.toggle('opacity-50', !enabled);
+          }
+          if (serialNoInput) {
+            serialNoInput.disabled = !enabled;
+            serialNoInput.classList.toggle('opacity-50', !enabled);
+          }
+          if (processButton) {
+            processButton.disabled = !enabled;
+            processButton.textContent = buttonText;
+            processButton.classList.toggle('opacity-50', !enabled);
+            processButton.classList.toggle('cursor-not-allowed', !enabled);
+          }
         }
 
         // Load data from backend
@@ -469,78 +583,117 @@
         }
 
         function renderPDFPagePreview(pageIndex, containerEl) {
-          if (!pdfPages[pageIndex] || !containerEl) return;
-          
-          const pageData = pdfPages[pageIndex];
-          
+          // This function is now simplified since we don't split PDFs
+          // Just render the PDF document as-is
+          if (!containerEl) return;
+
           containerEl.innerHTML = `
             <div class="w-full h-full flex flex-col">
               <div class="flex justify-between mb-2">
-                <span class="text-sm font-medium">Page ${pageData.pageNum}</span>
+                <span class="text-sm font-medium">PDF Document</span>
                 <div class="flex items-center gap-2">
                   <button class="btn btn-ghost btn-icon zoom-out"><i data-lucide="zoom-out" class="h-4 w-4"></i></button>
                   <span class="text-xs zoom-level">${state.typingState.zoomLevel}%</span>
                   <button class="btn btn-ghost btn-icon zoom-in"><i data-lucide="zoom-in" class="h-4 w-4"></i></button>
                   <button class="btn btn-ghost btn-icon rotate"><i data-lucide="rotate-cw" class="h-4 w-4"></i></button>
+                  <button class="btn btn-ghost btn-icon fullscreen-btn" onclick="openFullscreenView()" title="Full Screen"><i data-lucide="maximize" class="h-4 w-4"></i></button>
                 </div>
               </div>
               <div class="flex-1 overflow-auto flex items-center justify-center bg-gray-50">
-                <canvas id="pdf-page-canvas" class="max-h-full max-w-full border shadow-sm"></canvas>
+                <div class="text-center">
+                  <i data-lucide="file-text" class="h-16 w-16 mx-auto mb-3 text-blue-500"></i>
+                  <p class="text-sm">PDF document loaded</p>
+                  <p class="text-xs text-muted-foreground">Use navigation controls above</p>
+                </div>
               </div>
             </div>`;
-          
           lucide.createIcons();
-          
-          // Render the PDF page
-          renderPDFPageToCanvas(pageData.page, 'pdf-page-canvas');
         }
 
-        async function renderPDFPageToCanvas(page, canvasId) {
+        async function loadPDFViewer(url, containerEl) {
           try {
-            const scale = state.typingState.zoomLevel / 100;
-            const rotation = state.typingState.rotation;
-            
-            const viewport = page.getViewport({ scale: scale, rotation: rotation });
-            
-            const canvas = document.getElementById(canvasId);
-            if (!canvas) return;
-            
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-            
-            const renderContext = {
-              canvasContext: canvas.getContext('2d'),
-              viewport: viewport
-            };
-            
-            await page.render(renderContext).promise;
+            // Load PDF document
+            const loadingTask = pdfjsLib.getDocument(url);
+            const pdf = await loadingTask.promise;
+
+            state.pdfViewer.pdfDoc = pdf;
+            state.pdfViewer.totalPages = pdf.numPages;
+            state.pdfViewer.currentPage = Math.min(state.pdfViewer.currentPage, pdf.numPages);
+
+            // Update page counter
+            updatePDFPageCounter(containerEl);
+
+            // Render current page
+            await renderPDFPage(containerEl);
+
           } catch (error) {
-            console.error('Error rendering PDF page:', error);
-            const canvas = document.getElementById(canvasId);
+            console.error('Error loading PDF:', error);
+            const canvas = containerEl.querySelector('#pdf-viewer-canvas');
             if (canvas) {
               const ctx = canvas.getContext('2d');
+              canvas.width = 400;
+              canvas.height = 300;
               ctx.fillStyle = '#f3f4f6';
               ctx.fillRect(0, 0, canvas.width, canvas.height);
               ctx.fillStyle = '#6b7280';
               ctx.font = '14px Arial';
               ctx.textAlign = 'center';
-              ctx.fillText('Error loading page preview', canvas.width / 2, canvas.height / 2);
+              ctx.fillText('Error loading PDF', canvas.width / 2, canvas.height / 2);
             }
+          }
+        }
+
+        async function renderPDFPage(containerEl) {
+          if (!state.pdfViewer.pdfDoc) return;
+
+          try {
+            const page = await state.pdfViewer.pdfDoc.getPage(state.pdfViewer.currentPage);
+            const scale = state.typingState.zoomLevel / 100;
+            const rotation = state.typingState.rotation;
+
+            const viewport = page.getViewport({ scale: scale, rotation: rotation });
+
+            const canvas = containerEl.querySelector('#pdf-viewer-canvas');
+            if (!canvas) return;
+
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            const renderContext = {
+              canvasContext: canvas.getContext('2d'),
+              viewport: viewport
+            };
+
+            await page.render(renderContext).promise;
+
+          } catch (error) {
+            console.error('Error rendering PDF page:', error);
+          }
+        }
+
+        function updatePDFPageCounter(containerEl) {
+          const currentPageEl = containerEl.querySelector('.pdf-current-page');
+          const totalPagesEl = containerEl.querySelector('.pdf-total-pages');
+          const prevBtn = containerEl.querySelector('.pdf-prev');
+          const nextBtn = containerEl.querySelector('.pdf-next');
+
+          if (currentPageEl) currentPageEl.textContent = state.pdfViewer.currentPage;
+          if (totalPagesEl) totalPagesEl.textContent = state.pdfViewer.totalPages;
+
+          if (prevBtn) {
+            prevBtn.disabled = state.pdfViewer.currentPage <= 1;
+            prevBtn.classList.toggle('opacity-50', state.pdfViewer.currentPage <= 1);
+          }
+
+          if (nextBtn) {
+            nextBtn.disabled = state.pdfViewer.currentPage >= state.pdfViewer.totalPages;
+            nextBtn.classList.toggle('opacity-50', state.pdfViewer.currentPage >= state.pdfViewer.totalPages);
           }
         }
 
         function renderDocumentPreview(scanning, containerEl, pageIndex = null) {
           if (!scanning || !containerEl) return;
-          
-          // Check if this is a split PDF page
-          const isSplitPDFPage = pageIndex !== null && pdfPages.length > 0 && pdfPages[pageIndex];
-          
-          if (isSplitPDFPage) {
-            // Render specific PDF page
-            renderPDFPagePreview(pageIndex, containerEl);
-            return;
-          }
-          
+
           const url = getDocumentUrl(scanning.document_path);
           const isImg = isImageFile(scanning.original_filename);
           const isPdf = isPDFFile(scanning.original_filename);
@@ -567,6 +720,7 @@
                     <span class="text-xs zoom-level">${state.typingState.zoomLevel}%</span>
                     <button class="btn btn-ghost btn-icon zoom-in"><i data-lucide="zoom-in" class="h-4 w-4"></i></button>
                     <button class="btn btn-ghost btn-icon rotate"><i data-lucide="rotate-cw" class="h-4 w-4"></i></button>
+                    <button class="btn btn-ghost btn-icon fullscreen-btn" onclick="openFullscreenView()" title="Full Screen"><i data-lucide="maximize" class="h-4 w-4"></i></button>
                   </div>
                 </div>
                 <div class="flex-1 overflow-auto flex items-center justify-center bg-gray-50">
@@ -576,27 +730,74 @@
                 </div>
               </div>`;
           } else if (isPdf) {
+            // Initialize PDF navigation state if not exists
+            if (!state.pdfViewer) {
+              state.pdfViewer = {
+                currentPage: 1,
+                totalPages: 1,
+                pdfDoc: null,
+                url: url
+              };
+            }
+
             containerEl.innerHTML = `
               <div class="w-full h-full flex flex-col">
-                <div class="flex justify-between mb-2">
+                <div class="flex justify-between items-center mb-2">
                   <span class="text-sm font-medium">${scanning.original_filename}</span>
                   <div class="flex items-center gap-2">
-                    <button class="btn btn-outline btn-sm" onclick="window.open('${url}', '_blank')">
-                      <i data-lucide="external-link" class="h-4 w-4 mr-1"></i> Open PDF
-                    </button>
+                    <button class="btn btn-ghost btn-icon zoom-out"><i data-lucide="zoom-out" class="h-4 w-4"></i></button>
+                    <span class="text-xs zoom-level">${state.typingState.zoomLevel}%</span>
+                    <button class="btn btn-ghost btn-icon zoom-in"><i data-lucide="zoom-in" class="h-4 w-4"></i></button>
+                    <button class="btn btn-ghost btn-icon rotate"><i data-lucide="rotate-cw" class="h-4 w-4"></i></button>
+                    <button class="btn btn-ghost btn-icon fullscreen-btn" onclick="openFullscreenView()" title="Full Screen"><i data-lucide="maximize" class="h-4 w-4"></i></button>
+                    <div class="flex items-center gap-1 ml-4">
+                      <button class="btn btn-ghost btn-icon pdf-prev" ${state.pdfViewer.currentPage <= 1 ? 'disabled' : ''}>
+                        <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                      </button>
+                      <span class="text-xs px-2">
+                        <span class="pdf-current-page">${state.pdfViewer.currentPage}</span> / <span class="pdf-total-pages">${state.pdfViewer.totalPages}</span>
+                      </span>
+                      <button class="btn btn-ghost btn-icon pdf-next" ${state.pdfViewer.currentPage >= state.pdfViewer.totalPages ? 'disabled' : ''}>
+                        <i data-lucide="chevron-right" class="h-4 w-4"></i>
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div class="flex-1 overflow-auto flex items-center justify-center bg-gray-50">
-                  <div class="text-center">
-                    <i data-lucide="file-text" class="h-16 w-16 mx-auto mb-3 text-blue-500"></i>
-                    <p class="text-sm">PDF document</p>
-                    <p class="text-xs text-muted-foreground mb-3">Preview opens in a new tab</p>
-                    <button class="btn btn-primary btn-sm" onclick="window.open('${url}', '_blank')">
-                      <i data-lucide="external-link" class="h-4 w-4 mr-1"></i> View PDF
-                    </button>
-                  </div>
+                  <canvas id="pdf-viewer-canvas" class="max-h-full max-w-full border shadow-sm"></canvas>
                 </div>
               </div>`;
+
+            lucide.createIcons();
+
+            // Load and render PDF
+            loadPDFViewer(url, containerEl);
+
+            // Add PDF navigation event listeners
+            setTimeout(() => {
+              const prevBtn = containerEl.querySelector('.pdf-prev');
+              const nextBtn = containerEl.querySelector('.pdf-next');
+
+              if (prevBtn) {
+                prevBtn.addEventListener('click', () => {
+                  if (state.pdfViewer && state.pdfViewer.currentPage > 1) {
+                    state.pdfViewer.currentPage--;
+                    updatePDFPageCounter(containerEl);
+                    renderPDFPage(containerEl);
+                  }
+                });
+              }
+
+              if (nextBtn) {
+                nextBtn.addEventListener('click', () => {
+                  if (state.pdfViewer && state.pdfViewer.currentPage < state.pdfViewer.totalPages) {
+                    state.pdfViewer.currentPage++;
+                    updatePDFPageCounter(containerEl);
+                    renderPDFPage(containerEl);
+                  }
+                });
+              }
+            }, 100);
           } else {
             containerEl.innerHTML = `
               <div class="h-full flex items-center justify-center">
@@ -616,31 +817,148 @@
         function updateDocumentZoom() {
           const span = document.querySelector('.zoom-level');
           const img = document.querySelector('.document-image');
-          const canvas = document.getElementById('pdf-page-canvas');
-          
+          const canvas = document.getElementById('pdf-viewer-canvas');
+
           if (span) span.textContent = `${state.typingState.zoomLevel}%`;
-          
+
           if (img) {
             img.style.transform = `scale(${state.typingState.zoomLevel / 100}) rotate(${state.typingState.rotation}deg)`;
           }
-          
-          if (canvas && state.typingState.selectedPageInFolder !== null && pdfPages[state.typingState.selectedPageInFolder]) {
+
+          if (canvas && state.pdfViewer && state.pdfViewer.pdfDoc) {
             // Re-render PDF page with new zoom
-            renderPDFPageToCanvas(pdfPages[state.typingState.selectedPageInFolder].page, 'pdf-page-canvas');
+            const container = canvas.closest('[id*="preview"], [id*="container"]');
+            if (container) renderPDFPage(container);
           }
         }
 
         function updateDocumentRotation() {
           const img = document.querySelector('.document-image');
-          const canvas = document.getElementById('pdf-page-canvas');
-          
+          const canvas = document.getElementById('pdf-viewer-canvas');
+
           if (img) {
             img.style.transform = `scale(${state.typingState.zoomLevel / 100}) rotate(${state.typingState.rotation}deg)`;
           }
-          
-          if (canvas && state.typingState.selectedPageInFolder !== null && pdfPages[state.typingState.selectedPageInFolder]) {
+
+          if (canvas && state.pdfViewer && state.pdfViewer.pdfDoc) {
             // Re-render PDF page with new rotation
-            renderPDFPageToCanvas(pdfPages[state.typingState.selectedPageInFolder].page, 'pdf-page-canvas');
+            const container = canvas.closest('[id*="preview"], [id*="container"]');
+            if (container) renderPDFPage(container);
+          }
+        }
+
+        // Full screen functionality
+        function openFullscreenView() {
+          const modal = document.getElementById('fullscreen-modal');
+          const content = document.getElementById('fullscreen-content');
+          const originalContainer = document.getElementById('document-preview-container');
+
+          if (!modal || !content || !originalContainer) return;
+
+          // Clone the preview content
+          const clonedContent = originalContainer.cloneNode(true);
+
+          // Remove the fullscreen button from clone
+          const fullscreenBtn = clonedContent.querySelector('.fullscreen-btn');
+          if (fullscreenBtn) fullscreenBtn.remove();
+
+          // Update clone styling for full screen
+          clonedContent.className = 'w-full h-full flex flex-col p-6';
+          clonedContent.style.height = '100%';
+          clonedContent.style.maxHeight = 'none';
+
+          // Clear and append cloned content
+          content.innerHTML = '';
+          content.appendChild(clonedContent);
+
+          // Show modal
+          modal.classList.remove('hidden');
+
+          // Re-render PDF if needed
+          const canvas = clonedContent.querySelector('#pdf-viewer-canvas');
+          if (canvas && state.pdfViewer && state.pdfViewer.pdfDoc) {
+            renderPDFPage(clonedContent);
+          }
+
+          // Add event listeners to cloned controls
+          addFullscreenEventListeners(clonedContent);
+
+          // Create icons for cloned content
+          lucide.createIcons();
+        }
+
+        function closeFullscreenView() {
+          const modal = document.getElementById('fullscreen-modal');
+          if (modal) {
+            modal.classList.add('hidden');
+          }
+        }
+
+        function addFullscreenEventListeners(container) {
+          // Zoom controls
+          container.querySelector('.zoom-in')?.addEventListener('click', () => {
+            if (state.typingState.zoomLevel < 300) {
+              state.typingState.zoomLevel += 25;
+              updateFullscreenZoom(container);
+            }
+          });
+
+          container.querySelector('.zoom-out')?.addEventListener('click', () => {
+            if (state.typingState.zoomLevel > 25) {
+              state.typingState.zoomLevel -= 25;
+              updateFullscreenZoom(container);
+            }
+          });
+
+          container.querySelector('.rotate')?.addEventListener('click', () => {
+            state.typingState.rotation = (state.typingState.rotation + 90) % 360;
+            updateFullscreenRotation(container);
+          });
+
+          // PDF navigation
+          container.querySelector('.pdf-prev')?.addEventListener('click', () => {
+            if (state.pdfViewer && state.pdfViewer.currentPage > 1) {
+              state.pdfViewer.currentPage--;
+              updatePDFPageCounter(container);
+              renderPDFPage(container);
+            }
+          });
+
+          container.querySelector('.pdf-next')?.addEventListener('click', () => {
+            if (state.pdfViewer && state.pdfViewer.currentPage < state.pdfViewer.totalPages) {
+              state.pdfViewer.currentPage++;
+              updatePDFPageCounter(container);
+              renderPDFPage(container);
+            }
+          });
+        }
+
+        function updateFullscreenZoom(container) {
+          const span = container.querySelector('.zoom-level');
+          const img = container.querySelector('.document-image');
+          const canvas = container.querySelector('#pdf-viewer-canvas');
+
+          if (span) span.textContent = `${state.typingState.zoomLevel}%`;
+
+          if (img) {
+            img.style.transform = `scale(${state.typingState.zoomLevel / 100}) rotate(${state.typingState.rotation}deg)`;
+          }
+
+          if (canvas && state.pdfViewer && state.pdfViewer.pdfDoc) {
+            renderPDFPage(container);
+          }
+        }
+
+        function updateFullscreenRotation(container) {
+          const img = container.querySelector('.document-image');
+          const canvas = container.querySelector('#pdf-viewer-canvas');
+
+          if (img) {
+            img.style.transform = `scale(${state.typingState.zoomLevel / 100}) rotate(${state.typingState.rotation}deg)`;
+          }
+
+          if (canvas && state.pdfViewer && state.pdfViewer.pdfDoc) {
+            renderPDFPage(container);
           }
         }
 
@@ -754,6 +1072,10 @@
                     // Use the first typing for code display
                     const first = pts[0];
                     state.typingState.processedPages[idx] = {
+                      coverType: first.cover_type_id?.toString() || null,
+                      pageType: first.page_type?.toString() || null,
+                      pageSubType: first.page_subtype?.toString() || null,
+                      serialNo: first.serial_number?.toString() || null,
                       page_code: first.page_code || null
                     };
                   }
@@ -764,69 +1086,102 @@
               
               updateUI();
             } else {
-              alert('Error loading file details: ' + data.message);
+              Swal.fire({
+                icon: 'error',
+                title: 'Error Loading File',
+                text: 'Error loading file details: ' + data.message,
+                confirmButtonColor: '#dc3545'
+              });
             }
           } catch (error) {
             console.error('Error starting page typing:', error);
-            alert('Error loading file details');
+            Swal.fire({
+              icon: 'error',
+              title: 'Error Loading File',
+              text: 'Error loading file details',
+              confirmButtonColor: '#dc3545'
+            });
           }
         }
 
         // Load and render pending files
-        async function renderPendingFiles() {
+        async function renderPendingFiles(page = 1) {
           if (!elements.pendingFilesList) return;
           
           try {
-            const response = await fetch('{{ route("pagetyping.api.files") }}?status=pending');
+            const response = await fetch(`{{ route("pagetyping.api.files") }}?status=pending&page=${page}&limit=${state.pagination.pending.perPage}`);
             const data = await response.json();
             
-            if (data.success && data.files.length > 0) {
-              elements.pendingFilesList.innerHTML = data.files.map(file => `
-                <div class="p-4 border-b last:border-b-0 hover:bg-gray-50">
-                  <div class="flex items-center justify-between">
-                    <div class="flex-1">
-                      <div class="flex items-center gap-3">
-                        <div class="flex-shrink-0">
-                          <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                            <i data-lucide="file-text" class="h-5 w-5 text-yellow-600"></i>
+            if (data.success) {
+              // Update pagination state
+              state.pagination.pending = {
+                currentPage: data.pagination.current_page,
+                total: data.pagination.total,
+                lastPage: data.pagination.last_page,
+                perPage: data.pagination.per_page
+              };
+
+              if (data.files.length > 0) {
+                elements.pendingFilesList.innerHTML = data.files.map(file => `
+                  <div class="p-4 border-b last:border-b-0 hover:bg-gray-50">
+                    <div class="flex items-center justify-between">
+                      <div class="flex-1">
+                        <div class="flex items-center gap-3">
+                          <div class="flex-shrink-0">
+                            <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                              <i data-lucide="file-text" class="h-5 w-5 text-yellow-600"></i>
+                            </div>
                           </div>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                          <p class="text-sm font-medium text-gray-900 truncate">${file.file_number}</p>
-                          <p class="text-sm text-gray-500 truncate">${file.file_title}</p>
-                          <div class="flex items-center gap-4 mt-1">
-                            <span class="text-xs text-gray-400">${file.scannings_count} pages scanned</span>
-                            <span class="text-xs text-gray-400">${file.created_at}</span>
+                          <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900 truncate">${file.file_number}</p>
+                            <p class="text-sm text-gray-500 truncate">${file.file_title}</p>
+                            <div class="flex items-center gap-4 mt-1">
+                              <span class="text-xs text-gray-400">${file.scannings_count} pages scanned</span>
+                              <span class="text-xs text-gray-400">${file.created_at}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <span class="badge bg-yellow-500 text-white">Pending</span>
-                      <button class="btn btn-primary btn-sm start-typing" data-id="${file.id}">
-                        <i data-lucide="type" class="h-4 w-4 mr-1"></i>
-                        Start Typing
-                      </button>
+                      <div class="flex items-center gap-2">
+                        <span class="badge bg-yellow-500 text-white">Pending</span>
+                        <button class="btn btn-primary btn-sm start-typing" data-id="${file.id}">
+                          <i data-lucide="type" class="h-4 w-4 mr-1"></i>
+                          Start Typing
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              `).join('');
-              
-              // Add event listeners
-              document.querySelectorAll('.start-typing').forEach(btn => {
-                btn.addEventListener('click', () => {
-                  const fileId = btn.getAttribute('data-id');
-                  startPageTyping(fileId);
+                `).join('');
+                
+                // Add event listeners
+                document.querySelectorAll('.start-typing').forEach(btn => {
+                  btn.addEventListener('click', () => {
+                    const fileId = btn.getAttribute('data-id');
+                    startPageTyping(fileId);
+                  });
                 });
-              });
+              } else {
+                elements.pendingFilesList.innerHTML = `
+                  <div class="rounded-md border p-8 text-center">
+                    <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                      <i data-lucide="file-text" class="h-6 w-6"></i>
+                    </div>
+                    <h3 class="mb-2 text-lg font-medium">No pending files</h3>
+                    <p class="mb-4 text-sm text-muted-foreground">All files have been processed</p>
+                  </div>
+                `;
+              }
+
+              // Update pagination UI
+              updatePaginationUI('pending');
             } else {
               elements.pendingFilesList.innerHTML = `
                 <div class="rounded-md border p-8 text-center">
-                  <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                    <i data-lucide="file-text" class="h-6 w-6"></i>
+                  <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                    <i data-lucide="alert-circle" class="h-6 w-6 text-red-600"></i>
                   </div>
-                  <h3 class="mb-2 text-lg font-medium">No pending files</h3>
-                  <p class="mb-4 text-sm text-muted-foreground">All files have been processed</p>
+                  <h3 class="mb-2 text-lg font-medium">Error loading files</h3>
+                  <p class="mb-4 text-sm text-muted-foreground">${data.message || 'Please try refreshing the page'}</p>
                 </div>
               `;
             }
@@ -847,63 +1202,86 @@
         }
 
         // Load and render in-progress files
-        async function renderInProgressFiles() {
+        async function renderInProgressFiles(page = 1) {
           if (!elements.inProgressFilesList) return;
           
           try {
-            const response = await fetch('{{ route("pagetyping.api.files") }}?status=in_progress');
+            const response = await fetch(`{{ route("pagetyping.api.files") }}?status=in_progress&page=${page}&limit=${state.pagination.inProgress.perPage}`);
             const data = await response.json();
             
-            if (data.success && data.files.length > 0) {
-              elements.inProgressFilesList.innerHTML = data.files.map(file => `
-                <div class="p-4 border-b last:border-b-0 hover:bg-gray-50">
-                  <div class="flex items-center justify-between">
-                    <div class="flex-1">
-                      <div class="flex items-center gap-3">
-                        <div class="flex-shrink-0">
-                          <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                            <i data-lucide="clock" class="h-5 w-5 text-orange-600"></i>
-                          </div>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                          <p class="text-sm font-medium text-gray-900 truncate">${file.file_number}</p>
-                          <p class="text-sm text-gray-500 truncate">${file.file_title}</p>
-                          <div class="flex items-center gap-4 mt-1">
-                            <span class="text-xs text-gray-400">${file.page_typings_count}/${file.scannings_count} pages typed</span>
-                            <div class="w-20 bg-gray-200 rounded-full h-2">
-                              <div class="bg-orange-500 h-2 rounded-full" style="width: ${file.progress}%"></div>
+            if (data.success) {
+              // Update pagination state
+              state.pagination.inProgress = {
+                currentPage: data.pagination.current_page,
+                total: data.pagination.total,
+                lastPage: data.pagination.last_page,
+                perPage: data.pagination.per_page
+              };
+
+              if (data.files.length > 0) {
+                elements.inProgressFilesList.innerHTML = data.files.map(file => `
+                  <div class="p-4 border-b last:border-b-0 hover:bg-gray-50">
+                    <div class="flex items-center justify-between">
+                      <div class="flex-1">
+                        <div class="flex items-center gap-3">
+                          <div class="flex-shrink-0">
+                            <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                              <i data-lucide="clock" class="h-5 w-5 text-orange-600"></i>
                             </div>
-                            <span class="text-xs text-gray-400">${file.progress}%</span>
+                          </div>
+                          <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900 truncate">${file.file_number}</p>
+                            <p class="text-sm text-gray-500 truncate">${file.file_title}</p>
+                            <div class="flex items-center gap-4 mt-1">
+                              <span class="text-xs text-gray-400">${file.page_typings_count}/${file.scannings_count} pages typed</span>
+                              <div class="w-20 bg-gray-200 rounded-full h-2">
+                                <div class="bg-orange-500 h-2 rounded-full" style="width: ${file.progress}%"></div>
+                              </div>
+                              <span class="text-xs text-gray-400">${file.progress}%</span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <span class="badge bg-orange-500 text-white">In Progress</span>
-                      <button class="btn btn-primary btn-sm continue-typing" data-id="${file.id}">
-                        <i data-lucide="edit" class="h-4 w-4 mr-1"></i>
-                        Continue
-                      </button>
+                      <div class="flex items-center gap-2">
+                        <span class="badge bg-orange-500 text-white">In Progress</span>
+                        <button class="btn btn-primary btn-sm continue-typing" data-id="${file.id}">
+                          <i data-lucide="edit" class="h-4 w-4 mr-1"></i>
+                          Continue
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              `).join('');
-              
-              // Add event listeners
-              document.querySelectorAll('.continue-typing').forEach(btn => {
-                btn.addEventListener('click', () => {
-                  const fileId = btn.getAttribute('data-id');
-                  startPageTyping(fileId);
+                `).join('');
+                
+                // Add event listeners
+                document.querySelectorAll('.continue-typing').forEach(btn => {
+                  btn.addEventListener('click', () => {
+                    const fileId = btn.getAttribute('data-id');
+                    startPageTyping(fileId);
+                  });
                 });
-              });
+              } else {
+                elements.inProgressFilesList.innerHTML = `
+                  <div class="rounded-md border p-8 text-center">
+                    <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                      <i data-lucide="clock" class="h-6 w-6"></i>
+                    </div>
+                    <h3 class="mb-2 text-lg font-medium">No files in progress</h3>
+                    <p class="mb-4 text-sm text-muted-foreground">Start typing a file to see it here</p>
+                  </div>
+                `;
+              }
+
+              // Update pagination UI
+              updatePaginationUI('inProgress');
             } else {
               elements.inProgressFilesList.innerHTML = `
                 <div class="rounded-md border p-8 text-center">
-                  <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                    <i data-lucide="clock" class="h-6 w-6"></i>
+                  <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                    <i data-lucide="alert-circle" class="h-6 w-6 text-red-600"></i>
                   </div>
-                  <h3 class="mb-2 text-lg font-medium">No files in progress</h3>
-                  <p class="mb-4 text-sm text-muted-foreground">Start typing a file to see it here</p>
+                  <h3 class="mb-2 text-lg font-medium">Error loading files</h3>
+                  <p class="mb-4 text-sm text-muted-foreground">${data.message || 'Please try refreshing the page'}</p>
                 </div>
               `;
             }
@@ -924,72 +1302,97 @@
         }
 
         // Load and render completed files
-        async function renderCompletedFilesTable() {
+        async function renderCompletedFilesTable(page = 1) {
           if (!elements.completedFilesTableBody) return;
           
           try {
-            const response = await fetch('{{ route("pagetyping.api.files") }}?status=completed');
+            const response = await fetch(`{{ route("pagetyping.api.files") }}?status=completed&page=${page}&limit=${state.pagination.completed.perPage}`);
             const data = await response.json();
             
-            if (data.success && data.files.length > 0) {
-              elements.completedFilesTableBody.innerHTML = data.files.map(file => `
-                <tr class="hover:bg-gray-50">
-                  <td class="p-3">
-                    <span class="text-blue-600 font-medium">${file.file_number}</span>
-                  </td>
-                  <td class="p-3">
-                    <div class="font-medium">${file.file_title}</div>
-                    ${file.district ? `<div class="text-xs text-gray-500">${file.district}, ${file.lga || ''}</div>` : ''}
-                  </td>
-                  <td class="p-3 text-sm text-gray-500">${file.updated_at}</td>
-                  <td class="p-3 text-sm text-gray-500">
-                    ${file.main_application?.applicant_name || 'Unknown'}
-                  </td>
-                  <td class="p-3">
-                    <span class="badge bg-green-500 text-white">
-                      <i data-lucide="check-circle" class="h-3 w-3 mr-1"></i>
-                      Completed
-                    </span>
-                  </td>
-                  <td class="p-3">
-                    <span class="badge badge-secondary">${file.page_typings_count} pages</span>
-                  </td>
-                  <td class="p-3">
-                    <div class="flex items-center gap-2">
-                      <button class="btn btn-ghost btn-sm view-file" data-id="${file.id}" title="View File">
-                        <i data-lucide="eye" class="h-4 w-4"></i>
-                      </button>
-                      <button class="btn btn-outline btn-sm edit-file" data-id="${file.id}" title="Edit">
-                        <i data-lucide="edit" class="h-4 w-4"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              `).join('');
-              
-              // Add event listeners
-              document.querySelectorAll('.view-file').forEach(btn => {
-                btn.addEventListener('click', () => {
-                  const fileId = btn.getAttribute('data-id');
-                  startPageTyping(fileId);
+            if (data.success) {
+              // Update pagination state
+              state.pagination.completed = {
+                currentPage: data.pagination.current_page,
+                total: data.pagination.total,
+                lastPage: data.pagination.last_page,
+                perPage: data.pagination.per_page
+              };
+
+              if (data.files.length > 0) {
+                elements.completedFilesTableBody.innerHTML = data.files.map(file => `
+                  <tr class="hover:bg-gray-50">
+                    <td class="p-3">
+                      <span class="text-blue-600 font-medium">${file.file_number}</span>
+                    </td>
+                    <td class="p-3">
+                      <div class="font-medium">${file.file_title}</div>
+                      ${file.district ? `<div class="text-xs text-gray-500">${file.district}, ${file.lga || ''}</div>` : ''}
+                    </td>
+                    <td class="p-3 text-sm text-gray-500">${file.updated_at}</td>
+                    <td class="p-3 text-sm text-gray-500">
+                      ${file.main_application?.applicant_name || 'Unknown'}
+                    </td>
+                    <td class="p-3">
+                      <span class="badge bg-green-500 text-white">
+                        <i data-lucide="check-circle" class="h-3 w-3 mr-1"></i>
+                        Completed
+                      </span>
+                    </td>
+                    <td class="p-3">
+                      <span class="badge badge-secondary">${file.page_typings_count} pages</span>
+                    </td>
+                    <td class="p-3">
+                      <div class="flex items-center gap-2">
+                        <button class="btn btn-ghost btn-sm view-file" data-id="${file.id}" title="View File">
+                          <i data-lucide="eye" class="h-4 w-4"></i>
+                        </button>
+                        <button class="btn btn-outline btn-sm edit-file" data-id="${file.id}" title="Edit">
+                          <i data-lucide="edit" class="h-4 w-4"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                `).join('');
+                
+                // Add event listeners
+                document.querySelectorAll('.view-file').forEach(btn => {
+                  btn.addEventListener('click', () => {
+                    const fileId = btn.getAttribute('data-id');
+                    startPageTyping(fileId);
+                  });
                 });
-              });
-              
-              document.querySelectorAll('.edit-file').forEach(btn => {
-                btn.addEventListener('click', () => {
-                  const fileId = btn.getAttribute('data-id');
-                  startPageTyping(fileId);
+                
+                document.querySelectorAll('.edit-file').forEach(btn => {
+                  btn.addEventListener('click', () => {
+                    const fileId = btn.getAttribute('data-id');
+                    startPageTyping(fileId);
+                  });
                 });
-              });
+              } else {
+                elements.completedFilesTableBody.innerHTML = `
+                  <tr>
+                    <td colspan="7" class="text-center p-8">
+                      <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                        <i data-lucide="check-circle" class="h-6 w-6"></i>
+                      </div>
+                      <h3 class="mb-2 text-lg font-medium">No completed files</h3>
+                      <p class="mb-4 text-sm text-muted-foreground">Complete page typing to see files here</p>
+                    </td>
+                  </tr>
+                `;
+              }
+
+              // Update pagination UI
+              updatePaginationUI('completed');
             } else {
               elements.completedFilesTableBody.innerHTML = `
                 <tr>
                   <td colspan="7" class="text-center p-8">
-                    <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                      <i data-lucide="check-circle" class="h-6 w-6"></i>
+                    <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                      <i data-lucide="alert-circle" class="h-6 w-6 text-red-600"></i>
                     </div>
-                    <h3 class="mb-2 text-lg font-medium">No completed files</h3>
-                    <p class="mb-4 text-sm text-muted-foreground">Complete page typing to see files here</p>
+                    <h3 class="mb-2 text-lg font-medium">Error loading files</h3>
+                    <p class="mb-4 text-sm text-muted-foreground">${data.message || 'Please try refreshing the page'}</p>
                   </td>
                 </tr>
               `;
@@ -1012,17 +1415,132 @@
           }
         }
 
+        // Update pagination UI for a specific tab
+        function updatePaginationUI(tabType) {
+          const pagination = state.pagination[tabType];
+          const prefix = tabType === 'inProgress' ? 'in-progress' : 
+                        tabType === 'pageTypeMore' ? 'pagetype-more' : tabType;
+
+          // Update showing text
+          const showingEl = document.getElementById(`${prefix}-showing`);
+          if (showingEl) {
+            const from = pagination.total > 0 ? ((pagination.currentPage - 1) * pagination.perPage) + 1 : 0;
+            const to = Math.min(pagination.currentPage * pagination.perPage, pagination.total);
+            showingEl.textContent = `Showing ${from} to ${to} of ${pagination.total} entries`;
+          }
+
+          // Update page numbers
+          const pageNumbersEl = document.getElementById(`${prefix}-page-numbers`);
+          if (pageNumbersEl) {
+            pageNumbersEl.innerHTML = generatePageNumbers(tabType);
+          }
+
+          // Update prev/next buttons
+          const prevBtn = document.getElementById(`${prefix}-prev-btn`);
+          const nextBtn = document.getElementById(`${prefix}-next-btn`);
+          
+          if (prevBtn) {
+            prevBtn.disabled = pagination.currentPage <= 1;
+            prevBtn.classList.toggle('opacity-50', pagination.currentPage <= 1);
+          }
+          
+          if (nextBtn) {
+            nextBtn.disabled = pagination.currentPage >= pagination.lastPage;
+            nextBtn.classList.toggle('opacity-50', pagination.currentPage >= pagination.lastPage);
+          }
+
+          // Add page number event listeners
+          document.querySelectorAll(`.${prefix}-page-btn`).forEach(btn => {
+            btn.addEventListener('click', () => {
+              const page = parseInt(btn.getAttribute('data-page'));
+              changePage(tabType, page);
+            });
+          });
+        }
+
+        // Generate page number buttons
+        function generatePageNumbers(tabType) {
+          const pagination = state.pagination[tabType];
+          const currentPage = pagination.currentPage;
+          const lastPage = pagination.lastPage;
+          
+          if (lastPage <= 1) return '';
+
+          let pages = [];
+          
+          // Always show first page
+          if (lastPage > 1) {
+            pages.push(`<button class="${tabType === 'inProgress' ? 'in-progress' : tabType === 'pageTypeMore' ? 'pagetype-more' : tabType}-page-btn btn btn-outline btn-sm ${currentPage === 1 ? 'bg-blue-500 text-white' : ''}" data-page="1">1</button>`);
+          }
+          
+          // Add ellipsis if needed
+          if (currentPage > 3) {
+            pages.push('<span class="px-2 text-gray-500">...</span>');
+          }
+          
+          // Add pages around current page
+          for (let i = Math.max(2, currentPage - 1); i <= Math.min(lastPage - 1, currentPage + 1); i++) {
+            pages.push(`<button class="${tabType === 'inProgress' ? 'in-progress' : tabType === 'pageTypeMore' ? 'pagetype-more' : tabType}-page-btn btn btn-outline btn-sm ${currentPage === i ? 'bg-blue-500 text-white' : ''}" data-page="${i}">${i}</button>`);
+          }
+          
+          // Add ellipsis if needed
+          if (currentPage < lastPage - 2) {
+            pages.push('<span class="px-2 text-gray-500">...</span>');
+          }
+          
+          // Always show last page
+          if (lastPage > 1) {
+            pages.push(`<button class="${tabType === 'inProgress' ? 'in-progress' : tabType === 'pageTypeMore' ? 'pagetype-more' : tabType}-page-btn btn btn-outline btn-sm ${currentPage === lastPage ? 'bg-blue-500 text-white' : ''}" data-page="${lastPage}">${lastPage}</button>`);
+          }
+          
+          return pages.join('');
+        }
+
+        // Change page for a specific tab
+        function changePage(tabType, page) {
+          const pagination = state.pagination[tabType];
+          
+          if (page < 1 || page > pagination.lastPage || page === pagination.currentPage) {
+            return;
+          }
+          
+          switch (tabType) {
+            case 'pending':
+              renderPendingFiles(page);
+              break;
+            case 'inProgress':
+              renderInProgressFiles(page);
+              break;
+            case 'completed':
+              renderCompletedFilesTable(page);
+              break;
+            case 'pageTypeMore':
+              renderPageTypeMoreFiles(page);
+              break;
+          }
+        }
+
         // Load and render PageType More files
-        async function renderPageTypeMoreFiles() {
+        async function renderPageTypeMoreFiles(page = 1) {
           if (!elements.pageTypeMoreTableBody) return;
           
           try {
-            const response = await fetch('{{ route("pagetyping.api.pagetype-more-files") }}');
+            const response = await fetch(`{{ route("pagetyping.api.pagetype-more-files") }}?page=${page}&limit=10`);
             const data = await response.json();
             
             console.log('PageType More API Response:', data); // Debug log
             
             if (data.success && data.files && data.files.length > 0) {
+              // Update pagination state
+              if (data.pagination) {
+                state.pagination.pageTypeMore = {
+                  currentPage: data.pagination.current_page,
+                  total: data.pagination.total,
+                  lastPage: data.pagination.last_page,
+                  perPage: data.pagination.per_page
+                };
+              }
+
               pageTypeMoreFiles = data.files; // Store the files
 
               // Optional filtering by search term
@@ -1108,6 +1626,9 @@
                 </tr>
               `;
             }
+
+            // Update pagination UI
+            updatePaginationUI('pageTypeMore');
             lucide.createIcons();
           } catch (error) {
             console.error('Error loading PageType More files:', error);
@@ -1140,6 +1661,99 @@
           }
         }
 
+        async function checkExistingThumbnails(fileId) {
+          try {
+            const response = await fetch(`{{ route("pagetyping.api.thumbnails") }}?file_indexing_id=${fileId}`);
+            const data = await response.json();
+            return data.success ? data.thumbnails : [];
+          } catch (error) {
+            console.error('Error checking existing thumbnails:', error);
+            return [];
+          }
+        }
+
+        async function savePDFThumbnails(file, pdfPages) {
+          try {
+            const savePromises = [];
+            
+            for (let i = 0; i < pdfPages.length; i++) {
+              const pageData = pdfPages[i];
+              
+              // Generate thumbnail image
+              const scale = 0.5; // Higher quality for storage
+              const viewport = pageData.page.getViewport({ scale: scale });
+              
+              const canvas = document.createElement('canvas');
+              const context = canvas.getContext('2d');
+              canvas.height = viewport.height;
+              canvas.width = viewport.width;
+              
+              const renderContext = {
+                canvasContext: context,
+                viewport: viewport
+              };
+              
+              await pageData.page.render(renderContext).promise;
+              
+              // Create a promise for saving this thumbnail
+              const savePromise = new Promise((resolve, reject) => {
+                canvas.toBlob(async (blob) => {
+                  if (!blob) {
+                    console.error('Failed to create blob for page', pageData.pageNum);
+                    resolve(null);
+                    return;
+                  }
+                  
+                  // Create filename
+                  const filename = `${file.file_number}_page_${pageData.pageNum.toString().padStart(3, '0')}.jpg`;
+                  const thumbnailPath = `EDMS/PAGETYPING/thumbnails/${filename}`;
+                  
+                  // Save to server
+                  const formData = new FormData();
+                  formData.append('thumbnail', blob, filename);
+                  formData.append('file_indexing_id', file.id);
+                  formData.append('page_number', pageData.pageNum);
+                  formData.append('thumbnail_path', thumbnailPath);
+                  formData.append('original_filename', pageData.scanning.original_filename);
+                  
+                  try {
+                    const response = await fetch('{{ route("pagetyping.api.save-thumbnail") }}', {
+                      method: 'POST',
+                      body: formData,
+                      headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                      }
+                    });
+                    
+                    if (response.ok) {
+                      const result = await response.json();
+                      resolve(result.thumbnail);
+                    } else {
+                      console.error('Failed to save thumbnail for page', pageData.pageNum, response.status);
+                      resolve(null);
+                    }
+                  } catch (error) {
+                    console.error('Error saving thumbnail for page', pageData.pageNum, error);
+                    resolve(null);
+                  }
+                }, 'image/jpeg', 0.8);
+              });
+              
+              savePromises.push(savePromise);
+            }
+            
+            // Wait for all thumbnails to be saved
+            const thumbnails = await Promise.all(savePromises);
+            const validThumbnails = thumbnails.filter(thumb => thumb !== null);
+            
+            console.log(`Saved ${validThumbnails.length} thumbnails out of ${pdfPages.length} pages`);
+            return validThumbnails;
+          } catch (error) {
+            console.error('Error saving PDF thumbnails:', error);
+            return [];
+          }
+        }
+
         async function loadAndSplitPDF(file) {
           try {
             // Find the PDF file in scannings
@@ -1149,6 +1763,24 @@
               return false;
             }
 
+            // Check if thumbnails already exist
+            const existingThumbnails = await checkExistingThumbnails(file.id);
+            if (existingThumbnails.length > 0) {
+              console.log('Using existing thumbnails for file:', file.file_number);
+              
+              // Load existing thumbnails
+              pdfPages = existingThumbnails.map((thumb, index) => ({
+                pageNum: thumb.page_number,
+                thumbnailUrl: `/storage/app/public/${thumb.thumbnail_path}`,
+                scanning: pdfScanning,
+                isSplitPage: true,
+                isFromCache: true
+              }));
+              
+              return true;
+            }
+
+            console.log('No existing thumbnails found, splitting PDF...');
             const pdfUrl = getDocumentUrl(pdfScanning.document_path);
             console.log('Attempting to load PDF from URL:', pdfUrl);
             console.log('Original document path:', pdfScanning.document_path);
@@ -1180,6 +1812,10 @@
                 isSplitPage: true
               });
             }
+
+            // Save thumbnails for future use
+            await savePDFThumbnails(file, pdfPages);
+            console.log('Thumbnails saved successfully');
 
             return true;
           } catch (error) {
@@ -1225,7 +1861,7 @@
         }
 
         async function generatePDFThumbnails() {
-          if (!pdfDoc || pdfPages.length === 0) return;
+          if (pdfPages.length === 0) return;
           
           for (let i = 0; i < pdfPages.length; i++) {
             const pageData = pdfPages[i];
@@ -1233,28 +1869,47 @@
             
             if (thumbnailContainer) {
               try {
-                const scale = 0.3;
-                const viewport = pageData.page.getViewport({ scale: scale });
-                
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-                
-                const renderContext = {
-                  canvasContext: context,
-                  viewport: viewport
-                };
-                
-                await pageData.page.render(renderContext).promise;
-                
-                const img = document.createElement('img');
-                img.src = canvas.toDataURL('image/jpeg', 0.7);
-                img.alt = `Page ${pageData.pageNum} thumbnail`;
-                img.className = 'max-h-full max-w-full object-contain';
-                
-                thumbnailContainer.innerHTML = '';
-                thumbnailContainer.appendChild(img);
+                // Check if we have cached thumbnail
+                if (pageData.isFromCache && pageData.thumbnailUrl) {
+                  const img = document.createElement('img');
+                  img.src = pageData.thumbnailUrl;
+                  img.alt = `Page ${pageData.pageNum} thumbnail`;
+                  img.className = 'max-h-full max-w-full object-contain';
+                  img.onerror = () => {
+                    thumbnailContainer.innerHTML = `<i class="h-8 w-8 text-gray-400" data-lucide="file-text"></i>`;
+                    lucide.createIcons();
+                  };
+                  
+                  thumbnailContainer.innerHTML = '';
+                  thumbnailContainer.appendChild(img);
+                } else if (pageData.page) {
+                  // Generate thumbnail from PDF page
+                  const scale = 0.3;
+                  const viewport = pageData.page.getViewport({ scale: scale });
+                  
+                  const canvas = document.createElement('canvas');
+                  const context = canvas.getContext('2d');
+                  canvas.height = viewport.height;
+                  canvas.width = viewport.width;
+                  
+                  const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                  };
+                  
+                  await pageData.page.render(renderContext).promise;
+                  
+                  const img = document.createElement('img');
+                  img.src = canvas.toDataURL('image/jpeg', 0.7);
+                  img.alt = `Page ${pageData.pageNum} thumbnail`;
+                  img.className = 'max-h-full max-w-full object-contain';
+                  
+                  thumbnailContainer.innerHTML = '';
+                  thumbnailContainer.appendChild(img);
+                } else {
+                  thumbnailContainer.innerHTML = `<i class="h-8 w-8 text-gray-400" data-lucide="file-text"></i>`;
+                  lucide.createIcons();
+                }
                 
               } catch (error) {
                 console.error(`Error generating thumbnail for page ${pageData.pageNum}:`, error);
@@ -1324,11 +1979,19 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <div class="border rounded-md p-4 h-[400px] bg-white relative" id="document-preview-container">
+                          <!-- Full screen button -->
+                          <button class="absolute top-2 right-2 z-10 btn btn-ghost btn-icon fullscreen-btn" title="Full Screen View">
+                            <i data-lucide="maximize" class="h-4 w-4"></i>
+                          </button>
                           <!-- Document preview rendered dynamically -->
                         </div>
                       </div>
 
                       <div class="space-y-6">
+                        ${!file.is_existing_file ? `
+                  
+                        ` : ''}
+
                         <div class="space-y-4">
                           <div>
                             <label for="cover-type" class="block text-sm font-medium mb-1.5">Cover Type</label>
@@ -1395,70 +2058,36 @@
                 </div>
               `;
             } else {
-              // Folder view - Check for PDF and split automatically
-              let pagesHtml = '';
-              
-              // Check if there's a PDF file that needs splitting
-              const hasPDF = file.scannings.some(scanning => isPDFFile(scanning.original_filename));
-              
-              if (hasPDF && pdfPages.length === 0) {
-                // Load and split PDF automatically
-                loadAndSplitPDF(file).then(success => {
-                  if (success) {
-                    // Re-render the view with split pages
-                    renderTypingView();
-                  }
-                });
-                // Show loading state
-                pagesHtml = '<div class="col-span-full text-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p class="text-sm text-gray-500">Splitting PDF into individual pages...</p></div>';
-              } else if (pdfPages.length > 0) {
-                // Use split PDF pages
-                pagesHtml = pdfPages.map((pageData, index) => {
-                  const isProcessed = state.typingState.processedPages[index];
-                  return `
-                    <div class="border rounded-md overflow-hidden cursor-pointer hover:border-blue-500 transition-colors folder-page ${isProcessed ? 'border-green-500 bg-green-50' : ''}" data-index="${index}" data-pdf-page="${pageData.pageNum}">
-                      <div class="h-40 bg-muted flex items-center justify-center relative">
-                        ${isProcessed ? `<div class=\"absolute top-2 right-2 z-10\"><span class=\"badge bg-green-500 text-white\"><i data-lucide=\"check-circle\" class=\"h-3 w-3 mr-1\"></i>Typed</span></div>` : ''}
-                        <div class="pdf-page-thumbnail" data-page-num="${pageData.pageNum}">
-                          <div class="loading">Loading...</div>
-                        </div>
+              // Folder view - Show original files without splitting
+              const pagesHtml = file.scannings.map((scanning, index) => {
+                const isProcessed = state.typingState.processedPages[index];
+                const url = getDocumentUrl(scanning.document_path);
+                const img = isImageFile(scanning.original_filename);
+                const pdf = isPDFFile(scanning.original_filename);
+                const canvasId = `pdf-thumb-${index}`;
+                return `
+                  <div class="border rounded-md overflow-hidden cursor-pointer hover:border-blue-500 transition-colors folder-page ${isProcessed ? 'border-green-500 bg-green-50' : ''}" data-index="${index}">
+                    <div class="h-40 bg-muted flex items-center justify-center relative">
+                      ${isProcessed ? `<div class=\"absolute top-2 right-2 z-10\"><span class=\"badge bg-green-500 text-white\"><i data-lucide=\"check-circle\" class=\"h-3 w-3 mr-1\"></i>Typed</span></div>` : ''}
+                      ${img && url ? `<img src=\"${url}\" alt=\"Page ${index + 1}\" class=\"max-h-full max-w-full object-contain\" onerror=\"this.style.display='none'; this.nextElementSibling.style.display='flex';\" />
+                        <div class=\"text-center hidden\"><i data-lucide=\"file-text\" class=\"h-8 w-8 text-gray-400 mb-2\"></i><p class=\"text-xs text-gray-500\">${scanning.original_filename}</p></div>`
+                      : pdf && url ? `<canvas id=\"${canvasId}\" class=\"max-h-full max-w-full border\" style=\"background: white;\"></canvas>
+                        <div class=\"text-center hidden absolute inset-0 flex flex-col items-center justify-center bg-gray-100\">
+                          <i data-lucide=\"file-text\" class=\"h-8 w-8 text-gray-400 mb-2\"></i>
+                          <p class=\"text-xs text-gray-500\">${scanning.original_filename}</p>
+                        </div>`
+                      : `<div class=\"text-center\"><i data-lucide=\"${pdf ? 'file-text' : 'file'}\" class=\"h-8 w-8 text-gray-400 mb-2\"></i><p class=\"text-xs text-gray-500\">${scanning.original_filename}</p></div>`}
+                    </div>
+                    <div class="p-2 bg-gray-50 border-t">
+                      <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium">Page ${index + 1}</span>
+                        <span class="badge badge-outline text-xs">${pdf ? 'PDF' : (img ? 'Image' : 'File')}</span>
                       </div>
-                      <div class="p-2 bg-gray-50 border-t">
-                        <div class="flex justify-between items-center">
-                          <span class="text-sm font-medium">Page ${pageData.pageNum}</span>
-                          <span class="badge badge-outline text-xs">PDF</span>
-                        </div>
-                        <div class="mt-1 text-xs text-muted-foreground">${file.file_number}-${pageData.pageNum.toString().padStart(2, '0')}</div>
-                        ${isProcessed ? `<div class=\"mt-1\"><span class=\"badge bg-blue-500 text-white text-xs w-full justify-center\">${isProcessed.page_code || 'Processed'}</span></div>` : ''}
-                      </div>
-                    </div>`;
-                }).join('');
-              } else {
-                // Use original scannings
-                pagesHtml = file.scannings.map((scanning, index) => {
-                  const isProcessed = state.typingState.processedPages[index];
-                  const url = getDocumentUrl(scanning.document_path);
-                  const img = isImageFile(scanning.original_filename);
-                  const pdf = isPDFFile(scanning.original_filename);
-                  return `
-                    <div class="border rounded-md overflow-hidden cursor-pointer hover:border-blue-500 transition-colors folder-page ${isProcessed ? 'border-green-500 bg-green-50' : ''}" data-index="${index}">
-                      <div class="h-40 bg-muted flex items-center justify-center relative">
-                        ${isProcessed ? `<div class=\"absolute top-2 right-2 z-10\"><span class=\"badge bg-green-500 text-white\"><i data-lucide=\"check-circle\" class=\"h-3 w-3 mr-1\"></i>Typed</span></div>` : ''}
-                        ${img && url ? `<img src=\"${url}\" alt=\"Page ${index + 1}\" class=\"max-h-full max-w-full object-contain\" onerror=\"this.style.display='none'; this.nextElementSibling.style.display='flex';\" />
-                          <div class=\"text-center hidden\"><i data-lucide=\"file-text\" class=\"h-8 w-8 text-gray-400 mb-2\"></i><p class=\"text-xs text-gray-500\">${scanning.original_filename}</p></div>`
-                        : `<div class=\"text-center\"><i data-lucide=\"${pdf ? 'file-text' : 'file'}\" class=\"h-8 w-8 text-gray-400 mb-2\"></i><p class=\"text-xs text-gray-500\">${scanning.original_filename}</p></div>`}
-                      </div>
-                      <div class="p-2 bg-gray-50 border-t">
-                        <div class="flex justify-between items-center">
-                          <span class="text-sm font-medium">Page ${index + 1}</span>
-                          <span class="badge badge-outline text-xs">${pdf ? 'PDF' : (img ? 'Image' : 'File')}</span>
-                        </div>
-                        <div class="mt-1 text-xs text-muted-foreground">${file.file_number}-${(index + 1).toString().padStart(2, '0')}</div>
-                        ${isProcessed ? `<div class=\"mt-1\"><span class=\"badge bg-blue-500 text-white text-xs w-full justify-center\">${isProcessed.page_code ? isProcessed.page_code : `${getCoverTypeById(isProcessed.coverType)?.code || ''}-${getPageTypeById(isProcessed.pageType)?.code || ''}-${getPageSubTypeById(isProcessed.pageType, isProcessed.pageSubType)?.code || ''}-${isProcessed.serialNo || ''}`}</span></div>` : ''}
-                      </div>
-                    </div>`;
-                }).join('');
-              }
+                      <div class="mt-1 text-xs text-muted-foreground">${file.file_number}-${(index + 1).toString().padStart(2, '0')}</div>
+                      ${isProcessed ? `<div class=\"mt-1\"><span class=\"badge bg-blue-500 text-white text-xs w-full justify-center\">${isProcessed.page_code ? isProcessed.page_code : `${getCoverTypeById(isProcessed.coverType)?.code || ''}-${getPageTypeById(isProcessed.pageType)?.code || ''}-${getPageSubTypeById(isProcessed.pageType, isProcessed.pageSubType)?.code || ''}-${isProcessed.serialNo || ''}`}</span></div>` : ''}
+                    </div>
+                  </div>`;
+              }).join('');
               
               content = `
                 ${headerContent}
@@ -1481,23 +2110,62 @@
           elements.typingCard.innerHTML = content;
           lucide.createIcons();
 
-          // Generate PDF thumbnails if we have split pages
-          if (pdfPages.length > 0) {
-            generatePDFThumbnails();
+          // Generate PDF thumbnails for folder view
+          file.scannings.forEach((scanning, index) => {
+            const url = getDocumentUrl(scanning.document_path);
+            const pdf = isPDFFile(scanning.original_filename);
+            if (pdf && url) {
+              const canvasId = `pdf-thumb-${index}`;
+              setTimeout(() => generateFolderPDFThumbnail(url, canvasId), 100 * index); // Stagger loading
+            }
+          });
+
+          // Generate PDF thumbnail for folder view
+        async function generateFolderPDFThumbnail(url, canvasId) {
+          try {
+            const loadingTask = pdfjsLib.getDocument(url);
+            const pdf = await loadingTask.promise;
+            const page = await pdf.getPage(1); // Always get first page
+            
+            const scale = 0.3; // Small scale for thumbnails
+            const viewport = page.getViewport({ scale: scale });
+            
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            
+            const renderContext = {
+              canvasContext: canvas.getContext('2d'),
+              viewport: viewport
+            };
+            
+            await page.render(renderContext).promise;
+          } catch (error) {
+            console.error('Error generating PDF thumbnail:', error);
+            const canvas = document.getElementById(canvasId);
+            if (canvas) {
+              const ctx = canvas.getContext('2d');
+              canvas.width = 120;
+              canvas.height = 160;
+              ctx.fillStyle = '#f3f4f6';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              ctx.fillStyle = '#6b7280';
+              ctx.font = '10px Arial';
+              ctx.textAlign = 'center';
+              ctx.fillText('PDF', canvas.width / 2, canvas.height / 2);
+            }
           }
+        }
 
           // Render preview if on a selected page
           if (state.typingState.selectedPageInFolder !== null) {
             const container = document.getElementById('document-preview-container');
             if (container) {
-              if (pdfPages.length > 0 && pdfPages[state.typingState.selectedPageInFolder]) {
-                // Render split PDF page
-                renderDocumentPreview(null, container, state.typingState.selectedPageInFolder);
-              } else {
-                // Render original scanning
-                const scanning = file.scannings[state.typingState.selectedPageInFolder];
-                if (scanning) renderDocumentPreview(scanning, container);
-              }
+              // Render original scanning
+              const scanning = file.scannings[state.typingState.selectedPageInFolder];
+              if (scanning) renderDocumentPreview(scanning, container);
             }
           }
           
@@ -1511,6 +2179,11 @@
           document.querySelector('.back-button')?.addEventListener('click', () => {
             if (state.typingState.selectedPageInFolder !== null) {
               state.typingState.selectedPageInFolder = null;
+
+              // Re-enable form fields when going back to folder view
+              setTimeout(() => {
+                setFormElementsState(true, 'Process Page');
+              }, 100);
             } else {
               state.selectedFile = null;
               state.selectedFileData = null;
@@ -1526,6 +2199,27 @@
             page.addEventListener('click', () => {
               const index = parseInt(page.getAttribute('data-index'));
               state.typingState.selectedPageInFolder = index;
+
+              // Check if this page is already processed
+              const existingData = state.typingState.processedPages[index];
+              if (existingData) {
+                // Populate form fields with existing data
+                state.typingState.coverType = existingData.coverType || state.typingState.coverType;
+                state.typingState.pageType = existingData.pageType || state.typingState.pageType;
+                state.typingState.pageSubType = existingData.pageSubType || state.typingState.pageSubType;
+                state.typingState.serialNo = existingData.serialNo || state.typingState.serialNo;
+
+                // Disable form fields and process button for completed pages
+                setTimeout(() => {
+                  setFormElementsState(false, 'Already Processed');
+                }, 100);
+              } else {
+                // Enable form fields and process button for new pages
+                setTimeout(() => {
+                  setFormElementsState(true, 'Process Page');
+                }, 100);
+              }
+
               updateUI();
             });
           });
@@ -1591,7 +2285,7 @@
               page_subtype: state.typingState.pageSubType,
               serial_number: parseInt(state.typingState.serialNo),
               page_code: `${getCoverTypeById(state.typingState.coverType)?.code}-${getPageTypeById(state.typingState.pageType)?.code}-${getPageSubTypeById(state.typingState.pageType, state.typingState.pageSubType)?.code}-${state.typingState.serialNo}`,
-              file_path: selected?.document_path || null
+              file_path: `storage\\app\\public\\EDMS\\PAGETYPING\\${file.file_number}.pdf`
             };
 
             try {
@@ -1623,14 +2317,31 @@
                 // Go back to folder view
                 state.typingState.selectedPageInFolder = null;
                 
-                alert('Page processed successfully!');
+                Swal.fire({
+                  icon: 'success',
+                  title: 'Page Processed Successfully!',
+                  text: 'The page has been categorized and saved.',
+                  confirmButtonColor: '#28a745',
+                  timer: 2000,
+                  timerProgressBar: true
+                });
                 updateUI();
               } else {
-                alert('Error processing page: ' + result.message);
+                Swal.fire({
+                  icon: 'error',
+                  title: 'Error Processing Page',
+                  text: 'Error processing page: ' + result.message,
+                  confirmButtonColor: '#dc3545'
+                });
               }
             } catch (error) {
               console.error('Error processing page:', error);
-              alert('Error processing page');
+              Swal.fire({
+                icon: 'error',
+                title: 'Error Processing Page',
+                text: 'An error occurred while processing the page. Please try again.',
+                confirmButtonColor: '#dc3545'
+              });
             }
           });
 
@@ -1652,6 +2363,45 @@
           document.querySelector('.rotate')?.addEventListener('click', () => {
             state.typingState.rotation = (state.typingState.rotation + 90) % 360;
             updateDocumentRotation();
+          });
+
+          // PDF navigation controls
+          document.querySelector('.pdf-prev')?.addEventListener('click', () => {
+            if (state.pdfViewer && state.pdfViewer.currentPage > 1) {
+              state.pdfViewer.currentPage--;
+              const container = document.getElementById('document-preview-container');
+              if (container) {
+                updatePDFPageCounter(container);
+                renderPDFPage(container);
+              }
+            }
+          });
+
+          document.querySelector('.pdf-next')?.addEventListener('click', () => {
+            if (state.pdfViewer && state.pdfViewer.currentPage < state.pdfViewer.totalPages) {
+              state.pdfViewer.currentPage++;
+              const container = document.getElementById('document-preview-container');
+              if (container) {
+                updatePDFPageCounter(container);
+                renderPDFPage(container);
+              }
+            }
+          });
+
+          // Full screen functionality
+          document.querySelector('.fullscreen-btn')?.addEventListener('click', () => {
+            openFullscreenView();
+          });
+
+          document.querySelector('.close-fullscreen')?.addEventListener('click', () => {
+            closeFullscreenView();
+          });
+
+          // Close fullscreen on escape key
+          document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+              closeFullscreenView();
+            }
           });
         }
 
@@ -1690,8 +2440,114 @@
             });
           }
 
+          // Add pagination event listeners
+          // Pending pagination
+          const pendingPrevBtn = document.getElementById('pending-prev-btn');
+          const pendingNextBtn = document.getElementById('pending-next-btn');
+          
+          if (pendingPrevBtn) {
+            pendingPrevBtn.addEventListener('click', () => {
+              const currentPage = state.pagination.pending.currentPage;
+              if (currentPage > 1) {
+                changePage('pending', currentPage - 1);
+              }
+            });
+          }
+          
+          if (pendingNextBtn) {
+            pendingNextBtn.addEventListener('click', () => {
+              const currentPage = state.pagination.pending.currentPage;
+              const lastPage = state.pagination.pending.lastPage;
+              if (currentPage < lastPage) {
+                changePage('pending', currentPage + 1);
+              }
+            });
+          }
+
+          // In-progress pagination
+          const inProgressPrevBtn = document.getElementById('in-progress-prev-btn');
+          const inProgressNextBtn = document.getElementById('in-progress-next-btn');
+          
+          if (inProgressPrevBtn) {
+            inProgressPrevBtn.addEventListener('click', () => {
+              const currentPage = state.pagination.inProgress.currentPage;
+              if (currentPage > 1) {
+                changePage('inProgress', currentPage - 1);
+              }
+            });
+          }
+          
+          if (inProgressNextBtn) {
+            inProgressNextBtn.addEventListener('click', () => {
+              const currentPage = state.pagination.inProgress.currentPage;
+              const lastPage = state.pagination.inProgress.lastPage;
+              if (currentPage < lastPage) {
+                changePage('inProgress', currentPage + 1);
+              }
+            });
+          }
+
+          // Completed pagination
+          const completedPrevBtn = document.getElementById('completed-prev-btn');
+          const completedNextBtn = document.getElementById('completed-next-btn');
+          
+          if (completedPrevBtn) {
+            completedPrevBtn.addEventListener('click', () => {
+              const currentPage = state.pagination.completed.currentPage;
+              if (currentPage > 1) {
+                changePage('completed', currentPage - 1);
+              }
+            });
+          }
+          
+          if (completedNextBtn) {
+            completedNextBtn.addEventListener('click', () => {
+              const currentPage = state.pagination.completed.currentPage;
+              const lastPage = state.pagination.completed.lastPage;
+              if (currentPage < lastPage) {
+                changePage('completed', currentPage + 1);
+              }
+            });
+          }
+
+          // PageType More pagination
+          const pageTypeMorePrevBtn = document.getElementById('pagetype-more-prev-btn');
+          const pageTypeMoreNextBtn = document.getElementById('pagetype-more-next-btn');
+          
+          if (pageTypeMorePrevBtn) {
+            pageTypeMorePrevBtn.addEventListener('click', () => {
+              const currentPage = state.pagination.pageTypeMore.currentPage;
+              if (currentPage > 1) {
+                changePage('pageTypeMore', currentPage - 1);
+              }
+            });
+          }
+          
+          if (pageTypeMoreNextBtn) {
+            pageTypeMoreNextBtn.addEventListener('click', () => {
+              const currentPage = state.pagination.pageTypeMore.currentPage;
+              const lastPage = state.pagination.pageTypeMore.lastPage;
+              if (currentPage < lastPage) {
+                changePage('pageTypeMore', currentPage + 1);
+              }
+            });
+          }
+
           // Initial UI update
           updateUI();
+
+          // Add fullscreen modal event listeners
+          const closeFullscreenBtn = document.querySelector('.close-fullscreen');
+          if (closeFullscreenBtn) {
+            closeFullscreenBtn.addEventListener('click', closeFullscreenView);
+          }
+
+          // Close fullscreen on escape key
+          document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !document.getElementById('fullscreen-modal').classList.contains('hidden')) {
+              closeFullscreenView();
+            }
+          });
         });
         
         // Backend Integration Functions
@@ -1731,5 +2587,22 @@
             }
         }, 30000);
     </script>
+
+    <!-- Full Screen Modal -->
+    <div id="fullscreen-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-90">
+      <div class="relative w-full h-full flex items-center justify-center">
+        <!-- Close button -->
+        <button class="absolute top-4 right-4 z-10 btn btn-ghost btn-icon text-white hover:bg-white hover:bg-opacity-20 close-fullscreen" title="Exit Full Screen">
+          <i data-lucide="x" class="h-6 w-6"></i>
+        </button>
+
+        <!-- Full screen content container -->
+        <div class="w-full h-full max-w-6xl max-h-screen p-8">
+          <div class="w-full h-full bg-white rounded-lg shadow-2xl overflow-hidden" id="fullscreen-content">
+            <!-- Content will be cloned here -->
+          </div>
+        </div>
+      </div>
+    </div>
 
 @endsection
