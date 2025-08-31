@@ -1007,22 +1007,35 @@
     });
   }
   
-  // API Functions to load dynamic data
-  async function loadPendingFiles(search = '') {
+  // Pagination state
+  let currentPendingPage = 1;
+  let currentIndexedPage = 1;
+  const itemsPerPage = 10;
+  
+  // API Functions to load dynamic data with pagination
+  async function loadPendingFiles(search = '', page = 1) {
     try {
-      const response = await fetch(`/fileindexing/api/pending-files?search=${encodeURIComponent(search)}`);
+      const response = await fetch(`/fileindexing/api/pending-files?search=${encodeURIComponent(search)}&page=${page}&per_page=${itemsPerPage}`);
       const data = await response.json();
       
       if (data.success) {
         pendingFiles = data.pending_files;
+        currentPendingPage = page;
         renderPendingFiles();
         updateCounters();
+        updatePendingPagination(data.pagination || {
+          current_page: page,
+          total: data.pending_files?.length || 0,
+          per_page: itemsPerPage,
+          last_page: Math.ceil((data.pending_files?.length || 0) / itemsPerPage)
+        });
       } else {
         console.error('Error loading pending files:', data.message);
         // Fallback to empty array if API fails
         pendingFiles = [];
         renderPendingFiles();
         updateCounters();
+        hidePendingPagination();
       }
     } catch (error) {
       console.error('Error loading pending files:', error);
@@ -1030,24 +1043,33 @@
       pendingFiles = [];
       renderPendingFiles();
       updateCounters();
+      hidePendingPagination();
     }
   }
   
-  async function loadIndexedFiles(search = '') {
+  async function loadIndexedFiles(search = '', page = 1) {
     try {
-      const response = await fetch(`/fileindexing/api/indexed-files?search=${encodeURIComponent(search)}`);
+      const response = await fetch(`/fileindexing/api/indexed-files?search=${encodeURIComponent(search)}&page=${page}&per_page=${itemsPerPage}`);
       const data = await response.json();
       
       if (data.success) {
         indexedFiles = data.indexed_files;
+        currentIndexedPage = page;
         renderIndexedFiles();
         updateCounters();
+        updateIndexedPagination(data.pagination || {
+          current_page: page,
+          total: data.indexed_files?.length || 0,
+          per_page: itemsPerPage,
+          last_page: Math.ceil((data.indexed_files?.length || 0) / itemsPerPage)
+        });
       } else {
         console.error('Error loading indexed files:', data.message);
         // Fallback to empty array if API fails
         indexedFiles = [];
         renderIndexedFiles();
         updateCounters();
+        hideIndexedPagination();
       }
     } catch (error) {
       console.error('Error loading indexed files:', error);
@@ -1055,7 +1077,133 @@
       indexedFiles = [];
       renderIndexedFiles();
       updateCounters();
+      hideIndexedPagination();
     }
+  }
+  
+  // Pagination functions
+  function updatePendingPagination(pagination) {
+    const paginationContainer = document.getElementById('pending-pagination');
+    const startElement = document.getElementById('pending-start');
+    const endElement = document.getElementById('pending-end');
+    const totalElement = document.getElementById('pending-total');
+    const paginationNav = document.getElementById('pending-pagination-nav');
+    
+    if (!pagination || pagination.total === 0) {
+      hidePendingPagination();
+      return;
+    }
+    
+    // Show pagination
+    paginationContainer.style.display = 'flex';
+    
+    // Update counters
+    const start = ((pagination.current_page - 1) * pagination.per_page) + 1;
+    const end = Math.min(pagination.current_page * pagination.per_page, pagination.total);
+    
+    startElement.textContent = start;
+    endElement.textContent = end;
+    totalElement.textContent = pagination.total;
+    
+    // Generate page numbers
+    generatePageNumbers(paginationNav, pagination.current_page, pagination.last_page, 'pending');
+  }
+  
+  function updateIndexedPagination(pagination) {
+    const paginationContainer = document.getElementById('indexed-pagination');
+    const startElement = document.getElementById('indexed-start');
+    const endElement = document.getElementById('indexed-end');
+    const totalElement = document.getElementById('indexed-total');
+    const paginationNav = document.getElementById('indexed-pagination-nav');
+    
+    if (!pagination || pagination.total === 0) {
+      hideIndexedPagination();
+      return;
+    }
+    
+    // Show pagination
+    paginationContainer.style.display = 'flex';
+    
+    // Update counters
+    const start = ((pagination.current_page - 1) * pagination.per_page) + 1;
+    const end = Math.min(pagination.current_page * pagination.per_page, pagination.total);
+    
+    startElement.textContent = start;
+    endElement.textContent = end;
+    totalElement.textContent = pagination.total;
+    
+    // Generate page numbers
+    generatePageNumbers(paginationNav, pagination.current_page, pagination.last_page, 'indexed');
+  }
+  
+  function hidePendingPagination() {
+    const paginationContainer = document.getElementById('pending-pagination');
+    if (paginationContainer) {
+      paginationContainer.style.display = 'none';
+    }
+  }
+  
+  function hideIndexedPagination() {
+    const paginationContainer = document.getElementById('indexed-pagination');
+    if (paginationContainer) {
+      paginationContainer.style.display = 'none';
+    }
+  }
+  
+  function generatePageNumbers(container, currentPage, lastPage, type) {
+    // Clear existing page numbers (keep prev/next buttons)
+    const existingNumbers = container.querySelectorAll('.page-number');
+    existingNumbers.forEach(el => el.remove());
+    
+    const prevButton = container.querySelector(`#${type}-prev`);
+    const nextButton = container.querySelector(`#${type}-next`);
+    
+    // Calculate page range to show
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(lastPage, startPage + maxVisiblePages - 1);
+    
+    // Adjust start if we're near the end
+    if (endPage - startPage < maxVisiblePages - 1) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    // Create page number buttons
+    for (let i = startPage; i <= endPage; i++) {
+      const pageButton = document.createElement('button');
+      pageButton.className = `page-number relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+        i === currentPage 
+          ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600' 
+          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+      }`;
+      pageButton.textContent = i;
+      pageButton.onclick = () => {
+        if (type === 'pending') {
+          loadPendingFiles(document.getElementById('search-pending-files')?.value || '', i);
+        } else {
+          loadIndexedFiles(document.getElementById('search-indexed-files')?.value || '', i);
+        }
+      };
+      
+      // Insert before next button
+      container.insertBefore(pageButton, nextButton);
+    }
+    
+    // Update prev/next button states
+    prevButton.disabled = currentPage <= 1;
+    nextButton.disabled = currentPage >= lastPage;
+    
+    prevButton.className = `relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 text-sm font-medium ${
+      currentPage <= 1 
+        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+        : 'bg-white text-gray-500 hover:bg-gray-50'
+    }`;
+    
+    nextButton.className = `relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 text-sm font-medium ${
+      currentPage >= lastPage 
+        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+        : 'bg-white text-gray-500 hover:bg-gray-50'
+    }`;
   }
   
   // Search functionality
@@ -1068,7 +1216,8 @@
       searchPendingInput.addEventListener('input', function() {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
-          loadPendingFiles(this.value);
+          currentPendingPage = 1; // Reset to first page on search
+          loadPendingFiles(this.value, 1);
         }, 300);
       });
     }
@@ -1078,8 +1227,80 @@
       searchIndexedInput.addEventListener('input', function() {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
-          loadIndexedFiles(this.value);
+          currentIndexedPage = 1; // Reset to first page on search
+          loadIndexedFiles(this.value, 1);
         }, 300);
+      });
+    }
+  }
+  
+  // Setup pagination event listeners
+  function setupPaginationListeners() {
+    // Pending files pagination
+    const pendingPrev = document.getElementById('pending-prev');
+    const pendingNext = document.getElementById('pending-next');
+    const pendingPrevMobile = document.getElementById('pending-prev-mobile');
+    const pendingNextMobile = document.getElementById('pending-next-mobile');
+    
+    if (pendingPrev) {
+      pendingPrev.addEventListener('click', () => {
+        if (currentPendingPage > 1) {
+          loadPendingFiles(document.getElementById('search-pending-files')?.value || '', currentPendingPage - 1);
+        }
+      });
+    }
+    
+    if (pendingNext) {
+      pendingNext.addEventListener('click', () => {
+        loadPendingFiles(document.getElementById('search-pending-files')?.value || '', currentPendingPage + 1);
+      });
+    }
+    
+    if (pendingPrevMobile) {
+      pendingPrevMobile.addEventListener('click', () => {
+        if (currentPendingPage > 1) {
+          loadPendingFiles(document.getElementById('search-pending-files')?.value || '', currentPendingPage - 1);
+        }
+      });
+    }
+    
+    if (pendingNextMobile) {
+      pendingNextMobile.addEventListener('click', () => {
+        loadPendingFiles(document.getElementById('search-pending-files')?.value || '', currentPendingPage + 1);
+      });
+    }
+    
+    // Indexed files pagination
+    const indexedPrev = document.getElementById('indexed-prev');
+    const indexedNext = document.getElementById('indexed-next');
+    const indexedPrevMobile = document.getElementById('indexed-prev-mobile');
+    const indexedNextMobile = document.getElementById('indexed-next-mobile');
+    
+    if (indexedPrev) {
+      indexedPrev.addEventListener('click', () => {
+        if (currentIndexedPage > 1) {
+          loadIndexedFiles(document.getElementById('search-indexed-files')?.value || '', currentIndexedPage - 1);
+        }
+      });
+    }
+    
+    if (indexedNext) {
+      indexedNext.addEventListener('click', () => {
+        loadIndexedFiles(document.getElementById('search-indexed-files')?.value || '', currentIndexedPage + 1);
+      });
+    }
+    
+    if (indexedPrevMobile) {
+      indexedPrevMobile.addEventListener('click', () => {
+        if (currentIndexedPage > 1) {
+          loadIndexedFiles(document.getElementById('search-indexed-files')?.value || '', currentIndexedPage - 1);
+        }
+      });
+    }
+    
+    if (indexedNextMobile) {
+      indexedNextMobile.addEventListener('click', () => {
+        loadIndexedFiles(document.getElementById('search-indexed-files')?.value || '', currentIndexedPage + 1);
       });
     }
   }
@@ -1174,6 +1395,9 @@
     
     // Setup search listeners
     setupSearchListeners();
+    
+    // Setup pagination listeners
+    setupPaginationListeners();
     
     // Load initial data
     loadPendingFiles();

@@ -313,13 +313,13 @@
                                                     @foreach($recentScans as $scan)
                                                         <tr class="hover:bg-gray-50">
                                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                                {{ $scan->fileIndexing->file_number ?? 'Unknown' }}
+                                                                {{ $scan->file_number ?? 'Unknown' }}
                                                             </td>
                                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                                {{ $scan->original_filename ?? 'Document' }}
+                                                                {{ $scan->file_title ?? 'Document' }}
                                                             </td>
                                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                                {{ $scan->created_at->format('M d, Y') }}
+                                                                {{ $scan->latest_scan_date ? $scan->latest_scan_date->format('M d, Y') : 'N/A' }}
                                                             </td>
                                                             <td class="px-6 py-4 whitespace-nowrap">
                                                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
@@ -329,19 +329,19 @@
                                                                 </span>
                                                             </td>
                                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                                1 page
+                                                                {{ $scan->scan_count }} {{ $scan->scan_count == 1 ? 'scan' : 'scans' }}
                                                             </td>
                                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                                 {{ $scan->uploader->name ?? 'Unknown' }}
                                                             </td>
                                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                                 <div class="flex items-center space-x-2">
-                                                                    <button class="text-indigo-600 hover:text-indigo-900 inline-flex items-center" onclick="viewDocument({{ $scan->id }})">
+                                                                    <button class="text-indigo-600 hover:text-indigo-900 inline-flex items-center" onclick="viewFileScans({{ $scan->id }})">
                                                                         <i data-lucide="eye" class="h-4 w-4 mr-1"></i>
                                                                         View
                                                                     </button>
                                                                     
-                                                                    <button class="text-orange-600 hover:text-orange-900 upload-more-action inline-flex items-center" data-file-id="{{ $scan->file_indexing_id }}">
+                                                                    <button class="text-orange-600 hover:text-orange-900 upload-more-action inline-flex items-center" data-file-id="{{ $scan->id }}">
                                                                         <i data-lucide="plus-circle" class="h-4 w-4 mr-1"></i>
                                                                         Upload More
                                                                     </button>
@@ -844,6 +844,16 @@
                 };
             })();
         </script>
+
+        <script>
+            // View file scans function
+            function viewFileScans(fileIndexingId) {
+                // Redirect to the view page for this FileNo
+                window.location.href = `/scanning/${fileIndexingId}`;
+            }
+        </script>
+        
         @include('scanning.assets.js_dynamic')
     </div>
 @endsection
+

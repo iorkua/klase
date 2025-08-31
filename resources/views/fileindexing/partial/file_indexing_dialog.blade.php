@@ -224,9 +224,9 @@
                 
                 <!-- File Properties Section -->
                 <div class="form-section">
-                    <h3 class="form-section-title">File Properties</h3>
+                    <!-- <h3 class="form-section-title">File Properties</h3> -->
                     
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-2 gap-4 hidden">
                         <div>
                             <div class="form-checkbox">
                                 <input type="checkbox" id="has-cofo">

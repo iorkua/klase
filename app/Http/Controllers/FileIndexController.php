@@ -1212,6 +1212,9 @@ class FileIndexController extends Controller
     {
         try {
             $search = $request->get('search', '');
+            $page = $request->get('page', 1);
+            $perPage = $request->get('per_page', 10);
+            $offset = ($page - 1) * $perPage;
             
             // Get mother applications without file indexing
             $motherApplications = DB::connection('sqlsrv')
@@ -1248,7 +1251,6 @@ class FileIndexController extends Controller
                     DB::raw("'mother' as source_table")
                 )
                 ->orderBy('created_at', 'desc')
-                ->limit(50)
                 ->get();
 
             // Get sub applications without file indexing
@@ -1286,7 +1288,6 @@ class FileIndexController extends Controller
                     DB::raw("'sub' as source_table")
                 )
                 ->orderBy('subapplications.created_at', 'desc')
-                ->limit(50)
                 ->get();
 
             // Combine and format results
@@ -1309,9 +1310,21 @@ class FileIndexController extends Controller
                 ];
             })->sortByDesc('date')->values();
 
+            // Apply pagination
+            $total = $pendingFiles->count();
+            $paginatedFiles = $pendingFiles->slice($offset, $perPage)->values();
+
             return response()->json([
                 'success' => true,
-                'pending_files' => $pendingFiles
+                'pending_files' => $paginatedFiles,
+                'pagination' => [
+                    'current_page' => (int) $page,
+                    'per_page' => (int) $perPage,
+                    'total' => $total,
+                    'last_page' => ceil($total / $perPage),
+                    'from' => $offset + 1,
+                    'to' => min($offset + $perPage, $total)
+                ]
             ]);
 
         } catch (Exception $e) {
@@ -1333,6 +1346,9 @@ class FileIndexController extends Controller
     {
         try {
             $search = $request->get('search', '');
+            $page = $request->get('page', 1);
+            $perPage = $request->get('per_page', 10);
+            $offset = ($page - 1) * $perPage;
             
             $query = FileIndexing::on('sqlsrv')
                 ->with(['mainApplication', 'scannings', 'pagetypings']);
@@ -1346,8 +1362,12 @@ class FileIndexController extends Controller
                 });
             }
 
+            // Get total count before pagination
+            $total = $query->count();
+
             $fileIndexings = $query->orderBy('created_at', 'desc')
-                ->limit(100)
+                ->skip($offset)
+                ->take($perPage)
                 ->get();
 
             $indexedFiles = $fileIndexings->map(function ($fi) {
@@ -1384,7 +1404,15 @@ class FileIndexController extends Controller
 
             return response()->json([
                 'success' => true,
-                'indexed_files' => $indexedFiles
+                'indexed_files' => $indexedFiles,
+                'pagination' => [
+                    'current_page' => (int) $page,
+                    'per_page' => (int) $perPage,
+                    'total' => $total,
+                    'last_page' => ceil($total / $perPage),
+                    'from' => $offset + 1,
+                    'to' => min($offset + $perPage, $total)
+                ]
             ]);
 
         } catch (Exception $e) {

@@ -1,710 +1,459 @@
 @extends('layouts.app')
 @section('page-title')
-    {{ __('View Scanned Document') }}
+    {{ $PageTitle }}
 @endsection
-
 @section('content')
-<div class="flex-1 overflow-auto bg-gray-50">
-    <!-- Header -->
-    @include('admin.header')
-    
-    <!-- Dashboard Content -->
-    <div class="p-6">
-        <div class="container mx-auto py-6 space-y-6">
-            <!-- Enhanced Page Header -->
-            <div class="bg-white rounded-lg shadow-sm border p-6">
-                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div class="flex items-center space-x-4">
-                        <div class="flex-shrink-0">
-                            @php
-                                // Get file extension from both original filename and document path
-                                $originalExtension = pathinfo($scanning->original_filename, PATHINFO_EXTENSION);
-                                $pathExtension = pathinfo($scanning->document_path, PATHINFO_EXTENSION);
-                                $fileExtension = $pathExtension ?: $originalExtension; // Use path extension if available
-                                
-                                // Debug info
-                                $fileUrl = url('storage/app/public/' . $scanning->document_path);
-                            @endphp
-                            @if(in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif', 'tiff', 'webp']))
-                                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                                    <i data-lucide="image" class="h-6 w-6 text-green-600"></i>
-                                </div>
-                            @elseif(strtolower($fileExtension) === 'pdf')
-                                <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                                    <i data-lucide="file-text" class="h-6 w-6 text-red-600"></i>
-                                </div>
-                            @else
-                                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                                    <i data-lucide="file" class="h-6 w-6 text-blue-600"></i>
-                                </div>
-                            @endif
-                        </div>
+    <!-- Main Content -->
+    <div class="flex-1 overflow-auto">
+        <!-- Header --> 
+        @include('admin.header') 
+        <!-- Dashboard Content -->
+        <div class="p-6">
+            @include('scanning.assets.style')
+            
+            <style>
+                /* Additional styles for view page */
+                .scan-card {
+                    transition: all 0.2s ease;
+                }
+
+                .scan-card:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                }
+
+                .tab.active {
+                    border-bottom: 2px solid #3b82f6;
+                    color: #3b82f6;
+                }
+
+                .tab-content.active {
+                    display: block;
+                }
+
+                .scans-grid {
+                    display: grid;
+                    gap: 1.5rem;
+                }
+
+                @media (max-width: 768px) {
+                    .scans-grid {
+                        grid-template-columns: 1fr;
+                    }
+                }
+
+                @media (min-width: 768px) {
+                    .scans-grid {
+                        grid-template-columns: repeat(2, 1fr);
+                    }
+                }
+
+                @media (min-width: 1024px) {
+                    .scans-grid {
+                        grid-template-columns: repeat(3, 1fr);
+                    }
+                }
+            </style>
+            
+            <div class="container mx-auto py-6 space-y-6">
+                <!-- Page Header -->
+                <div class="flex flex-col space-y-4">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
-                            <h1 class="text-2xl font-bold text-gray-900">{{ $scanning->original_filename }}</h1>
-                            <p class="text-gray-600">{{ $scanning->fileIndexing->file_number }} • {{ $scanning->fileIndexing->file_title }}</p>
-                            <div class="flex items-center space-x-2 mt-2">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                    {{ $scanning->status === 'typed' ? 'bg-green-100 text-green-800' : 
-                                       ($scanning->status === 'scanned' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800') }}">
-                                    {{ ucfirst($scanning->status) }}
-                                </span>
-                                @if($scanning->document_type)
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                        {{ $scanning->document_type }}
-                                    </span>
-                                @endif
-                                @if($scanning->paper_size)
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                        {{ $scanning->paper_size }}
-                                    </span>
-                                @endif
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                    {{ strtoupper($fileExtension) }}
-                                </span>
-                            </div>
+                            <h1 class="text-2xl font-bold tracking-tight">{{ $PageTitle }}</h1>
+                            <p class="text-muted-foreground">{{ $PageDescription }}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <a href="{{ route('scanning.index') }}" class="btn btn-outline gap-2">
+                                <i data-lucide="arrow-left" class="h-4 w-4"></i>
+                                Back to Scanning
+                            </a>
+                            <button class="btn btn-primary gap-2" onclick="uploadMoreScans()">
+                                <i data-lucide="plus-circle" class="h-4 w-4"></i>
+                                Upload More
+                            </button>
                         </div>
                     </div>
                     
-                    <div class="flex flex-wrap items-center gap-3">
-                        <a href="{{ route('scanning.index') }}" 
-                           class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
-                            <i data-lucide="arrow-left" class="h-4 w-4 mr-2"></i>
-                            Back
-                        </a>
-                        
-                        <a href="{{ $fileUrl }}" target="_blank" 
-                           class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
-                            <i data-lucide="external-link" class="h-4 w-4 mr-2"></i>
-                            Open in New Tab
-                        </a>
-
-                        <div class="relative">
-                            <button onclick="toggleActionsMenu()"
-                                    class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
-                                <i data-lucide="more-horizontal" class="h-4 w-4"></i>
-                            </button>
-                            <div id="actions-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-10 border border-gray-200 overflow-hidden">
-                                <div class="py-1">
-                                    <button class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150 flex items-center" onclick="editDocument()">
-                                        <i data-lucide="edit" class="h-4 w-4 mr-2"></i>
-                                        Edit Details
-                                    </button>
-                                    <button class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-150 flex items-center" onclick="deleteDocument()">
-                                        <i data-lucide="trash-2" class="h-4 w-4 mr-2"></i>
-                                        Delete Document
-                                    </button>
+                    <!-- File Information Card -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <i data-lucide="folder-open" class="h-5 w-5 text-blue-600 mr-3"></i>
+                                <div>
+                                    <p class="font-medium text-blue-900">{{ $fileIndexing->file_number }}</p>
+                                    <p class="text-sm text-blue-700">{{ $fileIndexing->file_title }}</p>
                                 </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm text-blue-700">{{ $allScans->count() }} {{ $allScans->count() == 1 ? 'scan' : 'scans' }}</p>
+                                <p class="text-xs text-blue-600">Storage: {{ $folderPath }}</p>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Debug Information (remove in production) -->
-            {{-- <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <h4 class="font-medium text-yellow-800 mb-2">Debug Information:</h4>
-                <div class="text-sm text-yellow-700 space-y-1">
-                    <p><strong>Document Path:</strong> {{ $scanning->document_path }}</p>
-                    <p><strong>File URL:</strong> {{ $fileUrl }}</p>
-                    <p><strong>Original Extension:</strong> {{ $originalExtension }}</p>
-                    <p><strong>Path Extension:</strong> {{ $pathExtension }}</p>
-                    <p><strong>Final Extension:</strong> {{ $fileExtension }}</p>
-                    <p><strong>File Exists:</strong> {{ Storage::exists('app/public/' . $scanning->document_path) ? 'Yes' : 'No' }}</p>
-                </div>
-            </div> --}}
+                <!-- Tabs -->
+                <div class="tabs">
+                    <div class="tabs-list grid w-full md:w-auto grid-cols-2">
+                        <button class="tab active" role="tab" aria-selected="true" data-tab="scans-list">Scanned Documents</button>
+                        <button class="tab" role="tab" aria-selected="false" data-tab="file-manager">File Manager</button>
+                    </div>
 
-            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <!-- Document Viewer - Takes up 2/3 of the space -->
-                <div class="xl:col-span-2">
-                    <div class="bg-white rounded-lg shadow-sm border">
-                        <div class="p-4 border-b bg-gray-50 rounded-t-lg">
-                            <div class="flex items-center justify-between">
-                                <h2 class="text-lg font-semibold text-gray-900">Document Preview</h2>
-                                <div class="flex items-center space-x-2">
-                                    @if(in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif', 'tiff', 'webp']))
-                                        <button class="btn btn-outline btn-sm" onclick="zoomOut()">
-                                            <i data-lucide="zoom-out" class="h-4 w-4"></i>
-                                        </button>
-                                        <span id="zoom-level" class="text-sm text-gray-600">100%</span>
-                                        <button class="btn btn-outline btn-sm" onclick="zoomIn()">
-                                            <i data-lucide="zoom-in" class="h-4 w-4"></i>
-                                        </button>
-                                        <button class="btn btn-outline btn-sm" onclick="resetZoom()">
-                                            <i data-lucide="maximize" class="h-4 w-4"></i>
-                                        </button>
-                                    @endif
-                                    <button class="btn btn-outline btn-sm" onclick="toggleFullscreen()">
-                                        <i data-lucide="expand" class="h-4 w-4"></i>
-                                    </button>
-                                    <a href="{{ $fileUrl }}" download="{{ $scanning->original_filename }}" class="btn btn-outline btn-sm">
-                                        <i data-lucide="download" class="h-4 w-4"></i>
-                                    </a>
+                    <!-- Scanned Documents Tab -->
+                    <div class="tab-content mt-6 active" role="tabpanel" aria-hidden="false" data-tab-content="scans-list">
+                        <div class="card">
+                            <div class="p-6 border-b">
+                                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <div>
+                                        <h2 class="text-lg font-semibold">Scanned Documents</h2>
+                                        <p class="text-sm text-muted-foreground">All scanned files for {{ $fileIndexing->file_number }}</p>
+                                    </div>
+                                    <div class="relative w-full md:w-64">
+                                        <i data-lucide="search" class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"></i>
+                                        <input type="search" placeholder="Search scans..." class="input w-full pl-8" id="search-scans">
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="p-4">
-                            <div id="document-container" class="border rounded-lg overflow-auto bg-gray-100 min-h-[600px] max-h-[800px] relative">
-                                @if(in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif', 'tiff', 'webp']))
-                                    <!-- Enhanced Image viewer -->
-                                    <div class="flex items-center justify-center min-h-[600px] p-4">
-                                        <img id="document-image" 
-                                             src="{{ $fileUrl }}" 
-                                             alt="Document Preview" 
-                                             class="max-w-full max-h-full object-contain transition-transform duration-200 cursor-zoom-in"
-                                             onclick="toggleImageZoom(this)"
-                                             onerror="handleImageError(this)"
-                                             onload="handleImageLoad(this)">
-                                        <div id="image-loading" class="absolute inset-0 flex items-center justify-center bg-gray-100">
-                                            <div class="text-center">
-                                                <i data-lucide="loader" class="h-8 w-8 mx-auto text-gray-400 animate-spin mb-4"></i>
-                                                <p class="text-gray-500">Loading image...</p>
+                            <div class="p-6">
+                                @if($allScans && $allScans->count() > 0)
+                                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="scans-grid">
+                                        @foreach($allScans as $scan)
+                                            <div class="scan-card border rounded-lg overflow-hidden hover:shadow-md transition-shadow" data-scan-id="{{ $scan->id }}">
+                                                <!-- Document Preview -->
+                                                <div class="aspect-[3/4] bg-gray-100 relative">
+                                                    @if(in_array(strtolower(pathinfo($scan->document_path, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'gif']))
+                                                        <img src="{{ Storage::disk('public')->url($scan->document_path) }}" 
+                                                             alt="{{ $scan->original_filename }}" 
+                                                             class="w-full h-full object-cover">
+                                                    @elseif(strtolower(pathinfo($scan->document_path, PATHINFO_EXTENSION)) === 'pdf')
+                                                        <div class="w-full h-full flex items-center justify-center bg-red-50">
+                                                            <div class="text-center">
+                                                                <i data-lucide="file-text" class="h-12 w-12 text-red-500 mx-auto mb-2"></i>
+                                                                <p class="text-sm text-red-700 font-medium">PDF Document</p>
+                                                            </div>
+                                                        </div>
+                                                    @else
+                                                        <div class="w-full h-full flex items-center justify-center bg-gray-50">
+                                                            <div class="text-center">
+                                                                <i data-lucide="file" class="h-12 w-12 text-gray-400 mx-auto mb-2"></i>
+                                                                <p class="text-sm text-gray-600">{{ strtoupper(pathinfo($scan->document_path, PATHINFO_EXTENSION)) }}</p>
+                                                            </div>
+                                                        </div>
+                                                    @endif
+                                                    
+                                                    <!-- Status Badge -->
+                                                    <div class="absolute top-2 right-2">
+                                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                                                            {{ $scan->status === 'typed' ? 'bg-green-100 text-green-800' : 
+                                                               ($scan->status === 'scanned' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800') }}">
+                                                            {{ ucfirst($scan->status) }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Document Info -->
+                                                <div class="p-4">
+                                                    <h3 class="font-medium text-sm mb-2 truncate" title="{{ $scan->original_filename }}">
+                                                        {{ $scan->original_filename }}
+                                                    </h3>
+                                                    <div class="space-y-1 text-xs text-gray-500">
+                                                        <div class="flex justify-between">
+                                                            <span>Type:</span>
+                                                            <span>{{ $scan->document_type }}</span>
+                                                        </div>
+                                                        <div class="flex justify-between">
+                                                            <span>Paper Size:</span>
+                                                            <span>{{ $scan->paper_size }}</span>
+                                                        </div>
+                                                        <div class="flex justify-between">
+                                                            <span>Uploaded:</span>
+                                                            <span>{{ $scan->created_at->format('M d, Y') }}</span>
+                                                        </div>
+                                                        <div class="flex justify-between">
+                                                            <span>By:</span>
+                                                            <span>{{ $scan->uploader->name ?? 'Unknown' }}</span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    @if($scan->notes)
+                                                        <div class="mt-2 p-2 bg-gray-50 rounded text-xs">
+                                                            <strong>Notes:</strong> {{ $scan->notes }}
+                                                        </div>
+                                                    @endif
+                                                    
+                                                    <!-- Actions -->
+                                                    <div class="mt-3 flex items-center justify-between">
+                                                        <button class="text-indigo-600 hover:text-indigo-900 text-sm font-medium" 
+                                                                onclick="viewDocument('{{ Storage::disk('public')->url($scan->document_path) }}', '{{ $scan->original_filename }}')">
+                                                            <i data-lucide="eye" class="h-4 w-4 inline mr-1"></i>
+                                                            View
+                                                        </button>
+                                                        <div class="flex items-center gap-2">
+                                                            <button class="text-gray-600 hover:text-gray-900 text-sm" 
+                                                                    onclick="editScan({{ $scan->id }})">
+                                                                <i data-lucide="edit" class="h-4 w-4"></i>
+                                                            </button>
+                                                            <button class="text-red-600 hover:text-red-900 text-sm" 
+                                                                    onclick="deleteScan({{ $scan->id }})">
+                                                                <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                @elseif(strtolower($fileExtension) === 'pdf')
-                                    <!-- Enhanced PDF viewer -->
-                                    <div class="w-full h-[600px] relative">
-                                        <iframe id="document-pdf" 
-                                                src="{{ $fileUrl }}#toolbar=1&navpanes=1&scrollbar=1" 
-                                                class="w-full h-full border-0 rounded"
-                                                onload="handlePdfLoad()"
-                                                onerror="handlePdfError()">
-                                        </iframe>
-                                        <div id="pdf-loading" class="absolute inset-0 flex items-center justify-center bg-gray-100">
-                                            <div class="text-center">
-                                                <i data-lucide="loader" class="h-8 w-8 mx-auto text-gray-400 animate-spin mb-4"></i>
-                                                <p class="text-gray-500">Loading PDF...</p>
-                                            </div>
-                                        </div>
-                                        <div id="pdf-fallback" class="hidden flex flex-col items-center justify-center h-full text-gray-500">
-                                            <div class="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mb-6">
-                                                <i data-lucide="file-text" class="h-12 w-12 text-red-400"></i>
-                                            </div>
-                                            <h3 class="text-xl font-semibold mb-2 text-gray-700">PDF Preview Unavailable</h3>
-                                            <p class="text-gray-500 mb-6 text-center max-w-md">
-                                                Your browser cannot display this PDF. Please download the file to view it.
-                                            </p>
-                                            <div class="flex space-x-3">
-                                                <a href="{{ $fileUrl }}" download="{{ $scanning->original_filename }}" class="btn btn-primary">
-                                                    <i data-lucide="download" class="h-4 w-4 mr-2"></i>
-                                                    Download PDF
-                                                </a>
-                                                <a href="{{ $fileUrl }}" target="_blank" class="btn btn-outline">
-                                                    <i data-lucide="external-link" class="h-4 w-4 mr-2"></i>
-                                                    Open in New Tab
-                                                </a>
-                                            </div>
-                                        </div>
+                                        @endforeach
                                     </div>
                                 @else
-                                    <!-- Try to detect file type by content or force preview -->
-                                    <div id="universal-preview" class="w-full h-[600px] relative">
-                                        <!-- Try iframe first for any file type -->
-                                        <iframe id="universal-iframe" 
-                                                src="{{ $fileUrl }}" 
-                                                class="w-full h-full border-0 rounded"
-                                                onload="handleUniversalLoad()"
-                                                onerror="handleUniversalError()">
-                                        </iframe>
-                                        
-                                        <!-- Try image as fallback -->
-                                        <img id="universal-image" 
-                                             src="{{ $fileUrl }}" 
-                                             alt="Document Preview" 
-                                             class="hidden w-full h-full object-contain"
-                                             onload="handleUniversalImageLoad(this)"
-                                             onerror="handleUniversalImageError(this)">
-                                        
-                                        <!-- Loading state -->
-                                        <div id="universal-loading" class="absolute inset-0 flex items-center justify-center bg-gray-100">
-                                            <div class="text-center">
-                                                <i data-lucide="loader" class="h-8 w-8 mx-auto text-gray-400 animate-spin mb-4"></i>
-                                                <p class="text-gray-500">Loading preview...</p>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Fallback when nothing works -->
-                                        <div id="universal-fallback" class="hidden flex flex-col items-center justify-center h-full text-gray-500">
-                                            <div class="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mb-6">
-                                                <i data-lucide="file-text" class="h-12 w-12 text-gray-400"></i>
-                                            </div>
-                                            <h3 class="text-xl font-semibold mb-2 text-gray-700">{{ $scanning->original_filename }}</h3>
-                                            <p class="text-gray-500 mb-6 text-center max-w-md">
-                                                Preview is not available for this file type. You can download the file to view it.
-                                            </p>
-                                            <div class="flex space-x-3">
-                                                <a href="{{ $fileUrl }}" download="{{ $scanning->original_filename }}" class="btn btn-primary">
-                                                    <i data-lucide="download" class="h-4 w-4 mr-2"></i>
-                                                    Download File
-                                                </a>
-                                                <a href="{{ $fileUrl }}" target="_blank" class="btn btn-outline">
-                                                    <i data-lucide="external-link" class="h-4 w-4 mr-2"></i>
-                                                    Open in Browser
-                                                </a>
-                                            </div>
-                                        </div>
+                                    <div class="text-center py-8">
+                                        <i data-lucide="inbox" class="h-12 w-12 mx-auto text-gray-300 mb-4"></i>
+                                        <p class="text-gray-500">No scanned documents found for this file</p>
+                                        <button class="btn btn-primary mt-4 gap-2" onclick="uploadMoreScans()">
+                                            <i data-lucide="plus-circle" class="h-4 w-4"></i>
+                                            Upload First Scan
+                                        </button>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- File Manager Tab -->
+                    <div class="tab-content mt-6 hidden" role="tabpanel" aria-hidden="true" data-tab-content="file-manager">
+                        <div class="card">
+                            <div class="p-6 border-b">
+                                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <div>
+                                        <h2 class="text-lg font-semibold">File Manager</h2>
+                                        <p class="text-sm text-muted-foreground">Browse and manage files in {{ $folderPath }}</p>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <button class="btn btn-outline btn-sm gap-2" onclick="refreshFileManager()">
+                                            <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                                            Refresh
+                                        </button>
+                                        <button class="btn btn-primary btn-sm gap-2" onclick="uploadMoreScans()">
+                                            <i data-lucide="upload" class="h-4 w-4"></i>
+                                            Upload
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-6">
+                                @if(count($folderFiles) > 0)
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full divide-y divide-gray-200">
+                                            <thead class="bg-gray-50">
+                                                <tr>
+                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
+                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Modified</th>
+                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="bg-white divide-y divide-gray-200">
+                                                @foreach($folderFiles as $file)
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="px-6 py-4 whitespace-nowrap">
+                                                            <div class="flex items-center">
+                                                                @if(in_array(strtolower(pathinfo($file['name'], PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'gif']))
+                                                                    <i data-lucide="image" class="h-5 w-5 text-green-500 mr-3"></i>
+                                                                @elseif(strtolower(pathinfo($file['name'], PATHINFO_EXTENSION)) === 'pdf')
+                                                                    <i data-lucide="file-text" class="h-5 w-5 text-red-500 mr-3"></i>
+                                                                @else
+                                                                    <i data-lucide="file" class="h-5 w-5 text-gray-400 mr-3"></i>
+                                                                @endif
+                                                                <span class="text-sm font-medium text-gray-900">{{ $file['name'] }}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                            {{ formatBytes($file['size']) }}
+                                                        </td>
+                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                            {{ date('M d, Y H:i', $file['modified']) }}
+                                                        </td>
+                                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                            <div class="flex items-center space-x-2">
+                                                                <button class="text-indigo-600 hover:text-indigo-900" 
+                                                                        onclick="viewDocument('{{ $file['url'] }}', '{{ $file['name'] }}')">
+                                                                    <i data-lucide="eye" class="h-4 w-4"></i>
+                                                                </button>
+                                                                <a href="{{ $file['url'] }}" download class="text-green-600 hover:text-green-900">
+                                                                    <i data-lucide="download" class="h-4 w-4"></i>
+                                                                </a>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                @else
+                                    <div class="text-center py-8">
+                                        <i data-lucide="folder-x" class="h-12 w-12 mx-auto text-gray-300 mb-4"></i>
+                                        <p class="text-gray-500">No files found in this folder</p>
+                                        <p class="text-sm text-gray-400 mt-1">{{ $folderPath }}</p>
                                     </div>
                                 @endif
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <!-- Document Information Sidebar - Takes up 1/3 of the space -->
-                <div class="xl:col-span-1 space-y-6">
-                    <!-- File Information Card -->
-                    <div class="bg-white rounded-lg shadow-sm border">
-                        <div class="p-4 border-b bg-gray-50 rounded-t-lg">
-                            <h3 class="font-semibold text-gray-900">File Information</h3>
-                        </div>
-                        <div class="p-4 space-y-4">
-                            <div class="space-y-3">
-                                <div class="flex justify-between items-start">
-                                    <span class="text-sm text-gray-600">File Number</span>
-                                    <span class="text-sm font-medium text-gray-900 text-right">{{ $scanning->fileIndexing->file_number }}</span>
-                                </div>
-                                <div class="flex justify-between items-start">
-                                    <span class="text-sm text-gray-600">File Title</span>
-                                    <span class="text-sm font-medium text-gray-900 text-right max-w-[60%]">{{ $scanning->fileIndexing->file_title }}</span>
-                                </div>
-                                <div class="flex justify-between items-start">
-                                    <span class="text-sm text-gray-600">Original Name</span>
-                                    <span class="text-sm font-medium text-gray-900 text-right max-w-[60%] break-words">{{ $scanning->original_filename }}</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-sm text-gray-600">File Size</span>
-                                    <span class="text-sm font-medium text-gray-900">
-                                        @if(Storage::exists('public/' . $scanning->document_path))
-                                            {{ number_format(Storage::size('public/' . $scanning->document_path) / 1024, 1) }} KB
-                                        @else
-                                            Unknown
-                                        @endif
-                                    </span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-sm text-gray-600">File Type</span>
-                                    <span class="text-sm font-medium text-gray-900 uppercase">{{ $fileExtension }}</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-sm text-gray-600">File URL</span>
-                                    <a href="{{ $fileUrl }}" target="_blank" class="text-sm text-blue-600 hover:text-blue-800 truncate max-w-[60%]">
-                                        View File
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
+        <!-- Document Viewer Modal -->
+        <div id="document-viewer-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+                    <div class="flex items-center justify-between p-4 border-b">
+                        <h3 class="text-lg font-semibold" id="document-title">Document Viewer</h3>
+                        <button onclick="closeDocumentViewer()" class="text-gray-400 hover:text-gray-600">
+                            <i data-lucide="x" class="h-6 w-6"></i>
+                        </button>
                     </div>
-
-                    <!-- Document Properties Card -->
-                    <div class="bg-white rounded-lg shadow-sm border">
-                        <div class="p-4 border-b bg-gray-50 rounded-t-lg">
-                            <h3 class="font-semibold text-gray-900">Document Properties</h3>
-                        </div>
-                        <div class="p-4 space-y-4">
-                            <div class="space-y-3">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-sm text-gray-600">Document Type</span>
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                        {{ $scanning->document_type ?? 'Unknown' }}
-                                    </span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-sm text-gray-600">Paper Size</span>
-                                    <span class="text-sm font-medium text-gray-900">{{ $scanning->paper_size ?? 'Unknown' }}</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-sm text-gray-600">Status</span>
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                        {{ $scanning->status === 'typed' ? 'bg-green-100 text-green-800' : 
-                                           ($scanning->status === 'scanned' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800') }}">
-                                        {{ ucfirst($scanning->status) }}
-                                    </span>
-                                </div>
-                                <div class="flex justify-between items-start">
-                                    <span class="text-sm text-gray-600">Uploaded</span>
-                                    <div class="text-right">
-                                        <div class="text-sm font-medium text-gray-900">{{ $scanning->created_at->format('M d, Y') }}</div>
-                                        <div class="text-xs text-gray-500">{{ $scanning->created_at->format('H:i') }}</div>
-                                    </div>
-                                </div>
-                                <div class="flex justify-between items-start">
-                                    <span class="text-sm text-gray-600">Uploaded By</span>
-                                    <span class="text-sm font-medium text-gray-900">{{ $scanning->uploader->name ?? 'Unknown' }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Notes Card -->
-                    @if($scanning->notes)
-                    <div class="bg-white rounded-lg shadow-sm border">
-                        <div class="p-4 border-b bg-gray-50 rounded-t-lg">
-                            <h3 class="font-semibold text-gray-900">Notes</h3>
-                        </div>
-                        <div class="p-4">
-                            <p class="text-sm text-gray-700">{{ $scanning->notes }}</p>
-                        </div>
-                    </div>
-                    @endif
-
-                    <!-- Quick Actions Card -->
-                    <div class="bg-white rounded-lg shadow-sm border">
-                        <div class="p-4 border-b bg-gray-50 rounded-t-lg">
-                            <h3 class="font-semibold text-gray-900">Quick Actions</h3>
-                        </div>
-                        <div class="p-4 space-y-3">
-                            @if($scanning->status !== 'typed')
-                                <a href="{{ route('pagetyping.index', ['file_indexing_id' => $scanning->file_indexing_id]) }}" 
-                                   class="w-full btn btn-primary">
-                                    <i data-lucide="type" class="h-4 w-4 mr-2"></i>
-                                    Start Page Typing
-                                </a>
-                            @endif
-                            <button class="w-full btn btn-outline" onclick="editDocument()">
-                                <i data-lucide="edit" class="h-4 w-4 mr-2"></i>
-                                Edit Document Details
-                            </button>
-                            <button class="w-full btn btn-outline" onclick="shareDocument()">
-                                <i data-lucide="share-2" class="h-4 w-4 mr-2"></i>
-                                Share Document
-                            </button>
+                    <div class="p-4 max-h-[80vh] overflow-auto">
+                        <div id="document-content" class="text-center">
+                            <!-- Document content will be loaded here -->
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Footer -->
+        @include('admin.footer')
+        
+        <script>
+            // Initialize Lucide icons
+            lucide.createIcons();
+
+            // Tab functionality
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabName = this.getAttribute('data-tab');
+                    
+                    // Update tab states
+                    document.querySelectorAll('.tab').forEach(t => {
+                        t.classList.remove('active');
+                        t.setAttribute('aria-selected', 'false');
+                    });
+                    this.classList.add('active');
+                    this.setAttribute('aria-selected', 'true');
+                    
+                    // Update content states
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.add('hidden');
+                        content.setAttribute('aria-hidden', 'true');
+                    });
+                    const targetContent = document.querySelector(`[data-tab-content="${tabName}"]`);
+                    if (targetContent) {
+                        targetContent.classList.remove('hidden');
+                        targetContent.setAttribute('aria-hidden', 'false');
+                    }
+                });
+            });
+
+            // Search functionality
+            document.getElementById('search-scans').addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const scanCards = document.querySelectorAll('.scan-card');
+                
+                scanCards.forEach(card => {
+                    const filename = card.querySelector('h3').textContent.toLowerCase();
+                    const documentType = card.querySelector('.space-y-1 span:nth-child(2)').textContent.toLowerCase();
+                    
+                    if (filename.includes(searchTerm) || documentType.includes(searchTerm)) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+
+            // Document viewer functions
+            function viewDocument(url, filename) {
+                const modal = document.getElementById('document-viewer-modal');
+                const title = document.getElementById('document-title');
+                const content = document.getElementById('document-content');
+                
+                title.textContent = filename;
+                
+                const extension = filename.split('.').pop().toLowerCase();
+                
+                if (['jpg', 'jpeg', 'png', 'gif'].includes(extension)) {
+                    content.innerHTML = `<img src="${url}" alt="${filename}" class="max-w-full h-auto">`;
+                } else if (extension === 'pdf') {
+                    content.innerHTML = `<iframe src="${url}" width="100%" height="600px" frameborder="0"></iframe>`;
+                } else {
+                    content.innerHTML = `
+                        <div class="text-center py-8">
+                            <i data-lucide="file" class="h-16 w-16 mx-auto text-gray-400 mb-4"></i>
+                            <p class="text-gray-600 mb-4">Cannot preview this file type</p>
+                            <a href="${url}" download class="btn btn-primary gap-2">
+                                <i data-lucide="download" class="h-4 w-4"></i>
+                                Download File
+                            </a>
+                        </div>
+                    `;
+                }
+                
+                modal.classList.remove('hidden');
+                lucide.createIcons();
+            }
+
+            function closeDocumentViewer() {
+                document.getElementById('document-viewer-modal').classList.add('hidden');
+            }
+
+            // Upload more scans
+            function uploadMoreScans() {
+                window.location.href = `/scanning?file_indexing_id={{ $fileIndexing->id }}`;
+            }
+
+            // Refresh file manager
+            function refreshFileManager() {
+                window.location.reload();
+            }
+
+            // Edit scan (placeholder)
+            function editScan(scanId) {
+                alert('Edit functionality will be implemented');
+            }
+
+            // Delete scan (placeholder)
+            function deleteScan(scanId) {
+                if (confirm('Are you sure you want to delete this scan?')) {
+                    // Implementation for delete
+                    alert('Delete functionality will be implemented');
+                }
+            }
+
+            // Close modal on escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeDocumentViewer();
+                }
+            });
+
+            // Close modal on backdrop click
+            document.getElementById('document-viewer-modal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeDocumentViewer();
+                }
+            });
+        </script>
     </div>
-
-    <!-- Footer -->
-    @include('admin.footer')
-</div>
-
-<!-- Edit Document Modal -->
-<div id="edit-modal" class="dialog-backdrop hidden" aria-hidden="true">
-    <div class="dialog-content animate-fade-in">
-        <div class="p-4 border-b">
-            <h2 class="text-lg font-semibold">Edit Document Details</h2>
-        </div>
-        <form id="edit-form" class="p-6 space-y-4">
-            <div>
-                <label class="block text-sm font-medium mb-2">Document Type</label>
-                <select id="edit-document-type" class="input">
-                    <option value="Certificate" {{ $scanning->document_type === 'Certificate' ? 'selected' : '' }}>Certificate</option>
-                    <option value="Deed" {{ $scanning->document_type === 'Deed' ? 'selected' : '' }}>Deed</option>
-                    <option value="Letter" {{ $scanning->document_type === 'Letter' ? 'selected' : '' }}>Letter</option>
-                    <option value="Application Form" {{ $scanning->document_type === 'Application Form' ? 'selected' : '' }}>Application Form</option>
-                    <option value="Map" {{ $scanning->document_type === 'Map' ? 'selected' : '' }}>Map</option>
-                    <option value="Survey Plan" {{ $scanning->document_type === 'Survey Plan' ? 'selected' : '' }}>Survey Plan</option>
-                    <option value="Receipt" {{ $scanning->document_type === 'Receipt' ? 'selected' : '' }}>Receipt</option>
-                    <option value="Other" {{ $scanning->document_type === 'Other' ? 'selected' : '' }}>Other</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-2">Paper Size</label>
-                <select id="edit-paper-size" class="input">
-                    <option value="A4" {{ $scanning->paper_size === 'A4' ? 'selected' : '' }}>A4</option>
-                    <option value="A3" {{ $scanning->paper_size === 'A3' ? 'selected' : '' }}>A3</option>
-                    <option value="A5" {{ $scanning->paper_size === 'A5' ? 'selected' : '' }}>A5</option>
-                    <option value="Letter" {{ $scanning->paper_size === 'Letter' ? 'selected' : '' }}>Letter</option>
-                    <option value="Legal" {{ $scanning->paper_size === 'Legal' ? 'selected' : '' }}>Legal</option>
-                    <option value="Custom" {{ $scanning->paper_size === 'Custom' ? 'selected' : '' }}>Custom</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-2">Notes</label>
-                <textarea id="edit-notes" class="input" rows="3" placeholder="Add any notes about this document...">{{ $scanning->notes }}</textarea>
-            </div>
-        </form>
-        <div class="flex justify-end gap-2 p-4 border-t">
-            <button class="btn btn-outline" onclick="closeEditModal()">Cancel</button>
-            <button class="btn btn-primary" onclick="saveDocumentDetails()">Save Changes</button>
-        </div>
-    </div>
-</div>
-
-<style>
-.zoom-in { transform: scale(1.5); }
-.zoom-out { transform: scale(0.75); }
-.fullscreen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 9999;
-    background: white;
-}
-</style>
-
-<script>
-let currentZoom = 100;
-let isFullscreen = false;
-
-function toggleActionsMenu() {
-    const menu = document.getElementById('actions-menu');
-    menu.classList.toggle('hidden');
-}
-
-function zoomIn() {
-    currentZoom = Math.min(currentZoom + 25, 200);
-    updateZoom();
-}
-
-function zoomOut() {
-    currentZoom = Math.max(currentZoom - 25, 50);
-    updateZoom();
-}
-
-function resetZoom() {
-    currentZoom = 100;
-    updateZoom();
-}
-
-function updateZoom() {
-    const image = document.getElementById('document-image');
-    const zoomLevel = document.getElementById('zoom-level');
-    
-    if (image) {
-        image.style.transform = `scale(${currentZoom / 100})`;
-    }
-    
-    if (zoomLevel) {
-        zoomLevel.textContent = currentZoom + '%';
-    }
-}
-
-function toggleImageZoom(img) {
-    if (img.classList.contains('zoom-in')) {
-        img.classList.remove('zoom-in');
-        img.classList.add('cursor-zoom-in');
-        img.classList.remove('cursor-zoom-out');
-    } else {
-        img.classList.add('zoom-in');
-        img.classList.remove('cursor-zoom-in');
-        img.classList.add('cursor-zoom-out');
-    }
-}
-
-function toggleFullscreen() {
-    const container = document.getElementById('document-container');
-    if (!isFullscreen) {
-        container.classList.add('fullscreen');
-        container.style.maxHeight = '100vh';
-        isFullscreen = true;
-    } else {
-        container.classList.remove('fullscreen');
-        container.style.maxHeight = '800px';
-        isFullscreen = false;
-    }
-}
-
-// Image handling functions
-function handleImageLoad(img) {
-    const loading = document.getElementById('image-loading');
-    if (loading) loading.style.display = 'none';
-    console.log('Image loaded successfully');
-}
-
-function handleImageError(img) {
-    const loading = document.getElementById('image-loading');
-    if (loading) loading.style.display = 'none';
-    
-    const container = img.parentElement;
-    container.innerHTML = `
-        <div class="flex flex-col items-center justify-center h-full text-gray-500">
-            <div class="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mb-6">
-                <i data-lucide="image-off" class="h-12 w-12 text-red-400"></i>
-            </div>
-            <h3 class="text-xl font-semibold mb-2 text-gray-700">Image Not Found</h3>
-            <p class="text-gray-500 mb-6 text-center max-w-md">
-                The image file could not be loaded. It may have been moved or deleted.
-            </p>
-            <div class="flex space-x-3">
-                <a href="{{ $fileUrl }}" target="_blank" class="btn btn-primary">
-                    <i data-lucide="external-link" class="h-4 w-4 mr-2"></i>
-                    Try Direct Link
-                </a>
-                <button onclick="location.reload()" class="btn btn-outline">
-                    <i data-lucide="refresh-cw" class="h-4 w-4 mr-2"></i>
-                    Reload Page
-                </button>
-            </div>
-        </div>
-    `;
-    lucide.createIcons();
-}
-
-// PDF handling functions
-function handlePdfLoad() {
-    const loading = document.getElementById('pdf-loading');
-    if (loading) loading.style.display = 'none';
-    console.log('PDF loaded successfully');
-}
-
-function handlePdfError() {
-    const loading = document.getElementById('pdf-loading');
-    const iframe = document.getElementById('document-pdf');
-    const fallback = document.getElementById('pdf-fallback');
-    
-    if (loading) loading.style.display = 'none';
-    if (iframe) iframe.style.display = 'none';
-    if (fallback) fallback.classList.remove('hidden');
-}
-
-// Universal preview handling functions
-function handleUniversalLoad() {
-    const loading = document.getElementById('universal-loading');
-    if (loading) loading.style.display = 'none';
-    console.log('Universal preview loaded successfully');
-}
-
-function handleUniversalError() {
-    // Try image as fallback
-    const iframe = document.getElementById('universal-iframe');
-    const image = document.getElementById('universal-image');
-    
-    if (iframe) iframe.style.display = 'none';
-    if (image) {
-        image.classList.remove('hidden');
-        image.classList.add('block');
-    }
-}
-
-function handleUniversalImageLoad(img) {
-    const loading = document.getElementById('universal-loading');
-    if (loading) loading.style.display = 'none';
-    console.log('Universal image loaded successfully');
-}
-
-function handleUniversalImageError(img) {
-    const loading = document.getElementById('universal-loading');
-    const fallback = document.getElementById('universal-fallback');
-    
-    if (loading) loading.style.display = 'none';
-    if (img) img.style.display = 'none';
-    if (fallback) fallback.classList.remove('hidden');
-}
-
-function editDocument() {
-    document.getElementById('edit-modal').classList.remove('hidden');
-    toggleActionsMenu();
-}
-
-function closeEditModal() {
-    document.getElementById('edit-modal').classList.add('hidden');
-}
-
-function saveDocumentDetails() {
-    const formData = {
-        document_type: document.getElementById('edit-document-type').value,
-        paper_size: document.getElementById('edit-paper-size').value,
-        notes: document.getElementById('edit-notes').value
-    };
-    
-    fetch(`{{ route('scanning.update-details', $scanning->id) }}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
-            'Accept': 'application/json'
-        },
-        body: JSON.stringify(formData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Document details updated successfully!');
-            location.reload();
-        } else {
-            alert(data.message || 'Error updating document details');
-        }
-    })
-    .catch(error => {
-        console.error('Error updating document details:', error);
-        alert('Error updating document details');
-    });
-}
-
-function shareDocument() {
-    if (navigator.share) {
-        navigator.share({
-            title: '{{ $scanning->original_filename }}',
-            text: 'Scanned document from {{ $scanning->fileIndexing->file_number }}',
-            url: '{{ $fileUrl }}'
-        });
-    } else {
-        // Fallback: copy link to clipboard
-        navigator.clipboard.writeText('{{ $fileUrl }}').then(() => {
-            alert('Document link copied to clipboard!');
-        });
-    }
-}
-
-function deleteDocument() {
-    if (!confirm('Are you sure you want to delete this document? This action cannot be undone.')) {
-        return;
-    }
-    
-    fetch(`{{ route('scanning.delete', $scanning->id) }}`, {
-        method: 'DELETE',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
-            'Accept': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(data.message);
-            window.location.href = '{{ route("scanning.index") }}';
-        } else {
-            alert(data.message || 'Error deleting document');
-        }
-    })
-    .catch(error => {
-        console.error('Error deleting document:', error);
-        alert('Error deleting document');
-    });
-}
-
-// Close dropdown when clicking outside
-document.addEventListener('click', function(event) {
-    const menu = document.getElementById('actions-menu');
-    const button = event.target.closest('button');
-    
-    if (!button || !button.onclick || button.onclick.toString().indexOf('toggleActionsMenu') === -1) {
-        menu.classList.add('hidden');
-    }
-});
-
-// Initialize Lucide icons
-document.addEventListener('DOMContentLoaded', function() {
-    lucide.createIcons();
-});
-
-// Keyboard shortcuts
-document.addEventListener('keydown', function(event) {
-    if (event.ctrlKey || event.metaKey) {
-        switch(event.key) {
-            case '=':
-            case '+':
-                event.preventDefault();
-                zoomIn();
-                break;
-            case '-':
-                event.preventDefault();
-                zoomOut();
-                break;
-            case '0':
-                event.preventDefault();
-                resetZoom();
-                break;
-        }
-    }
-    
-    if (event.key === 'Escape' && isFullscreen) {
-        toggleFullscreen();
-    }
-});
-</script>
 @endsection
+
+@php
+function formatBytes($bytes, $precision = 2) {
+    $units = array('B', 'KB', 'MB', 'GB', 'TB');
+    
+    for ($i = 0; $bytes > 1024; $i++) {
+        $bytes /= 1024;
+    }
+    
+    return round($bytes, $precision) . ' ' . $units[$i];
+}
+@endphp

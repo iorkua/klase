@@ -40,12 +40,8 @@ class ScanningController extends Controller
                 'total_scanned' => Scanning::on('sqlsrv')->count(),
             ];
             
-            // Get recent scanning records
-            $recentScans = Scanning::on('sqlsrv')
-                ->with(['fileIndexing', 'uploader'])
-                ->orderBy('created_at', 'desc')
-                ->limit(10)
-                ->get();
+            // Get recent scanning records grouped by FileNo (one row per FileNo)
+            $recentScans = $this->getGroupedScannedFiles();
             
             return view('scanning.index', compact(
                 'PageTitle', 
@@ -465,27 +461,59 @@ class ScanningController extends Controller
     }
 
     /**
-     * View a specific scanned document
+     * View all scanned documents for a FileNo (file_indexing_id)
      */
-    public function view($id)
+    public function view($fileIndexingId)
     {
         try {
-            $scanning = Scanning::on('sqlsrv')
-                ->with(['fileIndexing', 'uploader'])
-                ->findOrFail($id);
+            $fileIndexing = FileIndexing::on('sqlsrv')
+                ->with(['mainApplication', 'scannings.uploader'])
+                ->findOrFail($fileIndexingId);
 
-            $PageTitle = 'View Scanned Document';
-            $PageDescription = 'Preview and manage scanned document';
+            // Get all scanned documents for this FileNo
+            $allScans = Scanning::on('sqlsrv')
+                ->with(['uploader'])
+                ->where('file_indexing_id', $fileIndexingId)
+                ->orderBy('created_at', 'desc')
+                ->get();
 
-            return view('scanning.view', compact('PageTitle', 'PageDescription', 'scanning'));
+            // Get folder path for file manager
+            $folderPath = 'EDMS/SCAN_UPLOAD/' . $fileIndexing->file_number;
+            
+            // Check if folder exists and get files
+            $folderFiles = [];
+            if (Storage::disk('public')->exists($folderPath)) {
+                $files = Storage::disk('public')->files($folderPath);
+                foreach ($files as $file) {
+                    $folderFiles[] = [
+                        'name' => basename($file),
+                        'path' => $file,
+                        'url' => Storage::disk('public')->url($file),
+                        'size' => Storage::disk('public')->size($file),
+                        'modified' => Storage::disk('public')->lastModified($file),
+                    ];
+                }
+            }
+
+            $PageTitle = 'View Scanned Files - ' . $fileIndexing->file_number;
+            $PageDescription = 'All scanned documents for ' . $fileIndexing->file_title;
+
+            return view('scanning.view', compact(
+                'PageTitle', 
+                'PageDescription', 
+                'fileIndexing',
+                'allScans',
+                'folderPath',
+                'folderFiles'
+            ));
         } catch (Exception $e) {
-            Log::error('Error loading scanned document', [
-                'scanning_id' => $id,
+            Log::error('Error loading scanned files for FileNo', [
+                'file_indexing_id' => $fileIndexingId,
                 'error' => $e->getMessage()
             ]);
 
             return redirect()->route('scanning.index')
-                ->with('error', 'Scanned document not found');
+                ->with('error', 'File not found');
         }
     }
 
@@ -921,6 +949,69 @@ class ScanningController extends Controller
                 ->count();
         } catch (Exception $e) {
             return 0;
+        }
+    }
+
+    /**
+     * Get grouped scanned files (one row per FileNo)
+     */
+    private function getGroupedScannedFiles()
+    {
+        try {
+            // Get file indexings that have scanned documents, grouped by file_number
+            $groupedScans = FileIndexing::on('sqlsrv')
+                ->with(['scannings' => function($query) {
+                    $query->with('uploader')->orderBy('created_at', 'desc');
+                }])
+                ->whereHas('scannings')
+                ->orderBy('updated_at', 'desc')
+                ->limit(20)
+                ->get()
+                ->map(function ($fileIndexing) {
+                    $latestScan = $fileIndexing->scannings->first();
+                    $scanCount = $fileIndexing->scannings->count();
+                    
+                    return (object) [
+                        'id' => $fileIndexing->id,
+                        'fileIndexing' => $fileIndexing,
+                        'file_number' => $fileIndexing->file_number,
+                        'file_title' => $fileIndexing->file_title,
+                        'scan_count' => $scanCount,
+                        'latest_scan_date' => $latestScan ? $latestScan->created_at : null,
+                        'uploader' => $latestScan && $latestScan->uploader ? $latestScan->uploader : null,
+                        'status' => $this->determineFileStatus($fileIndexing),
+                        'created_at' => $latestScan ? $latestScan->created_at : $fileIndexing->created_at,
+                    ];
+                });
+
+            return $groupedScans;
+        } catch (Exception $e) {
+            Log::error('Error getting grouped scanned files', [
+                'error' => $e->getMessage()
+            ]);
+            return collect();
+        }
+    }
+
+    /**
+     * Determine file status based on workflow progress
+     */
+    private function determineFileStatus($fileIndexing)
+    {
+        try {
+            // Check if file has page typings
+            if ($fileIndexing->pagetypings && $fileIndexing->pagetypings->count() > 0) {
+                return 'typed';
+            }
+            
+            // Check if file has scannings
+            if ($fileIndexing->scannings && $fileIndexing->scannings->count() > 0) {
+                return 'scanned';
+            }
+            
+            return 'indexed';
+        } catch (Exception $e) {
+            return 'unknown';
         }
     }
 }
