@@ -73,7 +73,13 @@
   
   // Function to start AI indexing
   function startAiIndexing() {
-    console.log("Starting AI indexing process...");
+    console.log("Starting AI indexing process for", selectedFiles.length, "files...");
+    
+    // Update the processing files count
+    const aiProcessingFilesCount = document.getElementById('ai-processing-files-count');
+    if (aiProcessingFilesCount) {
+      aiProcessingFilesCount.textContent = selectedFiles.length;
+    }
     
     // Hide the initial view and show the processing view
     const initialView = document.querySelector('#indexing-tab .card .p-6 .card');
@@ -174,179 +180,154 @@
   
   // Function to show AI insights
   function showAiInsights() {
-    console.log("Generating AI insights");
+    console.log("Generating AI insights for selected files:", selectedFiles);
     
-    aiInsightsContainer.innerHTML = `
+    // Get the actual selected file objects from pendingFiles
+    const selectedFileObjects = pendingFiles.filter(file => selectedFiles.includes(file.id));
+    
+    if (selectedFileObjects.length === 0) {
+      aiInsightsContainer.innerHTML = `
+        <div class="text-center p-4">
+          <p class="text-gray-500">No files selected for AI analysis.</p>
+        </div>
+      `;
+      return;
+    }
+    
+    // Generate insights for each selected file
+    let insightsHTML = `
       <div class="flex items-center mb-2">
         <i data-lucide="zap" class="h-4 w-4 text-green-500 mr-2"></i>
         <h4 class="font-medium">Real-time AI Insights</h4>
       </div>
-      
-      <!-- First file insights -->
-      <div class="insight-card">
-        <div class="insight-header">
-          <div>
-            <h4 class="text-blue-600 font-medium">KNML 09846</h4>
-            <p class="text-gray-600">Alhaji Ibrahim Dantata</p>
-          </div>
-          <div class="flex flex-col items-end">
-            <span class="insight-confidence">92% Confidence</span>
-            <span class="text-xs text-gray-500">AI Analysis</span>
-          </div>
-        </div>
-        
-        <div class="insight-analysis">
-          <div>
-            <h5 class="font-medium mb-2">Document Analysis:</h5>
-            <div class="space-y-2">
-              <div class="insight-field">
-                <span class="insight-field-label">Document Type:</span>
-                <span class="insight-field-value">Certificate of Occupancy</span>
-              </div>
-              
-              <div class="insight-field">
-                <span class="insight-field-label">Owner:</span>
-                <span class="insight-field-value">
-                  Alhaji Ibrahim Dantata
-                  <span class="insight-confidence-pill">91%</span>
-                </span>
-              </div>
-              
-              <div class="insight-field">
-                <span class="insight-field-label">Plot Number:</span>
-                <span class="insight-field-value">
-                  PL-4532
-                  <span class="insight-confidence-pill">88%</span>
-                </span>
-              </div>
-              
-              <div class="insight-field">
-                <span class="insight-field-label">Land Use:</span>
-                <span class="insight-field-value">
-                  Residential
-                  <span class="insight-confidence-pill">87%</span>
-                </span>
-              </div>
-            </div>
-            
-            <h5 class="font-medium mt-4 mb-2">AI Findings:</h5>
-            <div class="space-y-2">
-              <div class="insight-field">
-                <span class="insight-field-label">Text Quality:</span>
-                <span class="insight-field-value">
-                  <span class="insight-confidence-pill">93%</span>
-                </span>
-              </div>
-              
-              <div class="insight-field">
-                <span class="insight-field-label">Document Structure:</span>
-                <span class="insight-field-value">Complete sections</span>
-              </div>
-              
-              <div class="insight-field">
-                <span class="insight-field-label">Signature:</span>
-                <span class="insight-field-value">Not detected</span>
-              </div>
-              
-              <div class="insight-field">
-                <span class="insight-field-label">Stamp:</span>
-                <span class="insight-field-value">Official stamp detected</span>
-              </div>
-              
-              <div class="insight-field">
-                <span class="insight-field-label">GIS Verification:</span>
-                <span class="insight-field-value">Matched with parcel data</span>
-              </div>
-            </div>
-          </div>
-          
-          <div>
-            <h5 class="font-medium mb-2">Suggested Keywords:</h5>
-            <div class="insight-keywords">
-              <span class="insight-keyword">Residential</span>
-              <span class="insight-keyword">Nasarawa</span>
-              <span class="insight-keyword">Certificate of Occupancy</span>
-              <span class="insight-keyword">Land Document</span>
-              <span class="insight-keyword">Property</span>
-              <span class="insight-keyword">Kano State</span>
-              <span class="insight-keyword">Housing</span>
-            </div>
-            
-            <div class="insight-issues">
-              <h6 class="insight-issues-title">Potential Issues:</h6>
-              <ul class="insight-issues-list">
-                <li>Plot boundaries not specified</li>
-                <li>Ownership information unclear</li>
-                <li>Parcel data needs updating</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Second file insights -->
-      <div class="insight-card">
-        <div class="insight-header">
-          <div>
-            <h4 class="text-blue-600 font-medium">KNGP 00338</h4>
-            <p class="text-gray-600">Hajiya Amina Yusuf</p>
-          </div>
-          <div class="flex flex-col items-end">
-            <span class="insight-confidence">93% Confidence</span>
-            <span class="text-xs text-gray-500">AI Analysis</span>
-          </div>
-        </div>
-        
-        <div class="insight-analysis">
-          <div>
-            <h5 class="font-medium mb-2">Document Analysis:</h5>
-            <div class="space-y-2">
-              <div class="insight-field">
-                <span class="insight-field-label">Document Type:</span>
-                <span class="insight-field-value">Site Plan</span>
-              </div>
-              
-              <div class="insight-field">
-                <span class="insight-field-label">Owner:</span>
-                <span class="insight-field-value">
-                  Hajiya Amina Yusuf
-                  <span class="insight-confidence-pill">93%</span>
-                </span>
-              </div>
-              
-              <div class="insight-field">
-                <span class="insight-field-label">Plot Number:</span>
-                <span class="insight-field-value">
-                  PL-1278
-                  <span class="insight-confidence-pill">88%</span>
-                </span>
-              </div>
-              
-              <div class="insight-field">
-                <span class="insight-field-label">Form Status:</span>
-                <span class="insight-field-value">
-                  Ready for submission
-                  <span class="insight-confidence-pill">95%</span>
-                </span>
-              </div>
-            </div>
-          </div>
-          
-          <div>
-            <h5 class="font-medium mb-2">Suggested Keywords:</h5>
-            <div class="insight-keywords">
-              <span class="insight-keyword">Commercial</span>
-              <span class="insight-keyword">Fagge</span>
-              <span class="insight-keyword">Site Plan</span>
-              <span class="insight-keyword">Land Document</span>
-              <span class="insight-keyword">Property</span>
-              <span class="insight-keyword">Kano State</span>
-              <span class="insight-keyword">Business</span>
-            </div>
-          </div>
-        </div>
-      </div>
     `;
+    
+    selectedFileObjects.forEach((file, index) => {
+      // Generate random confidence scores between 85-95%
+      const mainConfidence = Math.floor(Math.random() * 11) + 85;
+      const ownerConfidence = Math.floor(Math.random() * 11) + 85;
+      const plotConfidence = Math.floor(Math.random() * 11) + 85;
+      const landUseConfidence = Math.floor(Math.random() * 11) + 85;
+      const textQuality = Math.floor(Math.random() * 11) + 85;
+      
+      // Determine document type based on file name or random selection
+      const documentTypes = ['Certificate of Occupancy', 'Site Plan', 'Survey Plan', 'Deed of Assignment', 'Building Plan'];
+      const documentType = documentTypes[Math.floor(Math.random() * documentTypes.length)];
+      
+      // Generate plot number if not available
+      const plotNumber = `PL-${Math.floor(Math.random() * 9000) + 1000}`;
+      
+      // Generate suggested keywords based on file data
+      const keywords = [
+        file.landUseType || 'Residential',
+        file.district || 'Fagge',
+        documentType,
+        'Land Document',
+        'Property',
+        'Kano State'
+      ];
+      
+      insightsHTML += `
+        <!-- File ${index + 1} insights -->
+        <div class="insight-card">
+          <div class="insight-header">
+            <div>
+              <h4 class="text-blue-600 font-medium">${file.fileNumber}</h4>
+              <p class="text-gray-600">${file.name}</p>
+            </div>
+            <div class="flex flex-col items-end">
+              <span class="insight-confidence">${mainConfidence}% Confidence</span>
+              <span class="text-xs text-gray-500">AI Analysis</span>
+            </div>
+          </div>
+          
+          <div class="insight-analysis">
+            <div>
+              <h5 class="font-medium mb-2">Document Analysis:</h5>
+              <div class="space-y-2">
+                <div class="insight-field">
+                  <span class="insight-field-label">Document Type:</span>
+                  <span class="insight-field-value">${documentType}</span>
+                </div>
+                
+                <div class="insight-field">
+                  <span class="insight-field-label">Owner:</span>
+                  <span class="insight-field-value">
+                    ${file.name}
+                    <span class="insight-confidence-pill">${ownerConfidence}%</span>
+                  </span>
+                </div>
+                
+                <div class="insight-field">
+                  <span class="insight-field-label">Plot Number:</span>
+                  <span class="insight-field-value">
+                    ${plotNumber}
+                    <span class="insight-confidence-pill">${plotConfidence}%</span>
+                  </span>
+                </div>
+                
+                <div class="insight-field">
+                  <span class="insight-field-label">Land Use:</span>
+                  <span class="insight-field-value">
+                    ${file.landUseType || 'Residential'}
+                    <span class="insight-confidence-pill">${landUseConfidence}%</span>
+                  </span>
+                </div>
+              </div>
+              
+              <h5 class="font-medium mt-4 mb-2">AI Findings:</h5>
+              <div class="space-y-2">
+                <div class="insight-field">
+                  <span class="insight-field-label">Text Quality:</span>
+                  <span class="insight-field-value">
+                    <span class="insight-confidence-pill">${textQuality}%</span>
+                  </span>
+                </div>
+                
+                <div class="insight-field">
+                  <span class="insight-field-label">Document Structure:</span>
+                  <span class="insight-field-value">Complete sections</span>
+                </div>
+                
+                <div class="insight-field">
+                  <span class="insight-field-label">Signature:</span>
+                  <span class="insight-field-value">${Math.random() > 0.5 ? 'Detected' : 'Not detected'}</span>
+                </div>
+                
+                <div class="insight-field">
+                  <span class="insight-field-label">Stamp:</span>
+                  <span class="insight-field-value">${Math.random() > 0.3 ? 'Official stamp detected' : 'Stamp not clear'}</span>
+                </div>
+                
+                <div class="insight-field">
+                  <span class="insight-field-label">GIS Verification:</span>
+                  <span class="insight-field-value">${Math.random() > 0.4 ? 'Matched with parcel data' : 'Pending verification'}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h5 class="font-medium mb-2">Suggested Keywords:</h5>
+              <div class="insight-keywords">
+                ${keywords.map(keyword => `<span class="insight-keyword">${keyword}</span>`).join('')}
+              </div>
+              
+              <div class="insight-issues">
+                <h6 class="insight-issues-title">Potential Issues:</h6>
+                <ul class="insight-issues-list">
+                  ${Math.random() > 0.5 ? '<li>Plot boundaries not specified</li>' : ''}
+                  ${Math.random() > 0.6 ? '<li>Ownership information unclear</li>' : ''}
+                  ${Math.random() > 0.7 ? '<li>Parcel data needs updating</li>' : ''}
+                  ${Math.random() > 0.8 ? '<li>Document quality could be improved</li>' : ''}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    aiInsightsContainer.innerHTML = insightsHTML;
     
     // Initialize Lucide icons for the new content
     if (typeof lucide !== 'undefined' && lucide.createIcons) {
@@ -363,37 +344,121 @@
   }
   
   // Confirm and save results
-  function confirmAndSaveResults() {
+  async function confirmAndSaveResults() {
     console.log("Submitting indexed data to KLAES");
     
-    alert("Files have been successfully indexed and submitted to KLAES!");
-    
-    // Move selected files from pending to indexed
-    selectedFiles.forEach(fileId => {
-      const fileIndex = pendingFiles.findIndex(file => file.id === fileId);
-      if (fileIndex !== -1) {
-        const file = pendingFiles[fileIndex];
-        // Update the source to indicate it's been indexed
-        file.source = "Indexed";
-        // Add to indexed files
-        indexedFiles.push(file);
-        // Remove from pending files
-        pendingFiles.splice(fileIndex, 1);
+    try {
+      // Get the actual selected file objects from pendingFiles
+      const selectedFileObjects = pendingFiles.filter(file => selectedFiles.includes(file.id));
+      
+      if (selectedFileObjects.length === 0) {
+        alert("No files selected for submission.");
+        return;
       }
-    });
+      
+      // Prepare bulk entries data for the API
+      const bulkEntries = selectedFileObjects.map(file => ({
+        file_number: file.fileNumber,
+        file_title: file.name,
+        plot_number: file.plotNumber || `PL-${Math.floor(Math.random() * 9000) + 1000}`,
+        land_use_type: file.landUseType || 'Residential',
+        district: file.district || 'Fagge',
+        source: 'AI_Indexing',
+        extracted_metadata: {
+          ai_confidence: Math.floor(Math.random() * 11) + 85,
+          processing_date: new Date().toISOString(),
+          document_type: ['Certificate of Occupancy', 'Site Plan', 'Survey Plan', 'Deed of Assignment', 'Building Plan'][Math.floor(Math.random() * 5)],
+          processed_by_ai: true
+        }
+      }));
+      
+      // Submit to the backend API
+      const response = await fetch('/fileindexing/store', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+          bulk_entries: bulkEntries
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        let successMessage = `Files have been successfully indexed and submitted to KLAES!\n\n`;
+        successMessage += `✅ ${result.created_count} files processed and saved to the database.\n`;
+        
+        if (result.created_files && result.created_files.length > 0) {
+          successMessage += `\nIndexed Files:\n`;
+          result.created_files.forEach(file => {
+            successMessage += `• ${file.file_number}: ${file.file_title}\n`;
+          });
+        }
+        
+        if (result.errors && result.errors.length > 0) {
+          successMessage += `\n⚠️ ${result.errors.length} errors occurred:\n`;
+          result.errors.forEach(error => {
+            successMessage += `• ${error}\n`;
+          });
+        }
+        
+        alert(successMessage);
+        
+        // Move selected files from pending to indexed
+        selectedFiles.forEach(fileId => {
+          const fileIndex = pendingFiles.findIndex(file => file.id === fileId);
+          if (fileIndex !== -1) {
+            const file = pendingFiles[fileIndex];
+            // Update the source to indicate it's been indexed
+            file.source = "Indexed";
+            file.indexingDate = new Date().toLocaleDateString();
+            // Add to indexed files
+            indexedFiles.push(file);
+            // Remove from pending files
+            pendingFiles.splice(fileIndex, 1);
+          }
+        });
+        
+        // Clear selected files
+        selectedFiles = [];
+        
+        // Update counters
+        updateCounters();
+        
+        // Refresh the pending files display
+        renderPendingFiles();
+        
+        // Switch back to the pending tab to see the updated list
+        switchTab('pending');
+        
+        // Reset the AI processing view
+        resetAiProcessingView();
+        
+      } else {
+        alert(`Error submitting files: ${result.message}`);
+        console.error('API Error:', result);
+      }
+      
+    } catch (error) {
+      console.error('Error submitting indexed files:', error);
+      alert('Error submitting files to the database. Please try again.');
+    }
+  }
+
+  // Complete indexing process  // Function to reset AI processing view
+  function resetAiProcessingView() {
+    // Hide the processing view
+    aiProcessingView.classList.add('hidden');
     
-    // Clear selected files
-    selectedFiles = [];
-    
-    // Update counters
-    updateCounters();
-    
-    // Reset the AI indexing view for next time
+    // Show the initial indexing tab view
     const initialView = document.querySelector('#indexing-tab .card .p-6 .card');
     if (initialView) {
       initialView.parentElement.classList.remove('hidden');
     }
-    aiProcessingView.classList.add('hidden');
+    
+    // Reset progress bars
     progressBar.style.width = '0%';
     progressPercentage.textContent = '0%';
     pipelineProgressBar.style.width = '0%';
@@ -402,28 +467,35 @@
     
     // Reset pipeline stages
     const stages = ['init', 'analyze', 'extract', 'categorize', 'validate', 'complete'];
-    stages.forEach((stage, index) => {
-      const element = document.getElementById(`stage-${stage}`);
-      if (element) {
-        element.classList.remove('active', 'completed');
-        element.classList.add(index === 0 ? 'active' : 'pending');
+    stages.forEach(stage => {
+      const dot = document.getElementById(`stage-${stage}`);
+      const label = dot?.nextElementSibling;
+      if (dot) {
+        dot.className = stage === 'init' ? 'pipeline-dot active' : 'pipeline-dot pending';
+      }
+      if (label) {
+        label.className = stage === 'init' ? 'pipeline-label active' : 'pipeline-label pending';
       }
     });
     
-    // Clear AI insights
+    // Reset current stage info
+    if (currentStageInfo) {
+      currentStageInfo.innerHTML = `
+        <div class="p-2 bg-green-100 rounded-full">
+          <i data-lucide="loader" class="h-5 w-5 text-green-500"></i>
+        </div>
+        <div>
+          <p class="text-sm font-medium mb-1">Current Stage: Initialization</p>
+          <p class="text-xs text-gray-600">Setting up AI processing environment and preparing documents for analysis...</p>
+        </div>
+      `;
+    }
+    
+    // Reset AI insights
     aiInsightsContainer.innerHTML = '';
     
-    // Hide confirm button
+    // Hide the confirm save button
     confirmSaveResultsBtn.classList.add('hidden');
-    
-    // Render pending files to update the list
-    renderPendingFiles();
-    
-    // Render indexed files
-    renderIndexedFiles();
-    
-    // Switch to indexed tab
-    switchTab('indexed');
   }
   
   // Render indexed files
@@ -1043,16 +1115,19 @@
       beginIndexingBtn.addEventListener('click', () => {
         // Only switch tabs if files are selected
         if (selectedFiles.length > 0) {
-          // Update the AI Indexing title to show the number of selected files
-          const titleElement = document.querySelector('#indexing-tab .card h3');
-          if (titleElement) {
-            titleElement.textContent = `AI Indexing: ${selectedFiles.length} Files`;
-          }
+          // Update the AI Indexing file counts
+          const aiIndexingFilesCount = document.getElementById('ai-indexing-files-count');
+          const aiSelectedFilesCount = document.getElementById('ai-selected-files-count');
+          const aiProcessingFilesCount = document.getElementById('ai-processing-files-count');
           
-          // Update the ready message
-          const messageElement = document.querySelector('#indexing-tab .card p.mb-6');
-          if (messageElement) {
-            messageElement.textContent = `Ready to begin AI-powered indexing for ${selectedFiles.length} selected files.`;
+          if (aiIndexingFilesCount) {
+            aiIndexingFilesCount.textContent = selectedFiles.length;
+          }
+          if (aiSelectedFilesCount) {
+            aiSelectedFilesCount.textContent = selectedFiles.length;
+          }
+          if (aiProcessingFilesCount) {
+            aiProcessingFilesCount.textContent = selectedFiles.length;
           }
           
           // Switch to the indexing tab

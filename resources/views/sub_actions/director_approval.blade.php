@@ -325,6 +325,7 @@
                             </div>
                         </div>
 
+                        @if(request('url') !== 'view')
                         <!-- Tabs Navigation -->
                         <div class="grid grid-cols-5 gap-2 mb-4">
                             <button class="tab-button active" data-tab="summary">
@@ -1594,6 +1595,8 @@
                     </div>
                 </div>
             </div>
+
+            @endif
 
             <!-- Footer -->
             @include('admin.footer')

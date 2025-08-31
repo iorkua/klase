@@ -70,6 +70,21 @@
             firstParty: 'Deceased Owner',
             secondParty: 'Heir/Beneficiary',
             needsRootReg: true
+        },
+        'deed-of-gift': {
+            id: 'deed-of-gift',
+            name: 'Deed of Gift',
+            firstParty: 'Donor',
+            secondParty: 'Donee',
+            needsRootReg: true
+        },
+        'occupancy-permit': {
+            id: 'occupancy-permit',
+            name: 'Occupancy Permit',
+            firstParty: 'Grantor',
+            secondParty: 'Grantee',
+            needsRootReg: true,
+            autoSetGrantor: true
         }
     };
 
@@ -168,6 +183,7 @@
         switch (instrumentType) {
             case 'power-of-attorney':
             case 'irrevocable-power-of-attorney':
+            case 'occupancy-permit':
                 fieldsContainer.innerHTML = `
                     <div class="space-y-2">
                         <label for="duration" class="label">Duration</label>
@@ -308,6 +324,144 @@
                     </div>
                 `;
                 break;
+            case 'deed-of-gift':
+                fieldsContainer.innerHTML = `
+                    <!-- Section A - Instrument Metadata -->
+                    <div class="border rounded-md p-4 bg-white mb-4">
+                        <h4 class="font-medium mb-3 text-gray-800 border-b pb-2">Section A - Instrument Metadata</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <label for="instrumentNo" class="label">Instrument No.</label>
+                                <input id="instrumentNo" name="instrumentNo" class="input" placeholder="Enter instrument number">
+                            </div>
+                            <div class="space-y-2">
+                                <label for="landUse" class="label">Land Use</label>
+                                <input id="landUse" name="landUse" class="input" placeholder="Enter land use">
+                            </div>
+                            <div class="space-y-2">
+                                <label for="dateOfExecution" class="label">Date of Execution</label>
+                                <input id="dateOfExecution" name="dateOfExecution" type="date" class="input">
+                            </div>
+                            <div class="space-y-2">
+                                <label for="dateOfRegistration" class="label">Date of Registration</label>
+                                <input id="dateOfRegistration" name="dateOfRegistration" type="date" class="input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section B - Donor Details -->
+                    <div class="border rounded-md p-4 bg-white mb-4">
+                        <h4 class="font-medium mb-3 text-gray-800 border-b pb-2">Section B - Donor (Giver) Details</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <label for="donorPhone" class="label">Phone/Email</label>
+                                <input id="donorPhone" name="donorPhone" class="input" placeholder="Enter phone/email">
+                            </div>
+                            <div class="space-y-2">
+                                <label for="donorNationality" class="label">Nationality</label>
+                                <input id="donorNationality" name="donorNationality" class="input" placeholder="Enter nationality">
+                            </div>
+                            <div class="space-y-2">
+                                <label for="donorIdDocument" class="label">Identification Document</label>
+                                <select id="donorIdDocument" name="donorIdDocument" class="select">
+                                    <option value="">Select ID Type</option>
+                                    <option value="National ID">National ID</option>
+                                    <option value="International Passport">International Passport</option>
+                                    <option value="Driver's License">Driver's License</option>
+                                    <option value="Voter's Card">Voter's Card</option>
+                                </select>
+                            </div>
+                            <div class="space-y-2">
+                                <label for="donorIdNumber" class="label">ID Number</label>
+                                <input id="donorIdNumber" name="donorIdNumber" class="input" placeholder="Enter ID number">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section C - Donee Details -->
+                    <div class="border rounded-md p-4 bg-white mb-4">
+                        <h4 class="font-medium mb-3 text-gray-800 border-b pb-2">Section C - Donee (Receiver) Details</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <label for="doneePhone" class="label">Phone/Email</label>
+                                <input id="doneePhone" name="doneePhone" class="input" placeholder="Enter phone/email">
+                            </div>
+                            <div class="space-y-2">
+                                <label for="doneeNationality" class="label">Nationality</label>
+                                <input id="doneeNationality" name="doneeNationality" class="input" placeholder="Enter nationality">
+                            </div>
+                            <div class="space-y-2">
+                                <label for="doneeIdDocument" class="label">Identification Document</label>
+                                <select id="doneeIdDocument" name="doneeIdDocument" class="select">
+                                    <option value="">Select ID Type</option>
+                                    <option value="National ID">National ID</option>
+                                    <option value="International Passport">International Passport</option>
+                                    <option value="Driver's License">Driver's License</option>
+                                    <option value="Voter's Card">Voter's Card</option>
+                                </select>
+                            </div>
+                            <div class="space-y-2">
+                                <label for="doneeIdNumber" class="label">ID Number</label>
+                                <input id="doneeIdNumber" name="doneeIdNumber" class="input" placeholder="Enter ID number">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section D - Gifted Property Information -->
+                    <div class="border rounded-md p-4 bg-white mb-4">
+                        <h4 class="font-medium mb-3 text-gray-800 border-b pb-2">Section D - Gifted Property Information</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <label for="surveyPlanNo" class="label">Survey Plan No.</label>
+                                <input id="surveyPlanNo" name="surveyPlanNo" class="input" placeholder="Enter survey plan number">
+                            </div>
+                            <div class="space-y-2">
+                                <label for="propertySize" class="label">Size (m²/Ha)</label>
+                                <input id="propertySize" name="propertySize" class="input" placeholder="Enter property size">
+                            </div>
+                            <div class="space-y-2">
+                                <label for="consideration" class="label">Consideration</label>
+                                <input id="consideration" name="consideration" class="input" placeholder="Enter consideration (usually 'Love and Affection')">
+                            </div>
+                            <div class="space-y-2">
+                                <label for="encumbrances" class="label">Encumbrances (if any)</label>
+                                <input id="encumbrances" name="encumbrances" class="input" placeholder="Enter any encumbrances">
+                            </div>
+                            <div class="space-y-2 md:col-span-2">
+                                <label for="supportingDocs" class="label">Supporting Docs</label>
+                                <textarea id="supportingDocs" name="supportingDocs" class="textarea" placeholder="List supporting documents"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section E - Registration -->
+                    <div class="border rounded-md p-4 bg-white mb-4">
+                        <h4 class="font-medium mb-3 text-gray-800 border-b pb-2">Section E - Registration</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <label for="registrarName" class="label">Registrar's Name</label>
+                                <input id="registrarName" name="registrarName" class="input" placeholder="Enter registrar's name">
+                            </div>
+                            <div class="space-y-2">
+                                <label for="registrarSignature" class="label">Registrar's Signature</label>
+                                <input id="registrarSignature" name="registrarSignature" class="input" placeholder="Registrar's signature reference">
+                            </div>
+                            <div class="space-y-2">
+                                <label for="registrationDate" class="label">Registration Date</label>
+                                <input id="registrationDate" name="registrationDate" type="date" class="input">
+                            </div>
+                            <div class="space-y-2">
+                                <label for="volumePageNo" class="label">Volume & Page No.</label>
+                                <input id="volumePageNo" name="volumePageNo" class="input" placeholder="Enter volume and page number">
+                            </div>
+                            <div class="space-y-2 md:col-span-2">
+                                <label for="blockchainHash" class="label">Blockchain Hash (if applicable)</label>
+                                <input id="blockchainHash" name="blockchainHash" class="input" placeholder="Enter blockchain hash if applicable">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
             default:
                 // For any new types not handled above, leave blank or add a comment
                 break;
@@ -322,7 +476,7 @@
         updatePartyLabels(instrumentType);
         renderInstrumentSpecificFields(instrumentType);
         
-        // Auto-set grantor for ST Assignment and Sectional Titling CofO
+        // Auto-set grantor for Occupancy Permit and other instruments with autoSetGrantor
         if (type.autoSetGrantor) {
             const firstPartyNameField = document.getElementById('firstPartyName');
             if (firstPartyNameField) {
@@ -350,6 +504,14 @@
                     field.style.cursor = 'not-allowed';
                 }
             });
+            
+            // Hide solicitor section for Occupancy Permit
+            if (instrumentType === 'occupancy-permit') {
+                const solicitorSection = document.getElementById('solicitor-section');
+                if (solicitorSection) {
+                    solicitorSection.style.display = 'none';
+                }
+            }
         } else {
             // Reset fields for other instrument types
             const firstPartyNameField = document.getElementById('firstPartyName');
@@ -370,6 +532,12 @@
                     field.style.cursor = '';
                 }
             });
+            
+            // Show solicitor section for other instruments
+            const solicitorSection = document.getElementById('solicitor-section');
+            if (solicitorSection) {
+                solicitorSection.style.display = 'block';
+            }
         }
         
         // Show/hide registration number sections based on whether instrument needs Root Reg
@@ -411,6 +579,12 @@
         const registrationDetailsSection = document.getElementById('registration-details-section');
         if (registrationDetailsSection) {
             registrationDetailsSection.classList.remove('hidden');
+        }
+        
+        // Show solicitor section
+        const solicitorSection = document.getElementById('solicitor-section');
+        if (solicitorSection) {
+            solicitorSection.style.display = 'block';
         }
         
         // Reset checkboxes to unchecked state

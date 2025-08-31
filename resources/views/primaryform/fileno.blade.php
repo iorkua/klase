@@ -459,7 +459,7 @@
 
         if (prefix && number) {
             // Pad to 5 digits
-            number = number.padStart(5, '0');
+            number = number.padStart(5, '');
             numberEl.value = number;
             const formatted = prefix + ' ' + number;
             previewEl.value = formatted;

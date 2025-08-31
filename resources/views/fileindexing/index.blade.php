@@ -96,6 +96,38 @@
               <!-- File items will be populated here by JavaScript -->
             </div>
           </div>
+
+          <!-- Pagination for File Index -->
+          <div class="flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6 mt-4" id="pending-pagination" style="display: none;">
+            <div class="flex-1 flex justify-between sm:hidden">
+              <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" id="pending-prev-mobile">
+                Previous
+              </button>
+              <button class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" id="pending-next-mobile">
+                Next
+              </button>
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p class="text-sm text-gray-700">
+                  Showing <span class="font-medium" id="pending-start">1</span> to <span class="font-medium" id="pending-end">10</span> of <span class="font-medium" id="pending-total">0</span> results
+                </p>
+              </div>
+              <div>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination" id="pending-pagination-nav">
+                  <button class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50" id="pending-prev">
+                    <span class="sr-only">Previous</span>
+                    <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                  </button>
+                  <!-- Page numbers will be inserted here by JavaScript -->
+                  <button class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50" id="pending-next">
+                    <span class="sr-only">Next</span>
+                    <i data-lucide="chevron-right" class="h-4 w-4"></i>
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -336,6 +368,38 @@
               </tbody>
             </table>
           </div>
+
+          <!-- Pagination for Indexed Files -->
+          <div class="flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6 mt-4" id="indexed-pagination" style="display: none;">
+            <div class="flex-1 flex justify-between sm:hidden">
+              <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" id="indexed-prev-mobile">
+                Previous
+              </button>
+              <button class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" id="indexed-next-mobile">
+                Next
+              </button>
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p class="text-sm text-gray-700">
+                  Showing <span class="font-medium" id="indexed-start">1</span> to <span class="font-medium" id="indexed-end">10</span> of <span class="font-medium" id="indexed-total">0</span> results
+                </p>
+              </div>
+              <div>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination" id="indexed-pagination-nav">
+                  <button class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50" id="indexed-prev">
+                    <span class="sr-only">Previous</span>
+                    <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                  </button>
+                  <!-- Page numbers will be inserted here by JavaScript -->
+                  <button class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50" id="indexed-next">
+                    <span class="sr-only">Next</span>
+                    <i data-lucide="chevron-right" class="h-4 w-4"></i>
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
         </div>
         <div id="indexed-card-footer" class="flex justify-between items-center p-6 border-t" style="display: none;">
           <button class="btn btn-outline" id="index-more-files">
@@ -371,9 +435,10 @@
 
         <!-- Footer -->
         @include('admin.footer')
-    </div>
+</div>
+{{-- Debug JS for testing --}}
+    @include('fileindexing.js.debug')
+    
     {{-- Existing File Indexing JS --}}
     @include('fileindexing.js.javascript')
-    {{-- Include new File Index Dialog JS (after the existing JS so it overrides dialog handlers) --}}
-    @include('fileindexing.js.FileIndexDialog_js')
 @endsection

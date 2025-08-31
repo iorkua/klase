@@ -822,19 +822,24 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'propertycard'], func
 });
 
 // File Indexing routes - Dynamic API endpoints
+// File Indexing API routes (require authentication for AJAX calls)
+Route::group(['middleware' => ['web', 'auth', 'XSS'], 'prefix' => 'fileindexing'], function () {
+    // API endpoints for dynamic data
+    Route::get('/api/pending-files', [App\Http\Controllers\FileIndexController::class, 'getPendingFiles'])->name('fileindexing.api.pending-files');
+    Route::get('/api/indexed-files', [App\Http\Controllers\FileIndexController::class, 'getIndexedFiles'])->name('fileindexing.api.indexed-files');
+    Route::get('/api/selected-files-for-ai-insights', [App\Http\Controllers\FileIndexController::class, 'getSelectedFilesForAiInsights'])->name('fileindexing.api.selected-files-for-ai-insights');
+});
+
 Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'fileindexing'], function () {
     Route::get('/', [App\Http\Controllers\FileIndexController::class, 'index'])->name('fileindexing.index');
     Route::get('/create', [App\Http\Controllers\FileIndexController::class, 'create'])->name('fileindexing.create');
     Route::post('/store', [App\Http\Controllers\FileIndexController::class, 'store'])->name('fileindexing.store');
-    
-    // API endpoints for dynamic data (specific routes first)
-    Route::get('/api/pending-files', [App\Http\Controllers\FileIndexController::class, 'getPendingFiles'])->name('fileindexing.api.pending-files');
-    Route::get('/api/indexed-files', [App\Http\Controllers\FileIndexController::class, 'getIndexedFiles'])->name('fileindexing.api.indexed-files');
-    Route::get('/api/selected-files-for-ai-insights', [App\Http\Controllers\FileIndexController::class, 'getSelectedFilesForAiInsights'])->name('fileindexing.api.selected-files-for-ai-insights');
+
+    // Other authenticated routes
     Route::get('/search-applications', [App\Http\Controllers\FileIndexController::class, 'searchApplications'])->name('fileindexing.search-applications');
     Route::get('/check-file-status', [App\Http\Controllers\FileIndexController::class, 'checkFileStatus'])->name('fileindexing.check-file-status');
     Route::get('/list', [App\Http\Controllers\FileIndexController::class, 'getFileIndexingList'])->name('fileindexing.list');
-    
+
     // Tracking sheet generation routes (specific routes before parameterized routes)
     Route::get('/batch-tracking-sheet', [App\Http\Controllers\FileIndexController::class, 'generateBatchTrackingSheet'])->name('fileindexing.batch-tracking-sheet');
     Route::get('/tracking-sheet/{id}', [App\Http\Controllers\FileIndexController::class, 'generateTrackingSheet'])->name('fileindexing.tracking-sheet');
@@ -866,7 +871,6 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'filetracker'], funct
     Route::get('/get-indexed-files', [App\Http\Controllers\FileTrackerController::class, 'getIndexedFiles'])->name('filetracker.get-indexed-files');
 });
 
-// Scanning Integration
 Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'scanning'], function () {
     Route::get('/', [App\Http\Controllers\ScanningController::class, 'index'])->name('scanning.index');
     Route::post('/upload', [App\Http\Controllers\ScanningController::class, 'upload'])->name('scanning.upload');
@@ -876,6 +880,7 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'scanning'], function
     Route::get('/{id}/details', [App\Http\Controllers\ScanningController::class, 'details'])->name('scanning.details');
     Route::put('/{id}/update', [App\Http\Controllers\ScanningController::class, 'updateDetails'])->name('scanning.update');
     Route::delete('/{id}', [App\Http\Controllers\ScanningController::class, 'delete'])->name('scanning.delete');
+    Route::post('/upload-more/{fileIndexingId}', [App\Http\Controllers\ScanningController::class, 'uploadMore'])->name('scanning.upload-more');
 });
 
 // Page Typing Integration

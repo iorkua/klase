@@ -258,6 +258,17 @@ class FileIndexController extends Controller
     private function storeBulkEntries(Request $request)
     {
         try {
+            // Check if this is AI indexing based on source field
+            $entries = $request->input('bulk_entries', []);
+            $isAiIndexing = !empty($entries) && 
+                           collect($entries)->every(function($entry) {
+                               return ($entry['source'] ?? '') === 'AI_Indexing';
+                           });
+
+            if ($isAiIndexing) {
+                return $this->storeAiIndexedBulkEntries($request);
+            }
+
             $validator = Validator::make($request->all(), [
                 'bulk_entries' => 'required|array|min:1',
                 'bulk_entries.*.scanning_id' => 'required|integer',
@@ -335,6 +346,115 @@ class FileIndexController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error creating bulk file indexing entries: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Store AI-processed bulk entries (no scanning_id required)
+     */
+    private function storeAiIndexedBulkEntries(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'bulk_entries' => 'required|array|min:1',
+                'bulk_entries.*.file_number' => 'required|string|max:255',
+                'bulk_entries.*.file_title' => 'required|string|max:255',
+                'bulk_entries.*.plot_number' => 'nullable|string|max:100',
+                'bulk_entries.*.land_use_type' => 'nullable|string|max:100',
+                'bulk_entries.*.district' => 'nullable|string|max:100',
+                'bulk_entries.*.source' => 'nullable|string',
+                'bulk_entries.*.extracted_metadata' => 'nullable|array',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $entries = $request->input('bulk_entries');
+            $createdCount = 0;
+            $errors = [];
+            $createdFiles = [];
+
+            foreach ($entries as $entry) {
+                try {
+                    // Check if this file number already exists
+                    $existingFile = FileIndexing::on('sqlsrv')
+                        ->where('file_number', $entry['file_number'])
+                        ->first();
+
+                    if ($existingFile) {
+                        $errors[] = "File number {$entry['file_number']} already exists";
+                        continue;
+                    }
+
+                    $fileIndexing = FileIndexing::on('sqlsrv')->create([
+                        'file_number' => $entry['file_number'],
+                        'file_title' => $entry['file_title'],
+                        'plot_number' => $entry['plot_number'] ?? null,
+                        'land_use_type' => $entry['land_use_type'] ?? 'Residential',
+                        'district' => $entry['district'] ?? null,
+                        'lga' => null,
+                        'has_cofo' => false,
+                        'is_merged' => false,
+                        'has_transaction' => false,
+                        'is_problematic' => false,
+                        'is_co_owned_plot' => false,
+                        'created_by' => Auth::id(),
+                        'updated_by' => Auth::id(),
+                        'workflow_status' => 'ai_indexed',
+                    ]);
+
+                    $createdCount++;
+                    $createdFiles[] = [
+                        'id' => $fileIndexing->id,
+                        'file_number' => $fileIndexing->file_number,
+                        'file_title' => $fileIndexing->file_title
+                    ];
+
+                    Log::info('AI-indexed file created', [
+                        'file_indexing_id' => $fileIndexing->id,
+                        'file_number' => $fileIndexing->file_number,
+                        'source' => $entry['source'] ?? 'AI_Indexing',
+                        'extracted_metadata' => $entry['extracted_metadata'] ?? null,
+                        'created_by' => Auth::id()
+                    ]);
+
+                } catch (Exception $e) {
+                    $errors[] = "Error creating entry for {$entry['file_title']}: " . $e->getMessage();
+                    Log::error('Error creating AI-indexed file entry', [
+                        'entry' => $entry,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            $message = "Successfully processed {$createdCount} AI-indexed files";
+            if (!empty($errors)) {
+                $message .= " with " . count($errors) . " errors";
+            }
+
+            return response()->json([
+                'success' => $createdCount > 0,
+                'message' => $message,
+                'created_count' => $createdCount,
+                'created_files' => $createdFiles,
+                'errors' => $errors
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error creating AI-indexed bulk entries', [
+                'error' => $e->getMessage(),
+                'request_data' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error creating AI-indexed files: ' . $e->getMessage()
             ], 500);
         }
     }

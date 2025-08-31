@@ -27,6 +27,37 @@
       <span>View Other Departments</span>
       </a>
    </li>
+      @php
+         $isPlanningApproved = ($app->planning_recommendation_status ?? '') === 'Approved';
+         $isDirectorApproved = ($app->application_status ?? '') === 'Approved';
+      @endphp
+
+      <li>
+         @if($isPlanningApproved)
+         <a href="{{ route('sub-actions.recommendation', $app->id) }}" class="block w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
+            <i data-lucide="eye" class="w-4 h-4 text-blue-600"></i>
+            <span>View Planning Recommendation</span>
+         </a>
+         @else
+         <button type="button" class="block w-full text-left px-4 py-2 flex items-center space-x-2 cursor-not-allowed opacity-50" disabled>
+            <i data-lucide="eye" class="w-4 h-4 text-gray-400"></i>
+            <span class="text-gray-400">View Planning Recommendation</span>
+         </button>
+         @endif
+      </li>
+      <li>
+         @if($isDirectorApproved)
+         <a href="{{ route('sub-actions.director-approval', $app->id) }}?url=view" class="block w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
+            <i data-lucide="eye" class="w-4 h-4 text-blue-600"></i>
+            <span>View Director's Approval</span>
+         </a>
+         @else
+         <button type="button" class="block w-full text-left px-4 py-2 flex items-center space-x-2 cursor-not-allowed opacity-50" disabled>
+            <i data-lucide="eye" class="w-4 h-4 text-gray-400"></i>
+            <span class="text-gray-400">View Director's Approval</span>
+         </button>
+         @endif
+      </li>
       <li>
          <button type="button" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
             onclick="openERegistryModal(

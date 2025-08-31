@@ -15,7 +15,7 @@ class PrimaryFormController extends Controller
 {
     public function index()
     {
-        $PageTitle = 'Application for Sectional Titling ';
+        $PageTitle = 'Application for Sectional Title ';
         $PageDescription = 'Main Application';
 
         // Generate NP FileNo for the main application

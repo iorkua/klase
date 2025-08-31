@@ -20,51 +20,87 @@
                 <p class="text-gray-600 mb-6">Select an instrument type to capture</p>
                 
                 <!-- Instrument Type Selection - Updated Types -->
-                <div class="grid grid-cols-4 gap-3 mb-6">
+                <div class="grid grid-cols-3 gap-3 mb-6">
                     <button class="instrument-type-btn p-2 border rounded-lg text-center bg-blue-50 border-blue-200 hover:bg-blue-100" data-type="power-of-attorney">
                         <h3 class="font-medium text-blue-800">Power of Attorney</h3>
                         <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">01</span>A legal document granting authority to a person (the attorney) to act on behalf of another (the donor) in property-related matters.</p>
                     </button>
+                    <button class=" instrument-type-btn p-2 border rounded-lg text-center bg-orange-50 border-orange-200 hover:bg-orange-100\ data-type=\occupancy-permit\>
+ <h3 class=\font-medium text-orange-800\>Occupancy Permit</h3>
+ <p class=\text-xs text-black text-justify flex items-start gap-2\><span class=\inline-flex items-center justify-center w-6 h-6 bg-orange-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5\>11</span>An official document issued by Kano State Government granting permission to occupy and use a specific property or land for designated purposes.</p>
+ </button>
                     <button class="instrument-type-btn p-2 border rounded-lg text-center bg-green-50 border-green-200 hover:bg-green-100" data-type="irrevocable-power-of-attorney">
                         <h3 class="font-medium text-green-800">Irrevocable Power of Attorney</h3>
                         <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-green-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">02</span>A non-revocable legal instrument that permanently empowers the attorney to act on behalf of the donor in managing or transferring land/property rights.</p>
                     </button>
+                    <button class=" instrument-type-btn p-2 border rounded-lg text-center bg-orange-50 border-orange-200 hover:bg-orange-100\ data-type=\occupancy-permit\>
+ <h3 class=\font-medium text-orange-800\>Occupancy Permit</h3>
+ <p class=\text-xs text-black text-justify flex items-start gap-2\><span class=\inline-flex items-center justify-center w-6 h-6 bg-orange-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5\>11</span>An official document issued by Kano State Government granting permission to occupy and use a specific property or land for designated purposes.</p>
+ </button>
                     <button class="instrument-type-btn p-2 border rounded-lg text-center bg-purple-50 border-purple-200 hover:bg-purple-100" data-type="deed-of-mortgage">
                         <h3 class="font-medium text-purple-800">Deed of Mortgage</h3>
                         <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-purple-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">03</span>A formal agreement used to secure a loan against landed property, with the lender holding interest until full repayment.</p>
                     </button>
+                    <button class=" instrument-type-btn p-2 border rounded-lg text-center bg-orange-50 border-orange-200 hover:bg-orange-100\ data-type=\occupancy-permit\>
+ <h3 class=\font-medium text-orange-800\>Occupancy Permit</h3>
+ <p class=\text-xs text-black text-justify flex items-start gap-2\><span class=\inline-flex items-center justify-center w-6 h-6 bg-orange-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5\>11</span>An official document issued by Kano State Government granting permission to occupy and use a specific property or land for designated purposes.</p>
+ </button>
                     <button class="instrument-type-btn p-2 border rounded-lg text-center bg-red-50 border-red-200 hover:bg-red-100" data-type="tripartite-mortgage">
                         <h3 class="font-medium text-red-800">Tripartite Mortgage</h3>
                         <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-red-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">04</span>A three-party agreement involving the borrower, lender, and property owner, typically used where the borrower is not the titleholder.</p>
                     </button>
+                    <button class=" instrument-type-btn p-2 border rounded-lg text-center bg-orange-50 border-orange-200 hover:bg-orange-100\ data-type=\occupancy-permit\>
+ <h3 class=\font-medium text-orange-800\>Occupancy Permit</h3>
+ <p class=\text-xs text-black text-justify flex items-start gap-2\><span class=\inline-flex items-center justify-center w-6 h-6 bg-orange-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5\>11</span>An official document issued by Kano State Government granting permission to occupy and use a specific property or land for designated purposes.</p>
+ </button>
                     <button class="instrument-type-btn p-2 border rounded-lg text-center bg-yellow-50 border-yellow-200 hover:bg-yellow-100" data-type="deed-of-assignment">
                         <h3 class="font-medium text-yellow-800">Deed of Assignment</h3>
                         <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-yellow-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">05</span>A document that legally transfers ownership of an interest in land or property from one party (assignor) to another (assignee).</p>
                     </button>
+                    <button class=" instrument-type-btn p-2 border rounded-lg text-center bg-orange-50 border-orange-200 hover:bg-orange-100\ data-type=\occupancy-permit\>
+ <h3 class=\font-medium text-orange-800\>Occupancy Permit</h3>
+ <p class=\text-xs text-black text-justify flex items-start gap-2\><span class=\inline-flex items-center justify-center w-6 h-6 bg-orange-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5\>11</span>An official document issued by Kano State Government granting permission to occupy and use a specific property or land for designated purposes.</p>
+ </button>
                     <button class="instrument-type-btn p-2 border rounded-lg text-center bg-indigo-50 border-indigo-200 hover:bg-indigo-100" data-type="deed-of-lease">
                         <h3 class="font-medium text-indigo-800">Deed of Lease</h3>
                         <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-indigo-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">06</span>A contractual document that grants possession and use of land or property to a lessee for a specified period under agreed terms.</p>
                     </button>
+                    <button class=" instrument-type-btn p-2 border rounded-lg text-center bg-orange-50 border-orange-200 hover:bg-orange-100\ data-type=\occupancy-permit\>
+ <h3 class=\font-medium text-orange-800\>Occupancy Permit</h3>
+ <p class=\text-xs text-black text-justify flex items-start gap-2\><span class=\inline-flex items-center justify-center w-6 h-6 bg-orange-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5\>11</span>An official document issued by Kano State Government granting permission to occupy and use a specific property or land for designated purposes.</p>
+ </button>
                     <button class="instrument-type-btn p-2 border rounded-lg text-center bg-pink-50 border-pink-200 hover:bg-pink-100" data-type="deed-of-sub-lease">
                         <h3 class="font-medium text-pink-800">Deed of Sub-Lease</h3>
                         <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-pink-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">07</span>An agreement where a lessee (not the owner) leases part or all of the leased property to another party.</p>
                     </button>
+                    <button class=" instrument-type-btn p-2 border rounded-lg text-center bg-orange-50 border-orange-200 hover:bg-orange-100\ data-type=\occupancy-permit\>
+ <h3 class=\font-medium text-orange-800\>Occupancy Permit</h3>
+ <p class=\text-xs text-black text-justify flex items-start gap-2\><span class=\inline-flex items-center justify-center w-6 h-6 bg-orange-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5\>11</span>An official document issued by Kano State Government granting permission to occupy and use a specific property or land for designated purposes.</p>
+ </button>
                     <button class="instrument-type-btn p-2 border rounded-lg text-center bg-lime-50 border-lime-200 hover:bg-lime-100" data-type="deed-of-surrender-release">
                         <h3 class="font-medium text-lime-800">Deed of Surrender/Release</h3>
                         <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-lime-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">08</span>A legal agreement in which a tenant voluntarily returns possession of property to the landlord, or a document that discharges a party from a previous claim or mortgage on a property.</p>
                     </button>
+                    <button class=" instrument-type-btn p-2 border rounded-lg text-center bg-orange-50 border-orange-200 hover:bg-orange-100\ data-type=\occupancy-permit\>
+ <h3 class=\font-medium text-orange-800\>Occupancy Permit</h3>
+ <p class=\text-xs text-black text-justify flex items-start gap-2\><span class=\inline-flex items-center justify-center w-6 h-6 bg-orange-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5\>11</span>An official document issued by Kano State Government granting permission to occupy and use a specific property or land for designated purposes.</p>
+ </button>
                     <button class="instrument-type-btn p-2 border rounded-lg text-center bg-slate-50 border-slate-200 hover:bg-slate-100" data-type="devolution-order">
                         <h3 class="font-medium text-slate-800">Devolution Order</h3>
                         <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-slate-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">09</span>A court-issued legal instrument used to transfer property ownership from a deceased person's estate to their rightful heirs or beneficiaries.</p>
                     </button>
+                    <button class=" instrument-type-btn p-2 border rounded-lg text-center bg-orange-50 border-orange-200 hover:bg-orange-100\ data-type=\occupancy-permit\>
+ <h3 class=\font-medium text-orange-800\>Occupancy Permit</h3>
+ <p class=\text-xs text-black text-justify flex items-start gap-2\><span class=\inline-flex items-center justify-center w-6 h-6 bg-orange-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5\>11</span>An official document issued by Kano State Government granting permission to occupy and use a specific property or land for designated purposes.</p>
+ </button>
                     <button class="instrument-type-btn p-2 border rounded-lg text-center bg-emerald-50 border-emerald-200 hover:bg-emerald-100" data-type="deed-of-gift">
                         <h3 class="font-medium text-emerald-800">Deed of Gift</h3>
                         <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-emerald-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">10</span>A legal document that transfers ownership of property from a donor (giver) to a donee (receiver) without monetary consideration, typically as a gift.</p>
                     </button>
-                    <button class="instrument-type-btn p-2 border rounded-lg text-center bg-orange-50 border-orange-200 hover:bg-orange-100" data-type="occupancy-permit">
-                        <h3 class="font-medium text-orange-800">Occupancy Permit</h3>
-                        <p class="text-xs text-black text-justify flex items-start gap-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-orange-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5">11</span>An official document issued by Kano State Government granting permission to occupy and use a specific property or land for designated purposes.</p>
-                    </button>
+                    <button class=" instrument-type-btn p-2 border rounded-lg text-center bg-orange-50 border-orange-200 hover:bg-orange-100\ data-type=\occupancy-permit\>
+ <h3 class=\font-medium text-orange-800\>Occupancy Permit</h3>
+ <p class=\text-xs text-black text-justify flex items-start gap-2\><span class=\inline-flex items-center justify-center w-6 h-6 bg-orange-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5\>11</span>An official document issued by Kano State Government granting permission to occupy and use a specific property or land for designated purposes.</p>
+ </button>
                 </div>
             </div>
         </div>
@@ -75,7 +111,7 @@
         <div class="dialog-content animate-fade-in">
             <div class="p-6 border-b flex items-center justify-between">
                 <div>
-                    <h2 id="dialog-title" class="text-lg font-semibold">Capture Instrument</h2>
+                    <h2 id="dialog-title" class="text-lg font-semibold">Register Instrument</h2>
                     <p class="text-sm text-gray-600">Enter the details for the new instrument</p>
                 </div>
                 <button type="button" class="btn btn-ghost btn-sm" onclick="closeRegistrationDialog()" aria-label="Close">
@@ -114,6 +150,10 @@
                                 </svg>
                                 <span x-text="showManualEntry ? 'Use Smart Selector' : 'Enter Fileno manually'"></span>
                             </button>
+                    <button class=" instrument-type-btn p-2 border rounded-lg text-center bg-orange-50 border-orange-200 hover:bg-orange-100\ data-type=\occupancy-permit\>
+ <h3 class=\font-medium text-orange-800\>Occupancy Permit</h3>
+ <p class=\text-xs text-black text-justify flex items-start gap-2\><span class=\inline-flex items-center justify-center w-6 h-6 bg-orange-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5\>11</span>An official document issued by Kano State Government granting permission to occupy and use a specific property or land for designated purposes.</p>
+ </button>
                         </div>
                         
                         <!-- Smart File Number Selector (Default) -->
@@ -152,6 +192,10 @@
                                 <i data-lucide="refresh-ccw" class="h-4 w-4 mr-1"></i>
                                 Generate
                             </button>
+                    <button class=" instrument-type-btn p-2 border rounded-lg text-center bg-orange-50 border-orange-200 hover:bg-orange-100\ data-type=\occupancy-permit\>
+ <h3 class=\font-medium text-orange-800\>Occupancy Permit</h3>
+ <p class=\text-xs text-black text-justify flex items-start gap-2\><span class=\inline-flex items-center justify-center w-6 h-6 bg-orange-600 text-white rounded-full text-xs font-bold flex-shrink-0 mt-0.5\>11</span>An official document issued by Kano State Government granting permission to occupy and use a specific property or land for designated purposes.</p>
+ </button>
                         </div>
                         <p class="text-xs text-gray-500">Click Generate to auto-fill next Serial/Page/Volume.</p>
                     </div>  
@@ -234,7 +278,7 @@
                 </div>
 
                 <!-- Solicitor Information Section -->
-                <div id="solicitor-section" class="border rounded-md p-4 bg-gray-50">
+                <div class="border rounded-md p-4 bg-gray-50">
                     <h3 class="text-lg font-medium mb-3">Solicitor Information</h3>
                     
                     <div class="space-y-2 mb-4">

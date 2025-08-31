@@ -179,13 +179,15 @@ class ScanningController extends Controller
                     $documentType = $documentTypes[$index] ?? $this->detectDocumentType($originalName);
                     $documentNotes = $notes[$index] ?? null;
                     
-                    // Generate unique filename for storage
+                    // Generate incremental ScanId
+                    $existingCount = \App\Models\Scanning::where('file_indexing_id', $fileIndexingId)->count();
+                    $scanId = str_pad($existingCount + $index + 1, 4, '0', STR_PAD_LEFT);
                     $extension = $document->getClientOriginalExtension();
-                    $filename = time() . '_' . $index . '_' . uniqid() . '.' . $extension;
+                    $filename = $fileIndexing->file_number . '_' . $scanId . '.' . $extension;
                     
                     // Store file
                     $path = $document->storeAs(
-                        'scanned_documents/' . $fileIndexingId, 
+                        'EDMS/SCAN_UPLOAD/' . $fileIndexing->file_number, 
                         $filename, 
                         'public'
                     );

@@ -147,6 +147,13 @@
                                                     <textarea class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500" id="decommissioningReason" name="decommissioning_reason" rows="3" required placeholder="Enter the reason for decommissioning this file..."></textarea>
                                                 </div>
                                             </div>
+                                            <div>
+                                                <label for="decommissionedBy" class="block text-sm font-medium text-gray-700 mb-2">
+                                                    <i data-lucide="user" class="w-4 h-4 inline mr-1"></i>
+                                                    Decommissioned By
+                                                </label>
+                                                <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" id="decommissionedBy" name="decommissioned_by" value="{{ auth()->user()->first_name }} {{ auth()->user()->last_name }}" readonly>
+                                            </div>
                                             <div class="flex items-center space-x-3">
                                                 <button type="submit" class="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
                                                     <i data-lucide="archive" class="w-4 h-4 mr-2"></i>
@@ -659,7 +666,7 @@
             });
 
             $.ajax({
-                url: `/file-decommissioning/decommissioned-file-details/${fileId}`,
+                url: `/file-decommissioning/decommissioned-details/${fileId}`,
                 type: 'GET',
                 success: function(response) {
                     if (response.success) {

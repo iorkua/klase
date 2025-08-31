@@ -110,6 +110,42 @@ class InstrumentController extends Controller
                 'updated_at' => $now,
             ];
             
+            // Add Deed of Gift specific fields if the instrument type is Deed of Gift
+            if ($request->instrument_type === 'Deed of Gift') {
+                $data = array_merge($data, [
+                    // Section A - Instrument Metadata
+                    'instrumentNo' => $request->instrumentNo,
+                    'landUse' => $request->landUse,
+                    'dateOfExecution' => $request->dateOfExecution ? date('Y-m-d', strtotime($request->dateOfExecution)) : null,
+                    'dateOfRegistration' => $request->dateOfRegistration ? date('Y-m-d', strtotime($request->dateOfRegistration)) : null,
+                    
+                    // Section B - Donor (Giver) Details
+                    'donorPhone' => $request->donorPhone,
+                    'donorNationality' => $request->donorNationality,
+                    'donorIdDocument' => $request->donorIdDocument,
+                    'donorIdNumber' => $request->donorIdNumber,
+                    
+                    // Section C - Donee (Receiver) Details
+                    'doneePhone' => $request->doneePhone,
+                    'doneeNationality' => $request->doneeNationality,
+                    'doneeIdDocument' => $request->doneeIdDocument,
+                    'doneeIdNumber' => $request->doneeIdNumber,
+                    
+                    // Section D - Gifted Property Information
+                    'surveyPlanNo' => $request->surveyPlanNo,
+                    'propertySize' => $request->propertySize,
+                    'consideration' => $request->consideration,
+                    'encumbrances' => $request->encumbrances,
+                    'supportingDocs' => $request->supportingDocs,
+                    
+                    // Section E - Registration
+                    'registrarName' => $request->registrarName,
+                    'registrarSignature' => $request->registrarSignature,
+                    'volumePageNo' => $request->volumePageNo,
+                    'blockchainHash' => $request->blockchainHash,
+                ]);
+            }
+            
             // Check if table exists
             $tableExists = DB::connection('sqlsrv')->select("SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'instrument_registration'");
             
