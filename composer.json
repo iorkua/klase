@@ -6,6 +6,8 @@
     "license": "MIT",
     "require": {
         "php": "^8.0.2",
+        "setasign/fpdf": "1.8.*",
+        "setasign/fpdi": "^2.6.4",
         "anhskohbo/no-captcha": "^3.5",
         "bacon/bacon-qr-code": "^3.0",
         "doctrine/dbal": "^4.2",

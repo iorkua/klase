@@ -134,6 +134,7 @@ class SecondaryFormController extends Controller
                 'application_letter' => 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png',
                 'building_plan' => 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png',
                 'architectural_design' => 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png',
+                'survey_plan' => 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png',
                 'ownership_document' => 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png',
             ]);
 
@@ -223,7 +224,7 @@ class SecondaryFormController extends Controller
 
             // Process document uploads
             $documents = $existingApplication->documents ? json_decode($existingApplication->documents, true) : [];
-            $documentTypes = ['application_letter', 'building_plan', 'architectural_design', 'ownership_document'];
+            $documentTypes = ['application_letter', 'building_plan', 'architectural_design', 'survey_plan', 'ownership_document'];
             
             foreach ($documentTypes as $docType) {
                 if ($request->hasFile($docType)) {
@@ -415,6 +416,7 @@ class SecondaryFormController extends Controller
                 'application_letter' => 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png',
                 'building_plan' => 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png',
                 'architectural_design' => 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png',
+                'survey_plan' => 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png',
                 'ownership_document' => 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png',
             ]);
 
@@ -478,7 +480,7 @@ class SecondaryFormController extends Controller
 
             // Process document uploads
             $documents = [];
-            $documentTypes = ['application_letter', 'building_plan', 'architectural_design', 'ownership_document'];
+            $documentTypes = ['application_letter', 'building_plan', 'architectural_design', 'survey_plan', 'ownership_document'];
             
             foreach ($documentTypes as $docType) {
                 if ($request->hasFile($docType)) {

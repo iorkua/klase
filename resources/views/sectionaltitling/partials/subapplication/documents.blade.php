@@ -10,7 +10,7 @@
       <div class="mb-6">
         <div class="flex items-center mb-2">
           <i data-lucide="file-text" class="w-5 h-5 mr-2 text-green-600"></i>
-          <h3 class="text-lg font-bold">Application for Sectional Titling - Main Application</h3>
+          <h3 class="text-lg font-bold">Application for Sectional Titling -  Unit Application (Secondary)</h3>
           <div class="ml-auto flex items-center">
             <span class="text-gray-600 mr-2">Land Use:</span>
             <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">{{ $motherApplication->land_use ?? 'N/A' }}</span>
@@ -108,6 +108,26 @@
                 </div>
             </div>
             
+            <div class="border border-gray-200 rounded-md p-4">
+                <h4 class="font-medium mb-2">Survey Plan</h4>
+                <p class="text-sm text-gray-600 mb-4">Official survey plan of the property</p>
+                
+                <div class="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
+                    <div class="flex justify-center mb-2">
+                        <i data-lucide="upload" class="w-6 h-6 text-gray-400"></i>
+                    </div>
+                    <div class="flex justify-center">
+                        <input type="file" name="survey_plan" id="survey_plan" accept=".pdf,.jpg,.jpeg,.png" class="hidden" onchange="updateFileName(this, 'survey_plan_label')">
+                        <label for="survey_plan" id="survey_plan_label" class="flex items-center text-blue-600 cursor-pointer">
+                            <span>Upload Document</span>
+                        </label>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2" id="survey_plan_name">PDF, JPG or PNG (max. 5MB)</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-6 mb-6">
             <div class="border border-gray-200 rounded-md p-4">
                 <h4 class="font-medium mb-2">Ownership Document</h4>
                 <p class="text-sm text-gray-600 mb-4">Proof of ownership (CofO, deed, etc.)</p>

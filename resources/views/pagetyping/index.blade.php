@@ -463,12 +463,84 @@
 
         function getDocumentUrl(documentPath) {
           if (!documentPath) return null;
+          // Use the correct Laravel storage path
           const clean = documentPath.replace(/^\/+/, '').replace(/\\/g, '/');
-          return `{{ asset('storage') }}/${clean}`;
+          return `/storage/app/public/${clean}`;
         }
 
-        function renderDocumentPreview(scanning, containerEl) {
+        function renderPDFPagePreview(pageIndex, containerEl) {
+          if (!pdfPages[pageIndex] || !containerEl) return;
+          
+          const pageData = pdfPages[pageIndex];
+          
+          containerEl.innerHTML = `
+            <div class="w-full h-full flex flex-col">
+              <div class="flex justify-between mb-2">
+                <span class="text-sm font-medium">Page ${pageData.pageNum}</span>
+                <div class="flex items-center gap-2">
+                  <button class="btn btn-ghost btn-icon zoom-out"><i data-lucide="zoom-out" class="h-4 w-4"></i></button>
+                  <span class="text-xs zoom-level">${state.typingState.zoomLevel}%</span>
+                  <button class="btn btn-ghost btn-icon zoom-in"><i data-lucide="zoom-in" class="h-4 w-4"></i></button>
+                  <button class="btn btn-ghost btn-icon rotate"><i data-lucide="rotate-cw" class="h-4 w-4"></i></button>
+                </div>
+              </div>
+              <div class="flex-1 overflow-auto flex items-center justify-center bg-gray-50">
+                <canvas id="pdf-page-canvas" class="max-h-full max-w-full border shadow-sm"></canvas>
+              </div>
+            </div>`;
+          
+          lucide.createIcons();
+          
+          // Render the PDF page
+          renderPDFPageToCanvas(pageData.page, 'pdf-page-canvas');
+        }
+
+        async function renderPDFPageToCanvas(page, canvasId) {
+          try {
+            const scale = state.typingState.zoomLevel / 100;
+            const rotation = state.typingState.rotation;
+            
+            const viewport = page.getViewport({ scale: scale, rotation: rotation });
+            
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            
+            const renderContext = {
+              canvasContext: canvas.getContext('2d'),
+              viewport: viewport
+            };
+            
+            await page.render(renderContext).promise;
+          } catch (error) {
+            console.error('Error rendering PDF page:', error);
+            const canvas = document.getElementById(canvasId);
+            if (canvas) {
+              const ctx = canvas.getContext('2d');
+              ctx.fillStyle = '#f3f4f6';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              ctx.fillStyle = '#6b7280';
+              ctx.font = '14px Arial';
+              ctx.textAlign = 'center';
+              ctx.fillText('Error loading page preview', canvas.width / 2, canvas.height / 2);
+            }
+          }
+        }
+
+        function renderDocumentPreview(scanning, containerEl, pageIndex = null) {
           if (!scanning || !containerEl) return;
+          
+          // Check if this is a split PDF page
+          const isSplitPDFPage = pageIndex !== null && pdfPages.length > 0 && pdfPages[pageIndex];
+          
+          if (isSplitPDFPage) {
+            // Render specific PDF page
+            renderPDFPagePreview(pageIndex, containerEl);
+            return;
+          }
+          
           const url = getDocumentUrl(scanning.document_path);
           const isImg = isImageFile(scanning.original_filename);
           const isPdf = isPDFFile(scanning.original_filename);
@@ -544,13 +616,32 @@
         function updateDocumentZoom() {
           const span = document.querySelector('.zoom-level');
           const img = document.querySelector('.document-image');
+          const canvas = document.getElementById('pdf-page-canvas');
+          
           if (span) span.textContent = `${state.typingState.zoomLevel}%`;
-          if (img) img.style.transform = `scale(${state.typingState.zoomLevel / 100}) rotate(${state.typingState.rotation}deg)`;
+          
+          if (img) {
+            img.style.transform = `scale(${state.typingState.zoomLevel / 100}) rotate(${state.typingState.rotation}deg)`;
+          }
+          
+          if (canvas && state.typingState.selectedPageInFolder !== null && pdfPages[state.typingState.selectedPageInFolder]) {
+            // Re-render PDF page with new zoom
+            renderPDFPageToCanvas(pdfPages[state.typingState.selectedPageInFolder].page, 'pdf-page-canvas');
+          }
         }
 
         function updateDocumentRotation() {
           const img = document.querySelector('.document-image');
-          if (img) img.style.transform = `scale(${state.typingState.zoomLevel / 100}) rotate(${state.typingState.rotation}deg)`;
+          const canvas = document.getElementById('pdf-page-canvas');
+          
+          if (img) {
+            img.style.transform = `scale(${state.typingState.zoomLevel / 100}) rotate(${state.typingState.rotation}deg)`;
+          }
+          
+          if (canvas && state.typingState.selectedPageInFolder !== null && pdfPages[state.typingState.selectedPageInFolder]) {
+            // Re-render PDF page with new rotation
+            renderPDFPageToCanvas(pdfPages[state.typingState.selectedPageInFolder].page, 'pdf-page-canvas');
+          }
         }
 
         // UI update functions
@@ -596,6 +687,10 @@
         // Start page typing for a file
         async function startPageTyping(fileId, options = {}) {
           try {
+            // Reset PDF state for new file
+            pdfDoc = null;
+            pdfPages = [];
+            
             state.pageTypeMoreMode = !!options.pageTypeMore;
 
             // Load page typing data first
@@ -1031,6 +1126,145 @@
           }
         }
 
+        // PDF splitting functionality
+        let pdfDoc = null;
+        let pdfPages = [];
+
+        async function checkPDFAccessibility(url) {
+          try {
+            const response = await fetch(url, { method: 'HEAD' });
+            return response.ok;
+          } catch (error) {
+            console.error('Error checking PDF accessibility:', error);
+            return false;
+          }
+        }
+
+        async function loadAndSplitPDF(file) {
+          try {
+            // Find the PDF file in scannings
+            const pdfScanning = file.scannings.find(scanning => isPDFFile(scanning.original_filename));
+            if (!pdfScanning) {
+              console.log('No PDF file found in scannings');
+              return false;
+            }
+
+            const pdfUrl = getDocumentUrl(pdfScanning.document_path);
+            console.log('Attempting to load PDF from URL:', pdfUrl);
+            console.log('Original document path:', pdfScanning.document_path);
+
+            // Check if the file exists
+            const isAccessible = await checkPDFAccessibility(pdfUrl);
+            if (!isAccessible) {
+              console.error('PDF file not accessible at URL:', pdfUrl);
+              return false;
+            }
+            console.log('PDF file is accessible');
+
+            // Load PDF
+            const loadingTask = pdfjsLib.getDocument({
+              url: pdfUrl
+            });
+
+            pdfDoc = await loadingTask.promise;
+            console.log('PDF loaded successfully. Pages:', pdfDoc.numPages);
+
+            // Generate page data
+            pdfPages = [];
+            for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+              const page = await pdfDoc.getPage(pageNum);
+              pdfPages.push({
+                pageNum: pageNum,
+                page: page,
+                scanning: pdfScanning,
+                isSplitPage: true
+              });
+            }
+
+            return true;
+          } catch (error) {
+            console.error('Error loading PDF:', error);
+            console.error('Error details:', {
+              message: error.message,
+              name: error.name,
+              stack: error.stack
+            });
+            return false;
+          }
+        }
+
+        async function generatePDFPageCards(file) {
+          if (!pdfDoc || pdfPages.length === 0) return '';
+          
+          let cardsHtml = '';
+          
+          for (let i = 0; i < pdfPages.length; i++) {
+            const pageData = pdfPages[i];
+            const isProcessed = state.typingState.processedPages[i];
+            
+            cardsHtml += `
+              <div class="border rounded-md overflow-hidden cursor-pointer hover:border-blue-500 transition-colors folder-page ${isProcessed ? 'border-green-500 bg-green-50' : ''}" data-index="${i}" data-pdf-page="${pageData.pageNum}">
+                <div class="h-40 bg-muted flex items-center justify-center relative">
+                  ${isProcessed ? `<div class=\"absolute top-2 right-2 z-10\"><span class=\"badge bg-green-500 text-white\"><i data-lucide=\"check-circle\" class=\"h-3 w-3 mr-1\"></i>Typed</span></div>` : ''}
+                  <div class="pdf-page-thumbnail" data-page-num="${pageData.pageNum}">
+                    <div class="loading">Loading...</div>
+                  </div>
+                </div>
+                <div class="p-2 bg-gray-50 border-t">
+                  <div class="flex justify-between items-center">
+                    <span class="text-sm font-medium">Page ${pageData.pageNum}</span>
+                    <span class="badge badge-outline text-xs">PDF</span>
+                  </div>
+                  <div class="mt-1 text-xs text-muted-foreground">${file.file_number}-${pageData.pageNum.toString().padStart(2, '0')}</div>
+                  ${isProcessed ? `<div class=\"mt-1\"><span class=\"badge bg-blue-500 text-white text-xs w-full justify-center\">${isProcessed.page_code || 'Processed'}</span></div>` : ''}
+                </div>
+              </div>`;
+          }
+          
+          return cardsHtml;
+        }
+
+        async function generatePDFThumbnails() {
+          if (!pdfDoc || pdfPages.length === 0) return;
+          
+          for (let i = 0; i < pdfPages.length; i++) {
+            const pageData = pdfPages[i];
+            const thumbnailContainer = document.querySelector(`.pdf-page-thumbnail[data-page-num="${pageData.pageNum}"]`);
+            
+            if (thumbnailContainer) {
+              try {
+                const scale = 0.3;
+                const viewport = pageData.page.getViewport({ scale: scale });
+                
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                const renderContext = {
+                  canvasContext: context,
+                  viewport: viewport
+                };
+                
+                await pageData.page.render(renderContext).promise;
+                
+                const img = document.createElement('img');
+                img.src = canvas.toDataURL('image/jpeg', 0.7);
+                img.alt = `Page ${pageData.pageNum} thumbnail`;
+                img.className = 'max-h-full max-w-full object-contain';
+                
+                thumbnailContainer.innerHTML = '';
+                thumbnailContainer.appendChild(img);
+                
+              } catch (error) {
+                console.error(`Error generating thumbnail for page ${pageData.pageNum}:`, error);
+                thumbnailContainer.innerHTML = `<i class="h-8 w-8 text-gray-400" data-lucide="file-text"></i>`;
+                lucide.createIcons();
+              }
+            }
+          }
+        }
+
         // Render typing view with full page typing interface including CoverType
         function renderTypingView() {
           if (!elements.typingCard || !state.selectedFileData) return;
@@ -1161,7 +1395,71 @@
                 </div>
               `;
             } else {
-              // Folder view
+              // Folder view - Check for PDF and split automatically
+              let pagesHtml = '';
+              
+              // Check if there's a PDF file that needs splitting
+              const hasPDF = file.scannings.some(scanning => isPDFFile(scanning.original_filename));
+              
+              if (hasPDF && pdfPages.length === 0) {
+                // Load and split PDF automatically
+                loadAndSplitPDF(file).then(success => {
+                  if (success) {
+                    // Re-render the view with split pages
+                    renderTypingView();
+                  }
+                });
+                // Show loading state
+                pagesHtml = '<div class="col-span-full text-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p class="text-sm text-gray-500">Splitting PDF into individual pages...</p></div>';
+              } else if (pdfPages.length > 0) {
+                // Use split PDF pages
+                pagesHtml = pdfPages.map((pageData, index) => {
+                  const isProcessed = state.typingState.processedPages[index];
+                  return `
+                    <div class="border rounded-md overflow-hidden cursor-pointer hover:border-blue-500 transition-colors folder-page ${isProcessed ? 'border-green-500 bg-green-50' : ''}" data-index="${index}" data-pdf-page="${pageData.pageNum}">
+                      <div class="h-40 bg-muted flex items-center justify-center relative">
+                        ${isProcessed ? `<div class=\"absolute top-2 right-2 z-10\"><span class=\"badge bg-green-500 text-white\"><i data-lucide=\"check-circle\" class=\"h-3 w-3 mr-1\"></i>Typed</span></div>` : ''}
+                        <div class="pdf-page-thumbnail" data-page-num="${pageData.pageNum}">
+                          <div class="loading">Loading...</div>
+                        </div>
+                      </div>
+                      <div class="p-2 bg-gray-50 border-t">
+                        <div class="flex justify-between items-center">
+                          <span class="text-sm font-medium">Page ${pageData.pageNum}</span>
+                          <span class="badge badge-outline text-xs">PDF</span>
+                        </div>
+                        <div class="mt-1 text-xs text-muted-foreground">${file.file_number}-${pageData.pageNum.toString().padStart(2, '0')}</div>
+                        ${isProcessed ? `<div class=\"mt-1\"><span class=\"badge bg-blue-500 text-white text-xs w-full justify-center\">${isProcessed.page_code || 'Processed'}</span></div>` : ''}
+                      </div>
+                    </div>`;
+                }).join('');
+              } else {
+                // Use original scannings
+                pagesHtml = file.scannings.map((scanning, index) => {
+                  const isProcessed = state.typingState.processedPages[index];
+                  const url = getDocumentUrl(scanning.document_path);
+                  const img = isImageFile(scanning.original_filename);
+                  const pdf = isPDFFile(scanning.original_filename);
+                  return `
+                    <div class="border rounded-md overflow-hidden cursor-pointer hover:border-blue-500 transition-colors folder-page ${isProcessed ? 'border-green-500 bg-green-50' : ''}" data-index="${index}">
+                      <div class="h-40 bg-muted flex items-center justify-center relative">
+                        ${isProcessed ? `<div class=\"absolute top-2 right-2 z-10\"><span class=\"badge bg-green-500 text-white\"><i data-lucide=\"check-circle\" class=\"h-3 w-3 mr-1\"></i>Typed</span></div>` : ''}
+                        ${img && url ? `<img src=\"${url}\" alt=\"Page ${index + 1}\" class=\"max-h-full max-w-full object-contain\" onerror=\"this.style.display='none'; this.nextElementSibling.style.display='flex';\" />
+                          <div class=\"text-center hidden\"><i data-lucide=\"file-text\" class=\"h-8 w-8 text-gray-400 mb-2\"></i><p class=\"text-xs text-gray-500\">${scanning.original_filename}</p></div>`
+                        : `<div class=\"text-center\"><i data-lucide=\"${pdf ? 'file-text' : 'file'}\" class=\"h-8 w-8 text-gray-400 mb-2\"></i><p class=\"text-xs text-gray-500\">${scanning.original_filename}</p></div>`}
+                      </div>
+                      <div class="p-2 bg-gray-50 border-t">
+                        <div class="flex justify-between items-center">
+                          <span class="text-sm font-medium">Page ${index + 1}</span>
+                          <span class="badge badge-outline text-xs">${pdf ? 'PDF' : (img ? 'Image' : 'File')}</span>
+                        </div>
+                        <div class="mt-1 text-xs text-muted-foreground">${file.file_number}-${(index + 1).toString().padStart(2, '0')}</div>
+                        ${isProcessed ? `<div class=\"mt-1\"><span class=\"badge bg-blue-500 text-white text-xs w-full justify-center\">${isProcessed.page_code ? isProcessed.page_code : `${getCoverTypeById(isProcessed.coverType)?.code || ''}-${getPageTypeById(isProcessed.pageType)?.code || ''}-${getPageSubTypeById(isProcessed.pageType, isProcessed.pageSubType)?.code || ''}-${isProcessed.serialNo || ''}`}</span></div>` : ''}
+                      </div>
+                    </div>`;
+                }).join('');
+              }
+              
               content = `
                 ${headerContent}
                 <div class="p-6">
@@ -1172,29 +1470,7 @@
                     </div>
 
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="folder-pages">
-                      ${file.scannings.map((scanning, index) => {
-                        const isProcessed = state.typingState.processedPages[index];
-                        const url = getDocumentUrl(scanning.document_path);
-                        const img = isImageFile(scanning.original_filename);
-                        const pdf = isPDFFile(scanning.original_filename);
-                        return `
-                          <div class="border rounded-md overflow-hidden cursor-pointer hover:border-blue-500 transition-colors folder-page ${isProcessed ? 'border-green-500 bg-green-50' : ''}" data-index="${index}">
-                            <div class="h-40 bg-muted flex items-center justify-center relative">
-                              ${isProcessed ? `<div class=\"absolute top-2 right-2 z-10\"><span class=\"badge bg-green-500 text-white\"><i data-lucide=\"check-circle\" class=\"h-3 w-3 mr-1\"></i>Typed</span></div>` : ''}
-                              ${img && url ? `<img src=\"${url}\" alt=\"Page ${index + 1}\" class=\"max-h-full max-w-full object-contain\" onerror=\"this.style.display='none'; this.nextElementSibling.style.display='flex';\" />
-                                <div class=\"text-center hidden\"><i data-lucide=\"file-text\" class=\"h-8 w-8 text-gray-400 mb-2\"></i><p class=\"text-xs text-gray-500\">${scanning.original_filename}</p></div>`
-                              : `<div class=\"text-center\"><i data-lucide=\"${pdf ? 'file-text' : 'file'}\" class=\"h-8 w-8 text-gray-400 mb-2\"></i><p class=\"text-xs text-gray-500\">${scanning.original_filename}</p></div>`}
-                            </div>
-                            <div class="p-2 bg-gray-50 border-t">
-                              <div class="flex justify-between items-center">
-                                <span class="text-sm font-medium">Page ${index + 1}</span>
-                                <span class="badge badge-outline text-xs">${pdf ? 'PDF' : (img ? 'Image' : 'File')}</span>
-                              </div>
-                              <div class="mt-1 text-xs text-muted-foreground">${file.file_number}-${(index + 1).toString().padStart(2, '0')}</div>
-                              ${isProcessed ? `<div class=\"mt-1\"><span class=\"badge bg-blue-500 text-white text-xs w-full justify-center\">${isProcessed.page_code ? isProcessed.page_code : `${getCoverTypeById(isProcessed.coverType)?.code || ''}-${getPageTypeById(isProcessed.pageType)?.code || ''}-${getPageSubTypeById(isProcessed.pageType, isProcessed.pageSubType)?.code || ''}-${isProcessed.serialNo || ''}`}</span></div>` : ''}
-                            </div>
-                          </div>`;
-                      }).join('')}
+                      ${pagesHtml}
                     </div>
                   </div>
                 </div>
@@ -1205,11 +1481,24 @@
           elements.typingCard.innerHTML = content;
           lucide.createIcons();
 
+          // Generate PDF thumbnails if we have split pages
+          if (pdfPages.length > 0) {
+            generatePDFThumbnails();
+          }
+
           // Render preview if on a selected page
           if (state.typingState.selectedPageInFolder !== null) {
-            const scanning = file.scannings[state.typingState.selectedPageInFolder];
             const container = document.getElementById('document-preview-container');
-            if (container && scanning) renderDocumentPreview(scanning, container);
+            if (container) {
+              if (pdfPages.length > 0 && pdfPages[state.typingState.selectedPageInFolder]) {
+                // Render split PDF page
+                renderDocumentPreview(null, container, state.typingState.selectedPageInFolder);
+              } else {
+                // Render original scanning
+                const scanning = file.scannings[state.typingState.selectedPageInFolder];
+                if (scanning) renderDocumentPreview(scanning, container);
+              }
+            }
           }
           
           // Add event listeners

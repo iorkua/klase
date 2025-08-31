@@ -64,7 +64,7 @@
          ->first();
       @endphp
 
-      <li>
+      <li   class="hidden">
          @if($edmsFile)
          <button type="button" class="w-full text-left px-4 py-2 flex items-center space-x-2 cursor-not-allowed opacity-50" disabled>
          <i data-lucide="folder-open" class="w-4 h-4 text-gray-400"></i>
@@ -89,7 +89,7 @@ $approvalsGiven = $app->application_status === 'approved' && $app->planning_reco
 @endphp
 
 @if(!$rofoExists && $approvalsGiven)
-   <li>
+   <li  class="hidden">
       <button type="button" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
          onclick="window.location='{{ route('programmes.generate_rofo', $app->id) }}'">
          <i data-lucide="file-plus" class="w-4 h-4 text-purple-500"></i>
@@ -97,7 +97,7 @@ $approvalsGiven = $app->application_status === 'approved' && $app->planning_reco
       </button>
    </li>
 @else
-   <li>
+   <li   class="hidden">
       <button type="button" class="w-full text-left px-4 py-2 flex items-center space-x-2 cursor-not-allowed opacity-50" disabled>
          <i data-lucide="file-plus" class="w-4 h-4 text-gray-400"></i>
          <span class="text-gray-400">
@@ -120,7 +120,7 @@ $approvalsGiven = $app->application_status === 'approved' && $app->planning_reco
       @endphp
 
       @if(!$cofoExists)
-         <li>
+         <li   class="hidden">
             <button type="button" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
                onclick="window.location='{{ route('programmes.generate_cofo', $app->id) }}'">
                <i data-lucide="file-plus" class="w-4 h-4 text-purple-500"></i>
@@ -128,7 +128,7 @@ $approvalsGiven = $app->application_status === 'approved' && $app->planning_reco
             </button>
          </li>
       @else
-         <li>
+         <li   class="hidden">
             <button type="button" class="w-full text-left px-4 py-2 flex items-center space-x-2 cursor-not-allowed opacity-50" disabled>
                <i data-lucide="file-plus" class="w-4 h-4 text-gray-400"></i>
                <span class="text-gray-400"  style="font-size: 65%">Generate CofO (FrontPage)</span>

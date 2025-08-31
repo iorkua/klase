@@ -44,6 +44,8 @@ class RouteServiceProvider extends ServiceProvider
 
             Route::middleware('web')
                 ->group(base_path('routes/bills_api.php'));
+
+            // PageTyping routes removed — file no longer present
         });
     }
 

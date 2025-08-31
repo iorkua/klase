@@ -20,6 +20,8 @@ class PageTyping extends Model
         'file_path',
         'typed_by',
         'page_number',
+        'cover_type_id',
+        'source',
         'qc_status',
         'qc_reviewed_by',
         'qc_reviewed_at',
@@ -32,6 +34,7 @@ class PageTyping extends Model
     protected $casts = [
         'serial_number' => 'integer',
         'page_number' => 'integer',
+        'cover_type_id' => 'integer',
         'qc_overridden' => 'boolean',
         'has_qc_issues' => 'boolean',
         'created_at' => 'datetime',
@@ -43,6 +46,12 @@ class PageTyping extends Model
     const QC_STATUS_PENDING = 'pending';
     const QC_STATUS_PASSED = 'passed';
     const QC_STATUS_FAILED = 'failed';
+
+    // Source constants
+    const SOURCE_MANUAL = 'manual';
+    const SOURCE_PDF_SPLIT = 'pdf_split';
+    const SOURCE_IMAGE_COPY = 'image_copy';
+    const SOURCE_UPLOAD_MORE = 'upload_more';
 
     public function fileIndexing()
     {
@@ -101,7 +110,23 @@ class PageTyping extends Model
      */
     public function isPdfPage()
     {
-        return strpos($this->file_path, '#page=') !== false;
+        return $this->source === self::SOURCE_PDF_SPLIT || strpos($this->file_path, '.pdf') !== false;
+    }
+
+    /**
+     * Check if this page typing is for an image
+     */
+    public function isImagePage()
+    {
+        return $this->source === self::SOURCE_IMAGE_COPY || $this->isImageFile($this->file_path);
+    }
+
+    /**
+     * Check if this page typing is from upload more
+     */
+    public function isUploadMore()
+    {
+        return $this->source === self::SOURCE_UPLOAD_MORE;
     }
 
     /**
@@ -110,8 +135,8 @@ class PageTyping extends Model
     public function getPdfPageNumber()
     {
         if ($this->isPdfPage()) {
-            preg_match('/#page=(\d+)/', $this->file_path, $matches);
-            return isset($matches[1]) ? (int)$matches[1] : null;
+            preg_match('/page_(\d+)\.pdf/', $this->file_path, $matches);
+            return isset($matches[1]) ? (int)$matches[1] : $this->page_number;
         }
         return null;
     }
@@ -122,8 +147,68 @@ class PageTyping extends Model
     public function getBaseFilePath()
     {
         if ($this->isPdfPage()) {
-            return preg_replace('/#page=\d+/', '', $this->file_path);
+            return preg_replace('/page_\d+\.pdf/', 'combined.pdf', $this->file_path);
         }
         return $this->file_path;
+    }
+
+    /**
+     * Check if file is an image based on extension
+     */
+    private function isImageFile($filename)
+    {
+        $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff', 'tif'];
+        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        return in_array($extension, $imageExtensions);
+    }
+
+    /**
+     * Get formatted page code
+     */
+    public function getFormattedPageCode()
+    {
+        return $this->page_code ?: 'UNTYPED';
+    }
+
+    /**
+     * Get source display name
+     */
+    public function getSourceDisplayName()
+    {
+        switch ($this->source) {
+            case self::SOURCE_PDF_SPLIT:
+                return 'PDF Split';
+            case self::SOURCE_IMAGE_COPY:
+                return 'Image Copy';
+            case self::SOURCE_UPLOAD_MORE:
+                return 'Upload More';
+            case self::SOURCE_MANUAL:
+            default:
+                return 'Manual';
+        }
+    }
+
+    /**
+     * Scope for filtering by source
+     */
+    public function scopeBySource($query, $source)
+    {
+        return $query->where('source', $source);
+    }
+
+    /**
+     * Scope for filtering by QC status
+     */
+    public function scopeByQcStatus($query, $status)
+    {
+        return $query->where('qc_status', $status);
+    }
+
+    /**
+     * Scope for upload more pages
+     */
+    public function scopeUploadMore($query)
+    {
+        return $query->where('source', self::SOURCE_UPLOAD_MORE);
     }
 }

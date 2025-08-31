@@ -10,7 +10,7 @@
     <div class="mb-6">
       <div class="flex items-center mb-2">
         <i data-lucide="file-text" class="w-5 h-5 mr-2 text-green-600"></i>
-        <h3 class="text-lg font-bold">Application for Sectional Titling - Main Application</h3>
+        <h3 class="text-lg font-bold">Application for Sectional Titling -  Unit Application (Secondary)</h3>
         <div class="ml-auto flex items-center">
           <span class="text-gray-600 mr-2">Land Use:</span>
           <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">{{ $motherApplication->land_use ?? 'N/A' }}</span>
