@@ -11,6 +11,16 @@
         <div class="p-6">
             @include('scanning.assets.style')
             
+            <!-- Preview Libraries -->
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+            <script src="https://unpkg.com/pdfobject@2.2.8/pdfobject.min.js"></script>
+            <script>
+                // Configure PDF.js worker
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            </script>
+            
             <style>
                 /* Additional styles for view page */
                 .scan-card {
@@ -53,6 +63,68 @@
                         grid-template-columns: repeat(3, 1fr);
                     }
                 }
+
+                /* Enhanced preview styles */
+                .scan-card .aspect-\[3\/4\] {
+                    cursor: pointer;
+                }
+
+                .scan-card .aspect-\[3\/4\]:hover {
+                    opacity: 0.9;
+                }
+
+                /* PDF viewer styles */
+                .pdf-viewer-container {
+                    max-width: 100%;
+                }
+
+                .pdf-canvas-container {
+                    background: #f8f9fa;
+                    padding: 1rem;
+                    border-radius: 0.5rem;
+                }
+
+                #pdf-viewer-canvas {
+                    max-width: 100%;
+                    height: auto;
+                }
+
+                /* Button styles */
+                .btn {
+                    @apply inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors;
+                }
+
+                .btn-primary {
+                    @apply bg-blue-600 text-white hover:bg-blue-700;
+                }
+
+                .btn-outline {
+                    @apply border border-gray-300 bg-white text-gray-700 hover:bg-gray-50;
+                }
+
+                .btn-sm {
+                    @apply px-2 py-1 text-xs;
+                }
+
+                /* Loading animation */
+                @keyframes spin {
+                    to {
+                        transform: rotate(360deg);
+                    }
+                }
+
+                .animate-spin {
+                    animation: spin 1s linear infinite;
+                }
+
+                /* Enhanced file type icons */
+                .file-type-icon {
+                    transition: transform 0.2s ease;
+                }
+
+                .file-type-icon:hover {
+                    transform: scale(1.1);
+                }
             </style>
             
             <div class="container mx-auto py-6 space-y-6">
@@ -68,10 +140,10 @@
                                 <i data-lucide="arrow-left" class="h-4 w-4"></i>
                                 Back to Scanning
                             </a>
-                            <button class="btn btn-primary gap-2" onclick="uploadMoreScans()">
+                            <!-- <button class="btn btn-primary gap-2" onclick="uploadMoreScans()">
                                 <i data-lucide="plus-circle" class="h-4 w-4"></i>
                                 Upload More
-                            </button>
+                            </button> -->
                         </div>
                     </div>
                     
@@ -121,23 +193,102 @@
                                         @foreach($allScans as $scan)
                                             <div class="scan-card border rounded-lg overflow-hidden hover:shadow-md transition-shadow" data-scan-id="{{ $scan->id }}">
                                                 <!-- Document Preview -->
-                                                <div class="aspect-[3/4] bg-gray-100 relative">
+                                                <div class="aspect-[3/4] bg-gray-100 relative cursor-pointer" 
+                                                     onclick="viewDocument('/storage/app/public/{{ $scan->document_path }}', '{{ $scan->original_filename }}', '{{ pathinfo($scan->document_path, PATHINFO_EXTENSION) }}')">
                                                     @if(in_array(strtolower(pathinfo($scan->document_path, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'gif']))
-                                                        <img src="{{ Storage::disk('public')->url($scan->document_path) }}" 
+                                                        <img src="/storage/app/public/{{ $scan->document_path }}" 
                                                              alt="{{ $scan->original_filename }}" 
                                                              class="w-full h-full object-cover">
-                                                    @elseif(strtolower(pathinfo($scan->document_path, PATHINFO_EXTENSION)) === 'pdf')
-                                                        <div class="w-full h-full flex items-center justify-center bg-red-50">
-                                                            <div class="text-center">
-                                                                <i data-lucide="file-text" class="h-12 w-12 text-red-500 mx-auto mb-2"></i>
-                                                                <p class="text-sm text-red-700 font-medium">PDF Document</p>
+                                                        <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition-all duration-200 flex items-center justify-center">
+                                                            <div class="opacity-0 hover:opacity-100 transition-opacity">
+                                                                <i data-lucide="zoom-in" class="h-8 w-8 text-white"></i>
                                                             </div>
                                                         </div>
+                                                    @elseif(strtolower(pathinfo($scan->document_path, PATHINFO_EXTENSION)) === 'pdf')
+                                                        <div class="w-full h-full bg-red-50 relative" id="pdf-preview-{{ $scan->id }}">
+                                                            <canvas class="w-full h-full object-cover" id="pdf-canvas-{{ $scan->id }}"></canvas>
+                                                            <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition-all duration-200 flex items-center justify-center">
+                                                                <div class="opacity-0 hover:opacity-100 transition-opacity">
+                                                                    <i data-lucide="zoom-in" class="h-8 w-8 text-white"></i>
+                                                                </div>
+                                                            </div>
+                                                            <div class="absolute inset-0 flex items-center justify-center" id="pdf-loading-{{ $scan->id }}">
+                                                                <div class="text-center">
+                                                                    <i data-lucide="file-text" class="h-12 w-12 text-red-500 mx-auto mb-2"></i>
+                                                                    <p class="text-sm text-red-700 font-medium">Loading PDF...</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <script>
+                                                            // Load PDF thumbnail for {{ $scan->id }}
+                                                            (function() {
+                                                                const url = '/storage/app/public/{{ $scan->document_path }}';
+                                                                const canvas = document.getElementById('pdf-canvas-{{ $scan->id }}');
+                                                                const loading = document.getElementById('pdf-loading-{{ $scan->id }}');
+                                                                const context = canvas.getContext('2d');
+                                                                
+                                                                pdfjsLib.getDocument(url).promise.then(function(pdf) {
+                                                                    pdf.getPage(1).then(function(page) {
+                                                                        const viewport = page.getViewport({scale: 1});
+                                                                        const scale = Math.min(300 / viewport.width, 400 / viewport.height);
+                                                                        const scaledViewport = page.getViewport({scale: scale});
+                                                                        
+                                                                        canvas.width = scaledViewport.width;
+                                                                        canvas.height = scaledViewport.height;
+                                                                        
+                                                                        page.render({
+                                                                            canvasContext: context,
+                                                                            viewport: scaledViewport
+                                                                        }).promise.then(function() {
+                                                                            loading.style.display = 'none';
+                                                                        });
+                                                                    });
+                                                                }).catch(function(error) {
+                                                                    console.error('Error loading PDF:', error);
+                                                                    loading.innerHTML = `
+                                                                        <div class="text-center">
+                                                                            <i data-lucide="file-text" class="h-12 w-12 text-red-500 mx-auto mb-2"></i>
+                                                                            <p class="text-sm text-red-700 font-medium">PDF Document</p>
+                                                                        </div>
+                                                                    `;
+                                                                });
+                                                            })();
+                                                        </script>
                                                     @else
-                                                        <div class="w-full h-full flex items-center justify-center bg-gray-50">
-                                                            <div class="text-center">
-                                                                <i data-lucide="file" class="h-12 w-12 text-gray-400 mx-auto mb-2"></i>
-                                                                <p class="text-sm text-gray-600">{{ strtoupper(pathinfo($scan->document_path, PATHINFO_EXTENSION)) }}</p>
+                                                        @php
+                                                            $extension = strtolower(pathinfo($scan->document_path, PATHINFO_EXTENSION));
+                                                            $isOfficeDoc = in_array($extension, ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx']);
+                                                            $isTextFile = in_array($extension, ['txt', 'csv', 'xml', 'json']);
+                                                        @endphp
+                                                        
+                                                        <div class="w-full h-full flex items-center justify-center 
+                                                            {{ $isOfficeDoc ? 'bg-blue-50' : ($isTextFile ? 'bg-green-50' : 'bg-gray-50') }}" 
+                                                            id="file-preview-{{ $scan->id }}">
+                                                            <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition-all duration-200 flex items-center justify-center">
+                                                                <div class="opacity-0 hover:opacity-100 transition-opacity">
+                                                                    <i data-lucide="zoom-in" class="h-8 w-8 text-white"></i>
+                                                                </div>
+                                                            </div>
+                                                            <div class="text-center relative z-10">
+                                                                @if($isOfficeDoc)
+                                                                    @if(in_array($extension, ['doc', 'docx']))
+                                                                        <i data-lucide="file-text" class="h-12 w-12 text-blue-500 mx-auto mb-2 file-type-icon"></i>
+                                                                        <p class="text-sm text-blue-700 font-medium">Word Document</p>
+                                                                    @elseif(in_array($extension, ['xls', 'xlsx']))
+                                                                        <i data-lucide="sheet" class="h-12 w-12 text-green-500 mx-auto mb-2 file-type-icon"></i>
+                                                                        <p class="text-sm text-green-700 font-medium">Excel Spreadsheet</p>
+                                                                    @elseif(in_array($extension, ['ppt', 'pptx']))
+                                                                        <i data-lucide="presentation" class="h-12 w-12 text-orange-500 mx-auto mb-2 file-type-icon"></i>
+                                                                        <p class="text-sm text-orange-700 font-medium">PowerPoint</p>
+                                                                    @endif
+                                                                @elseif($isTextFile)
+                                                                    <i data-lucide="file-code" class="h-12 w-12 text-green-500 mx-auto mb-2 file-type-icon"></i>
+                                                                    <p class="text-sm text-green-700 font-medium">{{ strtoupper($extension) }} File</p>
+                                                                @else
+                                                                    <i data-lucide="file" class="h-12 w-12 text-gray-400 mx-auto mb-2 file-type-icon"></i>
+                                                                    <p class="text-sm text-gray-600">{{ strtoupper($extension) }}</p>
+                                                                @endif
+                                                                <p class="text-xs text-gray-500 mt-1">Click to preview</p>
                                                             </div>
                                                         </div>
                                                     @endif
@@ -183,22 +334,12 @@
                                                     @endif
                                                     
                                                     <!-- Actions -->
-                                                    <div class="mt-3 flex items-center justify-between">
-                                                        <button class="text-indigo-600 hover:text-indigo-900 text-sm font-medium" 
-                                                                onclick="viewDocument('{{ Storage::disk('public')->url($scan->document_path) }}', '{{ $scan->original_filename }}')">
+                                                    <div class="mt-3 flex items-center justify-center">
+                                                        <button class="text-indigo-600 hover:text-indigo-900 text-sm font-medium w-full py-2 px-4 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors" 
+                                                                onclick="viewDocument('/storage/app/public/{{ $scan->document_path }}', '{{ $scan->original_filename }}', '{{ pathinfo($scan->document_path, PATHINFO_EXTENSION) }}')">
                                                             <i data-lucide="eye" class="h-4 w-4 inline mr-1"></i>
-                                                            View
+                                                            View Document
                                                         </button>
-                                                        <div class="flex items-center gap-2">
-                                                            <button class="text-gray-600 hover:text-gray-900 text-sm" 
-                                                                    onclick="editScan({{ $scan->id }})">
-                                                                <i data-lucide="edit" class="h-4 w-4"></i>
-                                                            </button>
-                                                            <button class="text-red-600 hover:text-red-900 text-sm" 
-                                                                    onclick="deleteScan({{ $scan->id }})">
-                                                                <i data-lucide="trash-2" class="h-4 w-4"></i>
-                                                            </button>
-                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -232,10 +373,10 @@
                                             <i data-lucide="refresh-cw" class="h-4 w-4"></i>
                                             Refresh
                                         </button>
-                                        <button class="btn btn-primary btn-sm gap-2" onclick="uploadMoreScans()">
+                                        <!-- <button class="btn btn-primary btn-sm gap-2" onclick="uploadMoreScans()">
                                             <i data-lucide="upload" class="h-4 w-4"></i>
                                             Upload
-                                        </button>
+                                        </button> -->
                                     </div>
                                 </div>
                             </div>
@@ -274,12 +415,14 @@
                                                         </td>
                                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                             <div class="flex items-center space-x-2">
-                                                                <button class="text-indigo-600 hover:text-indigo-900" 
+                                                                <button class="text-indigo-600 hover:text-indigo-900 inline-flex items-center gap-1 px-3 py-1 bg-indigo-50 hover:bg-indigo-100 rounded transition-colors" 
                                                                         onclick="viewDocument('{{ $file['url'] }}', '{{ $file['name'] }}')">
                                                                     <i data-lucide="eye" class="h-4 w-4"></i>
+                                                                    <span>View</span>
                                                                 </button>
-                                                                <a href="{{ $file['url'] }}" download class="text-green-600 hover:text-green-900">
+                                                                <a href="{{ $file['url'] }}" download class="text-green-600 hover:text-green-900 inline-flex items-center gap-1 px-3 py-1 bg-green-50 hover:bg-green-100 rounded transition-colors">
                                                                     <i data-lucide="download" class="h-4 w-4"></i>
+                                                                    <span>Download</span>
                                                                 </a>
                                                             </div>
                                                         </td>
@@ -372,24 +515,137 @@
             });
 
             // Document viewer functions
-            function viewDocument(url, filename) {
+            function viewDocument(url, filename, extension = null) {
                 const modal = document.getElementById('document-viewer-modal');
                 const title = document.getElementById('document-title');
                 const content = document.getElementById('document-content');
                 
                 title.textContent = filename;
                 
-                const extension = filename.split('.').pop().toLowerCase();
+                const ext = extension || filename.split('.').pop().toLowerCase();
                 
-                if (['jpg', 'jpeg', 'png', 'gif'].includes(extension)) {
-                    content.innerHTML = `<img src="${url}" alt="${filename}" class="max-w-full h-auto">`;
-                } else if (extension === 'pdf') {
-                    content.innerHTML = `<iframe src="${url}" width="100%" height="600px" frameborder="0"></iframe>`;
+                // Show loading state
+                content.innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                        <p class="text-gray-600">Loading preview...</p>
+                    </div>
+                `;
+                
+                modal.classList.remove('hidden');
+                
+                if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(ext)) {
+                    // Image files
+                    content.innerHTML = `
+                        <div class="text-center">
+                            <img src="${url}" alt="${filename}" class="max-w-full h-auto rounded-lg shadow-lg" 
+                                 onload="this.classList.add('opacity-100')" 
+                                 class="opacity-0 transition-opacity duration-300">
+                        </div>
+                    `;
+                } else if (ext === 'pdf') {
+                    // PDF files with enhanced viewer
+                    content.innerHTML = `
+                        <div class="pdf-viewer-container">
+                            <div class="flex justify-between items-center mb-4 p-2 bg-gray-50 rounded">
+                                <div class="flex items-center gap-2">
+                                    <button onclick="prevPage()" class="btn btn-sm btn-outline" id="prev-btn">
+                                        <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                                    </button>
+                                    <span id="page-info">Page 1 of 1</span>
+                                    <button onclick="nextPage()" class="btn btn-sm btn-outline" id="next-btn">
+                                        <i data-lucide="chevron-right" class="h-4 w-4"></i>
+                                    </button>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="zoomOut()" class="btn btn-sm btn-outline">
+                                        <i data-lucide="zoom-out" class="h-4 w-4"></i>
+                                    </button>
+                                    <span id="zoom-info">100%</span>
+                                    <button onclick="zoomIn()" class="btn btn-sm btn-outline">
+                                        <i data-lucide="zoom-in" class="h-4 w-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="pdf-canvas-container text-center" style="max-height: 500px; overflow: auto;">
+                                <canvas id="pdf-viewer-canvas" class="border rounded shadow-sm"></canvas>
+                            </div>
+                        </div>
+                    `;
+                    loadPDFViewer(url);
+                } else if (['doc', 'docx'].includes(ext)) {
+                    // Word documents
+                    content.innerHTML = `
+                        <div class="text-center py-8">
+                            <i data-lucide="file-text" class="h-16 w-16 mx-auto text-blue-500 mb-4"></i>
+                            <p class="text-gray-600 mb-4">Microsoft Word Document</p>
+                            <p class="text-sm text-gray-500 mb-4">Preview not available for this file type</p>
+                            <a href="${url}" download class="btn btn-primary gap-2">
+                                <i data-lucide="download" class="h-4 w-4"></i>
+                                Download File
+                            </a>
+                        </div>
+                    `;
+                } else if (['xls', 'xlsx'].includes(ext)) {
+                    // Excel files
+                    content.innerHTML = `
+                        <div class="text-center py-8">
+                            <i data-lucide="sheet" class="h-16 w-16 mx-auto text-green-500 mb-4"></i>
+                            <p class="text-gray-600 mb-4">Excel Spreadsheet</p>
+                            <p class="text-sm text-gray-500 mb-4">Preview not available for this file type</p>
+                            <a href="${url}" download class="btn btn-primary gap-2">
+                                <i data-lucide="download" class="h-4 w-4"></i>
+                                Download File
+                            </a>
+                        </div>
+                    `;
+                } else if (['ppt', 'pptx'].includes(ext)) {
+                    // PowerPoint files
+                    content.innerHTML = `
+                        <div class="text-center py-8">
+                            <i data-lucide="presentation" class="h-16 w-16 mx-auto text-orange-500 mb-4"></i>
+                            <p class="text-gray-600 mb-4">PowerPoint Presentation</p>
+                            <p class="text-sm text-gray-500 mb-4">Preview not available for this file type</p>
+                            <a href="${url}" download class="btn btn-primary gap-2">
+                                <i data-lucide="download" class="h-4 w-4"></i>
+                                Download File
+                            </a>
+                        </div>
+                    `;
+                } else if (['txt', 'csv', 'xml', 'json', 'html', 'css', 'js'].includes(ext)) {
+                    // Text-based files
+                    fetch(url)
+                        .then(response => response.text())
+                        .then(text => {
+                            content.innerHTML = `
+                                <div class="text-left">
+                                    <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                                        <h4 class="font-semibold mb-2">File Content Preview</h4>
+                                        <p class="text-sm text-gray-600">File type: ${ext.toUpperCase()}</p>
+                                    </div>
+                                    <pre class="bg-gray-900 text-green-400 p-4 rounded-lg overflow-auto max-h-96 text-sm font-mono">${text.substring(0, 5000)}${text.length > 5000 ? '\n\n... (Content truncated for preview)' : ''}</pre>
+                                </div>
+                            `;
+                        })
+                        .catch(error => {
+                            content.innerHTML = `
+                                <div class="text-center py-8">
+                                    <i data-lucide="file-text" class="h-16 w-16 mx-auto text-gray-400 mb-4"></i>
+                                    <p class="text-gray-600 mb-4">Could not load text content</p>
+                                    <a href="${url}" download class="btn btn-primary gap-2">
+                                        <i data-lucide="download" class="h-4 w-4"></i>
+                                        Download File
+                                    </a>
+                                </div>
+                            `;
+                        });
                 } else {
+                    // Unsupported file types
                     content.innerHTML = `
                         <div class="text-center py-8">
                             <i data-lucide="file" class="h-16 w-16 mx-auto text-gray-400 mb-4"></i>
-                            <p class="text-gray-600 mb-4">Cannot preview this file type</p>
+                            <p class="text-gray-600 mb-4">Cannot preview this file type (${ext.toUpperCase()})</p>
+                            <p class="text-sm text-gray-500 mb-4">Download the file to view its contents</p>
                             <a href="${url}" download class="btn btn-primary gap-2">
                                 <i data-lucide="download" class="h-4 w-4"></i>
                                 Download File
@@ -398,12 +654,109 @@
                     `;
                 }
                 
-                modal.classList.remove('hidden');
                 lucide.createIcons();
             }
 
             function closeDocumentViewer() {
                 document.getElementById('document-viewer-modal').classList.add('hidden');
+            }
+
+            // PDF Viewer functionality
+            let pdfDoc = null;
+            let pageNum = 1;
+            let pageRendering = false;
+            let pageNumPending = null;
+            let scale = 1.0;
+            let canvas = null;
+            let ctx = null;
+
+            function loadPDFViewer(url) {
+                canvas = document.getElementById('pdf-viewer-canvas');
+                ctx = canvas.getContext('2d');
+                
+                pdfjsLib.getDocument(url).promise.then(function(pdfDoc_) {
+                    pdfDoc = pdfDoc_;
+                    document.getElementById('page-info').textContent = `Page ${pageNum} of ${pdfDoc.numPages}`;
+                    
+                    // Initial page render
+                    renderPage(pageNum);
+                }).catch(function(error) {
+                    console.error('Error loading PDF:', error);
+                    document.getElementById('pdf-viewer-canvas').parentElement.innerHTML = `
+                        <div class="text-center py-8">
+                            <i data-lucide="alert-circle" class="h-16 w-16 mx-auto text-red-500 mb-4"></i>
+                            <p class="text-red-600 mb-4">Error loading PDF</p>
+                            <a href="${url}" download class="btn btn-primary gap-2">
+                                <i data-lucide="download" class="h-4 w-4"></i>
+                                Download File
+                            </a>
+                        </div>
+                    `;
+                });
+            }
+
+            function renderPage(num) {
+                pageRendering = true;
+                pdfDoc.getPage(num).then(function(page) {
+                    const viewport = page.getViewport({scale: scale});
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    const renderContext = {
+                        canvasContext: ctx,
+                        viewport: viewport
+                    };
+                    
+                    const renderTask = page.render(renderContext);
+                    renderTask.promise.then(function() {
+                        pageRendering = false;
+                        if (pageNumPending !== null) {
+                            renderPage(pageNumPending);
+                            pageNumPending = null;
+                        }
+                    });
+                });
+
+                document.getElementById('page-info').textContent = `Page ${num} of ${pdfDoc.numPages}`;
+            }
+
+            function queueRenderPage(num) {
+                if (pageRendering) {
+                    pageNumPending = num;
+                } else {
+                    renderPage(num);
+                }
+            }
+
+            function prevPage() {
+                if (pageNum <= 1) {
+                    return;
+                }
+                pageNum--;
+                queueRenderPage(pageNum);
+            }
+
+            function nextPage() {
+                if (pageNum >= pdfDoc.numPages) {
+                    return;
+                }
+                pageNum++;
+                queueRenderPage(pageNum);
+            }
+
+            function zoomIn() {
+                scale += 0.25;
+                document.getElementById('zoom-info').textContent = Math.round(scale * 100) + '%';
+                queueRenderPage(pageNum);
+            }
+
+            function zoomOut() {
+                if (scale <= 0.25) {
+                    return;
+                }
+                scale -= 0.25;
+                document.getElementById('zoom-info').textContent = Math.round(scale * 100) + '%';
+                queueRenderPage(pageNum);
             }
 
             // Upload more scans
@@ -414,19 +767,6 @@
             // Refresh file manager
             function refreshFileManager() {
                 window.location.reload();
-            }
-
-            // Edit scan (placeholder)
-            function editScan(scanId) {
-                alert('Edit functionality will be implemented');
-            }
-
-            // Delete scan (placeholder)
-            function deleteScan(scanId) {
-                if (confirm('Are you sure you want to delete this scan?')) {
-                    // Implementation for delete
-                    alert('Delete functionality will be implemented');
-                }
             }
 
             // Close modal on escape key

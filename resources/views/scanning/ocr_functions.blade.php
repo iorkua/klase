@@ -1,17 +1,6 @@
 <script>
-// Global variables
-let uploadStatus = 'idle';
-let uploadProgress = 0;
-let selectedFiles = [];
-let uploadedFiles = [];
-let aiProcessingStage = 'idle';
-let aiProgress = 0;
-let extractedMetadata = {}; // Now keyed by uploadedFile.id
-let currentEditingFile = null;
-let ocrProgress = 0;
-let filteredFiles = []; // For search functionality
-let currentPDFDocument = null; // Stores the PDFDocumentProxy object for the currently opened PDF in the modal
-let currentPageNumber = 1;    // Stores the current page number being viewed in the PDF preview
+// These variables should be defined in the main file
+/* Global variables are now moved to main file */
 
 // Initialize PDF.js worker
 if (typeof pdfjsLib !== 'undefined') {
@@ -47,6 +36,15 @@ function setupEventListeners() {
     const fileInput = document.getElementById('file-upload');
     if (fileInput) {
         fileInput.addEventListener('change', handleFileSelect);
+    }
+
+    // Start Upload button
+    const startUploadBtn = document.getElementById('start-upload-btn');
+    if (startUploadBtn) {
+        startUploadBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            startUpload();
+        });
     }
 
     // Search functionality
@@ -398,24 +396,21 @@ function updateUploadButtons() {
 
 // Upload functionality with backend integration
 async function startUpload(event) {
+    console.log('Starting upload process...');
+    
     // Prevent any default form submission behavior
     if (event) {
         event.preventDefault();
         event.stopPropagation();
     }
     
-    if (selectedFiles.length === 0) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'No Files Selected',
-            text: 'Please select files to upload first.',
-            confirmButtonColor: '#3b82f6'
-        });
+    if (!window.selectedFiles || window.selectedFiles.length === 0) {
+        alert('Please select files to upload first.');
         return false;
     }
 
-    uploadStatus = 'uploading';
-    uploadProgress = 0;
+    window.uploadStatus = 'uploading';
+    window.uploadProgress = 0;
     updateUploadStatus();
     updateUploadButtons();
 
@@ -426,9 +421,12 @@ async function startUpload(event) {
     try {
         // First, upload files to the server
         const formData = new FormData();
-        selectedFiles.forEach((file, index) => {
-            formData.append(`files[${index}]`, file);
+        window.selectedFiles.forEach((file, index) => {
+            formData.append(`documents[]`, file);
         });
+
+        // Add CSRF token
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
 
         // Show uploading progress
         updateUploadProgress();
@@ -439,7 +437,7 @@ async function startUpload(event) {
             }
         }, 100);
 
-        const uploadResponse = await fetch('/unindexed-scanning/upload', {
+        const uploadResponse = await fetch('/scanning/upload-unindexed', {
             method: 'POST',
             body: formData,
             headers: {
@@ -451,8 +449,13 @@ async function startUpload(event) {
         uploadProgress = 40;
         updateUploadProgress();
 
-        const uploadResult = await uploadResponse.json();
+        if (!uploadResponse.ok) {
+            const errorData = await uploadResponse.json();
+            throw new Error(errorData.message || 'Upload failed: ' + uploadResponse.statusText);
+        }
 
+        const uploadResult = await uploadResponse.json();
+        
         if (!uploadResult.success) {
             throw new Error(uploadResult.message || 'Upload failed');
         }

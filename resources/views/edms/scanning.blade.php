@@ -974,7 +974,7 @@
                             <i data-lucide="eye" style="width: 1rem; height: 1rem;"></i>
                             View
                         </a>
-                        <button type="button" class="btn-edit" 
+                        <!-- <button type="button" class="btn-edit" 
                                 data-document-id="{{ $scanning->id }}"
                                 data-file-name="{{ $scanning->original_filename ?? $fileIndexing->file_title ?? basename($scanning->document_path) }}"
                                 data-paper-size="{{ $scanning->paper_size ?? 'A4' }}"
@@ -982,7 +982,7 @@
                                 data-notes="{{ $scanning->notes ?? '' }}">
                             <i data-lucide="edit" style="width: 1rem; height: 1rem;"></i>
                             Edit
-                        </button>
+                        </button> -->
                         {{-- <a href="{{ asset('storage/' . $scanning->document_path) }}" download class="btn-download">
                             <i data-lucide="download" style="width: 1rem; height: 1rem;"></i>
                             Download
@@ -1014,7 +1014,7 @@
         </div>
 
         <!-- Test Modal Button (for debugging) -->
-        <div class="info-card">
+        <div class="info-card hidden">
             <div class="info-header">
                 <div>
                     <h3 class="info-title">Debug Modal Test</h3>

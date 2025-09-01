@@ -716,8 +716,8 @@
                           </label>
                           @if($landUse === 'Residential')
                             <select name="site_plan_fee" class="w-full p-2 border border-gray-300 rounded-md fee-input bg-blue-50" onchange="updateSurveyFee(this)">
-                              <option value="50000.00">Block of Flat - â‚¦50,000.00</option>
-                              <option value="70000.00">Apartment - â‚¦70,000.00</option>
+                              <option value="50000.00">Block of Flat - N 50,000.00</option>
+                              <option value="70000.00">Apartment - N 70,000.00</option>
                             </select>
                           @else
                             <input type="text" name="site_plan_fee" class="w-full p-2 border border-gray-300 rounded-md fee-input bg-blue-50" placeholder="Enter survey fee" value="{{ number_format($surveyFee, 2) }}" readonly>
@@ -849,6 +849,11 @@ function goToStep(stepNumber) {
   if (targetStep) targetStep.classList.add('active-tab');
   updateStepCircles(stepNumber);
   updateStepText(stepNumber);
+  
+  // Update application summary when reaching step 4
+  if (stepNumber === 4 && typeof updateApplicationSummary === 'function') {
+    updateApplicationSummary();
+  }
 }
 window.goToStep = goToStep;
 
@@ -882,6 +887,44 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 });
+
+// Update survey fee function for residential land use
+function updateSurveyFee(selectElement) {
+  const selectedValue = selectElement.value;
+  const totalAmountElement = document.getElementById('total-amount');
+  
+  if (totalAmountElement) {
+    // Get current application and processing fees
+    const applicationFeeInput = document.querySelector('input[name="application_fee"]');
+    const processingFeeInput = document.querySelector('input[name="processing_fee"]');
+    
+    let applicationFee = 0;
+    let processingFee = 0;
+    
+    if (applicationFeeInput) {
+      const value = applicationFeeInput.value.replace(/,/g, '');
+      applicationFee = parseFloat(value) || 0;
+    }
+    
+    if (processingFeeInput) {
+      const value = processingFeeInput.value.replace(/,/g, '');
+      processingFee = parseFloat(value) || 0;
+    }
+    
+    const surveyFee = parseFloat(selectedValue) || 0;
+    const total = applicationFee + processingFee + surveyFee;
+    
+    totalAmountElement.textContent = '₦' + total.toLocaleString();
+  }
+  
+  // Update payment information in summary if it exists
+  if (typeof updatePaymentInformation === 'function') {
+    updatePaymentInformation();
+  }
+}
+
+// Make function globally available
+window.updateSurveyFee = updateSurveyFee;
 
 // Validation functions
 function validateStep1() {

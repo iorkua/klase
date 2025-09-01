@@ -10,7 +10,7 @@
       <div class="mb-6">
         <div class="flex items-center mb-2">
           <i data-lucide="file-text" class="w-5 h-5 mr-2 text-green-600"></i>
-          <h3 class="text-lg font-bold">Application for Sectional Titling - Unit Application (Secondary)</h3>
+          <h3 class="text-lg font-bold">Application for Sectional Titlle - Unit Application (Secondary)</h3>
           <div class="ml-auto flex items-center">
             <span class="text-gray-600 mr-2">Land Use:</span>
             <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">{{ $motherApplication->land_use ?? 'N/A' }}</span>
@@ -958,9 +958,33 @@ function updateSharedAreasSummary() {
 }
 
 function updatePaymentInformation() {
-  const applicationFee = parseFloat(document.querySelector('input[name="application_fee"]')?.value || 0);
-  const processingFee = parseFloat(document.querySelector('input[name="processing_fee"]')?.value || 0);
-  const surveyFee = parseFloat(document.querySelector('input[name="survey_fee"]')?.value || 0);
+  // Get values from form inputs - handle both text and select fields for survey fee
+  let applicationFee = 0;
+  let processingFee = 0;
+  let surveyFee = 0;
+  
+  const applicationFeeInput = document.querySelector('input[name="application_fee"]');
+  if (applicationFeeInput) {
+    const value = applicationFeeInput.value.replace(/,/g, ''); // Remove commas from formatted numbers
+    applicationFee = parseFloat(value) || 0;
+  }
+  
+  const processingFeeInput = document.querySelector('input[name="processing_fee"]');
+  if (processingFeeInput) {
+    const value = processingFeeInput.value.replace(/,/g, ''); // Remove commas from formatted numbers
+    processingFee = parseFloat(value) || 0;
+  }
+  
+  // Handle survey fee which could be either input or select field with name "site_plan_fee"
+  const surveyFeeInput = document.querySelector('input[name="site_plan_fee"]');
+  const surveyFeeSelect = document.querySelector('select[name="site_plan_fee"]');
+  
+  if (surveyFeeInput) {
+    const value = surveyFeeInput.value.replace(/,/g, ''); // Remove commas from formatted numbers
+    surveyFee = parseFloat(value) || 0;
+  } else if (surveyFeeSelect) {
+    surveyFee = parseFloat(surveyFeeSelect.value) || 0;
+  }
   
   document.getElementById('applicationFeeDisplay').textContent = '₦' + applicationFee.toLocaleString();
   document.getElementById('processingFeeDisplay').textContent = '₦' + processingFee.toLocaleString();
@@ -1033,11 +1057,37 @@ function updateDocumentIndicators() {
 
 // Initialize form event listeners to update summary
 document.addEventListener('DOMContentLoaded', function() {
+  // Make functions globally available
+  window.updateApplicationSummary = updateApplicationSummary;
+  window.updatePaymentInformation = updatePaymentInformation;
+  
+  // Update summary immediately if step 4 is visible
+  const step4 = document.getElementById('step4');
+  if (step4 && step4.classList.contains('active-tab')) {
+    updateApplicationSummary();
+  }
+  
   // Update summary when the "Next" button on step 3 is clicked
   const nextStep3Button = document.getElementById('nextStep3');
   if (nextStep3Button) {
     nextStep3Button.addEventListener('click', updateApplicationSummary);
   }
+  
+  // Add event listeners for payment fields to update summary in real-time
+  const paymentFields = ['application_fee', 'processing_fee', 'site_plan_fee', 'receipt_number', 'payment_date'];
+  paymentFields.forEach(fieldName => {
+    const inputField = document.querySelector(`input[name="${fieldName}"]`);
+    const selectField = document.querySelector(`select[name="${fieldName}"]`);
+    
+    if (inputField) {
+      inputField.addEventListener('input', updatePaymentInformation);
+      inputField.addEventListener('change', updatePaymentInformation);
+    }
+    
+    if (selectField) {
+      selectField.addEventListener('change', updatePaymentInformation);
+    }
+  });
   
   // Add event listeners for file uploads to update document indicators in real-time
   const fileInputs = [
@@ -1077,25 +1127,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (fullContactAddressEl) fullContactAddressEl.textContent = fullAddress;
         if (contactAddressHiddenEl) contactAddressHiddenEl.value = fullAddress;
-      });
-    }
-  });
-  
-  // Listen to changes in fee fields to update total
-  const feeFields = ['application_fee', 'processing_fee', 'survey_fee'];
-  feeFields.forEach(fieldName => {
-    const field = document.querySelector(`input[name="${fieldName}"]`);
-    if (field) {
-      field.addEventListener('input', function() {
-        const applicationFee = parseFloat(document.querySelector('input[name="application_fee"]')?.value || 0);
-        const processingFee = parseFloat(document.querySelector('input[name="processing_fee"]')?.value || 0);
-        const surveyFee = parseFloat(document.querySelector('input[name="survey_fee"]')?.value || 0);
-        
-        const totalFee = applicationFee + processingFee + surveyFee;
-        const totalFeeEl = document.querySelector('.flex.justify-between.items-center.mb-4 span.font-bold');
-        if (totalFeeEl) {
-          totalFeeEl.textContent = '₦' + totalFee.toLocaleString();
-        }
       });
     }
   });

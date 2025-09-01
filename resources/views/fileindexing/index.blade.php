@@ -54,10 +54,10 @@
         <div class="tab" data-tab="indexed">Indexed Files</div>
       </div>
       <div class="flex items-center gap-3">
-        <a href="/unindexed-scanning" class="btn btn-outline">
+        <!-- <a href="/unindexed-scanning" class="btn btn-outline">
           <i data-lucide="upload" class="h-4 w-4 mr-2"></i>
           Go to Unindexed Files
-        </a>
+        </a> -->
         <button class="btn btn-primary" id="new-file-index-btn">
           <i data-lucide="folder-plus" class="h-4 w-4 mr-2"></i>
           New File Index

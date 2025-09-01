@@ -704,7 +704,7 @@
                 </div>
 
                 <!-- File Properties Section -->
-                <div class="properties-section">
+                <div class="properties-section hidden">
                     <div class="properties-header">
                         <div class="properties-icon">
                             <i data-lucide="settings" style="width: 1.25rem; height: 1.25rem;"></i>

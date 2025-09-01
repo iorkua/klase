@@ -33,11 +33,11 @@
                     <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Serial No.</label>
-                            <input type="number" id="cofoSerialNo" name="serial_no" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., 1" oninput="updateRegistrationPreview()">
+                            <input type="number" id="cofoSerialNo" name="serial_no" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., 1" oninput="syncSerialToPageNo(); updateRegistrationPreview()">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Page No.</label>
-                            <input type="number" id="cofoPageNo" name="page_no" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., 1" oninput="updateRegistrationPreview()">
+                            <input type="number" id="cofoPageNo" name="page_no" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" placeholder="e.g., 1" readonly>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Volume No.</label>
@@ -223,12 +223,14 @@
         const fieldsToToggle = [
             'cofoCertificateDate',
             'cofoSerialNo',
-            'cofoPageNo', 
             'cofoVolumeNo',
             'cofoTransactionDate',
             'cofoTransactionTime',
             'cofoRegNoPreview'
         ];
+        
+        // Handle page number field separately since it's always readonly
+        const pageNoField = document.getElementById('cofoPageNo');
         
         fieldsToToggle.forEach(fieldId => {
             const field = document.getElementById(fieldId);
@@ -242,6 +244,10 @@
                     // Clear default values for editable fields
                     if (fieldId !== 'cofoRegNoPreview') {
                         field.value = '';
+                        // Clear page number when serial number is cleared
+                        if (fieldId === 'cofoSerialNo') {
+                            document.getElementById('cofoPageNo').value = '';
+                        }
                     }
                 } else {
                     // Disable fields and add grey styling
@@ -256,9 +262,8 @@
                             break;
                         case 'cofoSerialNo':
                             field.value = '0';
-                            break;
-                        case 'cofoPageNo':
-                            field.value = '0';
+                            // Sync to page number when setting default value
+                            document.getElementById('cofoPageNo').value = '0';
                             break;
                         case 'cofoVolumeNo':
                             field.value = '0';
@@ -277,10 +282,29 @@
             }
         });
         
+        // Handle page number field - always readonly but style changes based on registration status
+        if (pageNoField) {
+            if (isRegistered) {
+                pageNoField.classList.remove('bg-gray-200', 'text-gray-500', 'cursor-not-allowed');
+                pageNoField.classList.add('bg-gray-100');
+                pageNoField.value = '';
+            } else {
+                pageNoField.classList.add('bg-gray-200', 'text-gray-500', 'cursor-not-allowed');
+                pageNoField.classList.remove('bg-gray-100');
+                pageNoField.value = '0';
+            }
+        }
+        
         // Update registration preview if not registered
         if (!isRegistered) {
             document.getElementById('cofoRegNoPreview').value = '0/0/0';
         }
+    }
+    
+    // Function to sync serial number to page number
+    function syncSerialToPageNo() {
+        const serialNo = document.getElementById('cofoSerialNo').value;
+        document.getElementById('cofoPageNo').value = serialNo;
     }
     
     // Function to update registration number preview

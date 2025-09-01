@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div>
                         <h3 class="font-medium">${file.file_number}</h3>
                         <p class="text-sm text-gray-600">${file.file_title}</p>
-                        <p class="text-xs text-gray-500">${file.district} • ${file.lga}</p>
+                        <p class="text-xs text-gray-500">${file.district || 'No District'} • ${file.lga || 'No LGA'}</p>
                         ${file.applicant_name ? `<p class="text-xs text-blue-600">Applicant: ${file.applicant_name}</p>` : ''}
                     </div>
                     <div class="text-right">

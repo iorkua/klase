@@ -325,10 +325,41 @@
     </div>
 
     <!-- Page Typing Dashboard JavaScript -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
-        // Configure PDF.js worker
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        // Load PDF.js with fallback
+        (function() {
+          function loadPDFJS() {
+            return new Promise((resolve, reject) => {
+              if (window.pdfjsLib) {
+                resolve(window.pdfjsLib);
+                return;
+              }
+
+              const script = document.createElement('script');
+              script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+              script.onload = function() {
+                if (window.pdfjsLib) {
+                  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                  window.pdfjsLib = pdfjsLib;
+                  resolve(pdfjsLib);
+                } else {
+                  reject(new Error('PDF.js loaded but not available'));
+                }
+              };
+              script.onerror = function() {
+                reject(new Error('Failed to load PDF.js'));
+              };
+              document.head.appendChild(script);
+            });
+          }
+
+          // Try to load PDF.js
+          loadPDFJS().then(function(pdfjs) {
+            console.log('PDF.js loaded successfully');
+          }).catch(function(error) {
+            console.error('Failed to load PDF.js:', error);
+          });
+        })();
     </script>
 
     <!-- SweetAlert2 for better user feedback -->
@@ -338,6 +369,12 @@
     <script>
         // Initialize Lucide icons
         lucide.createIcons();
+
+        // Check if PDF.js is available
+        console.log('PDF.js availability:', typeof pdfjsLib);
+        if (typeof pdfjsLib !== 'undefined') {
+          console.log('PDF.js version:', pdfjsLib.version);
+        }
 
         // Application state
         let state = {
@@ -394,6 +431,17 @@
             processButton.classList.toggle('opacity-50', !enabled);
             processButton.classList.toggle('cursor-not-allowed', !enabled);
           }
+        }
+
+        // Utility function to pick properties from object
+        function pick(obj, keys, defaultValue = null) {
+          if (!obj || typeof obj !== 'object') return defaultValue;
+          for (const key of keys) {
+            if (obj.hasOwnProperty(key) && obj[key] !== null && obj[key] !== undefined) {
+              return obj[key];
+            }
+          }
+          return defaultValue;
         }
 
         // Load data from backend
@@ -572,14 +620,34 @@
 
         function isPDFFile(filename) {
           if (!filename) return false;
-          return filename.toLowerCase().endsWith('.pdf');
+          const lower = filename.toLowerCase();
+          const isPdf = lower.endsWith('.pdf');
+          console.log('PDF detection for', filename, ':', isPdf);
+          return isPdf;
         }
 
         function getDocumentUrl(documentPath) {
           if (!documentPath) return null;
           // Use the correct Laravel storage path
           const clean = documentPath.replace(/^\/+/, '').replace(/\\/g, '/');
-          return `/storage/app/public/${clean}`;
+          const url = `/storage/app/public/${clean}`;
+          console.log('Generated document URL:', url, 'from path:', documentPath);
+
+          // Test if the URL is accessible
+          fetch(url, { method: 'HEAD' })
+            .then(response => {
+              console.log('File accessibility check:', {
+                url: url,
+                status: response.status,
+                contentType: response.headers.get('content-type'),
+                contentLength: response.headers.get('content-length')
+              });
+            })
+            .catch(error => {
+              console.error('File not accessible:', url, error);
+            });
+
+          return url;
         }
 
         function renderPDFPagePreview(pageIndex, containerEl) {
@@ -612,9 +680,24 @@
 
         async function loadPDFViewer(url, containerEl) {
           try {
-            // Load PDF document
-            const loadingTask = pdfjsLib.getDocument(url);
-            const pdf = await loadingTask.promise;
+            // Check if PDF.js is available
+            if (typeof pdfjsLib === 'undefined') {
+              throw new Error('PDF.js library not loaded');
+            }
+
+            // Try to load PDF document with timeout
+            const loadingTask = pdfjsLib.getDocument({
+              url: url,
+              cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+              cMapPacked: true,
+            });
+
+            // Add timeout to prevent hanging
+            const timeoutPromise = new Promise((_, reject) => {
+              setTimeout(() => reject(new Error('PDF loading timeout')), 30000);
+            });
+
+            const pdf = await Promise.race([loadingTask.promise, timeoutPromise]);
 
             state.pdfViewer.pdfDoc = pdf;
             state.pdfViewer.totalPages = pdf.numPages;
@@ -628,18 +711,22 @@
 
           } catch (error) {
             console.error('Error loading PDF:', error);
-            const canvas = containerEl.querySelector('#pdf-viewer-canvas');
-            if (canvas) {
-              const ctx = canvas.getContext('2d');
-              canvas.width = 400;
-              canvas.height = 300;
-              ctx.fillStyle = '#f3f4f6';
-              ctx.fillRect(0, 0, canvas.width, canvas.height);
-              ctx.fillStyle = '#6b7280';
-              ctx.font = '14px Arial';
-              ctx.textAlign = 'center';
-              ctx.fillText('Error loading PDF', canvas.width / 2, canvas.height / 2);
-            }
+            console.error('PDF URL:', url);
+            console.error('Error details:', error.message);
+
+            // Show error message in the container
+            containerEl.innerHTML = `
+              <div class="h-full flex items-center justify-center">
+                <div class="text-center">
+                  <i data-lucide="file-x" class="h-12 w-12 mx-auto mb-3 text-red-500"></i>
+                  <p class="text-sm text-red-600">Failed to load PDF</p>
+                  <p class="text-xs text-muted-foreground mt-1">${error.message}</p>
+                  <button class="btn btn-outline btn-sm mt-2" onclick="window.open('${url}', '_blank')">
+                    <i data-lucide="external-link" class="h-4 w-4 mr-1"></i> Open PDF
+                  </button>
+                </div>
+              </div>`;
+            lucide.createIcons();
           }
         }
 
@@ -692,11 +779,23 @@
         }
 
         function renderDocumentPreview(scanning, containerEl, pageIndex = null) {
-          if (!scanning || !containerEl) return;
+          if (!scanning || !containerEl) {
+            console.error('Missing scanning or containerEl', { scanning, containerEl });
+            return;
+          }
 
           const url = getDocumentUrl(scanning.document_path);
           const isImg = isImageFile(scanning.original_filename);
           const isPdf = isPDFFile(scanning.original_filename);
+
+          console.log('Rendering document preview:', {
+            filename: scanning.original_filename,
+            document_path: scanning.document_path,
+            url: url,
+            isImg: isImg,
+            isPdf: isPdf,
+            scanning: scanning
+          });
 
           if (!url) {
             containerEl.innerHTML = `
@@ -729,7 +828,56 @@
                        onerror="this.parentElement.innerHTML='<div class=\'text-center\'><i data-lucide=\'image-off\' class=\'h-12 w-12 mx-auto mb-3 text-red-500\'></i><p class=\'text-sm text-red-600\'>Failed to load image</p></div>'; lucide.createIcons();" />
                 </div>
               </div>`;
+
+            // Add event listeners for zoom and rotate controls
+            setTimeout(() => {
+              const zoomInBtn = containerEl.querySelector('.zoom-in');
+              const zoomOutBtn = containerEl.querySelector('.zoom-out');
+              const rotateBtn = containerEl.querySelector('.rotate');
+
+              if (zoomInBtn) {
+                zoomInBtn.addEventListener('click', () => {
+                  if (state.typingState.zoomLevel < 200) {
+                    state.typingState.zoomLevel += 25;
+                    updateDocumentZoom();
+                  }
+                });
+              }
+
+              if (zoomOutBtn) {
+                zoomOutBtn.addEventListener('click', () => {
+                  if (state.typingState.zoomLevel > 50) {
+                    state.typingState.zoomLevel -= 25;
+                    updateDocumentZoom();
+                  }
+                });
+              }
+
+              if (rotateBtn) {
+                rotateBtn.addEventListener('click', () => {
+                  state.typingState.rotation = (state.typingState.rotation + 90) % 360;
+                  updateDocumentRotation();
+                });
+              }
+            }, 100);
           } else if (isPdf) {
+            // Check if PDF.js is available
+            if (typeof pdfjsLib === 'undefined') {
+              containerEl.innerHTML = `
+                <div class="h-full flex items-center justify-center">
+                  <div class="text-center">
+                    <i data-lucide="file-x" class="h-12 w-12 mx-auto mb-3 text-red-500"></i>
+                    <p class="text-sm text-red-600">PDF viewer not available</p>
+                    <p class="text-xs text-muted-foreground mt-1">PDF.js library failed to load</p>
+                    <button class="btn btn-outline btn-sm mt-2" onclick="window.open('${url}', '_blank')">
+                      <i data-lucide="external-link" class="h-4 w-4 mr-1"></i> Open PDF
+                    </button>
+                  </div>
+                </div>`;
+              lucide.createIcons();
+              return;
+            }
+
             // Initialize PDF navigation state if not exists
             if (!state.pdfViewer) {
               state.pdfViewer = {
@@ -797,18 +945,105 @@
                   }
                 });
               }
+
+              // Add zoom and rotate event listeners
+              const zoomInBtn = containerEl.querySelector('.zoom-in');
+              const zoomOutBtn = containerEl.querySelector('.zoom-out');
+              const rotateBtn = containerEl.querySelector('.rotate');
+
+              if (zoomInBtn) {
+                zoomInBtn.addEventListener('click', () => {
+                  if (state.typingState.zoomLevel < 200) {
+                    state.typingState.zoomLevel += 25;
+                    updateDocumentZoom();
+                  }
+                });
+              }
+
+              if (zoomOutBtn) {
+                zoomOutBtn.addEventListener('click', () => {
+                  if (state.typingState.zoomLevel > 50) {
+                    state.typingState.zoomLevel -= 25;
+                    updateDocumentZoom();
+                  }
+                });
+              }
+
+              if (rotateBtn) {
+                rotateBtn.addEventListener('click', () => {
+                  state.typingState.rotation = (state.typingState.rotation + 90) % 360;
+                  updateDocumentRotation();
+                });
+              }
             }, 100);
           } else {
-            containerEl.innerHTML = `
-              <div class="h-full flex items-center justify-center">
-                <div class="text-center">
-                  <i data-lucide="file" class="h-12 w-12 mx-auto mb-3 text-muted-foreground"></i>
-                  <p class="text-sm">Unsupported file: ${scanning.original_filename}</p>
-                  <button class="btn btn-outline btn-sm mt-2" onclick="window.open('${url}', '_blank')">
-                    <i data-lucide="external-link" class="h-4 w-4 mr-1"></i> Open
-                  </button>
-                </div>
-              </div>`;
+            console.log('File detected as unsupported:', {
+              filename: scanning.original_filename,
+              isImg: isImg,
+              isPdf: isPdf
+            });
+
+            // Try to detect file type by content-type
+            if (url) {
+              fetch(url, { method: 'HEAD' })
+                .then(response => {
+                  const contentType = response.headers.get('content-type');
+                  console.log('Content-Type detected:', contentType);
+
+                  if (contentType && contentType.includes('pdf')) {
+                    console.log('Detected PDF by content-type:', contentType);
+                    // Re-render as PDF by calling the function again with forced PDF detection
+                    const fakeScanning = { ...scanning, original_filename: scanning.original_filename + '.pdf' };
+                    renderDocumentPreview(fakeScanning, containerEl, pageIndex);
+                  } else if (contentType && contentType.startsWith('image/')) {
+                    console.log('Detected image by content-type:', contentType);
+                    // Re-render as image by calling the function again with forced image detection
+                    const fakeScanning = { ...scanning, original_filename: scanning.original_filename + '.jpg' };
+                    renderDocumentPreview(fakeScanning, containerEl, pageIndex);
+                  } else {
+                    // Show unsupported file message
+                    containerEl.innerHTML = `
+                      <div class="h-full flex items-center justify-center">
+                        <div class="text-center">
+                          <i data-lucide="file" class="h-12 w-12 mx-auto mb-3 text-muted-foreground"></i>
+                          <p class="text-sm">Unsupported file: ${scanning.original_filename}</p>
+                          <p class="text-xs text-muted-foreground">Content-Type: ${contentType || 'unknown'}</p>
+                          <button class="btn btn-outline btn-sm mt-2" onclick="window.open('${url}', '_blank')">
+                            <i data-lucide="external-link" class="h-4 w-4 mr-1"></i> Open
+                          </button>
+                        </div>
+                      </div>`;
+                    lucide.createIcons();
+                  }
+                })
+                .catch(error => {
+                  console.error('Error checking file type:', error);
+                  containerEl.innerHTML = `
+                    <div class="h-full flex items-center justify-center">
+                      <div class="text-center">
+                        <i data-lucide="file-x" class="h-12 w-12 mx-auto mb-3 text-red-500"></i>
+                        <p class="text-sm text-red-600">Error loading file</p>
+                        <p class="text-xs text-muted-foreground">${error.message}</p>
+                        <button class="btn btn-outline btn-sm mt-2" onclick="window.open('${url}', '_blank')">
+                          <i data-lucide="external-link" class="h-4 w-4 mr-1"></i> Open
+                        </button>
+                      </div>
+                    </div>`;
+                  lucide.createIcons();
+                });
+            } else {
+              containerEl.innerHTML = `
+                <div class="h-full flex items-center justify-center">
+                  <div class="text-center">
+                    <i data-lucide="file" class="h-12 w-12 mx-auto mb-3 text-muted-foreground"></i>
+                    <p class="text-sm">Unsupported file: ${scanning.original_filename}</p>
+                    <button class="btn btn-outline btn-sm mt-2" onclick="window.open('${url}', '_blank')">
+                      <i data-lucide="external-link" class="h-4 w-4 mr-1"></i> Open
+                    </button>
+                  </div>
+                </div>`;
+              lucide.createIcons();
+            }
           }
 
           lucide.createIcons();
@@ -2065,23 +2300,27 @@
                 const img = isImageFile(scanning.original_filename);
                 const pdf = isPDFFile(scanning.original_filename);
                 const canvasId = `pdf-thumb-${index}`;
+                const imgId = `img-thumb-${index}`;
                 return `
                   <div class="border rounded-md overflow-hidden cursor-pointer hover:border-blue-500 transition-colors folder-page ${isProcessed ? 'border-green-500 bg-green-50' : ''}" data-index="${index}">
                     <div class="h-40 bg-muted flex items-center justify-center relative">
                       ${isProcessed ? `<div class=\"absolute top-2 right-2 z-10\"><span class=\"badge bg-green-500 text-white\"><i data-lucide=\"check-circle\" class=\"h-3 w-3 mr-1\"></i>Typed</span></div>` : ''}
-                      ${img && url ? `<img src=\"${url}\" alt=\"Page ${index + 1}\" class=\"max-h-full max-w-full object-contain\" onerror=\"this.style.display='none'; this.nextElementSibling.style.display='flex';\" />
+                      ${img && url ? `<img id=\"${imgId}\" src=\"${url}\" alt=\"Page ${index + 1}\" class=\"max-h-full max-w-full object-contain\" onerror=\"this.style.display='none'; this.nextElementSibling.style.display='flex';\" />
                         <div class=\"text-center hidden\"><i data-lucide=\"file-text\" class=\"h-8 w-8 text-gray-400 mb-2\"></i><p class=\"text-xs text-gray-500\">${scanning.original_filename}</p></div>`
                       : pdf && url ? `<canvas id=\"${canvasId}\" class=\"max-h-full max-w-full border\" style=\"background: white;\"></canvas>
                         <div class=\"text-center hidden absolute inset-0 flex flex-col items-center justify-center bg-gray-100\">
                           <i data-lucide=\"file-text\" class=\"h-8 w-8 text-gray-400 mb-2\"></i>
                           <p class=\"text-xs text-gray-500\">${scanning.original_filename}</p>
                         </div>`
-                      : `<div class=\"text-center\"><i data-lucide=\"${pdf ? 'file-text' : 'file'}\" class=\"h-8 w-8 text-gray-400 mb-2\"></i><p class=\"text-xs text-gray-500\">${scanning.original_filename}</p></div>`}
+                      : url ? `<img id=\"${imgId}\" src=\"${url}\" alt=\"Page ${index + 1}\" class=\"max-h-full max-w-full object-contain hidden\" onerror=\"this.style.display='none';\" />
+                        <canvas id=\"${canvasId}\" class=\"max-h-full max-w-full border hidden\" style=\"background: white;\"></canvas>
+                        <div class=\"text-center fallback-icon\"><i data-lucide=\"file\" class=\"h-8 w-8 text-gray-400 mb-2\"></i><p class=\"text-xs text-gray-500\">${scanning.original_filename}</p></div>`
+                      : `<div class=\"text-center\"><i data-lucide=\"file\" class=\"h-8 w-8 text-gray-400 mb-2\"></i><p class=\"text-xs text-gray-500\">${scanning.original_filename}</p></div>`}
                     </div>
                     <div class="p-2 bg-gray-50 border-t">
                       <div class="flex justify-between items-center">
                         <span class="text-sm font-medium">Page ${index + 1}</span>
-                        <span class="badge badge-outline text-xs">${pdf ? 'PDF' : (img ? 'Image' : 'File')}</span>
+                        <span class="badge badge-outline text-xs file-type-badge" data-file-type="${pdf ? 'pdf' : (img ? 'image' : 'file')}" data-canvas-id="${canvasId}">${pdf ? 'PDF' : (img ? 'Image' : 'File')}</span>
                       </div>
                       <div class="mt-1 text-xs text-muted-foreground">${file.file_number}-${(index + 1).toString().padStart(2, '0')}</div>
                       ${isProcessed ? `<div class=\"mt-1\"><span class=\"badge bg-blue-500 text-white text-xs w-full justify-center\">${isProcessed.page_code ? isProcessed.page_code : `${getCoverTypeById(isProcessed.coverType)?.code || ''}-${getPageTypeById(isProcessed.pageType)?.code || ''}-${getPageSubTypeById(isProcessed.pageType, isProcessed.pageSubType)?.code || ''}-${isProcessed.serialNo || ''}`}</span></div>` : ''}
@@ -2110,15 +2349,64 @@
           elements.typingCard.innerHTML = content;
           lucide.createIcons();
 
-          // Generate PDF thumbnails for folder view
+          // Generate thumbnails for folder view (PDF and images)
           file.scannings.forEach((scanning, index) => {
             const url = getDocumentUrl(scanning.document_path);
+            const img = isImageFile(scanning.original_filename);
             const pdf = isPDFFile(scanning.original_filename);
-            if (pdf && url) {
-              const canvasId = `pdf-thumb-${index}`;
-              setTimeout(() => generateFolderPDFThumbnail(url, canvasId), 100 * index); // Stagger loading
+            const canvasId = `pdf-thumb-${index}`;
+            const imgId = `img-thumb-${index}`;
+
+            if (url) {
+              if (pdf) {
+                // Generate PDF thumbnail
+                setTimeout(() => generateFolderPDFThumbnail(url, canvasId), 100 * index);
+              } else if (img) {
+                // Image thumbnail is already handled by img tag
+              } else {
+                // Check content-type for files without proper extensions
+                setTimeout(() => checkContentTypeAndGenerateThumbnail(url, canvasId, imgId, index), 100 * index);
+              }
             }
           });
+
+          // Function to check content-type and generate appropriate thumbnail
+          async function checkContentTypeAndGenerateThumbnail(url, canvasId, imgId, index) {
+            try {
+              const response = await fetch(url, { method: 'HEAD' });
+              const contentType = response.headers.get('content-type');
+
+              if (contentType && contentType.includes('pdf')) {
+                // Generate PDF thumbnail and show canvas
+                const canvasElement = document.getElementById(canvasId);
+                const fallbackIcon = canvasElement?.parentElement?.querySelector('.fallback-icon');
+                if (canvasElement && fallbackIcon) {
+                  canvasElement.style.display = 'block';
+                  fallbackIcon.style.display = 'none';
+                }
+                await generateFolderPDFThumbnail(url, canvasId);
+              } else if (contentType && contentType.startsWith('image/')) {
+                // Show image thumbnail
+                const imgElement = document.getElementById(imgId);
+                const fallbackIcon = imgElement?.parentElement?.querySelector('.fallback-icon');
+                if (imgElement && fallbackIcon) {
+                  imgElement.src = url;
+                  imgElement.style.display = 'block';
+                  fallbackIcon.style.display = 'none';
+
+                  // Update badge for image
+                  const badgeSelector = `[data-canvas-id="${canvasId}"]`;
+                  const badge = document.querySelector(badgeSelector);
+                  if (badge) {
+                    badge.textContent = 'Image';
+                  }
+                }
+              }
+              // For other content types, keep the fallback icon
+            } catch (error) {
+              console.error('Error checking content-type for thumbnail:', error);
+            }
+          }
 
           // Generate PDF thumbnail for folder view
         async function generateFolderPDFThumbnail(url, canvasId) {
@@ -2126,22 +2414,48 @@
             const loadingTask = pdfjsLib.getDocument(url);
             const pdf = await loadingTask.promise;
             const page = await pdf.getPage(1); // Always get first page
-            
+
             const scale = 0.3; // Small scale for thumbnails
             const viewport = page.getViewport({ scale: scale });
-            
+
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
-            
+
             canvas.height = viewport.height;
             canvas.width = viewport.width;
-            
+
             const renderContext = {
               canvasContext: canvas.getContext('2d'),
               viewport: viewport
             };
-            
+
             await page.render(renderContext).promise;
+
+            // Add page count indicator
+            const ctx = canvas.getContext('2d');
+            const totalPages = pdf.numPages;
+
+            // Add a small badge showing total pages
+            if (totalPages > 1) {
+              ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+              ctx.fillRect(canvas.width - 35, canvas.height - 20, 35, 20);
+
+              ctx.fillStyle = 'white';
+              ctx.font = '10px Arial';
+              ctx.textAlign = 'center';
+              ctx.fillText(`${totalPages}p`, canvas.width - 17.5, canvas.height - 7);
+            }
+
+            // Update the badge to show page count
+            const badgeSelector = `[data-canvas-id="${canvasId}"]`;
+            const badge = document.querySelector(badgeSelector);
+            if (badge) {
+              badge.textContent = `PDF (${totalPages} page${totalPages > 1 ? 's' : ''})`;
+            }
+
+            // Store page count for potential future use
+            canvas.setAttribute('data-total-pages', totalPages);
+
           } catch (error) {
             console.error('Error generating PDF thumbnail:', error);
             const canvas = document.getElementById(canvasId);
@@ -2342,49 +2656,6 @@
                 text: 'An error occurred while processing the page. Please try again.',
                 confirmButtonColor: '#dc3545'
               });
-            }
-          });
-
-          // Zoom controls
-          document.querySelector('.zoom-in')?.addEventListener('click', () => {
-            if (state.typingState.zoomLevel < 200) {
-              state.typingState.zoomLevel += 25;
-              updateDocumentZoom();
-            }
-          });
-
-          document.querySelector('.zoom-out')?.addEventListener('click', () => {
-            if (state.typingState.zoomLevel > 50) {
-              state.typingState.zoomLevel -= 25;
-              updateDocumentZoom();
-            }
-          });
-
-          document.querySelector('.rotate')?.addEventListener('click', () => {
-            state.typingState.rotation = (state.typingState.rotation + 90) % 360;
-            updateDocumentRotation();
-          });
-
-          // PDF navigation controls
-          document.querySelector('.pdf-prev')?.addEventListener('click', () => {
-            if (state.pdfViewer && state.pdfViewer.currentPage > 1) {
-              state.pdfViewer.currentPage--;
-              const container = document.getElementById('document-preview-container');
-              if (container) {
-                updatePDFPageCounter(container);
-                renderPDFPage(container);
-              }
-            }
-          });
-
-          document.querySelector('.pdf-next')?.addEventListener('click', () => {
-            if (state.pdfViewer && state.pdfViewer.currentPage < state.pdfViewer.totalPages) {
-              state.pdfViewer.currentPage++;
-              const container = document.getElementById('document-preview-container');
-              if (container) {
-                updatePDFPageCounter(container);
-                renderPDFPage(container);
-              }
             }
           });
 

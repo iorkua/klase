@@ -6,6 +6,35 @@
 
 @section('content')
 @include('fileindexing.css.style')
+
+<style>
+/* Collapsible card animations */
+.collapsible-content {
+    transition: all 0.3s ease-in-out;
+    overflow: hidden;
+}
+
+.chevron-icon {
+    transition: transform 0.3s ease-in-out;
+}
+
+.card-header-hover:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Quick actions styling */
+.quick-actions-card {
+    background: linear-gradient(135deg, #dbeafe 0%, #dcfce7 100%);
+    border: 2px solid #3b82f6;
+    box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
+}
+
+.quick-actions-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 35px rgba(59, 130, 246, 0.2);
+    transition: all 0.3s ease;
+}
+</style>
     <!-- Main Content -->
     <div class="flex-1 overflow-auto">
         <!-- Header -->
@@ -24,7 +53,7 @@
                             </h1>
                             <p class="text-sm text-gray-500 mt-1">{{ $PageDescription ?? 'Manage and track multiple files efficiently' }}</p>
                         </div>
-                        <div class="flex items-center">
+                        <div class="flex items-center space-x-3">
                             <span class="badge badge-blue text-lg px-4 py-2">
                                 {{ $selectedFiles->count() }} Files Selected
                             </span>
@@ -32,15 +61,43 @@
                     </div>
                 </div>
 
+                <!-- Quick Actions Bar -->
+                <div class="card mb-6 quick-actions-card">
+                    <div class="p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <i data-lucide="zap" class="h-6 w-6 mr-3 text-blue-600"></i>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800">Quick Actions</h3>
+                                    <p class="text-sm text-gray-600">Perform batch operations on selected files</p>
+                                </div>
+                            </div>
+                            <div class="flex space-x-3">
+                                <button type="button" class="btn btn-primary shadow-lg" id="printTrackingSheetBtn">
+                                    <i data-lucide="printer" class="h-5 w-5 mr-2"></i>
+                                    Print Tracking Sheets
+                                </button>
+                                <button type="button" class="btn btn-outline shadow-lg" id="refreshDataBtn">
+                                    <i data-lucide="refresh-cw" class="h-4 w-4 mr-2"></i>
+                                    Refresh Data
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Selected Files Summary -->
                 <div class="card mb-6">
-                    <div class="p-4 border-b bg-blue-50">
-                        <h3 class="text-lg font-medium flex items-center">
-                            <i data-lucide="list" class="h-5 w-5 mr-2 text-blue-600"></i>
-                            Selected Files for Batch Operations
-                        </h3>
+                    <div class="p-4 border-b bg-blue-50 cursor-pointer card-header-hover" id="selectedFilesToggle">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-medium flex items-center">
+                                <i data-lucide="list" class="h-5 w-5 mr-2 text-blue-600"></i>
+                                Selected Files for Batch Operations
+                            </h3>
+                            <i data-lucide="chevron-down" class="h-5 w-5 text-gray-500 chevron-icon" id="selectedFilesChevron"></i>
+                        </div>
                     </div>
-                    <div class="p-0">
+                    <div class="collapsible-content" id="selectedFilesContent">
                         <div style="max-height: 300px; overflow-y: auto;">
                             <table class="w-full">
                                 <thead class="bg-gray-50 sticky top-0">
@@ -92,13 +149,17 @@
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                     <!-- Bulk Movement Update -->
                     <div class="card">
-                        <div class="p-4 border-b bg-green-50">
-                            <h3 class="text-lg font-medium flex items-center">
-                                <i data-lucide="map-pin" class="h-5 w-5 mr-2 text-green-600"></i>
-                                Bulk Movement Update
-                            </h3>
+                        <div class="p-4 border-b bg-green-50 cursor-pointer card-header-hover" id="bulkMovementToggle">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-medium flex items-center">
+                                    <i data-lucide="map-pin" class="h-5 w-5 mr-2 text-green-600"></i>
+                                    Bulk Movement Update
+                                </h3>
+                                <i data-lucide="chevron-down" class="h-5 w-5 text-gray-500 chevron-icon" id="bulkMovementChevron"></i>
+                            </div>
                         </div>
-                        <div class="p-6">
+                        <div class="collapsible-content" id="bulkMovementContent">
+                            <div class="p-6">
                             <form id="bulkMovementForm">
                                 <div class="form-group">
                                     <label for="location" class="form-label required flex items-center">
@@ -182,18 +243,23 @@
                                     Update All Locations
                                 </button>
                             </form>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Movement History & Analytics -->
                     <div class="card">
-                        <div class="p-4 border-b bg-blue-50">
-                            <h3 class="text-lg font-medium flex items-center">
-                                <i data-lucide="history" class="h-5 w-5 mr-2 text-blue-600"></i>
-                                Movement History & Analytics
-                            </h3>
+                        <div class="p-4 border-b bg-blue-50 cursor-pointer card-header-hover" id="analyticsToggle">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-medium flex items-center">
+                                    <i data-lucide="history" class="h-5 w-5 mr-2 text-blue-600"></i>
+                                    Movement History & Analytics
+                                </h3>
+                                <i data-lucide="chevron-down" class="h-5 w-5 text-gray-500 chevron-icon" id="analyticsChevron"></i>
+                            </div>
                         </div>
-                        <div class="p-6">
+                        <div class="collapsible-content" id="analyticsContent">
+                            <div class="p-6">
                             <div class="space-y-3 mb-6">
                                 <button type="button" class="btn btn-outline w-full" id="viewHistoryBtn">
                                     <i data-lucide="eye" class="h-4 w-4 mr-2"></i>
@@ -249,19 +315,23 @@
                                     @endif
                                 </div>
                             </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Movement History Table (Hidden initially) -->
                 <div class="card hidden" id="historySection">
-                    <div class="p-4 border-b bg-purple-50">
-                        <h3 class="text-lg font-medium flex items-center">
-                            <i data-lucide="clock" class="h-5 w-5 mr-2 text-purple-600"></i>
-                            Movement History Timeline
-                        </h3>
+                    <div class="p-4 border-b bg-purple-50 cursor-pointer card-header-hover" id="historyToggle">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-medium flex items-center">
+                                <i data-lucide="clock" class="h-5 w-5 mr-2 text-purple-600"></i>
+                                Movement History Timeline
+                            </h3>
+                            <i data-lucide="chevron-down" class="h-5 w-5 text-gray-500 chevron-icon" id="historyChevron"></i>
+                        </div>
                     </div>
-                    <div class="p-0">
+                    <div class="collapsible-content" id="historyContent">
                         <div style="max-height: 400px; overflow-y: auto;">
                             <table class="w-full" id="historyTable">
                                 <thead class="bg-gray-50 sticky top-0">
@@ -288,16 +358,6 @@
                         <i data-lucide="arrow-left" class="h-4 w-4 mr-2"></i>
                         Back to File Indexing
                     </a>
-                    <div class="flex space-x-3">
-                        <button type="button" class="btn btn-outline" id="printTrackingSheetBtn">
-                            <i data-lucide="printer" class="h-4 w-4 mr-2"></i>
-                            Print Tracking Sheets
-                        </button>
-                        <button type="button" class="btn btn-primary" id="refreshDataBtn">
-                            <i data-lucide="refresh-cw" class="h-4 w-4 mr-2"></i>
-                            Refresh Data
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
@@ -350,6 +410,48 @@
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const selectedFileIds = @json($selectedFiles->pluck('id')->toArray());
+        
+        // Collapsible Card Functionality
+        function initializeCollapsibleCard(toggleId, contentId, chevronId, defaultOpen = true) {
+            const toggle = document.getElementById(toggleId);
+            const content = document.getElementById(contentId);
+            const chevron = document.getElementById(chevronId);
+            
+            if (!toggle || !content || !chevron) return;
+            
+            // Set initial state
+            if (!defaultOpen) {
+                content.style.maxHeight = '0px';
+                content.style.opacity = '0';
+                chevron.style.transform = 'rotate(-90deg)';
+            } else {
+                content.style.maxHeight = content.scrollHeight + 'px';
+                content.style.opacity = '1';
+                chevron.style.transform = 'rotate(0deg)';
+            }
+            
+            toggle.addEventListener('click', function() {
+                const isOpen = content.style.maxHeight !== '0px' && content.style.maxHeight !== '';
+                
+                if (isOpen) {
+                    // Close
+                    content.style.maxHeight = '0px';
+                    content.style.opacity = '0';
+                    chevron.style.transform = 'rotate(-90deg)';
+                } else {
+                    // Open
+                    content.style.maxHeight = content.scrollHeight + 'px';
+                    content.style.opacity = '1';
+                    chevron.style.transform = 'rotate(0deg)';
+                }
+            });
+        }
+        
+        // Initialize all collapsible cards (all collapsed by default)
+        initializeCollapsibleCard('selectedFilesToggle', 'selectedFilesContent', 'selectedFilesChevron', false);
+        initializeCollapsibleCard('bulkMovementToggle', 'bulkMovementContent', 'bulkMovementChevron', false);
+        initializeCollapsibleCard('analyticsToggle', 'analyticsContent', 'analyticsChevron', false);
+        initializeCollapsibleCard('historyToggle', 'historyContent', 'historyChevron', false);
         
         // Bulk Movement Form Submission
         document.getElementById('bulkMovementForm').addEventListener('submit', function(e) {

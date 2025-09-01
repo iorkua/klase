@@ -76,6 +76,43 @@
                 .switch-input:checked + .switch-label .switch-text::before {
                     content: attr(data-on);
                 }
+                
+                /* Dropdown Menu Styles */
+                .table-container {
+                    overflow: visible !important;
+                }
+                
+                .dropdown-menu {
+                    position: fixed !important;
+                    z-index: 10000 !important;
+                    min-width: 12rem;
+                    background: white;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 0.375rem;
+                    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                    transform: translateY(0);
+                    transition: opacity 0.15s ease-in-out, transform 0.15s ease-in-out;
+                }
+                
+                .dropdown-menu.show {
+                    display: block !important;
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+                
+                .dropdown-menu.hidden {
+                    opacity: 0;
+                    transform: translateY(-10px);
+                }
+                
+                /* Responsive adjustments */
+                @media (max-width: 768px) {
+                    .dropdown-menu {
+                        right: 1rem !important;
+                        left: auto !important;
+                        min-width: 10rem;
+                    }
+                }
             </style>
             
             <div class="container mx-auto py-6 space-y-6">
@@ -90,13 +127,21 @@
                         <!-- Switch Button for Indexed/Unindexed -->
                         <div class="flex items-center gap-4">
                             <div class="flex items-center gap-2">
-                                <span class="text-sm font-medium">Upload Type:</span>
-                                <div class="switch-container">
-                                    <input type="checkbox" id="upload-type-switch" class="switch-input">
-                                    <label for="upload-type-switch" class="switch-label">
-                                        <span class="switch-text" data-on="Unindexed" data-off="Indexed"></span>
-                                        <span class="switch-handle"></span>
-                                    </label>
+                              
+                                <div class="flex items-center gap-2">
+                                  
+                                    <div class="flex items-center bg-gray-100 rounded-lg p-1">
+                                        <a href="{{ route('scanning.index') }}" 
+                                           class="px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 {{ request('mode') != 'unindexed' ? 'bg-white text-blue-600 shadow-sm border border-blue-200' : 'text-gray-600 hover:text-gray-800' }}">
+                                            <i data-lucide="folder" class="h-4 w-4 mr-2 inline"></i>
+                                            Indexed
+                                        </a>
+                                        <a href="/unindexed-scanning" 
+                                           class="px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 {{ request('mode') == 'unindexed' ? 'bg-white text-blue-600 shadow-sm border border-blue-200' : 'text-gray-600 hover:text-gray-800' }}">
+                                            <i data-lucide="file-plus" class="h-4 w-4 mr-2 inline"></i>
+                                            Unindexed
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -296,7 +341,7 @@
                                 </div>
                                 <div class="p-6">
                                     @if($recentScans && $recentScans->count() > 0)
-                                        <div class="overflow-x-auto">
+                                        <div class="overflow-x-auto table-container">
                                             <table class="min-w-full divide-y divide-gray-200">
                                                 <thead class="bg-gray-50">
                                                     <tr>
@@ -309,7 +354,7 @@
                                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody   class="bg-white divide-y divide-gray-200">
+                                                <tbody class="bg-white divide-y divide-gray-200">
                                                     @foreach($recentScans as $scan)
                                                         <tr class="hover:bg-gray-50">
                                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -334,17 +379,23 @@
                                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                                 {{ $scan->uploader->name ?? 'Unknown' }}
                                                             </td>
-                                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                                <div class="flex items-center space-x-2">
-                                                                    <button class="text-indigo-600 hover:text-indigo-900 inline-flex items-center" onclick="viewFileScans({{ $scan->id }})">
-                                                                        <i data-lucide="eye" class="h-4 w-4 mr-1"></i>
-                                                                        View
+                                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium relative">
+                                                                <div class="relative inline-block">
+                                                                    <button class="text-gray-400 hover:text-gray-600 p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" onclick="toggleDropdown('dropdown-{{ $scan->id }}')">
+                                                                        <i data-lucide="more-vertical" class="h-5 w-5"></i>
                                                                     </button>
-                                                                    
-                                                                    <button class="text-orange-600 hover:text-orange-900 upload-more-action inline-flex items-center" data-file-id="{{ $scan->id }}">
-                                                                        <i data-lucide="plus-circle" class="h-4 w-4 mr-1"></i>
-                                                                        Upload More
-                                                                    </button>
+                                                                    <div id="dropdown-{{ $scan->id }}" class="dropdown-menu absolute right-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg z-[9999] hidden border border-gray-200">
+                                                                        <div class="py-1">
+                                                                            <button class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150" onclick="viewFileScans({{ $scan->id }})">
+                                                                                <i data-lucide="eye" class="h-4 w-4 mr-2 inline"></i>
+                                                                                View
+                                                                            </button>
+                                                                            <button class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 upload-more-action transition-colors duration-150" data-file-id="{{ $scan->id }}">
+                                                                                <i data-lucide="plus-circle" class="h-4 w-4 mr-2 inline"></i>
+                                                                                Upload More
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
                                                             </td>
                                                         </tr>
@@ -466,6 +517,84 @@
         <script>
             // Initialize Lucide icons
             lucide.createIcons();
+
+            // Function to toggle dropdown visibility
+            function toggleDropdown(dropdownId) {
+                const dropdown = document.getElementById(dropdownId);
+                if (dropdown) {
+                    // Close any other open dropdowns first
+                    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                        if (menu.id !== dropdownId) {
+                            menu.classList.add('hidden');
+                            menu.classList.remove('show');
+                        }
+                    });
+                    
+                    if (dropdown.classList.contains('hidden')) {
+                        // Position the dropdown using fixed positioning
+                        const button = dropdown.previousElementSibling;
+                        const rect = button.getBoundingClientRect();
+                        const viewportWidth = window.innerWidth;
+                        const viewportHeight = window.innerHeight;
+                        const dropdownWidth = 192; // w-48 = 12rem = 192px
+                        
+                        dropdown.style.position = 'fixed';
+                        dropdown.style.zIndex = '10000';
+                        
+                        // Calculate horizontal position
+                        let leftPos = rect.right - dropdownWidth;
+                        if (leftPos < 10) {
+                            leftPos = rect.left;
+                        }
+                        if (leftPos + dropdownWidth > viewportWidth - 10) {
+                            leftPos = viewportWidth - dropdownWidth - 10;
+                        }
+                        
+                        // Calculate vertical position
+                        let topPos = rect.bottom + 5;
+                        if (topPos + 100 > viewportHeight) { // Estimate dropdown height
+                            topPos = rect.top - 100 - 5;
+                        }
+                        
+                        dropdown.style.top = topPos + 'px';
+                        dropdown.style.left = leftPos + 'px';
+                        
+                        dropdown.classList.remove('hidden');
+                        dropdown.classList.add('show');
+                    } else {
+                        dropdown.classList.add('hidden');
+                        dropdown.classList.remove('show');
+                    }
+                }
+            }
+            
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(event) {
+                const isDropdownButton = event.target.closest('button[onclick*="toggleDropdown"]');
+                const isDropdownMenu = event.target.closest('.dropdown-menu');
+                
+                if (!isDropdownButton && !isDropdownMenu) {
+                    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                        menu.classList.add('hidden');
+                        menu.classList.remove('show');
+                    });
+                }
+            });
+            
+            // Close dropdowns on scroll or resize
+            window.addEventListener('scroll', function() {
+                document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                    menu.classList.add('hidden');
+                    menu.classList.remove('show');
+                });
+            });
+            
+            window.addEventListener('resize', function() {
+                document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                    menu.classList.add('hidden');
+                    menu.classList.remove('show');
+                });
+            });
 
             // Application state
             let uploadState = {

@@ -545,6 +545,70 @@
                               </div>
                             </div>
                             
+                            <!-- Buyers List (View Only) -->
+                            <div class="mb-6">
+                              <h4 class="text-sm font-semibold text-gray-800 mb-3 pb-2 border-b">Buyers List</h4>
+                              
+                              @php
+                                // Fetch buyers data for this application
+                                $buyers = [];
+                                try {
+                                  $buyers = DB::connection('sqlsrv')
+                                    ->table('buyer_list as bl')
+                                    ->leftJoin('st_unit_measurements as sum', function($join) {
+                                      $join->on('bl.unit_no', '=', 'sum.unit_no')
+                                           ->on('bl.application_id', '=', 'sum.application_id');
+                                    })
+                                    ->where('bl.application_id', $application->id)
+                                    ->select('bl.id', 'bl.buyer_title', 'bl.buyer_name', 'bl.unit_no', 'bl.unit_measurement_id', 'sum.measurement')
+                                    ->get()
+                                    ->toArray();
+                                } catch (\Exception $e) {
+                                  // Handle error silently
+                                  $buyers = [];
+                                }
+                              @endphp
+                              
+                              @if(count($buyers) > 0)
+                                <div class="overflow-x-auto">
+                                  <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                      <tr>
+                                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SN</th>
+                                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Buyer Name</th>
+                                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit No.</th>
+                                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Measurement (sqm)</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                      @foreach($buyers as $index => $buyer)
+                                        <tr class="hover:bg-gray-50">
+                                          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ $index + 1 }}</td>
+                                          <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            {{ $buyer->buyer_title ?? '' }} {{ $buyer->buyer_name ?? '' }}
+                                          </td>
+                                          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ $buyer->unit_no ?? '' }}</td>
+                                          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ $buyer->measurement ?? 'N/A' }}</td>
+                                        </tr>
+                                      @endforeach
+                                    </tbody>
+                                  </table>
+                                </div>
+                                
+                                <div class="mt-3 p-3 bg-blue-50 rounded-lg">
+                                  <div class="flex justify-between items-center">
+                                    <p class="text-sm font-medium text-gray-600">Total Buyers:</p>
+                                    <p class="text-lg font-bold text-blue-700">{{ count($buyers) }}</p>
+                                  </div>
+                                </div>
+                              @else
+                                <div class="text-center py-8 bg-gray-50 rounded-lg">
+                                  <i data-lucide="users" class="w-12 h-12 text-gray-400 mx-auto mb-3"></i>
+                                  <p class="text-sm text-gray-500">No buyers added yet</p>
+                                </div>
+                              @endif
+                            </div>
+                            
                             <!-- Action Buttons -->
                             <div class="flex justify-between items-center pt-4 mt-6 border-t border-gray-200">
                               <button type="button" onclick="window.history.back()" class="flex items-center px-3 py-1 text-xs border border-gray-300 rounded-md bg-white hover:bg-gray-50">

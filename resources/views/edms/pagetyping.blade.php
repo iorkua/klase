@@ -864,7 +864,9 @@
                 <li class="breadcrumb-item">
                     <span class="breadcrumb-current">Page Typing</span>
                 </li>
+               
             </ol>
+            
         </nav>
 
         @php
@@ -873,9 +875,12 @@
             $pageIndex = 0;
             
             foreach($fileIndexing->scannings as $docIndex => $scanning) {
-                if(str_ends_with($scanning->document_path, '.pdf')) {
+                // Use the actual document path from scanning table
+                $documentPath = $scanning->document_path;
+                
+                if(str_ends_with($documentPath, '.pdf')) {
                     // For PDFs, try to get actual page count
-                    $pdfInfo = app('App\Http\Controllers\EdmsController')->getPdfPageInfo($scanning->document_path);
+                    $pdfInfo = app('App\Http\Controllers\EdmsController')->getPdfPageInfo($documentPath);
                     $pageCount = $pdfInfo['page_count'] ?? 1;
                     
                     for($page = 1; $page <= $pageCount; $page++) {
@@ -883,7 +888,7 @@
                             'type' => 'pdf_page',
                             'document_index' => $docIndex,
                             'page_number' => $page,
-                            'file_path' => 'EDMS\\PAGETYPING\\' . $fileIndexing->file_number . '.pdf',
+                            'file_path' => $documentPath, // Use actual path from scanning table
                             'display_name' => "Document " . ($docIndex + 1) . " - Page " . $page,
                             'page_index' => $pageIndex++,
                             'scanning_id' => $scanning->id
@@ -895,7 +900,7 @@
                         'type' => 'image',
                         'document_index' => $docIndex,
                         'page_number' => 1,
-                        'file_path' => 'EDMS\\PAGETYPING\\' . $fileIndexing->file_number . '.pdf',
+                        'file_path' => $documentPath, // Use actual path from scanning table
                         'display_name' => "Document " . ($docIndex + 1),
                         'page_index' => $pageIndex++,
                         'scanning_id' => $scanning->id
@@ -1088,17 +1093,30 @@
                                     <i data-lucide="save" style="width: 1.25rem; height: 1.25rem;"></i>
                                     Save & Next Page
                                 </button>
-                                {{-- <button type="button" class="btn-save" id="batch-save-btn" style="flex: 1; background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);">
-                                    <i data-lucide="layers" style="width: 1.25rem; height: 1.25rem;"></i>
-                                    Batch Save All
-                                </button> --}}
                             </div>
-                            {{-- <div style="display: flex; gap: 1rem;">
-                                <button type="button" class="btn-save" id="finish-btn" style="flex: 1;">
-                                    <i data-lucide="check" style="width: 1.25rem; height: 1.25rem;"></i>
-                                    Finish Classification
-                                </button>
-                            </div> --}}
+                            <div style="display: flex; gap: 1rem; display: none;">
+                                @if($fileIndexing->recertification_application_id)
+                                    <a href="{{ route('recertification.index') }}" class="btn-save" style="flex: 1; background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                                        <i data-lucide="check-circle" style="width: 1.25rem; height: 1.25rem;"></i>
+                                        Finish EDMS - Return to Recertification
+                                    </a>
+                                @elseif($fileIndexing->subapplication_id)
+                                    <a href="{{ route('sectionaltitling.units') }}" class="btn-save" style="flex: 1; background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                                        <i data-lucide="check-circle" style="width: 1.25rem; height: 1.25rem;"></i>
+                                        Finish EDMS - Return to Unit Applications
+                                    </a>
+                                @elseif($fileIndexing->main_application_id)
+                                    <a href="{{ route('sectionaltitling.primary') }}?url=infopro" class="btn-save" style="flex: 1; background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                                        <i data-lucide="check-circle" style="width: 1.25rem; height: 1.25rem;"></i>
+                                        Finish EDMS - Return to Primary Applications
+                                    </a>
+                                @else
+                                    <a href="{{ url('/dashboard') }}" class="btn-save" style="flex: 1; background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                                        <i data-lucide="check-circle" style="width: 1.25rem; height: 1.25rem;"></i>
+                                        Finish EDMS - Return to Dashboard
+                                    </a>
+                                @endif
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -1112,8 +1130,32 @@
                 Back to Document Scanning
             </a>
             
-            <div class="status-text">
-                Complete all page classifications to finish the EDMS workflow
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <!-- <div class="status-text">
+                if you have completed classifying all pages, you may click the button below to go back.
+                </div> -->
+                
+                @if($fileIndexing->recertification_application_id)
+                    <a href="{{ route('recertification.index') }}" class="btn-primary">
+                        <i data-lucide="check-circle" style="width: 1.25rem; height: 1.25rem;"></i>
+                        Finish EDMS
+                    </a>
+                @elseif($fileIndexing->subapplication_id)
+                    <a href="{{ route('sectionaltitling.units') }}" class="btn-primary">
+                        <i data-lucide="check-circle" style="width: 1.25rem; height: 1.25rem;"></i>
+                        Finish EDMS
+                    </a>
+                @elseif($fileIndexing->main_application_id)
+                    <a href="{{ route('sectionaltitling.primary') }}?url=infopro" class="btn-primary">
+                        <i data-lucide="check-circle" style="width: 1.25rem; height: 1.25rem;"></i>
+                        Finish EDMS
+                    </a>
+                @else
+                    <a href="{{ url('/dashboard') }}" class="btn-primary">
+                        <i data-lucide="check-circle" style="width: 1.25rem; height: 1.25rem;"></i>
+                        Finish EDMS
+                    </a>
+                @endif
             </div>
         </div>
 
@@ -1486,7 +1528,7 @@
             
             // Load page in viewer
             const currentPage = pageData[index];
-            
+          
             if (currentPage.type === 'pdf_page') {
                 // For PDF pages, use PDF.js for better rendering
                 const pdfPath = `{{ asset('storage/app/public/') }}/${currentPage.file_path}`;

@@ -3,8 +3,9 @@
     {{ __('Document Upload') }}
 @endsection
 @section('content')
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://unpkg.com/tesseract.js@4/dist/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://unpkg.com/tesseract.js@4/dist/tesseract.min.js"></script>
+    <script src="/scanning/upload_handler.js"></script>
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Main Content -->
@@ -139,7 +140,7 @@
 
                                             <!-- Action Buttons -->
                                             <div class="flex flex-col md:flex-row gap-4 justify-center">
-                                                <button type="submit" id="start-upload-btn" class="hidden inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                                                <button type="button" id="start-upload-btn" class="hidden inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
                                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                                                     </svg>
@@ -330,12 +331,20 @@
     </div>
 
     <script>
-        // Global variables
-        let selectedFiles = [];
-        let uploadStatus = 'idle';
-        let uploadProgress = 0;
-        let extractedMetadata = {};
-        let uploadedDocuments = [];
+        // Initialize global variables in window scope
+        window.selectedFiles = [];
+        window.uploadStatus = 'idle';
+        window.uploadProgress = 0;
+        window.extractedMetadata = {};
+        window.uploadedDocuments = [];
+        window.aiProcessingStage = 'idle';
+        window.aiProgress = 0;
+        window.currentEditingFile = null;
+        window.ocrProgress = 0;
+        window.filteredFiles = [];
+        window.currentPDFDocument = null;
+        window.currentPageNumber = 1;
+        window.uploadedFiles = [];
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {

@@ -22,10 +22,30 @@
                         <div class="tracking-id-container" style="text-align: right;">
                             <label class="form-label" style="font-size: 0.75rem; color: #6b7280; margin-bottom: 0.25rem;">Tracking ID</label>
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <input type="text" id="tracking-id" class="input" readonly style="width: 180px; font-size: 0.75rem; background-color: #f9fafb; font-family: monospace;" placeholder="Will be generated on save">
-                                <button type="button" id="generate-tracking-btn" class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="Generate new tracking ID">
-                                    <i data-lucide="refresh-cw" class="h-3 w-3"></i>
-                                </button>
+                                  @php
+                                function generateTrackingId() {
+                                    $segment1 = '';
+                                    $segment2 = '';
+                                    $characters = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789';
+                                    
+                                    // Generate first segment (8 characters)
+                                    for ($i = 0; $i < 8; $i++) {
+                                        $segment1 .= $characters[rand(0, strlen($characters) - 1)];
+                                    }
+                                    
+                                    // Generate second segment (5 characters)
+                                    for ($i = 0; $i < 5; $i++) {
+                                        $segment2 .= $characters[rand(0, strlen($characters) - 1)];
+                                    }
+                                    
+                                    return "TRK-{$segment1}-{$segment2}";
+                                }
+                                $trackingId = generateTrackingId();
+                                @endphp
+                                <input type="text"   class="input" readonly 
+                                       style="width: 180px; font-size: 0.75rem; background-color: #f9fafb; font-family: monospace; cursor: default;"
+                                        value="{{ $trackingId }}">
+                                 
                             </div>
                         </div>
                     </div>
@@ -322,10 +342,102 @@ function generateRandomAlphanumeric(length) {
     return result;
 }
 
+// IMMEDIATE TRACKING ID GENERATION - runs as soon as script loads
+(function immediateTrackingIdGeneration() {
+    // Function to set tracking ID
+    function setTrackingId() {
+        const trackingIdInput = document.getElementById('tracking-id');
+        if (trackingIdInput) {
+            trackingIdInput.value = generateTrackingId();
+            return true;
+        }
+        return false;
+    }
+    
+    // Try immediately
+    setTrackingId();
+    
+    // Keep trying until successful
+    let attempts = 0;
+    const maxAttempts = 50;
+    const interval = setInterval(function() {
+        if (setTrackingId() || attempts >= maxAttempts) {
+            clearInterval(interval);
+        }
+        attempts++;
+    }, 20); // Try every 20ms
+})();
+
+// Generate random alphanumeric string
+function generateRandomAlphanumeric(length) {
+    const characters = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789'; // Exclude O, 0 for clarity
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
+}
+
+// Ensure tracking ID is always available
+function ensureTrackingIdExists() {
+    const trackingIdInput = document.getElementById('tracking-id');
+    if (trackingIdInput) {
+        if (!trackingIdInput.value || trackingIdInput.value === 'Auto-generating...') {
+            trackingIdInput.value = generateTrackingId();
+        }
+    }
+    return trackingIdInput && trackingIdInput.value;
+}
+
+// Auto-generate tracking ID immediately when script loads
+(function() {
+    // Generate tracking ID as soon as this script runs
+    const trackingIdInput = document.getElementById('tracking-id');
+    if (trackingIdInput) {
+        trackingIdInput.value = generateTrackingId();
+    }
+    
+    // Fallback attempts with shorter intervals
+    setTimeout(ensureTrackingIdExists, 10);
+    setTimeout(ensureTrackingIdExists, 50);
+    setTimeout(ensureTrackingIdExists, 100);
+    
+    // Use MutationObserver to watch for when the tracking ID input becomes available
+    if (typeof MutationObserver !== 'undefined') {
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList') {
+                    const trackingIdInput = document.getElementById('tracking-id');
+                    if (trackingIdInput && (!trackingIdInput.value || trackingIdInput.value === 'Auto-generating...')) {
+                        trackingIdInput.value = generateTrackingId();
+                        observer.disconnect(); // Stop observing once we've set the value
+                    }
+                }
+            });
+        });
+        
+        // Start observing
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+        
+        // Stop observing after 3 seconds to prevent memory leaks
+        setTimeout(() => {
+            observer.disconnect();
+        }, 3000);
+    }
+})();
+
 // Initialize tracking ID generation
 document.addEventListener('DOMContentLoaded', function() {
     const generateTrackingBtn = document.getElementById('generate-tracking-btn');
     const trackingIdInput = document.getElementById('tracking-id');
+    
+    if (trackingIdInput) {
+        // Always generate initial tracking ID on DOM ready
+        trackingIdInput.value = generateTrackingId();
+    }
     
     if (generateTrackingBtn && trackingIdInput) {
         generateTrackingBtn.addEventListener('click', function() {
@@ -338,11 +450,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 trackingIdInput.style.backgroundColor = '#f9fafb';
             }, 1000);
         });
-        
-        // Generate initial tracking ID
-        if (!trackingIdInput.value) {
-            trackingIdInput.value = generateTrackingId();
-        }
     }
     
     // Handle district selection
@@ -530,7 +637,7 @@ function closeFileIndexingDialog() {
             form.reset();
         }
         
-        // Reset tracking ID
+        // Always regenerate tracking ID when closing
         const trackingIdInput = document.getElementById('tracking-id');
         if (trackingIdInput) {
             trackingIdInput.value = generateTrackingId();
@@ -555,10 +662,24 @@ function openFileIndexingDialog() {
     if (overlay) {
         overlay.classList.remove('hidden');
         
-        // Generate new tracking ID
+        // Always ensure tracking ID is present when dialog opens
         const trackingIdInput = document.getElementById('tracking-id');
         if (trackingIdInput) {
-            trackingIdInput.value = generateTrackingId();
+            // If no tracking ID exists or it's still showing placeholder, generate one
+            if (!trackingIdInput.value || trackingIdInput.value === 'Auto-generating...') {
+                const newTrackingId = generateTrackingId();
+                trackingIdInput.value = newTrackingId;
+            } else {
+                // Generate a fresh one each time dialog opens
+                const newTrackingId = generateTrackingId();
+                trackingIdInput.value = newTrackingId;
+            }
+            
+            // Add visual feedback to show it's been generated
+            trackingIdInput.style.backgroundColor = '#dcfce7';
+            setTimeout(() => {
+                trackingIdInput.style.backgroundColor = '#f9fafb';
+            }, 1000);
         }
         
         // Focus on first input

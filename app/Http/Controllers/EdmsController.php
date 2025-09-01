@@ -478,9 +478,17 @@ class EdmsController extends Controller
             }
             
             $uploadedDocuments = [];
+            $fileNumber = $fileIndexing->file_number ?? 'FILE-' . $fileIndexingId;
             
-            foreach ($request->file('documents') as $document) {
-                $path = $document->store('scanned_documents/' . $fileIndexingId, 'public');
+            foreach ($request->file('documents') as $index => $document) {
+                // Generate sequential filename like: ST-COM-2025-01-002_0008.pdf
+                $extension = $document->getClientOriginalExtension();
+                $sequentialNumber = str_pad($index + 1, 4, '0', STR_PAD_LEFT);
+                $fileName = $fileNumber . '_' . $sequentialNumber . '.' . $extension;
+                
+                // Store in EDMS/SCAN_UPLOAD/{fileNumber}/ directory
+                $uploadPath = 'EDMS/SCAN_UPLOAD/' . $fileNumber;
+                $path = $document->storeAs($uploadPath, $fileName, 'public');
                 
                 $scanning = Scanning::on('sqlsrv')->create([
                     'file_indexing_id' => $fileIndexingId,
@@ -497,6 +505,8 @@ class EdmsController extends Controller
             
             Log::info('Documents uploaded', [
                 'file_indexing_id' => $fileIndexingId,
+                'file_number' => $fileNumber,
+                'upload_path' => $uploadPath,
                 'document_count' => count($uploadedDocuments),
                 'uploaded_by' => Auth::id()
             ]);
@@ -737,7 +747,7 @@ class EdmsController extends Controller
         
         $landUse = $application->land_use ?? 'Property';
         
-        return $name ? "{$name}'s {$landUse}" : "Application {$application->id}";
+        return $name ?: "Application {$application->id}";
     }
 
     /**

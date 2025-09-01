@@ -524,6 +524,7 @@
                         <th class="table-header">Status</th>
                         <th class="table-header">Approval/Declined Date</th>
                         <th class="table-header">Comment</th>
+                        <th class="table-header">Prerequisites</th>
                         <th class="table-header">Actions</th>
                     </tr>
                   </thead>
@@ -558,6 +559,27 @@
                             @endif
                         </td>
                         <td class="table-cell">{{ $application->comments ?? 'N/A' }}</td>
+                        <td class="table-cell">
+                            @php
+                            $fileExists = DB::connection('sqlsrv')
+                              ->table('Cofo')
+                              ->where('mlsFNo', $application->fileno)
+                              ->orWhere('kangisFileNo', $application->fileno)
+                              ->orWhere('NewKANGISFileno', $application->fileno)
+                              ->exists();
+                            @endphp
+                            @if($fileExists)
+                              <span class="badge badge-approved">
+                                <i data-lucide="check-circle" class="w-4 h-4 mr-1 text-green-600"></i>
+                                COFO 
+                              </span>
+                            @else
+                              <span class="badge badge-declined">
+                                <i data-lucide="x-circle" class="w-4 h-4 mr-1 text-red-600"></i>
+                                COFO  
+                              </span>
+                            @endif
+                        </td>
                        
                     
                       <td class="table-cell relative">
@@ -584,17 +606,16 @@
                                 ->orWhere('NewKANGISFileno', $application->fileno)
                                 ->exists();
                               @endphp
-
-                              @if($application->planning_recommendation_status == 'Approved' || !$fileExists)
-                              <div class="block w-full text-left px-4 py-2 flex items-center space-x-2 disabled-link">
-                                <i data-lucide="check-circle" class="w-4 h-4 disabled-icon"></i>
-                                <span>@if(!$fileExists) COFO Required @else Approve/Decline @endif</span>
-                              </div>
-                              @else
+                              @if($fileExists && $application->planning_recommendation_status != 'Approved')
                               <a href="{{ route('actions.recommendation', ['id' => $application->id]) }}?url=phy_planning" class="block w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2">
                                 <i data-lucide="check-circle" class="w-4 h-4 text-blue-600"></i>
                                 <span>Approve/Decline</span>
                               </a>
+                              @else
+                              <div class="block w-full text-left px-4 py-2 flex items-center space-x-2 disabled-link">
+                                <i data-lucide="check-circle" class="w-4 h-4 disabled-icon"></i>
+                                <span>Approve/Decline</span>
+                              </div>
                               @endif
                             </li>
 
@@ -632,7 +653,7 @@
                     </tr>
                     @empty
                      <tr class="text-xs">
-                      <td colspan="11" class="table-cell text-center py-4 text-gray-500">No primary survey records found</td>
+                      <td colspan="12" class="table-cell text-center py-4 text-gray-500">No primary survey records found</td>
                     </tr>
                     @endforelse
                   </tbody>
