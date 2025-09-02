@@ -295,7 +295,7 @@
                                 <option value="BATCH-005">BATCH-005</option>
                             </select>
                         </div>
-                        <div class="form-group">
+                   <div class="form-group">
                             <label for="shelf-location" class="form-label">Shelf/Rack Location</label>
                             <select id="shelf-location" class="input">
                                 <option value="">Select location</option>
@@ -311,6 +311,8 @@
                                 <option value="B2-R2">B2-R2 (Block 2, Rack 2)</option>
                             </select>
                         </div>
+    
+ 
                     </div>
                 </div>
                 

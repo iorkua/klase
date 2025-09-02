@@ -1,492 +1,210 @@
 @extends('layouts.app')
 @section('page-title')
-    {{ __('Blind Scannings') }}
+{{ __('Blind Scannings') }}
 @endsection
 
 @section('content')
-    @include('pagetyping.css.style')
-    <!-- Main Content -->
-    <div class="flex-1 overflow-auto">
-        <!-- Header -->
-        @include('admin.header')
-        <!-- Dashboard Content -->
-        <div class="p-6">
-          
-          <div class="container mx-auto py-6 space-y-6">
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    // Configure PDF.js worker
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
+  @include('scanning.blind_scan.css')
+<div class="flex-1 overflow-auto">
+    <!-- Header -->
+    @include('admin.header')
+    <!-- Dashboard Content -->
+    <div class="p-4 sm:p-6">
+
+        <div  class="bg-white rounded-md shadow-sm border border-gray-200 p-4 sm:p-6">
             <!-- Page Header -->
-            <div class="flex flex-col space-y-2">
-              <h1 class="text-2xl font-bold tracking-tight">Blind Scannings</h1>
-              <p class="text-muted-foreground">Upload raw scanned documents </p>
-            </div>
+            <!-- <div class="flex flex-col space-y-2">
+                <h1 class="text-xl sm:text-2xl font-bold tracking-tight">Blind Scannings</h1>
+                <p class="text-muted-foreground text-sm sm:text-base">Upload raw scanned documents </p>
+            </div> -->
+
+ 
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+      
+      <!-- Left Panel - File Operations -->
+      <div class="space-y-4 sm:space-y-6">
         
-           
-       
+        <!-- File Number Information Section -->
+        <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-gray-200">
+          <div class="flex items-center space-x-2 mb-4">
+            <div class="bg-green-100 p-2 rounded-lg">
+              <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
             </div>
+            <h3 class="text-base sm:text-lg font-semibold text-gray-800">File Number Information</h3>
           </div>
-        
+          
+          <!-- Include the reusable File Number Information component -->
+          @include('components.file_number_info')
+
+          <button class="w-full mt-4 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 text-sm sm:text-base">
+            Create Folder
+          </button>
         </div>
 
-        <!-- Footer -->
-        @include('admin.footer')
-    </div>
+       
+      </div>
 
-  
-
-   
-
-    <script>
-        // Initialize Lucide icons
-        lucide.createIcons();
-
-        // Application state
-        let state = {
-          activeTab: 'pending',
-          selectedFiles: [],
-          currentPage: 1,
-          perPage: 15,
-          filters: {}
-        };
-
-        // Sample data for demonstration
-        const sampleBlindScans = {
-          pending: [
-            {
-              id: 1,
-              temp_file_id: 'BLIND-2024-001',
-              original_filename: 'certificate_scan_001.pdf',
-              document_type: 'Certificate',
-              paper_size: 'A4',
-              status: 'pending',
-              created_at: '2024-01-15T10:30:00Z',
-              uploader: { name: 'John Doe' }
-            },
-            {
-              id: 2,
-              temp_file_id: 'BLIND-2024-002',
-              original_filename: 'deed_documents.pdf',
-              document_type: 'Deed',
-              paper_size: 'A4',
-              status: 'pending',
-              created_at: '2024-01-15T11:15:00Z',
-              uploader: { name: 'Jane Smith' }
-            }
-          ],
-          converted: [
-            {
-              id: 3,
-              temp_file_id: 'BLIND-2024-003',
-              original_filename: 'survey_plan.pdf',
-              document_type: 'Survey Plan',
-              paper_size: 'A3',
-              status: 'converted',
-              created_at: '2024-01-14T14:20:00Z',
-              uploader: { name: 'Mike Johnson' },
-              converted_to: 'KNML 12345'
-            }
-          ],
-          archived: []
-        };
-
-        // DOM Elements
-        const elements = {
-          // Tabs
-          tabs: document.querySelectorAll('[role="tab"]'),
-          tabContents: document.querySelectorAll('[role="tabpanel"]'),
-          uploadTab: document.getElementById('upload-tab'),
-          
-          // Lists
-          pendingScansList: document.getElementById('pending-scans-list'),
-          convertedScansList: document.getElementById('converted-scans-list'),
-          archivedScansList: document.getElementById('archived-scans-list'),
-          
-          // Counters
-          totalCount: document.getElementById('total-count'),
-          pendingCount: document.getElementById('pending-count'),
-          convertedCount: document.getElementById('converted-count'),
-          todayCount: document.getElementById('today-count')
-        };
-
-        // Helper functions
-        function formatDate(dateString) {
-          return new Date(dateString).toLocaleDateString();
-        }
-
-        function formatFileSize(bytes) {
-          if (bytes === 0) return '0 Bytes';
-          const k = 1024;
-          const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-          const i = Math.floor(Math.log(bytes) / Math.log(k));
-          return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        // UI update functions
-        function updateUI() {
-          updateStats();
-          renderPendingScans();
-          renderConvertedScans();
-          renderArchivedScans();
-        }
-
-        function updateStats() {
-          // Update tabs
-          elements.tabs.forEach(tab => {
-            const tabId = tab.getAttribute('data-tab');
-            tab.setAttribute('aria-selected', tabId === state.activeTab);
-          });
-          
-          elements.tabContents.forEach(content => {
-            const contentId = content.getAttribute('data-tab-content');
-            content.setAttribute('aria-hidden', contentId !== state.activeTab);
-          });
-
-          // Update counters
-          elements.totalCount.textContent = sampleBlindScans.pending.length + sampleBlindScans.converted.length + sampleBlindScans.archived.length;
-          elements.pendingCount.textContent = sampleBlindScans.pending.length;
-          elements.convertedCount.textContent = sampleBlindScans.converted.length;
-          elements.todayCount.textContent = sampleBlindScans.pending.filter(scan => 
-            new Date(scan.created_at).toDateString() === new Date().toDateString()
-          ).length;
-        }
-
-        function renderPendingScans() {
-          elements.pendingScansList.innerHTML = '';
-          
-          if (sampleBlindScans.pending.length === 0) {
-            elements.pendingScansList.innerHTML = `
-              <div class="rounded-md border p-8 text-center">
-                <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                  <i data-lucide="file-text" class="h-6 w-6"></i>
-                </div>
-                <h3 class="mb-2 text-lg font-medium">No pending blind scans</h3>
-                <p class="mb-4 text-sm text-muted-foreground">Upload some scans to get started</p>
+      <!-- Right Panel - Preview and File Management -->
+      <div class="space-y-4 sm:space-y-6">
+        
+        <!-- Preview Section -->
+        <div class="bg-white rounded-xl shadow-lg border border-gray-200">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 sm:p-6 border-b border-gray-200 space-y-3 sm:space-y-0">
+            <div class="flex items-center space-x-2">
+              <div class="bg-purple-100 p-2 rounded-lg">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
               </div>
-            `;
-            lucide.createIcons();
-            return;
-          }
-          
-          sampleBlindScans.pending.forEach(scan => {
-            const scanItem = document.createElement('div');
-            scanItem.className = 'flex items-center justify-between p-4';
-            scanItem.innerHTML = `
-              <div class="flex items-center gap-3">
-                <i data-lucide="file-text" class="h-8 w-8 text-orange-500"></i>
-                <div>
-                  <p class="text-blue-600 font-medium">${scan.temp_file_id}</p>
-                  <p class="text-sm text-gray-700 mt-0.5">${scan.original_filename}</p>
-                  <div class="flex items-center gap-2 mt-1">
-                    <span class="badge badge-secondary text-xs">${scan.document_type || 'Unknown'}</span>
-                    <span class="badge badge-secondary text-xs">${scan.paper_size || 'Unknown'}</span>
-                    <span class="text-xs text-muted-foreground">${formatDate(scan.created_at)}</span>
-                  </div>
-                </div>
-              </div>
-              <div class="flex items-center gap-2">
-                <button class="btn btn-ghost btn-sm preview-scan" data-id="${scan.id}" title="Preview Scans">
-                  <i data-lucide="eye" class="h-4 w-4"></i>
-                </button>
-                <button class="btn btn-outline btn-sm convert-scan" data-id="${scan.id}">
-                  <i data-lucide="arrow-right" class="h-3.5 w-3.5 mr-1"></i>
-                  Convert
-                </button>
-              </div>
-            `;
-            
-            elements.pendingScansList.appendChild(scanItem);
-          });
-          
-          // Initialize icons for the new elements
-          lucide.createIcons();
-          
-          // Add event listeners
-          document.querySelectorAll('.convert-scan').forEach(btn => {
-            btn.addEventListener('click', () => {
-              const scanId = btn.getAttribute('data-id');
-              showConvertModal(scanId);
-            });
-          });
-
-          document.querySelectorAll('.preview-scan').forEach(btn => {
-            btn.addEventListener('click', () => {
-              const scanId = btn.getAttribute('data-id');
-              showPreviewModal(scanId);
-            });
-          });
-        }
-
-        function renderConvertedScans() {
-          elements.convertedScansList.innerHTML = '';
-          
-          if (sampleBlindScans.converted.length === 0) {
-            elements.convertedScansList.innerHTML = `
-              <div class="rounded-md border p-8 text-center">
-                <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                  <i data-lucide="check-circle" class="h-6 w-6"></i>
-                </div>
-                <h3 class="mb-2 text-lg font-medium">No converted scans</h3>
-                <p class="mb-4 text-sm text-muted-foreground">Convert pending scans to see them here</p>
-              </div>
-            `;
-            lucide.createIcons();
-            return;
-          }
-          
-          sampleBlindScans.converted.forEach(scan => {
-            const scanItem = document.createElement('div');
-            scanItem.className = 'flex items-center justify-between p-4';
-            scanItem.innerHTML = `
-              <div class="flex items-center gap-3">
-                <i data-lucide="check-circle" class="h-8 w-8 text-green-500"></i>
-                <div>
-                  <p class="text-blue-600 font-medium">${scan.temp_file_id}</p>
-                  <p class="text-sm text-gray-700 mt-0.5">${scan.original_filename}</p>
-                  <div class="flex items-center gap-2 mt-1">
-                    <span class="badge bg-green-500 text-white text-xs">Converted to ${scan.converted_to}</span>
-                    <span class="text-xs text-muted-foreground">${formatDate(scan.created_at)}</span>
-                  </div>
-                </div>
-              </div>
-              <div class="flex items-center gap-2">
-                <button class="btn btn-ghost btn-sm" title="View Details">
-                  <i data-lucide="eye" class="h-4 w-4"></i>
-                </button>
-              </div>
-            `;
-            
-            elements.convertedScansList.appendChild(scanItem);
-          });
-          
-          lucide.createIcons();
-        }
-
-        function renderArchivedScans() {
-          elements.archivedScansList.innerHTML = `
-            <div class="rounded-md border p-8 text-center">
-              <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                <i data-lucide="archive" class="h-6 w-6"></i>
-              </div>
-              <h3 class="mb-2 text-lg font-medium">No archived scans</h3>
-              <p class="mb-4 text-sm text-muted-foreground">Archived scans will appear here</p>
+              <h3 class="text-base sm:text-lg font-semibold text-gray-800">Preview Scans</h3>
             </div>
-          `;
-          lucide.createIcons();
-        }
-
-        // Event handlers
-        function switchTab(tabId) {
-          state.activeTab = tabId;
-          updateUI();
-        }
-
-        function showConvertModal(scanId) {
-          const scan = sampleBlindScans.pending.find(s => s.id == scanId);
-          if (!scan) return;
-
-          // Populate modal
-          document.getElementById('convert-blind-scan-id').value = scanId;
-          document.getElementById('detail-temp-id').textContent = scan.temp_file_id;
-          document.getElementById('detail-filename').textContent = scan.original_filename;
-          document.getElementById('detail-doc-type').textContent = scan.document_type || '-';
-          document.getElementById('detail-paper-size').textContent = scan.paper_size || '-';
-
-          // Show modal
-          document.getElementById('convert-modal').classList.remove('hidden');
-          document.getElementById('convert-modal').setAttribute('aria-hidden', 'false');
-        }
-
-        function hideConvertModal() {
-          document.getElementById('convert-modal').classList.add('hidden');
-          document.getElementById('convert-modal').setAttribute('aria-hidden', 'true');
-        }
-
-        function showPreviewModal(scanId) {
-          const scan = sampleBlindScans.pending.find(s => s.id == scanId);
-          if (!scan) return;
-
-          // Show preview content
-          document.getElementById('preview-content').innerHTML = `
-            <div class="text-center p-8">
-              <i data-lucide="file-text" class="h-16 w-16 mx-auto text-gray-400 mb-4"></i>
-              <h3 class="text-lg font-medium mb-2">${scan.original_filename}</h3>
-              <p class="text-sm text-gray-500">Preview functionality will be implemented with actual file paths</p>
-            </div>
-          `;
-
-          // Show modal
-          document.getElementById('preview-modal').classList.remove('hidden');
-          document.getElementById('preview-modal').setAttribute('aria-hidden', 'false');
-          lucide.createIcons();
-        }
-
-        function hidePreviewModal() {
-          document.getElementById('preview-modal').classList.add('hidden');
-          document.getElementById('preview-modal').setAttribute('aria-hidden', 'true');
-        }
-
-        // File upload functions
-        function handleFileSelection(files) {
-          state.selectedFiles = Array.from(files);
-          displaySelectedFiles();
-        }
-
-        function displaySelectedFiles() {
-          const container = document.getElementById('selected-files-list');
-          
-          if (state.selectedFiles.length === 0) {
-            container.classList.add('hidden');
-            return;
-          }
-
-          container.classList.remove('hidden');
-          container.innerHTML = '';
-
-          state.selectedFiles.forEach((file, index) => {
-            const fileItem = document.createElement('div');
-            fileItem.className = 'flex items-center justify-between p-3 bg-gray-50 border rounded-md';
-            fileItem.innerHTML = `
-              <div class="flex items-center gap-3">
-                <i data-lucide="file-text" class="h-5 w-5 text-gray-400"></i>
-                <div>
-                  <div class="font-medium text-sm">${file.name}</div>
-                  <div class="text-xs text-gray-500">${formatFileSize(file.size)}</div>
-                </div>
-              </div>
-              <button type="button" class="text-red-500 hover:text-red-700 p-1" onclick="removeFile(${index})">
-                <i data-lucide="x" class="h-4 w-4"></i>
+            
+            <!-- Folder Type Selection Dropdown -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+              <select id="folderTypeSelect" class="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-0" onchange="updateFolderSelection()">
+                <option value="">Select Document Type</option>
+                <option value="A4">📄 A4 Documents</option>
+                <option value="A3">📋 A3 Documents</option>
+              
+              </select>
+              
+              <button id="browseFolderBtn" onclick="browseForFiles()" disabled class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-medium transition duration-200 flex items-center justify-center space-x-2 whitespace-nowrap">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <span>Browse Files</span>
               </button>
-            `;
-            container.appendChild(fileItem);
-          });
-
-          lucide.createIcons();
-        }
-
-        function removeFile(index) {
-          state.selectedFiles.splice(index, 1);
-          displaySelectedFiles();
-        }
-
-        async function uploadBlindScans() {
-          if (state.selectedFiles.length === 0) {
-            alert('Please select at least one file to upload.');
-            return;
-          }
-
-          const formData = new FormData();
-          const form = document.getElementById('upload-blind-scan-form');
+            </div>
+          </div>
           
-          // Add files
-          state.selectedFiles.forEach(file => {
-            formData.append('files[]', file);
-          });
-
-          // Add other form data
-          formData.append('paper_size', form.paper_size.value);
-          formData.append('document_type', form.document_type.value);
-          formData.append('notes', form.notes.value);
-
-          // Show progress
-          document.getElementById('upload-progress').classList.remove('hidden');
-          document.getElementById('submit-upload-btn').disabled = true;
-
-          try {
-            // Simulate upload progress
-            for (let i = 0; i <= 100; i += 10) {
-              document.getElementById('upload-percentage').textContent = i + '%';
-              document.getElementById('upload-progress-bar').style.width = i + '%';
-              await new Promise(resolve => setTimeout(resolve, 100));
-            }
-
-            // Simulate successful upload
-            alert('Files uploaded successfully!');
+          <div class="p-4 sm:p-6">
+            <!-- File Input for browsing (hidden) -->
+            <input type="file" id="folderInput" multiple accept=".pdf,.jpg,.jpeg,.png,.tiff,.tif,.bmp,.gif" style="display: none;" onchange="handleFileSelection(event)">
             
-            // Reset form
-            form.reset();
-            state.selectedFiles = [];
-            displaySelectedFiles();
+            <div id="previewArea" class="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-8 text-center file-preview">
+              <div id="defaultMessage" class="text-gray-500">
+                <svg class="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <p class="text-base sm:text-lg font-medium mb-2">Select Files for Processing (A4 & A3)</p>
+                <p class="text-xs sm:text-sm text-gray-400">1. Select document type from dropdown above</p>
+                <p class="text-xs sm:text-sm text-gray-400">2. Click "Browse Files" to select multiple files from your PC</p>
+              </div>
+              
+              <!-- File List Area (initially hidden) -->
+              <div id="fileListArea" class="hidden">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 space-y-2 sm:space-y-0">
+                  <h4 class="text-base sm:text-lg font-semibold text-gray-800">Selected Files</h4>
+                  <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                    <span id="selectedFolderType" class="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full"></span>
+                    <div class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                      💡 Click file to preview • Click ⭕ to select
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- File Management Actions -->
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 p-3 bg-gray-50 rounded-lg space-y-3 sm:space-y-0">
+                  <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+                    <button id="selectAllBtn" onclick="selectAllFiles()" class="bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-2 rounded-lg transition duration-200 flex items-center justify-center space-x-2">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                      <span>Select All</span>
+                    </button>
+                    
+                    <button id="deselectAllBtn" onclick="deselectAllFiles()" class="bg-gray-500 hover:bg-gray-600 text-white text-sm px-3 py-2 rounded-lg transition duration-200 flex items-center justify-center space-x-2">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                      </svg>
+                      <span>Deselect All</span>
+                    </button>
+                  </div>
+                  
+                  <div class="flex items-center justify-center sm:justify-end space-x-2 text-sm text-gray-600">
+                    <span id="selectionSummary">0 of 0 files selected</span>
+                  </div>
+                </div>
+                
+                <!-- File Grid -->
+                <div id="fileGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3 2xl:grid-cols-4 gap-3 sm:gap-4 max-h-96 overflow-y-auto">
+                  <!-- Files will be populated here -->
+                </div>
+                
+                <!-- Summary -->
+                <div class="mt-4 flex flex-col sm:flex-row sm:justify-between sm:items-center text-sm text-gray-600 bg-gray-50 rounded-lg p-3 space-y-2 sm:space-y-0">
+                  <span>Total Files: <span id="totalFileCount" class="font-semibold">0</span></span>
+                  <span>Selected Files: <span id="selectedFileCount" class="font-semibold">0</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Process Files Section -->
+        <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl shadow-md p-4 sm:p-6">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+            <div class="flex items-center space-x-3">
+              <div class="bg-green-100 p-2 rounded-lg">
+                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-base sm:text-lg font-semibold text-gray-800">Process Selected Files</h3>
+                <p class="text-sm text-gray-600">Start document processing workflow for selected files</p>
+              </div>
+            </div>
             
-            // Switch back to pending tab
-            switchTab('pending');
-            
-          } catch (error) {
-            console.error('Upload error:', error);
-            alert('Upload failed. Please try again.');
-          } finally {
-            document.getElementById('upload-progress').classList.add('hidden');
-            document.getElementById('submit-upload-btn').disabled = false;
-          }
-        }
+            <div class="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-4">
+              <div class="text-center sm:text-right">
+                <div class="text-sm text-gray-500">Ready to Process</div>
+                <div class="text-xl sm:text-2xl font-bold text-green-600" id="processDisplayCount">0</div>
+              </div>
+              
+              <button id="processFilesBtn" onclick="processSelectedFiles()" disabled class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 sm:px-8 rounded-lg transition duration-200 flex items-center justify-center space-x-2 shadow-lg w-full sm:w-auto">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>Process Files</span>
+              </button>
+            </div>
+          </div>
+          
+          <div class="mt-4">
+            <div class="bg-white bg-opacity-60 rounded-lg p-3">
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-600 space-y-1 sm:space-y-0">
+                <span>💡 Select files above to enable processing</span>
+                <span id="processStatusText">No files selected</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        // Initialize the application
-        document.addEventListener('DOMContentLoaded', () => {
-          // Add tab event listeners
-          elements.tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-              const tabId = tab.getAttribute('data-tab');
-              switchTab(tabId);
-            });
-          });
+      
+    </div>
+  </div>
 
-          // File upload event listeners
-          const dropZone = document.getElementById('file-drop-zone');
-          const fileInput = document.getElementById('blind-scan-files');
+ 
+ 
 
-          dropZone.addEventListener('click', () => fileInput.click());
-          dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('border-blue-400', 'bg-blue-50');
-          });
-          dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('border-blue-400', 'bg-blue-50');
-          });
-          dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('border-blue-400', 'bg-blue-50');
-            handleFileSelection(e.dataTransfer.files);
-          });
+        </div>
+    </div>
+ 
 
-          fileInput.addEventListener('change', (e) => {
-            handleFileSelection(e.target.files);
-          });
-
-          // Form submit
-          document.getElementById('upload-blind-scan-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            uploadBlindScans();
-          });
-
-          // Modal event listeners
-          document.getElementById('cancel-convert-btn').addEventListener('click', hideConvertModal);
-          document.getElementById('convert-modal-backdrop').addEventListener('click', hideConvertModal);
-          document.getElementById('close-preview-btn').addEventListener('click', hidePreviewModal);
-          document.getElementById('preview-modal-backdrop').addEventListener('click', hidePreviewModal);
-
-          // Other button listeners
-          document.getElementById('cancel-upload-btn').addEventListener('click', () => {
-            switchTab('pending');
-          });
-
-          document.getElementById('refresh-pending-btn').addEventListener('click', () => {
-            updateUI();
-          });
-
-          document.getElementById('create-folder-btn').addEventListener('click', () => {
-            alert('Create Folder functionality will be implemented');
-          });
-
-          document.getElementById('browse-folder-btn').addEventListener('click', () => {
-            alert('Browse Folder functionality will be implemented');
-          });
-
-          // Convert form submit
-          document.getElementById('convert-to-upload-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            alert('Convert functionality will be implemented');
-            hideConvertModal();
-          });
-
-          // Initial UI update
-          updateUI();
-        });
-    </script>
+<!-- Footer -->
+@include('admin.footer')
+</div>
+  @include('scanning.blind_scan.js_file_function')
 @endsection

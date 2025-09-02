@@ -163,7 +163,7 @@
                        <div class="flex items-center">
                      <div class="step-circle inactive cursor-pointer" onclick="goToStep(5)">5</div>
                    </div>
-                      <div class="ml-4">Step 1 0f 5</div>
+                      <div class="ml-4">Step 1 of 5</div>
                     </div>
             
                     <div class="mb-6">

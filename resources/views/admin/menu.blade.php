@@ -767,7 +767,7 @@
         <div class="sidebar-submodule-header flex items-center justify-between py-1.5 px-3 cursor-pointer rounded-md" data-section="stApplications">
           <div class="flex items-center gap-2">
             <i data-lucide="clipboard-list" class="h-4 w-4 text-red-500"></i>
-            <span>ST Applications</span>
+            <span>ST One Stop Shop</span>
           </div>
           <i data-lucide="chevron-right" class="h-4 w-4 transition-transform duration-200" data-chevron="stApplications"></i>
         </div>

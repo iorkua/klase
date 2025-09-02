@@ -19,6 +19,9 @@ class BlindScanningController extends Controller
      */
     public function index()
     {
+           $PageTitle = 'Blind Scans';
+            $PageDescription = ''; 
+
         try {
             // Get statistics
             $stats = [
@@ -29,12 +32,14 @@ class BlindScanningController extends Controller
             ];
 
             // Get recent blind scans
+
+
             $recentScans = BlindScanning::with(['uploader'])
                 ->orderBy('created_at', 'desc')
                 ->limit(10)
                 ->get();
 
-            return view('scanning.blind_scans', compact('stats', 'recentScans'));
+            return view('scanning.blind_scans', compact('stats', 'recentScans', 'PageTitle', 'PageDescription'));
         } catch (\Exception $e) {
             Log::error('Error loading blind scanning interface', [
                 'error' => $e->getMessage(),

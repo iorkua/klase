@@ -1,91 +1,103 @@
 @extends('layouts.print')
 
 @section('page-title')
-    {{ $PageTitle ?? 'Batch Tracking Sheets' }}
+{{ $PageTitle ?? 'Batch Tracking Sheets' }}
 @endsection
- 
+
 @section('content')
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kano State Land Registry - Batch Tracking Sheets</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'kano-green': '#22c55e',
-                        'kano-dark-green': '#16a34a',
-                    }
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    'kano-green': '#22c55e',
+                    'kano-dark-green': '#16a34a',
                 }
             }
         }
+    }
     </script>
     <!-- Added print styles for landscape orientation and single page fit -->
     <style>
-        @media print {
-            @page {
-                size: A4 landscape;
-                margin: 0.5in;
-            }
-            body {
-                print-color-adjust: exact;
-                -webkit-print-color-adjust: exact;
-            }
-            .print-container {
-                max-width: none !important;
-                width: 100% !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                box-shadow: none !important;
-                border-radius: 0 !important;
-            }
-            .no-print {
-                display: none !important;
-            }
-            .tracking-sheet {
-                page-break-after: always;
-                margin-bottom: 0 !important;
-            }
-            .tracking-sheet:last-child {
-                page-break-after: avoid;
-            }
+    @media print {
+        @page {
+            size: A4 landscape;
+            margin: 0.5in;
         }
-        
-        @media screen {
-            .tracking-sheet { 
-                margin-bottom: 2rem; 
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            }
+
+        body {
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
         }
-        
-        /* Enhanced gradient backgrounds for headers */
-        .enhanced-header {
-            background: linear-gradient(135deg, #16a34a 0%, #22c55e 50%, #4ade80 100%);
-            position: relative;
-            overflow: hidden;
+
+        .print-container {
+            max-width: none !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
         }
-        
-        .enhanced-header::before {
-            content: '';
-            position: absolute;
-            top: 0;
+
+        .no-print {
+            display: none !important;
+        }
+
+        .tracking-sheet {
+            page-break-after: always;
+            margin-bottom: 0 !important;
+        }
+
+        .tracking-sheet:last-child {
+            page-break-after: avoid;
+        }
+    }
+
+    @media screen {
+        .tracking-sheet {
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+    }
+
+    /* Enhanced gradient backgrounds for headers */
+    .enhanced-header {
+        background: linear-gradient(135deg, #16a34a 0%, #22c55e 50%, #4ade80 100%);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .enhanced-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        animation: shimmer 3s infinite;
+    }
+
+    @keyframes shimmer {
+        0% {
             left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            animation: shimmer 3s infinite;
         }
-        
-        @keyframes shimmer {
-            0% { left: -100%; }
-            100% { left: 100%; }
+
+        100% {
+            left: 100%;
         }
+    }
     </style>
 </head>
+
 <body class="bg-gray-50 p-2 font-sans">
 
     <!-- Header Section (only shown on screen, not print) -->
@@ -96,19 +108,26 @@
                     <div class="flex justify-between items-start mb-4">
                         <div>
                             <h1 class="text-2xl font-bold text-gray-800">Batch Tracking Sheets</h1>
-                            <p class="text-gray-600">{{ $PageDescription ?? 'Generate tracking sheets for multiple file indexing records' }}</p>
+                            <p class="text-gray-600">
+                                {{ $PageDescription ?? 'Generate tracking sheets for multiple file indexing records' }}
+                            </p>
                             <p class="text-sm text-gray-500 mt-1">Total Files: {{ $fileIndexings->count() }}</p>
                         </div>
                         <div class="flex space-x-2">
-                            <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                            <button onclick="window.print()"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
                                 <svg class="h-4 w-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z">
+                                    </path>
                                 </svg>
                                 Print All Sheets
                             </button>
-                            <a href="{{ route('fileindexing.index') }}" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                            <a href="{{ route('fileindexing.index') }}"
+                                class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
                                 <svg class="h-4 w-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                                 </svg>
                                 Back to Index
                             </a>
@@ -127,10 +146,12 @@
         <div class="border-b-2 border-gray-200 p-4">
             <div class="flex items-center justify-between mb-3">
                 <!-- Left Logo - Kano State Logo -->
-                <div class="w-16 h-16 border-2 border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden">
-                    <img src="http://klaes.com.ng/assets/logo/logo1.jpg" alt="Kano State Logo" class="w-14 h-14 object-contain" />
+                <div
+                    class="w-16 h-16 border-2 border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden">
+                    <img src="http://klaes.com.ng/assets/logo/logo1.jpg" alt="Kano State Logo"
+                        class="w-14 h-14 object-contain" />
                 </div>
-                
+
                 <!-- Center Title -->
                 <div class="flex-1 mx-6">
                     <div class="text-center border-2 border-gray-300 py-2 px-4 rounded-lg bg-blue-50">
@@ -139,19 +160,21 @@
                         </h1>
                     </div>
                 </div>
-                
+
                 <!-- Right Logo - KLAS Logo -->
-                <div class="w-16 h-16 border-2 border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden">
-                    <img src="http://klaes.com.ng/assets/logo/logo2.jpg" alt="KLAS Logo" class="w-14 h-14 object-contain" />
+                <div
+                    class="w-16 h-16 border-2 border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden">
+                    <img src="http://klaes.com.ng/assets/logo/logo2.jpg" alt="KLAS Logo"
+                        class="w-14 h-14 object-contain" />
                 </div>
             </div>
-            
+
             <!-- Tracking Info -->
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-end w-full">
                 <div class="text-right text-xs text-gray-600">
                     <p><span class="font-semibold">Tracking ID:</span> {{ $tracker->tracking_id }}</p>
-                    <p><span class="font-semibold">Generated:</span> {{ $tracker->sheet_generated_at->format('n/j/Y, g:i:s A') }}</p>
-                    <p><span class="font-semibold">Sheet:</span> {{ $index + 1 }} of {{ $fileIndexings->count() }}</p>
+                    <p><span class="font-semibold">Generated By:</span>
+                        {{ $tracker->sheet_generated_at->format('n/j/Y, g:i:s A') }}</p>
                     @if($tracker->total_prints > 0)
                     <p><span class="font-semibold">Prints:</span> {{ $tracker->total_prints }}</p>
                     @endif
@@ -165,28 +188,32 @@
                 <!-- Main Details Table -->
                 <div class="flex-1">
                     <h3 class="text-base font-bold text-kano-dark-green mb-3">File Details</h3>
-                    
+
                     <div class="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
                         <!-- Enhanced table header with gradient, better typography and icons -->
                         <div class="enhanced-header text-white relative">
                             <div class="grid grid-cols-2 gap-0 relative z-10">
-                                <div class="px-6 py-4 font-bold text-center border-r border-green-300/50 flex items-center justify-center space-x-2">
+                                <div
+                                    class="px-6 py-4 font-bold text-center border-r border-green-300/50 flex items-center justify-center space-x-2">
                                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h12v8H4V6z"/>
-                                        <path d="M6 8h8v2H6V8zm0 4h8v2H6v-2z"/>
+                                        <path
+                                            d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h12v8H4V6z" />
+                                        <path d="M6 8h8v2H6V8zm0 4h8v2H6v-2z" />
                                     </svg>
                                     <span class="text-lg tracking-wide">FILE INFORMATION</span>
                                 </div>
                                 <div class="px-6 py-4 font-bold text-center flex items-center justify-center space-x-2">
                                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
-                                        <path fill-rule="evenodd" d="M4 5a2 2 0 012-2v1a1 1 0 001 1h6a1 1 0 001-1V3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+                                        <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                                        <path fill-rule="evenodd"
+                                            d="M4 5a2 2 0 012-2v1a1 1 0 001 1h6a1 1 0 001-1V3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3z"
+                                            clip-rule="evenodd" />
                                     </svg>
                                     <span class="text-lg tracking-wide">DETAILS</span>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Table Rows -->
                         <div class="divide-y divide-gray-200">
                             <div class="grid grid-cols-2 gap-0">
@@ -199,18 +226,22 @@
                             </div>
                             <div class="grid grid-cols-2 gap-0">
                                 <div class="px-4 py-3 bg-gray-50 font-medium border-r border-gray-200">Plot Number</div>
-                                <div class="px-4 py-3 {{ empty($fileIndexing->plot_number) ? 'text-gray-500' : '' }}">{{ $fileIndexing->plot_number ?? 'Unknown' }}</div>
+                                <div class="px-4 py-3 {{ empty($fileIndexing->plot_number) ? 'text-gray-500' : '' }}">
+                                    {{ $fileIndexing->plot_number ?? 'Unknown' }}</div>
                             </div>
                             <div class="grid grid-cols-2 gap-0">
                                 <div class="px-4 py-3 bg-gray-50 font-medium border-r border-gray-200">Land Use</div>
-                                <div class="px-4 py-3 {{ empty($fileIndexing->land_use_type) ? 'text-gray-500' : '' }}">{{ $fileIndexing->land_use_type ?? 'Unknown' }}</div>
+                                <div class="px-4 py-3 {{ empty($fileIndexing->land_use_type) ? 'text-gray-500' : '' }}">
+                                    {{ $fileIndexing->land_use_type ?? 'Unknown' }}</div>
                             </div>
                             <div class="grid grid-cols-2 gap-0">
                                 <div class="px-4 py-3 bg-gray-50 font-medium border-r border-gray-200">District</div>
-                                <div class="px-4 py-3 {{ empty($fileIndexing->district) ? 'text-gray-500' : '' }}">{{ $fileIndexing->district ?? 'Unknown' }}</div>
+                                <div class="px-4 py-3 {{ empty($fileIndexing->district) ? 'text-gray-500' : '' }}">
+                                    {{ $fileIndexing->district ?? 'Unknown' }}</div>
                             </div>
                             <div class="grid grid-cols-2 gap-0">
-                                <div class="px-4 py-3 bg-gray-50 font-medium border-r border-gray-200">Date Created</div>
+                                <div class="px-4 py-3 bg-gray-50 font-medium border-r border-gray-200">Date Created
+                                </div>
                                 <div class="px-4 py-3">{{ $fileIndexing->created_at->format('Y-m-d') }}</div>
                             </div>
                             <!-- Status Information -->
@@ -218,20 +249,20 @@
                                 <div class="px-4 py-3 bg-gray-50 font-medium border-r border-gray-200">Status</div>
                                 <div class="px-4 py-3">
                                     @php
-                                        $status = $tracker->status ?? 'Active';
-                                        $statusClass = match($status) {
-                                            'Active' => 'bg-green-600 text-white',
-                                            'Normal' => 'bg-blue-600 text-white', 
-                                            'Scanned' => 'bg-purple-600 text-white',
-                                            'Typed' => 'bg-indigo-600 text-white',
-                                            'Pending' => 'bg-yellow-600 text-white',
-                                            'Completed' => 'bg-green-700 text-white',
-                                            'In Progress' => 'bg-blue-500 text-white',
-                                            default => 'bg-gray-600 text-white'
-                                        };
+                                    $status = $tracker->status ?? 'Active';
+                                    $statusClass = match($status) {
+                                    'Active' => 'bg-green-600 text-white',
+                                    'Normal' => 'bg-blue-600 text-white',
+                                    'Scanned' => 'bg-purple-600 text-white',
+                                    'Typed' => 'bg-indigo-600 text-white',
+                                    'Pending' => 'bg-yellow-600 text-white',
+                                    'Completed' => 'bg-green-700 text-white',
+                                    'In Progress' => 'bg-blue-500 text-white',
+                                    default => 'bg-gray-600 text-white'
+                                    };
                                     @endphp
                                     <span class="px-2 py-1 text-xs rounded {{ $statusClass }}">{{ $status }}</span>
-                                    
+
                                     @if($fileIndexing->scannings->count() > 0)
                                     <span class="bg-green-600 text-white px-2 py-1 text-xs rounded ml-2">Scanned</span>
                                     @endif
@@ -243,23 +274,24 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- QR Code Section -->
                 <div class="w-40">
                     <div class="border-2 border-gray-300 rounded-lg p-3 text-center">
                         <!-- QR Code -->
                         <div class="w-28 h-28 mx-auto mb-2 bg-gray-200 rounded-lg flex items-center justify-center">
                             @php
-                                $qrData = json_encode([
-                                    'tracking_id' => $tracker->tracking_id,
-                                    'file_number' => $fileIndexing->file_number,
-                                    'file_title' => $fileIndexing->file_title,
-                                    'plot_number' => $fileIndexing->plot_number,
-                                    'district' => $fileIndexing->district,
-                                    'status' => $status,
-                                    'url' => route('fileindexing.show', $fileIndexing->id)
-                                ]);
-                                $qrCodeUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' . urlencode($qrData);
+                            $qrData = json_encode([
+                            'tracking_id' => $tracker->tracking_id,
+                            'file_number' => $fileIndexing->file_number,
+                            'file_title' => $fileIndexing->file_title,
+                            'plot_number' => $fileIndexing->plot_number,
+                            'district' => $fileIndexing->district,
+                            'status' => $status,
+                            'url' => route('fileindexing.show', $fileIndexing->id)
+                            ]);
+                            $qrCodeUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' .
+                            urlencode($qrData);
                             @endphp
                             <img src="{{ $qrCodeUrl }}" alt="QR Code" class="w-24 h-24 rounded" />
                         </div>
@@ -276,45 +308,58 @@
         <div class="p-4 pt-0">
             <!-- Enhanced signing section header with better styling -->
             <div class="text-center mb-3">
-                <div class="inline-flex items-center space-x-2 bg-gradient-to-r from-kano-dark-green to-kano-green text-white px-6 py-2 rounded-full shadow-lg">
+                <div
+                    class="inline-flex items-center space-x-2 bg-gradient-to-r from-kano-dark-green to-kano-green text-white px-6 py-2 rounded-full shadow-lg">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        <path fill-rule="evenodd"
+                            d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clip-rule="evenodd" />
                     </svg>
                     <span class="text-lg font-bold tracking-wider">SIGNING SECTION</span>
                 </div>
             </div>
-            
+
             <div class="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
                 <!-- Enhanced signing header with gradient and better layout -->
                 <div class="enhanced-header text-white relative">
                     <div class="grid grid-cols-4 gap-0 relative z-10">
-                        <div class="px-4 py-4 font-bold text-center border-r border-green-300/50 flex flex-col items-center space-y-1">
+                        <div
+                            class="px-4 py-4 font-bold text-center border-r border-green-300/50 flex flex-col items-center space-y-1">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                    clip-rule="evenodd" />
                             </svg>
                             <span class="text-sm tracking-wide">INDEXED BY</span>
                         </div>
-                        <div class="px-4 py-4 font-bold text-center border-r border-green-300/50 flex flex-col items-center space-y-1">
+                        <div
+                            class="px-4 py-4 font-bold text-center border-r border-green-300/50 flex flex-col items-center space-y-1">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M4 5a2 2 0 012-2v1a1 1 0 001 1h6a1 1 0 001-1V3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+                                <path fill-rule="evenodd"
+                                    d="M4 5a2 2 0 012-2v1a1 1 0 001 1h6a1 1 0 001-1V3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3z"
+                                    clip-rule="evenodd" />
                             </svg>
                             <span class="text-sm tracking-wide">SCANNED BY</span>
                         </div>
-                        <div class="px-4 py-4 font-bold text-center border-r border-green-300/50 flex flex-col items-center space-y-1">
+                        <div
+                            class="px-4 py-4 font-bold text-center border-r border-green-300/50 flex flex-col items-center space-y-1">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                <path fill-rule="evenodd"
+                                    d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z"
+                                    clip-rule="evenodd" />
                             </svg>
                             <span class="text-sm tracking-wide">PAGE TYPED BY</span>
                         </div>
                         <div class="px-4 py-4 font-bold text-center flex flex-col items-center space-y-1">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                <path fill-rule="evenodd"
+                                    d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                    clip-rule="evenodd" />
                             </svg>
                             <span class="text-sm tracking-wide">SUPERVISED BY</span>
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Signing Fields -->
                 <div class="grid grid-cols-4 gap-0 h-24">
                     <div class="border-r border-gray-200 p-3"></div>
@@ -323,15 +368,30 @@
                     <div class="p-3"></div>
                 </div>
             </div>
+            <div
+                class="flex items-center justify-between border-t border-gray-300 mt-6 pt-4 bg-gray-50 px-4 py-2 rounded-lg">
+
+                <div class="flex items-center flex-1 mr-6">
+                    <span class="text-sm font-medium text-gray-700 mr-4 whitespace-nowrap">Authorized Signature:</span>
+                    <div class="border-b-2 border-gray-500 flex-1"></div>
+                </div>
+
+                <div class="flex items-center w-40">
+                    <span class="text-sm font-medium text-gray-700 mr-4 whitespace-nowrap">Date:</span>
+                    <div class="border-b-2 border-gray-500 flex-1"></div>
+                </div>
+            </div>
         </div>
 
         <!-- Footer -->
         <div class="bg-gray-100 px-4 py-2 text-center">
-            <p class="text-xs text-gray-500">Kano State Ministry of Land and Physical Planning - File Tracking System</p>
+            <p class="text-xs text-gray-500">Kano State Ministry of Land and Physical Planning - File Tracking System
+            </p>
         </div>
     </div>
     @endforeach
 
 </body>
+
 </html>
 @endsection

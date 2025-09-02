@@ -325,8 +325,8 @@ rk<div class="modal-dialog shadow-none" role="document">
                                                     id="passport_input"
                                                     class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                                     accept="image/jpeg,image/png,image/gif"
-                                                    required
-                                                    @change="handleFileSelect($event)" required />
+                                                     
+                                                    @change="handleFileSelect($event)"   />
                                                 
                                                 <div x-show="!showPreview" class="flex items-center justify-center w-full">
                                                     <label for="passport_input" class="flex flex-col items-center justify-center w-full h-32 border-2 border-indigo-300 border-dashed rounded-lg cursor-pointer bg-indigo-50 hover:bg-indigo-100 transition-colors duration-200">
