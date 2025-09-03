@@ -610,6 +610,247 @@
           return pageSubTypes[parseInt(typeId)]?.find(subType => subType.id.toString() === subTypeId.toString());
         }
 
+        // Horizontal File Browser functionality
+        function initializeHorizontalFileBrowser(file) {
+          if (!file || !file.scannings || file.scannings.length === 0) return;
+
+          // Initialize file browser state
+          const filesPerView = 5; // Number of files to show at once
+          let currentStartIndex = 0;
+          
+          // Update navigation buttons
+          function updateFileBrowserNavigation() {
+            const prevBtn = document.querySelector('.file-browser-prev');
+            const nextBtn = document.querySelector('.file-browser-next');
+            const indicator = document.getElementById('file-browser-indicator');
+            
+            if (prevBtn) {
+              prevBtn.disabled = currentStartIndex === 0;
+              prevBtn.classList.toggle('opacity-50', currentStartIndex === 0);
+            }
+            
+            if (nextBtn) {
+              nextBtn.disabled = currentStartIndex + filesPerView >= file.scannings.length;
+              nextBtn.classList.toggle('opacity-50', currentStartIndex + filesPerView >= file.scannings.length);
+            }
+            
+            if (indicator) {
+              const endIndex = Math.min(currentStartIndex + filesPerView, file.scannings.length);
+              indicator.textContent = `${currentStartIndex + 1}-${endIndex} of ${file.scannings.length}`;
+            }
+          }
+          
+          // Update file browser view
+          function updateFileBrowserView() {
+            const strip = document.getElementById('file-browser-strip');
+            if (!strip) return;
+            
+            const itemWidth = 88; // 80px width + 8px gap
+            const translateX = -(currentStartIndex * itemWidth);
+            strip.style.transform = `translateX(${translateX}px)`;
+            
+            // Update active states
+            document.querySelectorAll('.file-browser-item').forEach((item, index) => {
+              const isSelected = index === state.typingState.selectedPageInFolder;
+              item.classList.toggle('active', isSelected);
+              
+              if (isSelected) {
+                item.style.transform = 'translateY(-2px)';
+                item.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.2)';
+              } else {
+                item.style.transform = '';
+                item.style.boxShadow = '';
+              }
+            });
+            
+            updateFileBrowserNavigation();
+          }
+          
+          // Navigate to previous files
+          document.querySelector('.file-browser-prev')?.addEventListener('click', () => {
+            if (currentStartIndex > 0) {
+              currentStartIndex = Math.max(0, currentStartIndex - filesPerView);
+              updateFileBrowserView();
+            }
+          });
+          
+          // Navigate to next files
+          document.querySelector('.file-browser-next')?.addEventListener('click', () => {
+            if (currentStartIndex + filesPerView < file.scannings.length) {
+              currentStartIndex = Math.min(file.scannings.length - filesPerView, currentStartIndex + filesPerView);
+              updateFileBrowserView();
+            }
+          });
+          
+          // Keyboard navigation support
+          document.addEventListener('keydown', (e) => {
+            // Only handle keys when typing tab is active and we're in page categorization view
+            if (state.activeTab === 'typing' && state.typingState && state.typingState.selectedPageInFolder !== null) {
+              switch(e.key) {
+                case 'ArrowLeft':
+                  e.preventDefault();
+                  if (state.typingState.selectedPageInFolder > 0) {
+                    state.typingState.selectedPageInFolder--;
+                    updateUI();
+                  }
+                  break;
+                case 'ArrowRight':
+                  e.preventDefault();
+                  if (state.typingState.selectedPageInFolder < file.scannings.length - 1) {
+                    state.typingState.selectedPageInFolder++;
+                    updateUI();
+                  }
+                  break;
+                case 'Home':
+                  e.preventDefault();
+                  state.typingState.selectedPageInFolder = 0;
+                  updateUI();
+                  break;
+                case 'End':
+                  e.preventDefault();
+                  state.typingState.selectedPageInFolder = file.scannings.length - 1;
+                  updateUI();
+                  break;
+              }
+            }
+          });
+          
+          // Auto-scroll to selected file
+          function scrollToSelectedFile() {
+            if (state.typingState.selectedPageInFolder !== null) {
+              const selectedIndex = state.typingState.selectedPageInFolder;
+              
+              // Check if selected file is visible in current view
+              if (selectedIndex < currentStartIndex || selectedIndex >= currentStartIndex + filesPerView) {
+                // Scroll to make selected file visible
+                currentStartIndex = Math.max(0, selectedIndex - Math.floor(filesPerView / 2));
+                currentStartIndex = Math.min(currentStartIndex, file.scannings.length - filesPerView);
+                updateFileBrowserView();
+              }
+            }
+          }
+          
+          // Generate thumbnails for file browser
+          setTimeout(() => {
+            file.scannings.forEach((scanning, index) => {
+              const url = getDocumentUrl(scanning.document_path);
+              const img = isImageFile(scanning.original_filename);
+              const pdf = isPDFFile(scanning.original_filename);
+              const canvasId = `file-browser-thumb-${index}`;
+              const imgId = `file-browser-img-${index}`;
+
+              if (url) {
+                if (pdf) {
+                  generateFileBrowserPDFThumbnail(url, canvasId);
+                } else if (img) {
+                  // Image thumbnail is already handled by img tag
+                } else {
+                  checkContentTypeAndGenerateFileBrowserThumbnail(url, canvasId, imgId, index);
+                }
+              }
+            });
+          }, 100);
+          
+          // Initial setup
+          updateFileBrowserView();
+          
+          // Watch for changes in selected page
+          const originalUpdateUI = updateUI;
+          updateUI = function() {
+            originalUpdateUI.call(this);
+            setTimeout(() => {
+              scrollToSelectedFile();
+              updateFileBrowserView();
+            }, 50);
+          };
+        }
+
+        // Generate PDF thumbnail for file browser
+        async function generateFileBrowserPDFThumbnail(url, canvasId) {
+          try {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+
+            // Hide loading indicator
+            const loadingElement = canvas.parentElement?.querySelector('.loading');
+            if (loadingElement) loadingElement.style.display = 'none';
+
+            const loadingTask = pdfjsLib.getDocument(url);
+            const pdf = await loadingTask.promise;
+            const page = await pdf.getPage(1);
+
+            const scale = 0.2; // Very small scale for compact thumbnails
+            const viewport = page.getViewport({ scale: scale });
+
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            canvas.style.display = 'block';
+
+            const renderContext = {
+              canvasContext: canvas.getContext('2d'),
+              viewport: viewport
+            };
+
+            await page.render(renderContext).promise;
+          } catch (error) {
+            console.error(`Error generating file browser thumbnail for ${canvasId}:`, error);
+            const canvas = document.getElementById(canvasId);
+            if (canvas) {
+              // Hide loading and show fallback
+              const loadingElement = canvas.parentElement?.querySelector('.loading');
+              if (loadingElement) loadingElement.style.display = 'none';
+              
+              const fallbackDiv = canvas.parentElement?.querySelector('.fallback-icon');
+              if (fallbackDiv) {
+                canvas.style.display = 'none';
+                fallbackDiv.style.display = 'flex';
+              }
+            }
+          }
+        }
+
+        // Check content type and generate thumbnail for file browser
+        async function checkContentTypeAndGenerateFileBrowserThumbnail(url, canvasId, imgId, index) {
+          try {
+            const response = await fetch(url, { method: 'HEAD' });
+            const contentType = response.headers.get('content-type');
+
+            // Hide loading indicator
+            const loadingElement = document.querySelector(`#loading-${index}`);
+            if (loadingElement) loadingElement.style.display = 'none';
+
+            if (contentType && contentType.includes('pdf')) {
+              const canvasElement = document.getElementById(canvasId);
+              const fallbackIcon = canvasElement?.parentElement?.querySelector('.fallback-icon');
+              if (canvasElement && fallbackIcon) {
+                canvasElement.style.display = 'block';
+                fallbackIcon.style.display = 'none';
+              }
+              await generateFileBrowserPDFThumbnail(url, canvasId);
+            } else if (contentType && contentType.startsWith('image/')) {
+              const imgElement = document.getElementById(imgId);
+              const fallbackIcon = imgElement?.parentElement?.querySelector('.fallback-icon');
+              if (imgElement && fallbackIcon) {
+                imgElement.src = url;
+                imgElement.style.display = 'block';
+                fallbackIcon.style.display = 'none';
+              }
+            } else {
+              // Show fallback for unknown content types
+              const fallbackIcon = document.querySelector(`#loading-${index}`)?.parentElement?.querySelector('.fallback-icon');
+              if (fallbackIcon) fallbackIcon.style.display = 'flex';
+            }
+          } catch (error) {
+            console.error('Error checking content-type for file browser thumbnail:', error);
+            // Hide loading and show fallback
+            const loadingElement = document.querySelector(`#loading-${index}`);
+            if (loadingElement) loadingElement.style.display = 'none';
+            
+            const fallbackIcon = loadingElement?.parentElement?.querySelector('.fallback-icon');
+            if (fallbackIcon) fallbackIcon.style.display = 'flex';
+          }
+        }
+
         // Filetype helpers and preview rendering
         function isImageFile(filename) {
           if (!filename) return false;
@@ -2211,6 +2452,78 @@
                       <span class="badge bg-blue-500 text-white">${file.file_number}</span>
                     </div>
 
+                    <!-- Horizontal File Browser -->
+                    <div class="border rounded-lg p-4 bg-gray-50">
+                      <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-sm font-medium text-gray-700">Quick File Browser</h4>
+                        <div class="flex items-center gap-2">
+                          <button class="btn btn-ghost btn-icon file-browser-prev" title="Previous Files">
+                            <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                          </button>
+                          <span class="text-xs text-gray-500" id="file-browser-indicator">1-5 of ${file.scannings.length}</span>
+                          <button class="btn btn-ghost btn-icon file-browser-next" title="Next Files">
+                            <i data-lucide="chevron-right" class="h-4 w-4"></i>
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div class="horizontal-file-browser relative">
+                        <div class="file-browser-container overflow-hidden">
+                          <div class="file-browser-strip flex gap-2 transition-transform duration-300" id="file-browser-strip">
+                            ${file.scannings.map((scanning, index) => {
+                              const isCurrentPage = index === state.typingState.selectedPageInFolder;
+                              const isProcessed = state.typingState.processedPages[index];
+                              const url = getDocumentUrl(scanning.document_path);
+                              const img = isImageFile(scanning.original_filename);
+                              const pdf = isPDFFile(scanning.original_filename);
+                              const canvasId = 'file-browser-thumb-' + index;
+                              const imgId = 'file-browser-img-' + index;
+                              
+                              return '<div class="file-browser-item flex-shrink-0 cursor-pointer transition-all duration-200 ' + (isCurrentPage ? 'ring-2 ring-blue-500 shadow-md' : 'hover:shadow-sm') + '" ' +
+                                     'data-file-index="' + index + '" ' +
+                                     'style="width: 80px;" ' +
+                                     'tabindex="0" ' +
+                                     'role="button" ' +
+                                     'aria-label="Page ' + (index + 1) + ' - ' + scanning.original_filename + '" ' +
+                                     'title="Click to select page ' + (index + 1) + '">' +
+                                  '<div class="relative h-20 w-20 bg-gray-100 rounded-md overflow-hidden border ' + (isCurrentPage ? 'border-blue-500' : 'border-gray-200') + '">' +
+                                    (isProcessed ? '<div class="absolute top-1 right-1 z-10"><span class="badge bg-green-500 text-white text-xs px-1 py-0.5"><i data-lucide="check" class="h-2 w-2"></i></span></div>' : '') +
+                                    (isCurrentPage ? '<div class="absolute top-1 left-1 z-10"><span class="badge bg-blue-500 text-white text-xs px-1 py-0.5"><i data-lucide="eye" class="h-2 w-2"></i></span></div>' : '') +
+                                    '<div class="loading absolute inset-0 flex items-center justify-center" id="loading-' + index + '">' +
+                                      '<div class="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>' +
+                                    '</div>' +
+                                    (img && url ? '<img id="' + imgId + '" src="' + url + '" alt="Page ' + (index + 1) + '" class="w-full h-full object-cover" style="display: none;" onload="document.getElementById(\'loading-' + index + '\').style.display=\'none\'; this.style.display=\'block\';" onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\'; document.getElementById(\'loading-' + index + '\').style.display=\'none\';" />' +
+                                      '<div class="w-full h-full flex flex-col items-center justify-center text-center hidden">' +
+                                        '<i data-lucide="file-text" class="h-4 w-4 text-gray-400 mb-1"></i>' +
+                                        '<span class="text-xs text-gray-500 truncate px-1">' + scanning.original_filename.substring(0, 8) + '...</span>' +
+                                      '</div>'
+                                    : pdf && url ? '<canvas id="' + canvasId + '" class="w-full h-full object-cover" style="background: white; display: none;"></canvas>' +
+                                      '<div class="w-full h-full flex flex-col items-center justify-center text-center hidden absolute inset-0 bg-gray-100">' +
+                                        '<i data-lucide="file-text" class="h-4 w-4 text-gray-400 mb-1"></i>' +
+                                        '<span class="text-xs text-gray-500 truncate px-1">' + scanning.original_filename.substring(0, 8) + '...</span>' +
+                                      '</div>'
+                                    : url ? '<img id="' + imgId + '" src="' + url + '" alt="Page ' + (index + 1) + '" class="w-full h-full object-cover hidden" onerror="this.style.display=\'none\';" />' +
+                                      '<canvas id="' + canvasId + '" class="w-full h-full object-cover hidden" style="background: white;"></canvas>' +
+                                      '<div class="w-full h-full flex flex-col items-center justify-center text-center fallback-icon">' +
+                                        '<i data-lucide="file" class="h-4 w-4 text-gray-400 mb-1"></i>' +
+                                        '<span class="text-xs text-gray-500 truncate px-1">' + scanning.original_filename.substring(0, 8) + '...</span>' +
+                                      '</div>'
+                                    : '<div class="w-full h-full flex flex-col items-center justify-center text-center">' +
+                                      '<i data-lucide="file" class="h-4 w-4 text-gray-400 mb-1"></i>' +
+                                      '<span class="text-xs text-gray-500 truncate px-1">' + scanning.original_filename.substring(0, 8) + '...</span>' +
+                                    '</div>') +
+                                  '</div>' +
+                                  '<div class="mt-1 text-center">' +
+                                    '<span class="text-xs text-gray-600 font-medium">' + (index + 1) + '</span>' +
+                                    (isProcessed ? '<div class="text-xs text-green-600 font-medium truncate">' + (isProcessed.page_code || 'Typed') + '</div>' : '') +
+                                  '</div>' +
+                                '</div>';
+                            }).join('')}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <div class="border rounded-md p-4 h-[400px] bg-white relative" id="document-preview-container">
@@ -2512,6 +2825,39 @@
           document.querySelectorAll('.folder-page').forEach(page => {
             page.addEventListener('click', () => {
               const index = parseInt(page.getAttribute('data-index'));
+              state.typingState.selectedPageInFolder = index;
+
+              // Check if this page is already processed
+              const existingData = state.typingState.processedPages[index];
+              if (existingData) {
+                // Populate form fields with existing data
+                state.typingState.coverType = existingData.coverType || state.typingState.coverType;
+                state.typingState.pageType = existingData.pageType || state.typingState.pageType;
+                state.typingState.pageSubType = existingData.pageSubType || state.typingState.pageSubType;
+                state.typingState.serialNo = existingData.serialNo || state.typingState.serialNo;
+
+                // Disable form fields and process button for completed pages
+                setTimeout(() => {
+                  setFormElementsState(false, 'Already Processed');
+                }, 100);
+              } else {
+                // Enable form fields and process button for new pages
+                setTimeout(() => {
+                  setFormElementsState(true, 'Process Page');
+                }, 100);
+              }
+
+              updateUI();
+            });
+          });
+
+          // Horizontal File Browser functionality
+          initializeHorizontalFileBrowser(file);
+
+          // File browser item click handlers
+          document.querySelectorAll('.file-browser-item').forEach(item => {
+            item.addEventListener('click', () => {
+              const index = parseInt(item.getAttribute('data-file-index'));
               state.typingState.selectedPageInFolder = index;
 
               // Check if this page is already processed
