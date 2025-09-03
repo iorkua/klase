@@ -582,6 +582,7 @@
  
     <!-- 7. Lands -->
 @if(
+  $hasRole('EDMS') ||
   $hasRole('Lands - File Tracker/Tracking - RFID') || $hasRole('Lands - File Digital Archive – Doc-WARE') || $hasRole('EDMS - Indexing') ||
   $hasRole('EDMS - File Indexing Assistant') || $hasRole('EDMS - Print File Labels') || $hasRole('EDMS - Scanning') ||
   $hasRole('EDMS - Upload') || $hasRole('EDMS - Download') || $hasRole('EDMS - PageTyping') || $hasRole('EDMS - File Number Generation') ||
@@ -611,17 +612,15 @@
     <i data-lucide="folder-plus" class="h-4 w-4 text-orange-500"></i>
     <span>Capture an Existing FileNo</span>
   </a>
-  @endif
+
   <a href="{{route('file-decommissioning.index')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200  {{ request()->routeIs('file-decommissioning.index') ? 'active' : '' }}">
     <i data-lucide="folder-plus" class="h-4 w-4 text-orange-500"></i>
     <span>File Decommissioning </span>
   </a>
- 
+   @endif
 
   <!-- EDMS Section -->
-  @if($hasRole('EDMS - Indexing') || $hasRole('EDMS - File Indexing Assistant') || $hasRole('EDMS - Print File Labels') || 
-    $hasRole('EDMS - Scanning') || $hasRole('EDMS - Upload') || $hasRole('EDMS - Download') || 
-    $hasRole('EDMS - PageTyping') || $hasRole('EDMS - Blind Scanning') || $hasRole('EDMS - PT Quality Control'))
+  @if($hasRole('EDMS'))
   <div class="sidebar-submodule-header flex items-center justify-between py-1.5 px-3 cursor-pointer rounded-md" data-section="edms">
     <div class="flex items-center gap-2">
     <i data-lucide="database" class="h-4 w-4 text-orange-500"></i>
@@ -632,7 +631,6 @@
 
   <div class="pl-4 mt-1 mb-1 space-y-0.5 hidden" data-content="edms">
     <!-- Indexing -->
-    @if($hasRole('EDMS - Indexing') || $hasRole('EDMS - File Indexing Assistant') || $hasRole('EDMS - Print File Labels'))
     <div class="sidebar-submodule-header flex items-center justify-between py-1.5 px-3 cursor-pointer rounded-md" data-section="indexing">
       <div class="flex items-center gap-2">
         <i data-lucide="file-search" class="h-4 w-4 text-orange-500"></i>
@@ -642,24 +640,18 @@
     </div>
 
     <div class="pl-4 mt-1 mb-1 space-y-0.5 hidden" data-content="indexing">
-      @if($hasRole('EDMS - File Indexing Assistant'))
       <a href="{{route('fileindexing.index')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('fileindexing.index') ? 'active' : '' }}">
         <i data-lucide="file-search" class="h-3.5 w-3.5 text-orange-400"></i>
         <span>File Indexing Assistant</span>
       </a>
-      @endif
 
-      @if($hasRole('EDMS - Print File Labels'))
       <a href="{{route('printlabel.index')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('printlabel.index') ? 'active' : '' }}">
         <i data-lucide="printer" class="h-3.5 w-3.5 text-orange-400"></i>
         <span>Print File Labels</span>
       </a>
-      @endif
     </div>
-    @endif
 
     <!-- Scanning -->
-    @if($hasRole('EDMS - Scanning') || $hasRole('EDMS - Blind Scanning') || $hasRole('EDMS - Upload') || $hasRole('EDMS - Download'))
     <div class="sidebar-submodule-header flex items-center justify-between py-1.5 px-3 cursor-pointer rounded-md" data-section="scanning">
       <div class="flex items-center gap-2">
       <i data-lucide="scan" class="h-4 w-4 text-orange-500"></i>
@@ -669,30 +661,23 @@
     </div>
 
     <div class="pl-4 mt-1 mb-1 space-y-0.5 hidden" data-content="scanning">
-      @if($hasRole('EDMS - Blind Scanning'))
       <a href="{{route('blind-scanning.index')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
       <i data-lucide="eye-off" class="h-3.5 w-3.5 text-orange-400"></i>
       <span>Blind Scanning</span>
       </a>
-      @endif
 
-      @if($hasRole('EDMS - Upload'))
       <a href="{{route('scanning.index')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('scanning.index') ? 'active' : '' }}">
       <i data-lucide="upload" class="h-3.5 w-3.5 text-orange-400"></i>
       <span>Upload</span>
       </a>
-      @endif
 
-      @if($hasRole('EDMS - Download'))
       <a href="/file-digital-registry/download" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200">
       <i data-lucide="download" class="h-3.5 w-3.5 text-orange-400"></i>
       <span>Download</span>
       </a>
-      @endif
     </div>
-    @endif
+    
     <!-- Document Page Types -->
-    @if($hasRole('EDMS - PageTyping') || $hasRole('EDMS - PT Quality Control'))
     <div class="sidebar-submodule-header flex items-center justify-between py-1.5 px-3 cursor-pointer rounded-md" data-section="documentPageTypes">
       <div class="flex items-center gap-2">
       <i data-lucide="file-type" class="h-4 w-4 text-orange-500"></i>
@@ -702,21 +687,16 @@
     </div>
 
     <div class="pl-4 mt-1 mb-1 space-y-0.5 hidden" data-content="documentPageTypes">
-      @if($hasRole('EDMS - PageTyping'))
       <a href="{{route('pagetyping.index')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('pagetyping.index') ? 'active' : '' }}">
       <i data-lucide="type" class="h-3.5 w-3.5 text-orange-400"></i>
       <span>PageTyping</span>
       </a>
-      @endif
 
-      @if($hasRole('EDMS - PT Quality Control'))
       <a href="{{ route('ptq-control.index') }}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 {{ request()->routeIs('ptq-control.index') ? 'active' : '' }}">
       <i data-lucide="shield-check" class="h-3.5 w-3.5 text-orange-400"></i>
       <span>PT Quality Control</span>
       </a>
-      @endif
     </div>
-    @endif
 
   </div>
   @endif
@@ -1115,10 +1095,13 @@
       <span>Director's Approval</span>
     </a>
     @endif
-    <a href="/sectionaltitling/conveyance" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 text-black {{ request()->is('sectionaltitling/conveyance') ? 'active' : '' }}">
-      <i data-lucide="clipboard-list" class="h-3.5 w-3.5 text-lime-500"></i>
-      <span>Final Conveyance</span>
-    </a>
+    
+    @if($hasRole('ST - Final Conveyance'))
+      <a href="/sectionaltitling/conveyance" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 text-black {{ request()->is('sectionaltitling/conveyance') ? 'active' : '' }}">
+        <i data-lucide="clipboard-list" class="h-3.5 w-3.5 text-lime-500"></i>
+        <span>Final Conveyance</span>
+      </a>
+    @endif
 
     @if($hasRole('ST - ST Memo'))
     <a href="{{route('programmes.memo')}}" class="sidebar-item flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200 text-black {{ request()->routeIs('programmes.memo') ? 'active' : '' }}">

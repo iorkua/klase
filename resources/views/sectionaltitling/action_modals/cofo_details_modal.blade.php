@@ -131,8 +131,8 @@
     function openCofoDetailsModal(applicationId, fileNo, npFileNo, applicantType, applicantData, propertyData) {
         // Show SweetAlert confirmation dialog first
         Swal.fire({
-            title: '📋 CofO Registration Status',
-            text: 'Is the CofO Registered?',
+            title: '📋 Capture Extant CofO Details',
+            text: 'Primary Applicant Have CofO?',
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#10b981',

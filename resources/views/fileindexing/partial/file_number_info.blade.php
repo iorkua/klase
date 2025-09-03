@@ -386,7 +386,7 @@
         } else if (fileOption === 'sltr' && serialNo) {
             previewText = `SLTR-${serialNo}`;
         } else if ((fileOption === 'normal' || fileOption === 'temporary') && prefix && year && serialNo) {
-            const paddedSerial = serialNo.toString().padStart(4, '0');
+            const paddedSerial = serialNo.toString().padStart(, '');
             previewText = `${prefix}-${year}-${paddedSerial}`;
             
             if (fileOption === 'temporary') {
@@ -487,7 +487,7 @@
         let number = numberEl.value.trim();
 
         if (prefix && number) {
-            number = number.padStart(5, '0');
+            number = number.padStart(3, '');
             numberEl.value = number;
             const formatted = prefix + ' ' + number;
             previewEl.value = formatted;

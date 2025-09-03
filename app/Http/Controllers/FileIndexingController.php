@@ -138,6 +138,181 @@ class FileIndexingController extends Controller
         }
     }
 
- 
+    public function store(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'file_number' => 'required|string|max:255',
+                'file_title' => 'required|string|max:255',
+                'land_use_type' => 'nullable|string|max:255',
+                'plot_number' => 'nullable|string|max:255',
+                'district' => 'nullable|string|max:255',
+                'lga' => 'nullable|string|max:255',
+                'has_cofo' => 'nullable|boolean',
+                'has_transaction' => 'nullable|boolean',
+                'is_problematic' => 'nullable|boolean',
+                'is_co_owned_plot' => 'nullable|boolean',
+                'is_merged' => 'nullable|boolean',
+                'serial_no' => 'nullable|string|max:255',
+                'batch_no' => 'nullable|string',
+                'shelf_location' => 'nullable|string|max:255',
+                'tracking_id' => 'nullable|string|max:255',
+                'main_application_id' => 'nullable|integer',
+                'subapplication_id' => 'nullable|integer',
+                'file_number_source' => 'nullable|string',
+                'source_file_id' => 'nullable|integer',
+            ]);
+
+            $validated['created_by'] = Auth::id();
+            $validated['updated_by'] = Auth::id();
+
+            $fileIndexing = FileIndexing::create($validated);
+
+            // Mark the batch as used in the Rack_Shelf_Labels table
+            if (isset($validated['batch_no']) && !empty($validated['batch_no'])) {
+                try {
+                    // Check if the Rack_Shelf_Labels table exists
+                    $tableExists = DB::connection('sqlsrv')->select("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Rack_Shelf_Labels'");
+
+                    if (!empty($tableExists)) {
+                        // Mark the batch as used
+                        DB::connection('sqlsrv')
+                            ->table('Rack_Shelf_Labels')
+                            ->where('id', $validated['batch_no'])
+                            ->update(['is_used' => 1]);
+                    }
+                } catch (\Exception $e) {
+                    // Log the error but don't fail the file indexing creation
+                    \Log::error('Failed to mark batch as used: ' . $e->getMessage());
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'File indexing created successfully!',
+                'data' => $fileIndexing
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getShelfForBatch($batch)
+    {
+        try {
+            // Check if the Rack_Shelf_Labels table exists
+            $tableExists = DB::connection('sqlsrv')->select("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Rack_Shelf_Labels'");
+
+            if (empty($tableExists)) {
+                // Table doesn't exist, return a default shelf location
+                return response()->json([
+                    'success' => true,
+                    'label' => "A1-S{$batch}"
+                ]);
+            }
+
+            // Assuming table is Rack_Shelf_Labels with columns: id, full_label, is_used
+            // The batch number is stored in the 'id' column
+            $shelf = DB::connection('sqlsrv')
+                ->table('Rack_Shelf_Labels')
+                ->where('id', $batch)
+                ->where(function($query) {
+                    $query->where('is_used', 0)
+                          ->orWhereNull('is_used');
+                })
+                ->first();
+
+            if ($shelf) {
+                // DON'T mark as used here - only mark as used when file is actually created
+                return response()->json([
+                    'success' => true,
+                    'label' => $shelf->full_label
+                ]);
+            } else {
+                // No shelf found, return a default
+                return response()->json([
+                    'success' => true,
+                    'label' => "A1-S{$batch}"
+                ]);
+            }
+        } catch (\Exception $e) {
+            // If there's any error, return a default shelf location
+            return response()->json([
+                'success' => true,
+                'label' => "A1-S{$batch}"
+            ]);
+        }
+    }
+
+    public function getAvailableBatches(Request $request)
+    {
+        try {
+            // Check if the Rack_Shelf_Labels table exists
+            $tableExists = DB::connection('sqlsrv')->select("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Rack_Shelf_Labels'");
+
+            if (empty($tableExists)) {
+                // Table doesn't exist, return default batches 1-10
+                $batches = [];
+                for ($i = 1; $i <= 10; $i++) {
+                    $batches[] = [
+                        'id' => $i,
+                        'text' => $i
+                    ];
+                }
+                return response()->json([
+                    'success' => true,
+                    'batches' => $batches
+                ]);
+            }
+
+            // Get available batches (is_used = 0 or null)
+            $query = DB::connection('sqlsrv')
+                ->table('Rack_Shelf_Labels')
+                ->where(function($query) {
+                    $query->where('is_used', 0)
+                          ->orWhereNull('is_used');
+                });
+
+            // Add search functionality if search term is provided
+            if ($request->has('q') && !empty($request->q)) {
+                $searchTerm = $request->q;
+                $query->where('id', 'LIKE', '%' . $searchTerm . '%');
+            }
+
+            $availableBatches = $query
+                ->orderBy('id')
+                ->limit(10)
+                ->get(['id', 'full_label']);
+
+            $batches = [];
+            foreach ($availableBatches as $batch) {
+                $batches[] = [
+                    'id' => $batch->id,
+                    'text' => $batch->id
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'batches' => $batches
+            ]);
+        } catch (\Exception $e) {
+            // If there's any error, return default batches
+            $batches = [];
+            for ($i = 1; $i <= 10; $i++) {
+                $batches[] = [
+                    'id' => $i,
+                    'text' => $i
+                ];
+            }
+            return response()->json([
+                'success' => true,
+                'batches' => $batches
+            ]);
+        }
+    }
 
 }

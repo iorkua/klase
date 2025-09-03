@@ -286,6 +286,7 @@
                           BILLS
                         </button>
                         
+                        @if (request()->query('url') !== 'recommendation')
                         <button 
                           class="tab-button" 
                           data-tab="approval"
@@ -293,6 +294,7 @@
                           <i data-lucide="banknote" class="w-3.5 h-3.5 mr-1.5"></i>
                           APPROVAL
                         </button>
+                        @endif
                       </div>
                   
                       <!-- Summary Tab -->

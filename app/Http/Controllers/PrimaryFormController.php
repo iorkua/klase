@@ -143,16 +143,16 @@ class PrimaryFormController extends Controller
                 $rules['idType'] = 'nullable';
                 $rules['id_document'] = 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png';
             } else {
-                // Main owner required fields
-                $rules['address_house_no'] = 'required';
-                $rules['owner_street_name'] = 'required';
-                $rules['owner_district'] = 'required';
-                $rules['owner_lga'] = 'required';
-                $rules['owner_state'] = 'required';
-                $rules['phone_number'] = 'required';
-                $rules['owner_email'] = 'required|email';
-                $rules['idType'] = 'required';
-                $rules['id_document'] = 'required|file|max:5120|mimes:pdf,jpg,jpeg,png';
+                // Main owner nullable fields (not required)
+                $rules['address_house_no'] = 'nullable';
+                $rules['owner_street_name'] = 'nullable';
+                $rules['owner_district'] = 'nullable';
+                $rules['owner_lga'] = 'nullable';
+                $rules['owner_state'] = 'nullable';
+                $rules['phone_number'] = 'nullable';
+                $rules['owner_email'] = 'nullable|email';
+                $rules['idType'] = 'nullable';
+                $rules['id_document'] = 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png';
             }
 
             $validated = $request->validate($rules);

@@ -346,14 +346,7 @@
                                 BILLS
                             </button>
 
-                           
-                            
-                            @php
-                                $approvalDisabled = (
-                                    strtolower($application->application_status ?? '') === 'approved' ||
-                                    strtolower($application->planning_recommendation_status ?? '') === 'not approved'
-                                );
-                            @endphp
+                            @if (request()->query('url') !== 'recommendation')
                             <button 
                                 class="tab-button{{ $approvalDisabled ? ' cursor-not-allowed bg-gray-200 text-gray-400' : '' }}" 
                                 data-tab="initial"
@@ -363,6 +356,7 @@
                                 <i data-lucide="banknote" class="w-3.5 h-3.5 mr-1.5"></i>
                                 APPROVAL
                             </button>
+                            @endif
                         </div>
 
                         <!-- Summary Tab -->

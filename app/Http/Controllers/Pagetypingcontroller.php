@@ -692,9 +692,13 @@ class PageTypingController extends Controller
                 'cover_type_id' => 'required|integer',
                 'page_type' => 'required|string|max:100',
                 'page_subtype' => 'nullable|string|max:100',
-                'serial_number' => 'required|integer|min:1',
+                'serial_number' => 'required|integer|min:0',
                 'page_code' => 'nullable|string|max:100',
                 'file_path' => 'required|string|max:255',
+                // Booklet management fields
+                'booklet_id' => 'nullable|string|max:50',
+                'is_booklet_page' => 'nullable|boolean',
+                'booklet_sequence' => 'nullable|string|max:5',
             ]);
 
             if ($validator->fails()) {
@@ -722,12 +726,20 @@ class PageTypingController extends Controller
                     'serial_number' => $validated['serial_number'],
                     'page_code' => $validated['page_code'],
                     'typed_by' => Auth::id(),
+                    // Booklet management fields
+                    'booklet_id' => $validated['booklet_id'] ?? null,
+                    'is_booklet_page' => $validated['is_booklet_page'] ?? false,
+                    'booklet_sequence' => $validated['booklet_sequence'] ?? null,
                 ]);
                 $pageTyping = $existingPageTyping;
             } else {
                 // Create new record
                 $pageTyping = PageTyping::on('sqlsrv')->create(array_merge($validated, [
-                    'typed_by' => Auth::id()
+                    'typed_by' => Auth::id(),
+                    // Ensure booklet fields have defaults if not provided
+                    'booklet_id' => $validated['booklet_id'] ?? null,
+                    'is_booklet_page' => $validated['is_booklet_page'] ?? false,
+                    'booklet_sequence' => $validated['booklet_sequence'] ?? null,
                 ]));
             }
 
@@ -746,7 +758,27 @@ class PageTypingController extends Controller
 
                         // Get file extension from original file
                         $fileExtension = pathinfo($scanning->original_filename, PATHINFO_EXTENSION);
+                        
+                        // Handle case where file has no extension
+                        if (empty($fileExtension)) {
+                            // Try to get extension from document_path as fallback
+                            $pathExtension = pathinfo($scanning->document_path, PATHINFO_EXTENSION);
+                            $fileExtension = !empty($pathExtension) ? $pathExtension : 'pdf'; // default to pdf
+                        }
+                        
                         $fileName = $fileNumber . '.' . strtolower($fileExtension);
+                        
+                        // Validate the constructed filename
+                        if (substr($fileName, -1) === '.') {
+                            Log::error('Invalid filename constructed - missing extension', [
+                                'file_number' => $fileNumber,
+                                'original_filename' => $scanning->original_filename ?? 'N/A',
+                                'document_path' => $scanning->document_path ?? 'N/A',
+                                'extracted_extension' => $fileExtension,
+                                'constructed_filename' => $fileName
+                            ]);
+                            throw new \Exception('Invalid filename: missing file extension for file ' . $fileNumber);
+                        }
 
                         // Define the two target locations
                         $pagetypingPath = 'EDMS/PAGETYPING/' . $fileNumber . '/' . $fileName;
@@ -770,14 +802,34 @@ class PageTypingController extends Controller
                         // Copy file to PAGETYPING location
                         if (file_exists($originalPath) && !file_exists($pagetypingFullPath)) {
                             if (!copy($originalPath, $pagetypingFullPath)) {
-                                Log::warning('Failed to copy file to PAGETYPING location', [
+                                $error = error_get_last();
+                                Log::error('Failed to copy file to PAGETYPING location', [
                                     'original' => $originalPath,
-                                    'target' => $pagetypingFullPath
+                                    'target' => $pagetypingFullPath,
+                                    'file_number' => $fileNumber,
+                                    'original_filename' => $scanning->original_filename ?? 'N/A',
+                                    'document_path' => $scanning->document_path ?? 'N/A',
+                                    'file_extension' => $fileExtension,
+                                    'constructed_filename' => $fileName,
+                                    'error' => $error['message'] ?? 'Unknown error'
                                 ]);
                             } else {
                                 Log::info('File copied to PAGETYPING location', [
                                     'file_number' => $fileNumber,
                                     'path' => $pagetypingPath
+                                ]);
+                            }
+                        } else {
+                            if (!file_exists($originalPath)) {
+                                Log::warning('Original file does not exist', [
+                                    'original_path' => $originalPath,
+                                    'file_number' => $fileNumber
+                                ]);
+                            }
+                            if (file_exists($pagetypingFullPath)) {
+                                Log::info('File already exists at PAGETYPING location', [
+                                    'target' => $pagetypingFullPath,
+                                    'file_number' => $fileNumber
                                 ]);
                             }
                         }

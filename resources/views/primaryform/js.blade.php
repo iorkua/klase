@@ -724,7 +724,6 @@
             const ownerState = document.querySelector('select[name="owner_state"]') || document.getElementById('ownerState');
             const ownerLga = document.querySelector('select[name="owner_lga"]') || document.getElementById('ownerLga');
             if (!phone1 || !phone1.value.trim()) errors.push('Please enter phone number');
-            if (!email || !email.value.trim()) errors.push('Please enter email address');
             if (!ownerState || !ownerState.value) errors.push('Please select owner state');
             if (!ownerLga || !ownerLga.value) errors.push('Please select owner LGA');
             
@@ -769,7 +768,6 @@
             if (activeFileTab.value === 'mlsFNo') {
                 const prefix = document.getElementById('mlsFileNoPrefix');
                 const number = document.getElementById('mlsFileNumber');
-                if (!prefix || !prefix.value) errors.push('Please select MLS file prefix');
                 if (!number || !number.value.trim()) errors.push('Please enter MLS file number');
             } else if (activeFileTab.value === 'kangisFileNo') {
                 const prefix = document.getElementById('kangisFileNoPrefix');

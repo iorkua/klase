@@ -154,13 +154,21 @@
 
 
 
-                        <div class="grid grid-cols-3 gap-2 mb-4">
-                            @if (request()->query('url') !== 'phy_planning' || request()->query('url') == 'recommendation')
-                                <button class="tab-button active" data-tab="detterment">
-                                    <i data-lucide="calculator" class="w-3.5 h-3.5 mr-1.5"></i>
-                                    Architectural Design
-                                </button>
-                            @endif
+                        <div class="grid grid-cols-5 gap-2 mb-4">
+                            <button class="tab-button active" data-tab="detterment">
+                                <i data-lucide="calculator" class="w-3.5 h-3.5 mr-1.5"></i>
+                                Architectural Design
+                            </button>
+
+                            <button class="tab-button" data-tab="survey-plan">
+                                <i data-lucide="map" class="w-3.5 h-3.5 mr-1.5"></i>
+                                View Survey Plan
+                            </button>
+
+                            <button class="tab-button" data-tab="planning-form">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5 mr-1.5"></i>
+                               Complete survey data 
+                            </button>
 
                             @if (request()->query('url') == 'phy_planning')
                                 <button class="tab-button" data-tab="initial">
@@ -169,20 +177,189 @@
                                 </button>
                             @endif
 
-
-                            @if (request()->query('url') !== 'phy_planning')
-                                <button class="tab-button" data-tab="final">
-                                    <i data-lucide="file-check" class="w-3.5 h-3.5 mr-1.5"></i>
-                                    Planning Recommendation
-                                </button>
-                            @endif
+                            <button class="tab-button" data-tab="final">
+                                <i data-lucide="file-check" class="w-3.5 h-3.5 mr-1.5"></i>
+                                Planning Recommendation Report
+                            </button>
                         </div>
 
 
                         @include('sub_actions.architecturaldesign')
 
-                        <div id="initial-tab"
-                            class="tab-content {{ request()->query('url') == 'phy_planning' ? 'active' : '' }}">
+                        <!-- View Survey Plan Tab -->
+                        <div id="survey-plan-tab" class="tab-content">
+                            <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+                                <div class="p-4 border-b">
+                                    <h3 class="text-sm font-medium">View Survey Plan</h3>
+                                    <p class="text-xs text-gray-500">Review the uploaded survey plan document for this application.</p>
+                                </div>
+                                <div class="p-4">
+                                    @php
+                                        $surveyPlan = null;
+                                        
+                                        if (!empty($application->documents)) {
+                                            $documents = json_decode($application->documents, true);
+                                            if (is_array($documents) && isset($documents['survey_plan'])) {
+                                                $surveyPlan = $documents['survey_plan'];
+                                            }
+                                        }
+                                    @endphp
+                                    
+                                    @if ($surveyPlan && isset($surveyPlan['path']))
+                                        <div class="bg-gray-50 rounded-lg p-4 border">
+                                            <div class="flex items-center justify-between mb-4">
+                                                <div>
+                                                    <h4 class="font-semibold text-gray-800 flex items-center">
+                                                        <i data-lucide="file-image" class="w-4 h-4 mr-2"></i>
+                                                        Survey Plan Document
+                                                    </h4>
+                                                    <p class="text-sm text-gray-600 mt-1">
+                                                        <strong>Original Name:</strong> {{ $surveyPlan['original_name'] ?? 'N/A' }}<br>
+                                                        <strong>File Type:</strong> {{ strtoupper($surveyPlan['type'] ?? 'Unknown') }}<br>
+                                                        <strong>Uploaded:</strong> {{ $surveyPlan['uploaded_at'] ?? 'N/A' }}
+                                                    </p>
+                                                </div>
+                                                <div class="flex gap-2">
+                                                    <a href="{{ asset('storage/' . $surveyPlan['path']) }}" 
+                                                       target="_blank"
+                                                       class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center">
+                                                        <i data-lucide="external-link" class="w-4 h-4 mr-1"></i>
+                                                        Open in New Tab
+                                                    </a>
+                                                    <a href="{{ asset('storage/' . $surveyPlan['path']) }}" 
+                                                       download="{{ $surveyPlan['original_name'] ?? 'survey_plan' }}"
+                                                       class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center">
+                                                        <i data-lucide="download" class="w-4 h-4 mr-1"></i>
+                                                        Download
+                                                    </a>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Document Preview -->
+                                            <div class="bg-white rounded-lg border p-4">
+                                                <h5 class="font-medium text-gray-800 mb-3">Document Preview</h5>
+                                                <div class="flex justify-center">
+                                                    @if (in_array(strtolower($surveyPlan['type'] ?? ''), ['jpg', 'jpeg', 'png', 'gif', 'webp']))
+                                                        <img src="{{ asset('storage/' . $surveyPlan['path']) }}" 
+                                                             alt="Survey Plan" 
+                                                             class="max-w-full max-h-96 object-contain rounded-lg shadow-md border">
+                                                    @elseif (strtolower($surveyPlan['type'] ?? '') === 'pdf')
+                                                        <div class="w-full">
+                                                            <iframe src="{{ asset('storage/' . $surveyPlan['path']) }}" 
+                                                                    class="w-full h-96 border rounded-lg"
+                                                                    frameborder="0">
+                                                                <p>Your browser does not support PDFs. 
+                                                                   <a href="{{ asset('storage/' . $surveyPlan['path']) }}" target="_blank">Click here to view the PDF</a>
+                                                                </p>
+                                                            </iframe>
+                                                        </div>
+                                                    @else
+                                                        <div class="text-center py-8">
+                                                            <i data-lucide="file" class="w-16 h-16 mx-auto text-gray-400 mb-4"></i>
+                                                            <p class="text-gray-600">Preview not available for this file type.</p>
+                                                            <p class="text-sm text-gray-500 mt-2">Please download the file to view it.</p>
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <div class="text-center py-12">
+                                            <i data-lucide="map-pin-off" class="w-16 h-16 mx-auto text-gray-400 mb-4"></i>
+                                            <h4 class="text-lg font-medium text-gray-800 mb-2">No Survey Plan Available</h4>
+                                            <p class="text-gray-600 mb-4">No survey plan document has been uploaded for this application.</p>
+                                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 max-w-md mx-auto">
+                                                <p class="text-sm text-yellow-800">
+                                                    <i data-lucide="info" class="w-4 h-4 inline mr-1"></i>
+                                                    Please ensure the survey plan is uploaded in the application documents.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Complete survey data Tab -->
+                        <div id="planning-form-tab" class="tab-content">
+                            <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+                                <div class="p-4 border-b bg-blue-50">
+                                    <h3 class="text-lg font-medium text-blue-800">📋 Complete survey data</h3>
+                                    <p class="text-sm text-blue-600 mt-1">Fill in all required information before generating the Physical Planning Report. Fields marked with <span class="text-red-500">*</span> are required: LKN Number, TP Plan Number, and Approved Plan Number.</p>
+                                </div>
+                                
+                                <form id="applicationDataForm" class="p-6 space-y-6">
+                                    <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="application_id" value="{{ $application->id }}">
+                                    
+                                    <!-- Application Information Section -->
+                                    <div class="bg-gray-50 rounded-lg p-4 border">
+                                        <h4 class="font-semibold text-gray-800 mb-4 flex items-center">
+                                            <i data-lucide="file-text" class="w-4 h-4 mr-2"></i>
+                                            Application Information
+                                        </h4>
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div class="space-y-2">
+                                                <label for="lkn_number" class="text-xs font-medium block">
+                                                    LKN Number <span class="text-red-500">*</span>
+                                                </label>
+                                                <input type="text" id="lkn_number" name="lkn_number" 
+                                                       value="{{ old('lkn_number', $application->lkn_number ?? '') }}"
+                                                       class="w-full p-2 border border-gray-300 rounded-md text-sm"
+                                                       placeholder="Enter LKN Number">
+                                                <span id="lknStatus" class="text-xs text-gray-500">❌</span>
+                                            </div>
+                                            <div class="space-y-2">
+                                                <label for="tp_plan_number" class="text-xs font-medium block">
+                                                    TP Plan Number <span class="text-red-500">*</span>
+                                                </label>
+                                                <input type="text" id="tp_plan_number" name="tp_plan_number" 
+                                                       value="{{ old('tp_plan_number', $application->tp_plan_number ?? '') }}"
+                                                       class="w-full p-2 border border-gray-300 rounded-md text-sm"
+                                                       placeholder="Enter TP Plan Number">
+                                                <span id="tpStatus" class="text-xs text-gray-500">❌</span>
+                                            </div>
+                                            <div class="space-y-2">
+                                                <label for="approved_plan_number" class="text-xs font-medium block">
+                                                    Approved Plan Number <span class="text-red-500">*</span>
+                                                </label>
+                                                <input type="text" id="approved_plan_number" name="approved_plan_number" 
+                                                       value="{{ old('approved_plan_number', $application->approved_plan_number ?? '') }}"
+                                                       class="w-full p-2 border border-gray-300 rounded-md text-sm"
+                                                       placeholder="Enter Approved Plan Number">
+                                                <span id="approvedStatus" class="text-xs text-gray-500">❌</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Validation Status -->
+                                    <div id="completionMessage" class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                        <p class="text-sm text-red-700">
+                                            <i data-lucide="info" class="w-4 h-4 inline mr-1"></i>
+                                            Complete all required fields above to unlock the Planning Recommendation Report tab.
+                                        </p>
+                                    </div>
+
+                                    <div class="flex gap-3">
+                                        <button type="button" onclick="window.history.back()" 
+                                                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center">
+                                            <i data-lucide="arrow-left" class="w-4 h-4 mr-1"></i>
+                                            Back
+                                        </button>
+                                        <button type="submit" id="saveApplicationDataBtn" 
+                                                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center">
+                                            <i data-lucide="save" class="w-4 h-4 mr-1"></i>
+                                            Save Application Data
+                                        </button>
+                                    </div>
+                                    <div class="text-sm text-gray-600 mt-2">
+                                        <span class="text-red-500">*</span> Required fields: LKN Number, TP Plan Number, Approved Plan Number
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div id="initial-tab" class="tab-content">
                             <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
                                 <div class="p-4 border-b">
                                     <h3 class="text-sm font-medium">Planning Recommendation Approval</h3>
@@ -482,9 +659,167 @@
             </button>
         </div>
     </div>
-</div>
             <!-- Footer -->
             @include('admin.footer')
         </div>
-      @include('sub_actions.parts.sub_recomm_js')
-    @endsection
+    </div>
+    </div>
+
+<!-- Application Data Form JavaScript with Validation -->
+<script>
+// Application Data Form JavaScript with Validation
+document.addEventListener('DOMContentLoaded', function() {
+    // Get approval status from PHP
+    const isApproved = '{{ strtolower($application->planning_recommendation_status ?? '') }}' === 'approved' || '{{ strtolower($application->planning_recommendation_status ?? '') }}' === 'approve';
+    
+    // Validation function
+    function validateRequiredFields() {
+        const lknNumber = document.getElementById('lkn_number').value.trim();
+        const tpNumber = document.getElementById('tp_plan_number').value.trim();
+        const approvedNumber = document.getElementById('approved_plan_number').value.trim();
+
+        // Update status indicators
+        document.getElementById('lknStatus').textContent = lknNumber ? '✅' : '❌';
+        document.getElementById('tpStatus').textContent = tpNumber ? '✅' : '❌';
+        document.getElementById('approvedStatus').textContent = approvedNumber ? '✅' : '❌';
+
+        const allComplete = lknNumber && tpNumber && approvedNumber;
+        
+        // Enable Planning Recommendation Report tab if approved OR all fields complete
+        const shouldEnableReportTab = isApproved || allComplete;
+        
+        // Update completion message
+        const completionMessage = document.getElementById('completionMessage');
+        if (shouldEnableReportTab) {
+            if (isApproved) {
+                completionMessage.className = 'mt-4 p-3 bg-green-50 border border-green-200 rounded-lg';
+                completionMessage.innerHTML = `
+                    <p class="text-sm text-green-700">
+                        <i data-lucide="check-circle" class="w-4 h-4 inline mr-1"></i>
+                        Application is approved! You can now access the Planning Recommendation Report tab.
+                    </p>
+                `;
+            } else {
+                completionMessage.className = 'mt-4 p-3 bg-green-50 border border-green-200 rounded-lg';
+                completionMessage.innerHTML = `
+                    <p class="text-sm text-green-700">
+                        <i data-lucide="check-circle" class="w-4 h-4 inline mr-1"></i>
+                        All required fields completed! You can now access the Planning Recommendation Report tab.
+                    </p>
+                `;
+            }
+        } else {
+            completionMessage.className = 'mt-4 p-3 bg-red-50 border border-red-200 rounded-lg';
+            completionMessage.innerHTML = `
+                <p class="text-sm text-red-700">
+                    <i data-lucide="info" class="w-4 h-4 inline mr-1"></i>
+                    Complete all required fields (LKN Number, TP Plan Number, and Approved Plan Number) above to unlock the Planning Recommendation Report tab.
+                </p>
+            `;
+        }
+
+        // Enable/disable Planning Recommendation Report tab
+        const planningTab = document.getElementById('final-tab');
+        if (planningTab) {
+            const tabButton = document.querySelector('[data-tab="final"]');
+            if (tabButton) {
+                if (shouldEnableReportTab) {
+                    tabButton.disabled = false;
+                    tabButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                    tabButton.classList.add('cursor-pointer');
+                } else {
+                    tabButton.disabled = true;
+                    tabButton.classList.add('opacity-50', 'cursor-not-allowed');
+                    tabButton.classList.remove('cursor-pointer');
+                }
+            }
+        }
+
+        return allComplete;
+    }
+
+    // Add event listeners to required fields
+    const requiredFields = ['lkn_number', 'tp_plan_number', 'approved_plan_number'];
+    requiredFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('input', validateRequiredFields);
+            field.addEventListener('blur', validateRequiredFields);
+        }
+    });
+
+    // Initial validation
+    validateRequiredFields();
+
+    // Prevent clicking on disabled Planning Recommendation Report tab
+    document.addEventListener('click', function(e) {
+        const finalTabButton = document.querySelector('[data-tab="final"]');
+        if (finalTabButton && finalTabButton.disabled && finalTabButton.contains(e.target)) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Show appropriate alert message
+            if (isApproved) {
+                alert('The Planning Recommendation Report tab should be enabled for approved applications. Please refresh the page.');
+            } else {
+                alert('Please complete all required fields (LKN Number, TP Plan Number, and Approved Plan Number) in the "Complete survey data" tab before accessing the Planning Recommendation Report.');
+            }
+            
+            return false;
+        }
+    });
+
+    // Handle form submission
+    const applicationDataForm = document.getElementById('applicationDataForm');
+    if (applicationDataForm) {
+        applicationDataForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // If application is approved, allow saving even with incomplete fields
+            if (!isApproved && !validateRequiredFields()) {
+                alert('Please fill in all required fields (LKN Number, TP Plan Number, and Approved Plan Number) before saving.');
+                return;
+            }
+            
+            // Collect form data
+            const formData = new FormData(this);
+            
+            // Show loading state
+            const submitBtn = document.getElementById('saveApplicationDataBtn');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 mr-1 animate-spin"></i>Saving...';
+            submitBtn.disabled = true;
+            
+            // Send data to backend
+            fetch('{{ route("sectionaltitling.saveApplicationData") }}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Application data saved successfully!');
+                    validateRequiredFields();
+                } else {
+                    alert('Error saving data: ' + (data.error || 'Unknown error occurred'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error saving data: ' + error.message);
+            })
+            .finally(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        });
+    }
+});
+</script>
+
+@include('sub_actions.parts.sub_recomm_js')
+
+@endsection

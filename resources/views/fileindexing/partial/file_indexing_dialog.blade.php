@@ -42,11 +42,17 @@
                                 }
                                 $trackingId = generateTrackingId();
                                 @endphp
-                                <input type="text"   class="input" readonly 
-                                       style="width: 180px; font-size: 0.75rem; background-color: #f9fafb; font-family: monospace; cursor: default;"
+                                <input type="text" id="tracking-id" class="input" readonly 
+                                       style="width: 180px; font-size: 0.75rem; background-color: #f9fafb; font-family: monospace; cursor: default; font-weight: bold; color: #dc2626;"
                                         value="{{ $trackingId }}">
                                  
                             </div>
+                            <!-- QR Code Container -->
+                            <!-- <div class="qr-code-container" style="margin-top: 0.5rem; display: flex; justify-content: center;">
+                                <div id="qr-code" style="border: 1px solid #e5e7eb; padding: 0.5rem; background-color: white; border-radius: 0.375rem;">
+                                    <img id="qr-code-image" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ $trackingId }}" alt="QR Code for {{ $trackingId }}" style="display: block;">
+                                </div>
+                            </div> -->
                         </div>
                     </div>
                     
@@ -286,30 +292,13 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div class="form-group">
                             <label for="batch-no" class="form-label">Batch No</label>
-                            <select id="batch-no" class="input">
+                            <select id="batch-no" class="input select2">
                                 <option value="">Select batch number</option>
-                                <option value="BATCH-001">BATCH-001</option>
-                                <option value="BATCH-002">BATCH-002</option>
-                                <option value="BATCH-003">BATCH-003</option>
-                                <option value="BATCH-004">BATCH-004</option>
-                                <option value="BATCH-005">BATCH-005</option>
                             </select>
                         </div>
                    <div class="form-group">
                             <label for="shelf-location" class="form-label">Shelf/Rack Location</label>
-                            <select id="shelf-location" class="input">
-                                <option value="">Select location</option>
-                                <option value="A1-S1">A1-S1 (Aisle 1, Shelf 1)</option>
-                                <option value="A1-S2">A1-S2 (Aisle 1, Shelf 2)</option>
-                                <option value="A1-S3">A1-S3 (Aisle 1, Shelf 3)</option>
-                                <option value="A2-S1">A2-S1 (Aisle 2, Shelf 1)</option>
-                                <option value="A2-S2">A2-S2 (Aisle 2, Shelf 2)</option>
-                                <option value="A2-S3">A2-S3 (Aisle 2, Shelf 3)</option>
-                                <option value="B1-R1">B1-R1 (Block 1, Rack 1)</option>
-                                <option value="B1-R2">B1-R2 (Block 1, Rack 2)</option>
-                                <option value="B2-R1">B2-R1 (Block 2, Rack 1)</option>
-                                <option value="B2-R2">B2-R2 (Block 2, Rack 2)</option>
-                            </select>
+                            <input type="text" id="shelf-location" class="input" readonly placeholder="Select batch first">
                         </div>
     
  
@@ -324,6 +313,9 @@
         </div>
     </div>
 </div>
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
 // Generate tracking ID functionality
@@ -473,7 +465,73 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize file indexing form submission
     initializeFileIndexingForm();
+
+    // Remove the problematic Select2 initialization from here
+    // It will be initialized when the dialog opens
+    });
+
 });
+
+function refreshAvailableBatches() {
+    // Refresh the batch dropdown to remove used batches
+    fetch('/fileindexing/get-available-batches')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.batches) {
+                const $select = $('#batch-no');
+                
+                // Clear existing options
+                $select.empty();
+                
+                // Add new options
+                data.batches.forEach(function(batch) {
+                    const option = new Option(batch.text, batch.id, false, false);
+                    $select.append(option);
+                });
+                
+                // Trigger change to update Select2
+                $select.trigger('change');
+            }
+        })
+        .catch(error => {
+            console.error('Error refreshing batches:', error);
+        });
+}
+
+// Make the function globally available
+window.refreshAvailableBatches = refreshAvailableBatches;
+
+function initializeFileIndexingForm() {
+    const form = document.getElementById('new-file-form');
+    const createBtn = document.getElementById('create-file-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+    const closeBtn = document.getElementById('close-dialog-btn');
+    const overlay = document.getElementById('new-file-dialog-overlay');
+    
+    if (createBtn) {
+        createBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            submitFileIndexingForm();
+        });
+    }
+    
+    // Close dialog handlers
+    [cancelBtn, closeBtn].forEach(btn => {
+        if (btn) {
+            btn.addEventListener('click', function() {
+                closeFileIndexingDialog();
+            });
+        }
+    });
+    
+    if (overlay) {
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) {
+                closeFileIndexingDialog();
+            }
+        });
+    }
+}
 
 function initializeFileIndexingForm() {
     const form = document.getElementById('new-file-form');
@@ -576,6 +634,10 @@ function submitFileIndexingForm() {
                     icon: 'success',
                     confirmButtonText: 'OK'
                 }).then(() => {
+                    // Refresh available batches since one was just used
+                    if (typeof window.refreshAvailableBatches === 'function') {
+                        window.refreshAvailableBatches();
+                    }
                     closeFileIndexingDialog();
                     // Refresh the file list if available
                     if (typeof refreshFileList === 'function') {
@@ -586,6 +648,10 @@ function submitFileIndexingForm() {
                 });
             } else {
                 alert(data.message || 'File indexing created successfully!');
+                // Refresh available batches since one was just used
+                if (typeof window.refreshAvailableBatches === 'function') {
+                    window.refreshAvailableBatches();
+                }
                 closeFileIndexingDialog();
                 window.location.reload();
             }
@@ -632,24 +698,30 @@ function closeFileIndexingDialog() {
     const overlay = document.getElementById('new-file-dialog-overlay');
     if (overlay) {
         overlay.classList.add('hidden');
-        
+
         // Reset form
         const form = document.getElementById('new-file-form');
         if (form) {
             form.reset();
         }
-        
+
+        // Clear batch and shelf selections
+        const $batchSelect = $('#batch-no');
+        $batchSelect.val(null).trigger('change');
+        $('#shelf-location').val('');
+        $('#shelf-location').css('background-color', '');
+
         // Always regenerate tracking ID when closing
         const trackingIdInput = document.getElementById('tracking-id');
         if (trackingIdInput) {
             trackingIdInput.value = generateTrackingId();
         }
-        
+
         // Reset smart file selector
         if (typeof resetSmartFileSelector === 'function') {
             resetSmartFileSelector();
         }
-        
+
         // Hide custom district input
         const customDistrictContainer = document.getElementById('custom-district-container');
         if (customDistrictContainer) {
@@ -663,7 +735,10 @@ function openFileIndexingDialog() {
     const overlay = document.getElementById('new-file-dialog-overlay');
     if (overlay) {
         overlay.classList.remove('hidden');
-        
+
+        // Initialize Select2 for batch selection
+        initializeBatchSelect2();
+
         // Always ensure tracking ID is present when dialog opens
         const trackingIdInput = document.getElementById('tracking-id');
         if (trackingIdInput) {
@@ -676,14 +751,14 @@ function openFileIndexingDialog() {
                 const newTrackingId = generateTrackingId();
                 trackingIdInput.value = newTrackingId;
             }
-            
+
             // Add visual feedback to show it's been generated
             trackingIdInput.style.backgroundColor = '#dcfce7';
             setTimeout(() => {
                 trackingIdInput.style.backgroundColor = '#f9fafb';
             }, 1000);
         }
-        
+
         // Focus on first input
         setTimeout(() => {
             const firstInput = overlay.querySelector('input:not([readonly])');
@@ -692,5 +767,118 @@ function openFileIndexingDialog() {
             }
         }, 100);
     }
+}
+
+// Initialize Select2 for batch selection
+function initializeBatchSelect2() {
+    const $batchSelect = $('#batch-no');
+    
+    // Destroy existing Select2 instance if it exists
+    if ($batchSelect.hasClass('select2-hidden-accessible')) {
+        $batchSelect.select2('destroy');
+    }
+    
+    // Clear any existing options
+    $batchSelect.empty().append('<option value="">Select batch number</option>');
+    
+    // First, try to load batches directly without AJAX
+    fetch('/fileindexing/get-available-batches')
+        .then(response => {
+            console.log('Batch API response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Batch API response data:', data);
+            if (data.success && data.batches && data.batches.length > 0) {
+                // Add batches to select
+                data.batches.forEach(function(batch) {
+                    const option = new Option(batch.text, batch.id, false, false);
+                    $batchSelect.append(option);
+                });
+                
+                // Initialize Select2 with the loaded data
+                $batchSelect.select2({
+                    placeholder: 'Select batch number',
+                    allowClear: true,
+                    minimumInputLength: 0
+                });
+                
+                console.log('Select2 initialized with', data.batches.length, 'batches');
+            } else {
+                console.log('No batches found or API failed, using fallback');
+                // Fallback to default batches 1-10
+                for (let i = 1; i <= 10; i++) {
+                    const option = new Option(i.toString(), i, false, false);
+                    $batchSelect.append(option);
+                }
+                
+                // Initialize Select2 with fallback data
+                $batchSelect.select2({
+                    placeholder: 'Select batch number',
+                    allowClear: true,
+                    minimumInputLength: 0
+                });
+                
+                console.log('Select2 initialized with fallback data');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading batches:', error);
+            // Fallback to default batches 1-10
+            for (let i = 1; i <= 10; i++) {
+                const option = new Option(i.toString(), i, false, false);
+                $batchSelect.append(option);
+            }
+            
+            // Initialize Select2 with fallback data
+            $batchSelect.select2({
+                placeholder: 'Select batch number',
+                allowClear: true,
+                minimumInputLength: 0
+            });
+            
+            console.log('Select2 initialized with fallback data after error');
+        });
+
+    // Handle batch selection
+    $batchSelect.on('change', function() {
+        const batch = $(this).val();
+        console.log('Batch selected:', batch);
+        if (batch) {
+            fetch(`/fileindexing/get-shelf-for-batch/${batch}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Shelf API response:', data);
+                    if (data.success) {
+                        $('#shelf-location').val(data.label);
+                        $('#shelf-location').css('background-color', '#f3f4f6');
+                    } else {
+                        alert(data.message || 'No available shelf for this batch');
+                        $('#shelf-location').val('');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching shelf:', error);
+                    alert('Error fetching shelf location');
+                });
+        } else {
+            $('#shelf-location').val('');
+            $('#shelf-location').css('background-color', '');
+        }
+    });
+}
+
+// Function to get district value (handles custom district input)
+function getDistrictValue() {
+    const districtSelect = document.getElementById('district-select');
+    const customDistrictInput = document.getElementById('custom-district-input');
+    
+    if (!districtSelect) return '';
+    
+    if (districtSelect.value === 'other' && customDistrictInput?.value) {
+        return customDistrictInput.value;
+    }
+    
+    return districtSelect.value;
 }
 </script>

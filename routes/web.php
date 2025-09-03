@@ -476,6 +476,15 @@ Route::post('fileindex/save-transaction', [FileIndexingController::class, 'saveP
 
 // Check if a fileno has already been indexed
 Route::get('/fileindex/check-indexed', [FileIndexingController::class, 'checkIndexed'])->name('fileindex.check-indexed');
+
+// Get shelf for batch
+Route::get('/fileindexing/get-shelf-for-batch/{batch}', [FileIndexingController::class, 'getShelfForBatch'])->name('fileindexing.get-shelf-for-batch');
+
+// Get available batches
+Route::get('/fileindexing/get-available-batches', [FileIndexingController::class, 'getAvailableBatches'])->name('fileindexing.get-available-batches');
+
+// Store file indexing
+Route::post('/fileindexing/store', [FileIndexingController::class, 'store'])->name('fileindexing.store');
  
 // File Scanning
 Route::get('/filescanning/index', [FileScanningController::class, 'index'])->name('filescanning.index');
@@ -875,6 +884,7 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'scanning'], function
     Route::get('/', [App\Http\Controllers\ScanningController::class, 'index'])->name('scanning.index');
     Route::post('/upload', [App\Http\Controllers\ScanningController::class, 'upload'])->name('scanning.upload');
     Route::post('/upload-unindexed', [App\Http\Controllers\ScanningController::class, 'uploadUnindexed'])->name('scanning.upload-unindexed');
+    Route::get('/unindexed', [App\Http\Controllers\ScanningController::class, 'unindexed'])->name('scanning.unindexed');
     Route::get('/list', [App\Http\Controllers\ScanningController::class, 'list'])->name('scanning.list');
     Route::get('/{id}', [App\Http\Controllers\ScanningController::class, 'view'])->name('scanning.view');
     Route::get('/{id}/details', [App\Http\Controllers\ScanningController::class, 'details'])->name('scanning.details');
@@ -882,6 +892,9 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'scanning'], function
     Route::delete('/{id}', [App\Http\Controllers\ScanningController::class, 'delete'])->name('scanning.delete');
     Route::post('/upload-more/{fileIndexingId}', [App\Http\Controllers\ScanningController::class, 'uploadMore'])->name('scanning.upload-more');
 });
+
+// Test route for backend connectivity
+Route::get('/test-backend', [App\Http\Controllers\TestController::class, 'test'])->name('test.backend');
 
 // Page Typing Integration
 Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'pagetyping'], function () {

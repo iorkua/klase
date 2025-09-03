@@ -235,8 +235,8 @@ rk<div class="modal-dialog shadow-none" role="document">
                                             {{ Form::label('phone', __('Phone Number'), ['class' => 'block text-sm font-medium text-gray-700 mb-1']) }}
                                             {{ Form::text('phone', null, [
                                                 'class' => 'w-full p-2 border border-gray-300 rounded-md text-sm',
-                                                'placeholder' => __('Enter Phone Number'),
-                                                'required' => 'required'
+                                                'placeholder' => __('Enter Phone Number')
+                                                
                                             ]) }}
                                         </div>
                                     </div>
@@ -246,8 +246,8 @@ rk<div class="modal-dialog shadow-none" role="document">
                                             {{ Form::label('email', __('Email'), ['class' => 'block text-sm font-medium text-gray-700 mb-1']) }}
                                             {{ Form::text('email', null, [
                                                 'class' => 'w-full p-2 border border-gray-300 rounded-md text-sm',
-                                                'placeholder' => __('Enter email'),
-                                                'required' => 'required'
+                                                'placeholder' => __('Enter email')
+                                                 
                                             ]) }}
                                         </div>
                                     </div>

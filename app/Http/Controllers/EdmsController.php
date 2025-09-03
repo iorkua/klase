@@ -226,17 +226,7 @@ class EdmsController extends Controller
             }
         }
         
-        $landUse = 'Recertification';
-        $plotInfo = '';
-        
-        if ($application->plot_number) {
-            $plotInfo = ' - Plot ' . $application->plot_number;
-            if ($application->layout_district) {
-                $plotInfo .= ', ' . $application->layout_district;
-            }
-        }
-        
-        return $name ? "{$name}'s {$landUse}{$plotInfo}" : "Recertification Application {$application->id}";
+        return $name ?: "Recertification Application {$application->id}";
     }
 
     /**
@@ -768,25 +758,7 @@ class EdmsController extends Controller
             }
         }
         
-        $unitInfo = '';
-        if ($subApplication->unit_number) {
-            $unitInfo = "Unit {$subApplication->unit_number}";
-            if ($subApplication->block_number) {
-                $unitInfo .= ", Block {$subApplication->block_number}";
-            }
-        }
-        
-        $landUse = $motherApplication->land_use ?? 'Property';
-        
-        if ($name && $unitInfo) {
-            return "{$name}'s {$landUse} - {$unitInfo}";
-        } elseif ($name) {
-            return "{$name}'s Unit Application";
-        } elseif ($unitInfo) {
-            return "{$landUse} - {$unitInfo}";
-        } else {
-            return "Unit Application {$subApplication->id}";
-        }
+        return $name ?: "Unit Application {$subApplication->id}";
     }
 
     /**

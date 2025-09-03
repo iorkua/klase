@@ -103,10 +103,7 @@ class UserController extends Controller
                     [
                         'name' => 'required',
                         'username' => 'required|unique:users', // add username validation
-                        'email' => 'required|email|unique:users',
                         'password' => 'required|min:6',
-                        // profile image optional for super admin create form
-                        'profile' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                     ]
                 );
                 if ($validator->fails()) {
@@ -118,7 +115,7 @@ class UserController extends Controller
                 $user = new User();
                 $user->name = $request->name;
                 $user->username = $request->username; // save username
-                $user->email = $request->email;
+                $user->email = $request->filled('email') ? $request->email : uniqid('temp_') . '@klaes.com.ng';
                 $user->assign_role = isset($request->user_role) ? implode(',', $request->user_role) : null;
                 $user->password = \Hash::make($request->password);
                 // allow either phone or phone_number
@@ -171,14 +168,11 @@ class UserController extends Controller
                     [
                         'first_name' => 'required',
                         'last_name' => 'required',
-                        'email' => 'required|email|unique:users',
                         'password' => 'required|min:6',
                         'department_id' => 'required',
                         'user_type' => 'required|string|in:Management,Operations,ALL,User,System',
                         'user_level' => 'required|string|in:Administrative,Technical,Finance,Lowest,High,Highest',
                         'user_role' => 'required|array',
-                        // profile image required for user create form
-                        'profile' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
                     ]
                 );
                 if ($validator->fails()) {
@@ -202,7 +196,7 @@ class UserController extends Controller
                 $user->first_name = $request->first_name;
                 $user->last_name = $request->last_name;
                 $user->username = $request->username; // save username
-                $user->email = $request->email;
+                $user->email = $request->filled('email') ? $request->email : uniqid('temp') . '@klaes.com.ng';
                 // allow either phone or phone_number
                 $user->phone_number = $request->input('phone_number', $request->input('phone'));
                 $user->password = \Hash::make($request->password);
@@ -294,7 +288,6 @@ class UserController extends Controller
                     [
                         'name' => 'required',
                         'username' => 'required|unique:users,username,' . $id, // add username validation
-                        'email' => 'required|email|unique:users,email,' . $id, // Fix: exclude current user's email
                     ]
                 );
                 if ($validator->fails()) {
@@ -306,6 +299,7 @@ class UserController extends Controller
                 $userData = $request->all();
                 $user->fill($userData);
                 $user->username = $request->username; // update username
+                $user->email = $request->filled('email') ? $request->email : uniqid('temp') . '@klaes.com.ng';
                 $user->save();
 
                 return redirect()->route('users.index')->with('success', 'User successfully updated.');
@@ -315,7 +309,6 @@ class UserController extends Controller
                     [
                         'first_name' => 'required',
                         'last_name' => 'required',
-                        'email' => 'required|email|unique:users,email,' . $id,
                         'department_id' => 'required',
                         'user_level' => 'required|string|in:Administrative,Technical,Finance,Lowest,Highest,High',
                         'user_role' => 'required|array',
@@ -335,7 +328,7 @@ class UserController extends Controller
                 $user->first_name = $request->first_name;
                 $user->last_name = $request->last_name;
                 $user->username = $request->username; // update username
-                $user->email = $request->email;
+                $user->email = $request->filled('email') ? $request->email : uniqid('temp') . '@klaes.com.ng';
                 $user->phone_number = $request->phone_number;
                 $user->department_id = $request->department_id;
                 $user->user_level = $request->user_level;

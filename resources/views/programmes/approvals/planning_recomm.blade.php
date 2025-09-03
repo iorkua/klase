@@ -560,25 +560,31 @@
                         </td>
                         <td class="table-cell">{{ $application->comments ?? 'N/A' }}</td>
                         <td class="table-cell">
-                            @php
-                            $fileExists = DB::connection('sqlsrv')
-                              ->table('Cofo')
-                              ->where('mlsFNo', $application->fileno)
-                              ->orWhere('kangisFileNo', $application->fileno)
-                              ->orWhere('NewKANGISFileno', $application->fileno)
-                              ->exists();
-                            @endphp
-                            @if($fileExists)
-                              <span class="badge badge-approved">
-                                <i data-lucide="check-circle" class="w-4 h-4 mr-1 text-green-600"></i>
-                                COFO 
-                              </span>
-                            @else
-                              <span class="badge badge-declined">
-                                <i data-lucide="x-circle" class="w-4 h-4 mr-1 text-red-600"></i>
-                                COFO  
-                              </span>
-                            @endif
+                          @php
+                          $cofoRecord = DB::connection('sqlsrv')
+                            ->table('Cofo')
+                            ->where('mlsFNo', $application->fileno)
+                            ->orWhere('kangisFileNo', $application->fileno)
+                            ->orWhere('NewKANGISFileno', $application->fileno)
+                            ->select('regNo')
+                            ->first();
+                          @endphp
+                          @if(!$cofoRecord)
+                            <span class="badge badge-declined">
+                            <i data-lucide="x-circle" class="w-4 h-4 mr-1 text-red-600"></i>
+                            Cofo not captured
+                            </span>
+                          @elseif($cofoRecord->regNo == '0/0/0')
+                            <span class="badge badge-pending">
+                            <i data-lucide="alert-triangle" class="w-4 h-4 mr-1 text-yellow-600"></i>
+                            NO CofO
+                            </span>
+                          @else
+                            <span class="badge badge-approved">
+                            <i data-lucide="check-circle" class="w-4 h-4 mr-1 text-green-600"></i>
+                             CoFO
+                            </span>
+                          @endif
                         </td>
                        
                     

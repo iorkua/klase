@@ -1,17 +1,16 @@
 @extends('layouts.app')
 @section('page-title')
-    {{ __('Document Upload') }}
+    {{ __('File Upload - EDMS') }}
 @endsection
 @section('content')
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://unpkg.com/tesseract.js@4/dist/tesseract.min.js"></script>
-    <script src="/scanning/upload_handler.js"></script>
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Main Content -->
     <div class="flex-1 overflow-auto">
-        <!-- Header --> 
-        @include('admin.header') 
+        <!-- Header -->
+        @include('admin.header')
         <!-- Dashboard Content -->
         <div class="p-6">
             <div class="container mx-auto py-6 space-y-6">
@@ -31,12 +30,12 @@
                         border: 1px solid #e5e7eb;
                     }
                 </style>
- 
+
                 <div class="container mx-auto py-6 space-y-6 px-4">
                     <!-- Page Header -->
                     <div class="mb-8">
-                        <h1 class="text-3xl font-bold text-gray-900">Unindexed File Upload</h1>
-                        <p class="text-gray-600 mt-2">Upload and automatically index digital files</p>
+                        <h1 class="text-3xl font-bold text-gray-900">File Upload</h1>
+                        <p class="text-gray-600 mt-2">Upload digital files to the registry</p>
                     </div>
 
                     <!-- Stats Cards -->
@@ -90,83 +89,80 @@
                         <div id="upload-tab" class="tab-content mt-6">
                             <div class="bg-white rounded-lg border shadow-sm">
                                 <div class="p-6 border-b">
-                                    <h3 class="text-lg font-semibold">Upload Unindexed Files</h3>
-                                    <p class="text-gray-600 text-sm mt-1">Upload files that will be automatically analyzed and indexed</p>
+                                    <h3 class="text-lg font-semibold">Upload Files</h3>
+                                    <p class="text-gray-600 text-sm mt-1">Upload digital files to the registry</p>
                                 </div>
                                 <div class="p-6">
-                                    <form id="unindexed-upload-form" enctype="multipart/form-data">
-                                        @csrf
-                                        <div class="space-y-6">
-                                            <!-- Upload Area -->
-                                            <div id="upload-area" class="rounded-md border-2 border-dashed border-gray-300 p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
-                                                <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
-                                                    <svg class="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                                                    </svg>
-                                                </div>
-                                                <h3 class="mb-2 text-lg font-medium">Drag and drop files here</h3>
-                                                <p class="mb-4 text-sm text-gray-500">or click to browse files on your computer</p>
-                                                <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.tiff,.webp" class="hidden" id="file-upload" name="documents[]">
-                                                <button type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors" onclick="document.getElementById('file-upload').click()">
-                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                                                    </svg>
-                                                    Browse Files
-                                                </button>
-                                                <p class="text-xs text-gray-500 mt-2">
-                                                    Supported formats: PDF, JPG, PNG, GIF, BMP, TIFF, WebP (OCR enabled for scanned documents)
-                                                </p>
+                                    <div class="space-y-6">
+                                        <!-- Upload Area -->
+                                        <div id="upload-area" class="rounded-md border-2 border-dashed border-gray-300 p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
+                                            <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
+                                                <svg class="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                                </svg>
                                             </div>
+                                            <h3 class="mb-2 text-lg font-medium">Drag and drop files here</h3>
+                                            <p class="mb-4 text-sm text-gray-500">or click to browse files on your computer</p>
+                                            <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.tiff,.webp" class="hidden" id="file-upload">
+                                            <button class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors" onclick="document.getElementById('file-upload').click()">
+                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                                </svg>
+                                                Browse Files
+                                            </button>
+                                            <p class="text-xs text-gray-500 mt-2">
+                                                Supported formats: PDF, JPG, PNG, GIF, BMP, TIFF, WebP (OCR enabled for scanned documents)
+                                            </p>
+                                        </div>
 
-                                            <!-- Selected Files -->
-                                            <div id="selected-files" class="hidden rounded-md border divide-y">
-                                                <div class="p-3 bg-gray-50 flex justify-between items-center">
-                                                    <span class="font-medium" id="selected-count">0 files selected</span>
-                                                    <button type="button" class="text-sm text-gray-600 hover:text-gray-800" onclick="clearAllFiles()">Clear All</button>
-                                                </div>
-                                                <div id="selected-files-list"></div>
+                                        <!-- Selected Files -->
+                                        <div id="selected-files" class="hidden rounded-md border divide-y">
+                                            <div class="p-3 bg-gray-50 flex justify-between items-center">
+                                                <span class="font-medium" id="selected-count">0 files selected</span>
+                                                <button class="text-sm text-gray-600 hover:text-gray-800" onclick="clearAllFiles()">Clear All</button>
                                             </div>
+                                            <div id="selected-files-list"></div>
+                                        </div>
 
-                                            <!-- Upload Progress -->
-                                            <div id="upload-progress" class="hidden space-y-2">
-                                                <div class="flex justify-between text-sm">
-                                                    <span id="upload-progress-text">Uploading files...</span>
-                                                    <span id="upload-progress-percent">0%</span>
-                                                </div>
-                                                <div class="w-full bg-gray-200 rounded-full h-2">
-                                                    <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" id="upload-progress-bar" style="width: 0%"></div>
-                                                </div>
+                                        <!-- Upload Progress -->
+                                        <div id="upload-progress" class="hidden space-y-2">
+                                            <div class="flex justify-between text-sm">
+                                                <span id="upload-progress-text">Uploading files...</span>
+                                                <span id="upload-progress-percent">0%</span>
                                             </div>
-
-                                            <!-- Action Buttons -->
-                                            <div class="flex flex-col md:flex-row gap-4 justify-center">
-                                                <button type="button" id="start-upload-btn" class="hidden inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                                                    </svg>
-                                                    Start Upload & Analysis
-                                                </button>
-                                                <button type="button" id="cancel-upload-btn" class="hidden inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors" onclick="cancelUpload()">
-                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                    </svg>
-                                                    Cancel
-                                                </button>
-                                                <button type="button" id="upload-more-btn" class="hidden inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors" onclick="resetUpload()">
-                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                                    </svg>
-                                                    Upload More
-                                                </button>
-                                                <button type="button" id="view-files-btn" class="hidden inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors" onclick="switchToUploadedFiles()">
-                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                    </svg>
-                                                    View Uploaded Files
-                                                </button>
+                                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                                <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" id="upload-progress-bar" style="width: 0%"></div>
                                             </div>
                                         </div>
-                                    </form>
+
+                                        <!-- Action Buttons -->
+                                        <div class="flex flex-col md:flex-row gap-4 justify-center">
+                                            <button id="start-upload-btn" class="hidden inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors" onclick="startUpload()">
+                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                                </svg>
+                                                Start Upload & Analysis
+                                            </button>
+                                            <button id="cancel-upload-btn" class="hidden inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors" onclick="cancelUpload()">
+                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                                Cancel
+                                            </button>
+                                            <button id="upload-more-btn" class="hidden inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors" onclick="resetUpload()">
+                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                                </svg>
+                                                Upload More
+                                            </button>
+                                            <button id="view-files-btn" class="hidden inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors" onclick="switchToUploadedFiles()">
+                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                                View Uploaded Files
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -248,7 +244,7 @@
                                     <div class="text-xs font-medium">Complete</div>
                                 </div>
                             </div>
-                            
+
                             <!-- Analysis Results -->
                             <div id="analysis-results" class="hidden mt-4 p-4 bg-white rounded-lg border shadow-sm">
                                 <div class="flex justify-between items-center mb-4">
@@ -256,25 +252,25 @@
                                     <span class="px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800 border border-green-200" id="files-processed">0 files processed</span>
                                 </div>
                                 <div id="metadata-results" class="space-y-6"></div>
-                                
+
                                 <!-- Summary and Actions -->
                                 <div class="mt-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200">
                                     <div class="flex items-center justify-between">
                                         <div>
                                             <h5 class="font-semibold text-gray-900 mb-1">Analysis Complete</h5>
                                             <p class="text-sm text-gray-600">
-                                                All documents have been processed and indexed successfully.
+                                                All documents have been processed and are ready to be added to the File Indexing Assistant.
                                             </p>
                                         </div>
                                         <div class="flex gap-3">
-                                            <button type="button" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors" onclick="resetUpload()">
-                                                Upload More
+                                            <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors" onclick="resetUpload()">
+                                                Cancel
                                             </button>
-                                            <button type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors" onclick="goToPageTyping()">
+                                            <button class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors" onclick="createIndexingEntries()">
                                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
                                                 </svg>
-                                                Continue to Page Typing
+                                                Create in File Indexing Assistant
                                             </button>
                                         </div>
                                     </div>
@@ -323,7 +319,56 @@
                     </div>
                 </div>
 
-                @include('scanning.ocr_functions')
+                <!-- Edit Metadata Modal -->
+                <div id="metadata-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeMetadataModal()" tabindex="-1">
+                    <div class="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold" id="metadata-modal-title">Edit Document Metadata</h3>
+                            <button class="text-gray-400 hover:text-gray-600" onclick="closeMetadataModal()">
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div>
+                                <h4 class="font-medium mb-2">Metadata Fields</h4>
+                                <div id="metadata-form" class="space-y-4"></div>
+                            </div>
+                            <div>
+                                <h4 class="font-medium mb-2">Document Preview</h4>
+                                <div id="metadata-preview-content" class="document-preview border rounded-lg p-4 bg-gray-50">
+                                    <div id="pdf-preview-wrapper" class="relative hidden">
+                                        <canvas id="pdf-preview-canvas" class="w-full h-auto border rounded-lg"></canvas>
+                                        <p id="pdf-loading-placeholder" class="text-gray-500 text-center py-8 hidden">Loading PDF preview...</p>
+                                        <div id="pdf-navigation-controls" class="flex justify-between items-center mt-4 hidden">
+                                            <button id="prev-page-btn" class="px-3 py-1 bg-gray-200 rounded text-gray-700 hover:bg-gray-300 disabled:opacity-50" onclick="goToPreviousPage()" disabled>Previous</button>
+                                            <span id="page-info" class="text-sm font-medium text-gray-700"></span>
+                                            <button id="next-page-btn" class="px-3 py-1 bg-gray-200 rounded text-gray-700 hover:bg-gray-300 disabled:opacity-50" onclick="goToNextPage()" disabled>Next</button>
+                                        </div>
+                                    </div>
+                                    <div id="image-preview-wrapper" class="hidden">
+                                        <img id="image-preview-img" src="/placeholder.svg" alt="Document preview" class="max-w-full h-auto border rounded">
+                                        <p id="image-loading-placeholder" class="text-gray-500 text-center py-8 hidden">Loading image preview...</p>
+                                    </div>
+                                    <p id="unsupported-preview-message" class="text-gray-500 hidden">Preview not available for this file type</p>
+                                </div>
+                                <h4 class="font-medium mb-2 mt-4">Extracted Text</h4>
+                                <div class="document-preview border rounded-lg p-4 bg-white">
+                                    <pre id="metadata-extracted-text-preview" class="text-xs whitespace-pre-wrap text-gray-700"></pre>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex justify-end gap-3 mt-6">
+                            <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors" onclick="closeMetadataModal()">
+                                Cancel
+                            </button>
+                            <button class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors" onclick="applyMetadataChanges()">
+                                Apply
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         <!-- Footer -->
@@ -331,118 +376,159 @@
     </div>
 
     <script>
-        // Initialize global variables in window scope
-        window.selectedFiles = [];
-        window.uploadStatus = 'idle';
-        window.uploadProgress = 0;
-        window.extractedMetadata = {};
-        window.uploadedDocuments = [];
-        window.aiProcessingStage = 'idle';
-        window.aiProgress = 0;
-        window.currentEditingFile = null;
-        window.ocrProgress = 0;
-        window.filteredFiles = [];
-        window.currentPDFDocument = null;
-        window.currentPageNumber = 1;
-        window.uploadedFiles = [];
+        // Global variables
+        let uploadStatus = 'idle';
+        let uploadProgress = 0;
+        let selectedFiles = [];
+        let uploadedFiles = [];
+        let aiProcessingStage = 'idle';
+        let aiProgress = 0;
+        let extractedMetadata = {}; // Now keyed by uploadedFile.id
+        let currentEditingFile = null;
+        let ocrProgress = 0;
+        let filteredFiles = []; // For search functionality
+        let currentPDFDocument = null; // Stores the PDFDocumentProxy object for the currently opened PDF in the modal
+        let currentPageNumber = 1;    // Stores the current page number being viewed in the PDF preview
 
-        // Initialize on page load
+        // Initialize PDF.js worker
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        // Initialize the page when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
-            initializeUploadArea();
-            initializeTabs();
-            loadUploadedFiles();
+            initializePage();
         });
 
-        // Initialize upload area
-        function initializeUploadArea() {
-            const uploadArea = document.getElementById('upload-area');
-            const fileInput = document.getElementById('file-upload');
+        function initializePage() {
+            // Set up event listeners
+            setupEventListeners();
 
-            // Drag and drop events
-            uploadArea.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                uploadArea.classList.add('border-blue-400', 'bg-blue-50');
-            });
+            // Initialize displays
+            updateUploadedFilesDisplay();
+            updateStats();
 
-            uploadArea.addEventListener('dragleave', function(e) {
-                e.preventDefault();
-                uploadArea.classList.remove('border-blue-400', 'bg-blue-50');
-            });
-
-            uploadArea.addEventListener('drop', function(e) {
-                e.preventDefault();
-                uploadArea.classList.remove('border-blue-400', 'bg-blue-50');
-                
-                const files = Array.from(e.dataTransfer.files);
-                handleFileSelection(files);
-            });
-
-            uploadArea.addEventListener('click', function() {
-                fileInput.click();
-            });
-
-            fileInput.addEventListener('change', function(e) {
-                const files = Array.from(e.target.files);
-                handleFileSelection(files);
-            });
+            console.log('File Upload System initialized');
         }
 
-        // Initialize tabs
-        function initializeTabs() {
-            const tabButtons = document.querySelectorAll('.tab-button');
-            const tabContents = document.querySelectorAll('.tab-content');
-
-            tabButtons.forEach(button => {
+        function setupEventListeners() {
+            // Tab functionality
+            document.querySelectorAll('.tab-button').forEach(button => {
                 button.addEventListener('click', function() {
-                    const targetTab = this.getAttribute('data-tab');
-                    
-                    // Update button states
-                    tabButtons.forEach(btn => {
-                        btn.classList.remove('active', 'border-blue-500', 'text-blue-600');
-                        btn.classList.add('border-transparent', 'text-gray-500');
-                    });
-                    
-                    this.classList.add('active', 'border-blue-500', 'text-blue-600');
-                    this.classList.remove('border-transparent', 'text-gray-500');
-                    
-                    // Update content visibility
-                    tabContents.forEach(content => {
-                        if (content.id === targetTab + '-tab') {
-                            content.classList.remove('hidden');
-                        } else {
-                            content.classList.add('hidden');
-                        }
-                    });
-
-                    // Load data for specific tabs
-                    if (targetTab === 'uploaded-files') {
-                        loadUploadedFiles();
-                    }
+                    const tabName = this.dataset.tab;
+                    switchTab(tabName);
                 });
             });
-        }
 
-        // Handle file selection
-        function handleFileSelection(files) {
-            const validFiles = files.filter(file => {
-                const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/tiff', 'image/webp'];
-                return validTypes.includes(file.type) && file.size <= 20 * 1024 * 1024; // 20MB
-            });
-
-            if (validFiles.length !== files.length) {
-                showNotification('Some files were skipped due to invalid format or size (max 20MB)', 'warning');
+            // File upload
+            const fileInput = document.getElementById('file-upload');
+            if (fileInput) {
+                fileInput.addEventListener('change', handleFileSelect);
             }
 
-            selectedFiles = [...selectedFiles, ...validFiles];
-            displaySelectedFiles();
+            // Search functionality
+            const searchInput = document.getElementById('file-search');
+            if (searchInput) {
+                searchInput.addEventListener('input', handleFileSearch);
+            }
+
+            // Drag and drop functionality
+            const uploadArea = document.getElementById('upload-area');
+            if (uploadArea) {
+                uploadArea.addEventListener('click', () => {
+                    document.getElementById('file-upload').click();
+                });
+
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('border-blue-500', 'bg-blue-50');
+                });
+
+                uploadArea.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('border-blue-500', 'bg-blue-50');
+                });
+
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('border-blue-500', 'bg-blue-50');
+                    const files = Array.from(e.dataTransfer.files);
+                    handleFiles(files);
+                });
+            }
+        }
+
+        // Search functionality
+        function handleFileSearch(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            if (searchTerm === '') {
+                filteredFiles = uploadedFiles;
+            } else {
+                filteredFiles = uploadedFiles.filter(file =>
+                    file.name.toLowerCase().includes(searchTerm) ||
+                    file.type.toLowerCase().includes(searchTerm) ||
+                    file.status.toLowerCase().includes(searchTerm)
+                );
+            }
+            updateUploadedFilesDisplay();
+        }
+
+        // Tab functionality
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active', 'border-blue-500', 'text-blue-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            const activeTab = document.querySelector(`[data-tab="${tabName}"]`);
+            if (activeTab) {
+                activeTab.classList.add('active', 'border-blue-500', 'text-blue-600');
+                activeTab.classList.remove('border-transparent', 'text-gray-500');
+            }
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            const activeContent = document.getElementById(`${tabName}-tab`);
+            if (activeContent) {
+                activeContent.classList.remove('hidden');
+            }
+        }
+
+        function switchToUpload() {
+            switchTab('upload');
+        }
+
+        function switchToUploadedFiles() {
+            switchTab('uploaded-files');
+        }
+
+        // File handling
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            handleFiles(files);
+        }
+
+        async function handleFiles(files) {
+            console.log('handleFiles called with', files.length, 'files'); // Debug log
+            selectedFiles = files;
+
+            console.log('Total selected files now:', selectedFiles.length); // Debug log
+            console.log('Current uploadStatus:', uploadStatus); // Debug log
+
+            // filePreviewData is no longer needed as original file reference is stored in uploadedFiles
+
+            updateSelectedFilesDisplay();
             updateUploadButtons();
         }
 
-        // Display selected files
-        function displaySelectedFiles() {
+        function updateSelectedFilesDisplay() {
             const container = document.getElementById('selected-files');
             const list = document.getElementById('selected-files-list');
             const count = document.getElementById('selected-count');
+
+            if (!container || !list || !count) return;
 
             if (selectedFiles.length === 0) {
                 container.classList.add('hidden');
@@ -452,99 +538,71 @@
             container.classList.remove('hidden');
             count.textContent = `${selectedFiles.length} files selected`;
 
-            list.innerHTML = '';
-            selectedFiles.forEach((file, index) => {
-                const fileItem = document.createElement('div');
-                fileItem.className = 'p-3 flex items-center justify-between hover:bg-gray-50';
-                fileItem.innerHTML = `
+            list.innerHTML = selectedFiles.map((file, index) => `
+                <div class="flex items-center justify-between p-3">
                     <div class="flex items-center gap-3">
-                        <div class="p-2 bg-blue-100 rounded">
-                            <svg class="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
-                        </div>
+                        ${getFileIcon(file.type)}
                         <div>
-                            <div class="font-medium text-sm">${file.name}</div>
-                            <div class="text-xs text-gray-500">${formatFileSize(file.size)}</div>
+                            <p class="font-medium">${file.name}</p>
+                            <p class="text-xs text-gray-500">${formatFileSize(file.size)}</p>
                         </div>
                     </div>
-                    <button type="button" class="text-red-500 hover:text-red-700 p-1" onclick="removeFile(${index})">
+                    <button class="text-gray-400 hover:text-gray-600" onclick="removeSelectedFile(${index})">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </button>
-                `;
-                list.appendChild(fileItem);
-            });
+                </div>
+            `).join('');
         }
 
-        // Remove file from selection
-        function removeFile(index) {
+        function removeSelectedFile(index) {
+            // No need to delete from filePreviewData anymore
             selectedFiles.splice(index, 1);
-            displaySelectedFiles();
+            updateSelectedFilesDisplay();
             updateUploadButtons();
         }
 
-        // Clear all files
         function clearAllFiles() {
             selectedFiles = [];
-            document.getElementById('file-upload').value = '';
-            displaySelectedFiles();
+            // filePreviewData = {}; // No longer needed
+            updateSelectedFilesDisplay();
             updateUploadButtons();
         }
 
-        // Update upload buttons based on state
         function updateUploadButtons() {
             const startBtn = document.getElementById('start-upload-btn');
             const cancelBtn = document.getElementById('cancel-upload-btn');
             const uploadMoreBtn = document.getElementById('upload-more-btn');
             const viewFilesBtn = document.getElementById('view-files-btn');
 
-            // Hide all buttons first
-            [startBtn, cancelBtn, uploadMoreBtn, viewFilesBtn].forEach(btn => {
+            // Hide all buttons first EXCEPT start button (we'll handle it separately)
+            [cancelBtn, uploadMoreBtn, viewFilesBtn].forEach(btn => {
                 if (btn) btn.classList.add('hidden');
             });
 
             if (uploadStatus === 'idle' && selectedFiles.length > 0) {
+                console.log('Showing start upload button'); // Debug log
                 if (startBtn) startBtn.classList.remove('hidden');
+            } else if (uploadStatus === 'idle' && selectedFiles.length === 0) {
+                console.log('Hiding start upload button - no files selected'); // Debug log
+                if (startBtn) startBtn.classList.add('hidden');
             } else if (uploadStatus === 'uploading') {
+                console.log('Showing cancel button'); // Debug log
+                if (startBtn) startBtn.classList.add('hidden'); // Hide start button during upload
                 if (cancelBtn) cancelBtn.classList.remove('hidden');
             } else if (uploadStatus === 'complete') {
+                console.log('Showing upload more and view files buttons'); // Debug log
+                if (startBtn) startBtn.classList.add('hidden'); // Hide start button when complete
                 if (uploadMoreBtn) uploadMoreBtn.classList.remove('hidden');
                 if (viewFilesBtn) viewFilesBtn.classList.remove('hidden');
             }
         }
 
-        // Handle form submission
-        document.getElementById('unindexed-upload-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            startUpload();
-            return false;
-        });
-
-        // Also add direct click handler to the button as backup
-        document.addEventListener('click', function(e) {
-            if (e.target && e.target.id === 'start-upload-btn') {
-                e.preventDefault();
-                e.stopPropagation();
-                startUpload();
-                return false;
-            }
-        });
-
-        // Start upload process
-        async function startUpload() {
-            console.log('Starting upload process...'); // Debug log
-            
+        // Upload functionality
+        function startUpload() {
             if (selectedFiles.length === 0) {
-                showNotification('Please select files to upload', 'warning');
-                return;
-            }
-
-            // Prevent multiple simultaneous uploads
-            if (uploadStatus === 'uploading') {
-                console.log('Upload already in progress, ignoring...');
+                alert('Please select files to upload');
                 return;
             }
 
@@ -557,507 +615,670 @@
             const progressDiv = document.getElementById('upload-progress');
             if (progressDiv) progressDiv.classList.remove('hidden');
 
-            // Show OCR modal
-            document.getElementById('ocr-modal').classList.remove('hidden');
+            // Add files to uploaded list with original file references immediately
+            const newFiles = selectedFiles.map((file, index) => ({
+                id: `UPLOAD-${Date.now()}-${index}`, // Unique ID for each uploaded file
+                name: file.name,
+                size: formatFileSize(file.size),
+                type: file.type || getFileTypeFromName(file.name),
+                status: 'Uploading...', // Initial status
+                date: new Date().toLocaleDateString(),
+                file: file // Store original file reference
+            }));
 
-            try {
-                // Process OCR and metadata extraction first
-                await processOCRAndMetadata();
+            uploadedFiles = [...newFiles, ...uploadedFiles];
+            filteredFiles = uploadedFiles; // Initialize filtered files
+            updateUploadedFilesDisplay(); // Update display to show new files as 'Uploading...'
 
-                // Hide OCR modal
-                document.getElementById('ocr-modal').classList.add('hidden');
+            // Simulate upload progress
+            const interval = setInterval(() => {
+                uploadProgress += 5;
+                updateUploadProgress();
 
-                // Show AI processing
-                document.getElementById('ai-processing').classList.remove('hidden');
-
-                // Update progress
-                updateProgress(25, 'Preparing upload...');
-
-                // Create FormData
-                const formData = new FormData();
-                
-                // Add files
-                selectedFiles.forEach((file, index) => {
-                    formData.append(`documents[${index}]`, file);
-                });
-                
-                // Add extracted metadata
-                if (Object.keys(extractedMetadata).length > 0) {
-                    formData.append('extracted_metadata', JSON.stringify(extractedMetadata));
-                }
-
-                // Update progress
-                updateProgress(50, 'Uploading files...');
-
-                console.log('Sending request to backend...'); // Debug log
-
-                // Send to backend
-                const response = await fetch('{{ route("scanning.upload-unindexed") }}', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    }
-                });
-
-                console.log('Response received:', response.status); // Debug log
-
-                const result = await response.json();
-                console.log('Result:', result); // Debug log
-
-                if (result.success) {
-                    // Update progress
-                    updateProgress(75, 'Creating index records...');
-                    
-                    uploadedDocuments = result.uploaded_documents || [];
-                    
-                    // Update progress
-                    updateProgress(100, 'Upload complete!');
-                    
-                    // Show results
-                    showAnalysisResults(result);
-                    
+                if (uploadProgress >= 100) {
+                    clearInterval(interval);
                     uploadStatus = 'complete';
                     updateUploadStatus();
                     updateUploadButtons();
-                    
-                    showNotification(result.message, 'success');
-                    
-                    // Update stats
+
+                    // Update status of newly uploaded files to 'Ready for analysis'
+                    newFiles.forEach(file => {
+                        const index = uploadedFiles.findIndex(f => f.id === file.id);
+                        if (index !== -1) {
+                            uploadedFiles[index].status = 'Ready for analysis';
+                        }
+                    });
+                    updateUploadedFilesDisplay(); // Refresh table with new status
                     updateStats();
-                    
-                } else {
-                    throw new Error(result.message || 'Upload failed');
+
+                    // Start AI processing for the newly uploaded files
+                    setTimeout(() => {
+                        startAiProcessing(newFiles.map(f => f.id)); // Pass IDs of files to process
+                    }, 500);
                 }
-
-            } catch (error) {
-                console.error('Upload error:', error);
-                showNotification('Upload failed: ' + error.message, 'error');
-                uploadStatus = 'idle';
-                updateUploadStatus();
-                updateUploadButtons();
-                
-                // Hide modals
-                document.getElementById('ocr-modal').classList.add('hidden');
-                document.getElementById('ai-processing').classList.add('hidden');
-            }
-
-            // Hide progress bar
-            setTimeout(() => {
-                if (progressDiv) progressDiv.classList.add('hidden');
-            }, 2000);
+            }, 200);
         }
 
-        // Process OCR and metadata extraction
-        async function processOCRAndMetadata() {
-            extractedMetadata = {};
-            
-            for (let i = 0; i < selectedFiles.length; i++) {
-                const file = selectedFiles[i];
-                
-                // Update OCR modal
-                document.getElementById('ocr-current-file').textContent = `Processing ${file.name}...`;
-                updateOCRProgress((i / selectedFiles.length) * 100);
-                
-                try {
+        function cancelUpload() {
+            uploadStatus = 'idle';
+            uploadProgress = 0;
+            updateUploadStatus();
+            updateUploadButtons();
+            const progressDiv = document.getElementById('upload-progress');
+            if (progressDiv) progressDiv.classList.add('hidden');
+        }
+
+        function resetUpload() {
+            uploadStatus = 'idle';
+            uploadProgress = 0;
+            selectedFiles = [];
+            // filePreviewData = {}; // No longer needed
+            aiProcessingStage = 'idle';
+            aiProgress = 0;
+            extractedMetadata = {}; // Clear extracted metadata
+
+            updateUploadStatus();
+            updateSelectedFilesDisplay();
+            updateUploadButtons();
+
+            const progressDiv = document.getElementById('upload-progress');
+            const aiDiv = document.getElementById('ai-processing');
+            if (progressDiv) aiDiv.classList.add('hidden');
+            if (progressDiv) progressDiv.classList.add('hidden');
+        }
+
+        function updateUploadStatus() {
+            const statusText = document.getElementById('uploadStatusText');
+            const statusBadge = document.getElementById('uploadStatusBadge');
+
+            if (!statusText || !statusBadge) return;
+
+            let text, badgeText, badgeClass;
+
+            switch (uploadStatus) {
+                case 'idle':
+                    text = 'Ready';
+                    badgeText = 'Ready';
+                    badgeClass = 'bg-green-100 text-green-800';
+                    break;
+                case 'uploading':
+                    text = 'Uploading...';
+                    badgeText = 'Active';
+                    badgeClass = 'bg-blue-100 text-blue-800';
+                    break;
+                case 'complete':
+                    text = 'Complete';
+                    badgeText = 'Complete';
+                    badgeClass = 'bg-green-100 text-green-800';
+                    break;
+                case 'error':
+                    text = 'Error';
+                    badgeText = 'Error';
+                    badgeClass = 'bg-red-100 text-red-800';
+                    break;
+            }
+
+            statusText.textContent = text;
+            statusBadge.textContent = badgeText;
+            statusBadge.className = `ml-2 px-2 py-1 text-xs font-medium rounded-full ${badgeClass}`;
+        }
+
+        function updateUploadProgress() {
+            const percentEl = document.getElementById('upload-progress-percent');
+            const barEl = document.getElementById('upload-progress-bar');
+
+            if (percentEl) percentEl.textContent = `${uploadProgress}%`;
+            if (barEl) barEl.style.width = `${uploadProgress}%`;
+        }
+
+        function updateStats() {
+            const todaysEl = document.getElementById('todaysUploads');
+            const pendingEl = document.getElementById('pendingIndexing');
+
+            if (todaysEl) todaysEl.textContent = uploadedFiles.length;
+            if (pendingEl) pendingEl.textContent = uploadedFiles.filter(f => f.status !== 'Indexed').length; // Count files not yet indexed
+        }
+
+        // AI Processing functionality with real OCR
+        async function startAiProcessing(fileIdsToProcess) {
+            aiProcessingStage = 'analyzing';
+            aiProgress = 0;
+
+            const aiDiv = document.getElementById('ai-processing');
+            if (aiDiv) aiDiv.classList.remove('hidden');
+
+            updateAiProgress();
+
+            // Show OCR modal
+            const ocrModal = document.getElementById('ocr-modal');
+            if (ocrModal) ocrModal.classList.remove('hidden');
+
+            try {
+                const newExtractedMetadata = {};
+
+                for (let i = 0; i < fileIdsToProcess.length; i++) {
+                    const fileId = fileIdsToProcess[i];
+                    const fileEntry = uploadedFiles.find(f => f.id === fileId);
+                    if (!fileEntry || !fileEntry.file) {
+                        console.warn(`File entry not found for ID: ${fileId}`);
+                        continue;
+                    }
+                    const file = fileEntry.file;
+
+                    // Update current file being processed
+                    const currentFileEl = document.getElementById('ocr-current-file');
+                    if (currentFileEl) {
+                        currentFileEl.textContent = `Processing: ${file.name}`;
+                    }
+
+                    updateOcrProgress((i / fileIdsToProcess.length) * 25);
+
                     let extractedText = '';
-                    
+
                     if (file.type === 'application/pdf') {
                         extractedText = await extractTextFromPDF(file);
                     } else if (file.type.startsWith('image/')) {
                         extractedText = await extractTextFromImage(file);
+                    } else {
+                        extractedText = `Unsupported file type: ${file.type}`;
                     }
-                    
-                    // Extract metadata from text
-                    const metadata = extractMetadataFromText(extractedText, file.name);
-                    extractedMetadata[i] = metadata;
-                    
-                } catch (error) {
-                    console.error(`Error processing ${file.name}:`, error);
-                    extractedMetadata[i] = {
-                        extractedFileNumber: '',
-                        detectedOwner: file.name.replace(/\.[^/.]+$/, ''),
-                        plotNumber: '',
-                        landUseType: 'Unknown',
-                        district: 'Unknown',
-                        documentType: 'Document'
+
+                    updateOcrProgress(50 + (i / fileIdsToProcess.length) * 50);
+
+                    const fileMetadata = extractMetadataFromText(extractedText, file.name);
+                    newExtractedMetadata[fileId] = { // Key by the uploadedFile's ID
+                        ...fileMetadata,
+                        originalFileName: file.name,
+                        extractedText: extractedText,
+                        fileSize: formatFileSize(file.size),
+                        fileType: file.type,
+                        file: file // Store original file reference
                     };
+
+                    // Update the status of the file in the main uploadedFiles array
+                    const uploadedFileIndex = uploadedFiles.findIndex(f => f.id === fileId);
+                    if (uploadedFileIndex !== -1) {
+                        uploadedFiles[uploadedFileIndex].status = 'Analysis Complete';
+                    }
                 }
+
+                updateOcrProgress(100);
+                // Merge new extracted metadata with existing
+                extractedMetadata = { ...extractedMetadata, ...newExtractedMetadata };
+
+                setTimeout(() => {
+                    if (ocrModal) ocrModal.classList.add('hidden');
+
+                    aiProcessingStage = 'extracting';
+                    aiProgress = 60;
+                    updateAiProgress();
+
+                    setTimeout(() => {
+                        aiProcessingStage = 'creating';
+                        aiProgress = 90;
+                        updateAiProgress();
+
+                        setTimeout(() => {
+                            aiProcessingStage = 'complete';
+                            aiProgress = 100;
+                            updateAiProgress();
+                            showAnalysisResults();
+                            updateUploadedFilesDisplay(); // Refresh the table after analysis
+                            updateStats();
+                        }, 2000);
+                    }, 2000);
+                }, 1000);
+
+            } catch (error) {
+                console.error('Error processing documents:', error);
+                if (ocrModal) ocrModal.classList.add('hidden');
+                aiProcessingStage = 'idle';
+                alert('Error processing documents. Please try again.');
             }
-            
-            updateOCRProgress(100);
         }
 
-        // Extract text from PDF
-        async function extractTextFromPDF(file) {
-            return new Promise((resolve, reject) => {
-                const fileReader = new FileReader();
-                fileReader.onload = async function() {
-                    try {
-                        const pdf = await pdfjsLib.getDocument(this.result).promise;
-                        let fullText = '';
-                        
-                        for (let i = 1; i <= pdf.numPages; i++) {
-                            const page = await pdf.getPage(i);
-                            const textContent = await page.getTextContent();
-                            const pageText = textContent.items.map(item => item.str).join(' ');
-                            fullText += pageText + ' ';
-                        }
-                        
-                        resolve(fullText);
-                    } catch (error) {
-                        reject(error);
-                    }
-                };
-                fileReader.readAsArrayBuffer(file);
+        function updateAiProgress() {
+            const percentEl = document.getElementById('ai-progress-percent');
+            const barEl = document.getElementById('ai-progress-bar');
+
+            if (percentEl) percentEl.textContent = `${Math.round(aiProgress)}%`;
+            if (barEl) barEl.style.width = `${aiProgress}%`;
+
+            // Update stage indicators
+            const stages = ['analyzing', 'extracting', 'creating', 'complete'];
+            const currentIndex = stages.indexOf(aiProcessingStage);
+
+            document.querySelectorAll('[data-stage]').forEach((element, index) => {
+                const stage = element.dataset.stage;
+                element.className = 'text-center p-2 rounded ';
+
+                if (stage === aiProcessingStage) {
+                    element.className += 'bg-blue-100 text-blue-700';
+                } else if (index < currentIndex) {
+                    element.className += 'bg-green-100 text-green-700';
+                } else {
+                    element.className += 'bg-gray-100 text-gray-500';
+                }
             });
         }
 
-        // Extract text from image using OCR
-        async function extractTextFromImage(file) {
+        function updateOcrProgress(progress) {
+            ocrProgress = progress;
+            const percentEl = document.getElementById('ocr-progress-percent');
+            const barEl = document.getElementById('ocr-progress-bar');
+
+            if (percentEl) percentEl.textContent = `${Math.round(progress)}%`;
+            if (barEl) barEl.style.width = `${progress}%`;
+        }
+
+        function showAnalysisResults() {
+            const resultsContainer = document.getElementById('analysis-results');
+            const metadataResults = document.getElementById('metadata-results');
+            const filesProcessed = document.getElementById('files-processed');
+
+            if (!resultsContainer || !metadataResults || !filesProcessed) return;
+
+            resultsContainer.classList.remove('hidden');
+            filesProcessed.textContent = `${Object.keys(extractedMetadata).length} files processed`;
+
+            // Generate results HTML
+            const resultsHTML = Object.entries(extractedMetadata).map(([fileId, data]) =>
+                generateMetadataResultHTML(fileId, data)
+            ).join('');
+
+            metadataResults.innerHTML = resultsHTML;
+        }
+
+        function generateMetadataResultHTML(fileId, data) {
+            return `
+                <div class="border rounded-lg overflow-hidden">
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border-b">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h5 class="font-semibold text-gray-900">${data.originalFileName}</h5>
+                                <p class="text-sm text-gray-600 mt-1">Document successfully analyzed and processed</p>
+                            </div>
+                            <span class="px-3 py-1 text-sm font-medium rounded-full ${data.confidence > 70 ? 'bg-green-100 text-green-800 border-green-200' : 'bg-amber-100 text-amber-800 border-amber-200'}">
+                                ${data.confidence}% confidence
+                            </span>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="space-y-4">
+                                <h6 class="font-medium text-gray-900 border-b pb-2">File Numbers</h6>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-sm font-medium text-gray-700">New File Number (KANGIS)</span>
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full ${data.fileNumberFound ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}">
+                                            ${data.fileNumberFound ? '✓ Detected' : '⚠ Not Found'}
+                                        </span>
+                                    </div>
+                                    <div class="text-lg font-mono bg-white p-2 rounded border">
+                                        ${data.extractedFileNumber || 'No file number detected'}
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-sm font-medium text-gray-700">Property Owner</span>
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full ${data.ownerFound ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}">
+                                            ${data.ownerFound ? '✓ Detected' : '⚠ Not Found'}
+                                        </span>
+                                    </div>
+                                    <div class="text-lg font-semibold bg-white p-2 rounded border">
+                                        ${data.detectedOwner || 'No owner detected'}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="space-y-4">
+                                <h6 class="font-medium text-gray-900 border-b pb-2">Property Information</h6>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-sm font-medium text-gray-700">Plot No:</span>
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full ${data.plotNumberFound ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}">
+                                            ${data.plotNumberFound ? '✓ Detected' : '⚠ Not Found'}
+                                        </span>
+                                    </div>
+                                    <div class="text-lg bg-white p-2 rounded border">
+                                        ${data.plotNumber || 'No plot number detected'}
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-sm font-medium text-gray-700">Land Use Type</span>
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full ${data.landUseFound ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}">
+                                            ${data.landUseFound ? '✓ Detected' : '⚠ Not Found'}
+                                        </span>
+                                    </div>
+                                    <div class="text-lg bg-white p-2 rounded border">
+                                        ${data.landUseType ? `<span class="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">${data.landUseType}</span>` : 'No land use detected'}
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-sm font-medium text-gray-700">District/Location</span>
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full ${data.districtFound ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}">
+                                            ${data.districtFound ? '✓ Detected' : '⚠ Not Found'}
+                                        </span>
+                                    </div>
+                                    <div class="text-lg bg-white p-2 rounded border">
+                                        ${data.district || 'No district detected'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex justify-end mt-6 gap-3">
+                            <button class="inline-flex items-center gap-2 px-3 py-1 text-sm border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors" onclick="openMetadataEditModal('${fileId}')">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                                Preview Document
+                            </button>
+                            <button class="inline-flex items-center gap-2 px-3 py-1 text-sm border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors" onclick="openMetadataEditModal('${fileId}')">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                                Edit Metadata
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Real PDF text extraction using PDF.js
+        async function extractTextFromPDF(file) {
             try {
-                const result = await Tesseract.recognize(file, 'eng');
-                return result.data.text;
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                let fullText = '';
+                let hasExtractableText = false;
+
+                // First try to extract text directly from PDF
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+
+                    if (pageText.trim().length > 0) {
+                        fullText += `--- Page ${i} ---\n${pageText}\n\n`;
+                        hasExtractableText = true;
+                    }
+                }
+
+                // If we got good text extraction, return it
+                if (hasExtractableText && fullText.trim().length > 50) {
+                    return fullText;
+                }
+
+                // Otherwise, fall back to OCR
+                console.log('PDF has no extractable text, using OCR...');
+                return await extractTextFromPDFWithOCR(file, pdf);
             } catch (error) {
-                console.error('OCR Error:', error);
-                return '';
+                console.error('Error processing PDF:', error);
+                return `Error processing PDF: ${error.message}`;
             }
         }
 
-        // Extract metadata from text
-        function extractMetadataFromText(text, filename) {
-            const metadata = {
-                extractedFileNumber: '',
-                detectedOwner: '',
-                plotNumber: '',
-                landUseType: 'Unknown',
-                district: 'Unknown',
-                documentType: 'Document'
-            };
+        // OCR for scanned PDFs
+        async function extractTextFromPDFWithOCR(file, pdf) {
+            let ocrText = '';
 
-            if (!text) {
-                metadata.detectedOwner = filename.replace(/\.[^/.]+$/, '');
-                return metadata;
-            }
+            for (let i = 1; i <= pdf.numPages; i++) {
+                updateOcrProgress(25 + ((i - 1) / pdf.numPages) * 50);
 
-            // Extract file number patterns
-            const fileNumberPatterns = [
-                /(?:File\s*No\.?\s*:?\s*)([A-Z0-9\-\/]+)/i,
-                /(?:Reference\s*No\.?\s*:?\s*)([A-Z0-9\-\/]+)/i,
-                /([A-Z]{2,4}\/\d{4,}\/[A-Z0-9]+)/i
-            ];
+                try {
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: 2.0 });
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
 
-            for (const pattern of fileNumberPatterns) {
-                const match = text.match(pattern);
-                if (match) {
-                    metadata.extractedFileNumber = match[1].trim();
-                    break;
+                    const renderContext = {
+                        canvasContext: context,
+                        viewport: viewport
+                    };
+
+                    await page.render(renderContext).promise;
+
+                    // Convert canvas to blob for Tesseract
+                    const blob = await new Promise(resolve => {
+                        canvas.toBlob(resolve, 'image/png');
+                    });
+
+                    // Use Tesseract for OCR
+                    const { data: { text } } = await Tesseract.recognize(blob, 'eng', {
+                        logger: m => {
+                            if (m.status === 'recognizing text') {
+                                const progress = 25 + ((i - 1) / pdf.numPages) * 50 + (m.progress * 25 / pdf.numPages);
+                                updateOcrProgress(progress);
+                            }
+                        }
+                    });
+
+                    if (text && text.trim().length > 0) {
+                        ocrText += `--- Page ${i} (OCR) ---\n${text.trim()}\n\n`;
+                    }
+                } catch (pageError) {
+                    console.error(`Error processing page ${i}:`, pageError);
+                    ocrText += `--- Page ${i} (OCR) ---\nError processing this page\n\n`;
                 }
             }
 
-            // Extract owner/grantee
+            return ocrText || `PDF Document: ${file.name}\nNo readable text could be extracted.`;
+        }
+
+        // Real image OCR using Tesseract.js
+        async function extractTextFromImage(file) {
+            try {
+                const { data: { text } } = await Tesseract.recognize(file, 'eng', {
+                    logger: m => {
+                        if (m.status === 'recognizing text') {
+                            updateOcrProgress(50 + (m.progress * 50));
+                        }
+                    }
+                });
+                return text || 'No text could be extracted from this image.';
+            } catch (error) {
+                console.error('Error during OCR:', error);
+                return `Error during OCR: ${error.message}`;
+            }
+        }
+
+        // Metadata extraction
+        function extractMetadataFromText(text, fileName) {
+            const defaultMetadata = {
+                extractedFileNumber: '',
+                fileNumberFound: false,
+                oldFileNumber: '',
+                oldFileNumberFound: false,
+                plotNumber: '',
+                plotNumberFound: false,
+                detectedOwner: '',
+                ownerFound: false,
+                landUseType: '',
+                landUseFound: false,
+                district: '',
+                districtFound: false,
+                documentType: determineDocumentType(fileName, ''),
+                documentTypeFound: false,
+                confidence: 0,
+                pageCount: 1,
+                hasSignature: false,
+                hasStamp: false,
+                quality: 'Poor - No text extracted',
+                readyForPageTyping: false,
+                extractionStatus: 'No readable text found'
+            };
+
+            if (!text || text.trim() === '') {
+                return defaultMetadata;
+            }
+
+            const cleanText = text.replace(/\s+/g, ' ').trim();
+
+            // Extract file numbers
+            let newFileNumber = '';
+            let newFileNumberFound = false;
+            const newFileNumberPatterns = [
+                /NEW FILE NUMBER\s+MLKN\s+(\d+)/gi,
+                /KANGIS FILE NO\s+MLKN\s+(\d+)/gi,
+                /MLKN\s+(\d+)/gi
+            ];
+
+            for (const pattern of newFileNumberPatterns) {
+                const matches = [...cleanText.matchAll(pattern)];
+                if (matches.length > 0 && !newFileNumberFound) {
+                    const match = matches[0];
+                    if (match[1]) {
+                        const number = match[1].padStart(6, '0');
+                        newFileNumber = `MLKN ${number}`;
+                        newFileNumberFound = true;
+                        break;
+                    }
+                }
+            }
+
+            // Extract owner (now "File Name" in the UI)
+            let ownerName = '';
+            let ownerFound = false;
             const ownerPatterns = [
-                /(?:Grantee\s*:?\s*)([A-Z\s\.]+)/i,
-                /(?:Name\s*:?\s*)([A-Z\s\.]+)/i,
-                /(?:Owner\s*:?\s*)([A-Z\s\.]+)/i
+                /TITLE\s+ALH\.\s+([A-Z\s.]+?)(?:\s+OLD|\n|$)/gi,
+                /NAME OF ALLOTTEE\s+ALH\.\s+([A-Z\s.]+?)(?:\n|ADDRESS|$)/gi,
+                /ALH\.\s+([A-Z\s.]+?)(?:\s+ADDRESS|\s+PLOT|\n|$)/gi
             ];
 
             for (const pattern of ownerPatterns) {
-                const match = text.match(pattern);
-                if (match && match[1].length > 3) {
-                    metadata.detectedOwner = match[1].trim();
-                    break;
+                const matches = [...cleanText.matchAll(pattern)];
+                if (matches.length > 0 && !ownerFound) {
+                    const match = matches[0];
+                    ownerName = `ALH. ${match[1].trim()}`;
+                    if (ownerName.length > 5) {
+                        ownerFound = true;
+                        break;
+                    }
                 }
             }
 
             // Extract plot number
-            const plotPatterns = [
-                /(?:Plot\s*No\.?\s*:?\s*)([A-Z0-9\-\/]+)/i,
-                /(?:Plot\s*:?\s*)([A-Z0-9\-\/]+)/i
+            let plotNumber = '';
+            let plotNumberFound = false;
+            const plotNumberPatterns = [
+                /PLOT\s+NO\s*[:\s]*([A-Z0-9\/]+)/gi,
+                /PLOT NUMBER\s*[:\s]*([A-Z0-9\/]+)/gi,
+                /PLOT\s*([A-Z0-9\/]+)/gi
             ];
 
-            for (const pattern of plotPatterns) {
-                const match = text.match(pattern);
-                if (match) {
-                    metadata.plotNumber = match[1].trim();
-                    break;
+            for (const pattern of plotNumberPatterns) {
+                const matches = [...cleanText.matchAll(pattern)];
+                if (matches.length > 0 && !plotNumberFound) {
+                    plotNumber = matches[0][1].trim();
+                    if (plotNumber.length > 0) {
+                        plotNumberFound = true;
+                        break;
+                    }
                 }
             }
 
-            // Extract location/district
-            const locationPatterns = [
-                /(?:Location\s*:?\s*)([A-Z\s]+)/i,
-                /(?:District\s*:?\s*)([A-Z\s]+)/i,
-                /(?:LGA\s*:?\s*)([A-Z\s]+)/i
+            // Extract land use
+            let landUse = '';
+            let landUseFound = false;
+            if (/COMMERCIAL/gi.test(cleanText)) {
+                landUse = 'Commercial';
+                landUseFound = true;
+            } else if (/RESIDENTIAL/gi.test(cleanText)) {
+                landUse = 'Residential';
+                landUseFound = true;
+            } else if (/INDUSTRIAL/gi.test(cleanText)) {
+                landUse = 'Industrial';
+                landUseFound = true;
+            }
+
+            // Extract district
+            let district = '';
+            let districtFound = false;
+            const districtPatterns = [
+                /LGA\s+([A-Z]+)/gi,
+                /(FAGGE|NASARAWA|BOMPAI|KANO MUNICIPAL|DALA|GWALE|TARAUNI)/gi
             ];
 
-            for (const pattern of locationPatterns) {
-                const match = text.match(pattern);
-                if (match && match[1].length > 2) {
-                    metadata.district = match[1].trim();
+            for (const pattern of districtPatterns) {
+                const matches = [...cleanText.matchAll(pattern)];
+                if (matches.length > 0 && !districtFound) {
+                    district = matches[0][1] || matches[0][0];
+                    districtFound = true;
                     break;
                 }
             }
 
             // Determine document type
-            const lowerText = text.toLowerCase();
-            if (lowerText.includes('certificate of occupancy') || lowerText.includes('c of o')) {
-                metadata.documentType = 'Certificate of Occupancy';
-                metadata.landUseType = 'Residential';
-            } else if (lowerText.includes('deed') || lowerText.includes('conveyance')) {
-                metadata.documentType = 'Deed';
-            } else if (lowerText.includes('survey') || lowerText.includes('plan')) {
-                metadata.documentType = 'Survey Plan';
+            let documentType = '';
+            let documentTypeFound = false;
+            if (/RECERTIFICATION/gi.test(cleanText)) {
+                documentType = 'Recertification Document';
+                documentTypeFound = true;
+            } else if (/CERTIFICATE OF OCCUPANCY/gi.test(cleanText)) {
+                documentType = 'Certificate of Occupancy';
+                documentTypeFound = true;
             }
 
-            // Use filename as fallback for owner
-            if (!metadata.detectedOwner) {
-                metadata.detectedOwner = filename.replace(/\.[^/.]+$/, '');
-            }
+            // Calculate confidence
+            const confidence = calculateConfidenceScore(
+                newFileNumberFound,
+                ownerFound,
+                landUseFound,
+                districtFound,
+                documentTypeFound,
+                plotNumberFound
+            );
 
-            return metadata;
+            return {
+                extractedFileNumber: newFileNumber,
+                fileNumberFound: newFileNumberFound,
+                oldFileNumber: '',
+                oldFileNumberFound: false,
+                plotNumber: plotNumber,
+                plotNumberFound: plotNumberFound,
+                detectedOwner: ownerName,
+                ownerFound,
+                landUseType: landUse,
+                landUseFound,
+                district,
+                districtFound,
+                documentType: documentType || 'Land Document',
+                documentTypeFound,
+                confidence,
+                pageCount: Math.max(1, Math.floor(cleanText.length / 1000)),
+                hasSignature: /(?:SIGNATURE|SIGNED|SEAL)/gi.test(cleanText),
+                hasStamp: /(?:STAMP|SEAL|OFFICIAL|KANGIS)/gi.test(cleanText),
+                quality: cleanText.length > 500 ? 'Good' : 'Poor',
+                readyForPageTyping: confidence > 30,
+                extractionStatus: 'Successfully extracted'
+            };
         }
 
-        // Update OCR progress
-        function updateOCRProgress(percentage) {
-            document.getElementById('ocr-progress-percent').textContent = Math.round(percentage) + '%';
-            document.getElementById('ocr-progress-bar').style.width = percentage + '%';
+        function calculateConfidenceScore(newFileNumberFound, ownerFound, landUseFound, districtFound, documentTypeFound, plotNumberFound) {
+            let score = 0;
+            if (newFileNumberFound) score += 25;
+            if (ownerFound) score += 20;
+            if (plotNumberFound) score += 15; // Added for Plot No:
+            if (landUseFound) score += 10;
+            if (districtFound) score += 5;
+            if (documentTypeFound) score += 5;
+            return score;
         }
 
-        // Update upload progress
-        function updateProgress(percentage, text) {
-            uploadProgress = percentage;
-            document.getElementById('upload-progress-percent').textContent = percentage + '%';
-            document.getElementById('upload-progress-bar').style.width = percentage + '%';
-            document.getElementById('upload-progress-text').textContent = text;
-            
-            document.getElementById('ai-progress-percent').textContent = percentage + '%';
-            document.getElementById('ai-progress-bar').style.width = percentage + '%';
-            
-            // Update AI stages
-            const stages = document.querySelectorAll('#ai-stages [data-stage]');
-            stages.forEach((stage, index) => {
-                const stagePercentage = (index + 1) * 25;
-                if (percentage >= stagePercentage) {
-                    stage.classList.remove('bg-gray-100', 'text-gray-500');
-                    stage.classList.add('bg-blue-100', 'text-blue-600');
-                }
-            });
+        function determineDocumentType(fileName, content) {
+            const lowerFileName = fileName.toLowerCase();
+            if (lowerFileName.includes('certificate')) return 'Certificate of Occupancy';
+            if (lowerFileName.includes('deed')) return 'Deed of Assignment';
+            if (lowerFileName.includes('site')) return 'Site Plan';
+            return 'Land Document';
         }
 
-        // Show analysis results
-        function showAnalysisResults(result) {
-            const resultsDiv = document.getElementById('analysis-results');
-            const metadataDiv = document.getElementById('metadata-results');
-            const filesProcessedSpan = document.getElementById('files-processed');
-            
-            filesProcessedSpan.textContent = `${result.uploaded_documents.length} files processed`;
-            
-            metadataDiv.innerHTML = '';
-            
-            result.uploaded_documents.forEach((doc, index) => {
-                const metadata = extractedMetadata[index] || {};
-                
-                const resultItem = document.createElement('div');
-                resultItem.className = 'p-4 border rounded-lg bg-gray-50';
-                resultItem.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <h5 class="font-medium text-gray-900">${doc.filename}</h5>
-                        <span class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded">Indexed</span>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                            <span class="text-gray-600">File Number:</span>
-                            <span class="font-medium ml-1">${doc.file_number}</span>
-                        </div>
-                        <div>
-                            <span class="text-gray-600">Owner:</span>
-                            <span class="font-medium ml-1">${metadata.detectedOwner || 'N/A'}</span>
-                        </div>
-                        <div>
-                            <span class="text-gray-600">Plot Number:</span>
-                            <span class="font-medium ml-1">${metadata.plotNumber || 'N/A'}</span>
-                        </div>
-                        <div>
-                            <span class="text-gray-600">District:</span>
-                            <span class="font-medium ml-1">${metadata.district || 'N/A'}</span>
-                        </div>
-                    </div>
-                `;
-                metadataDiv.appendChild(resultItem);
-            });
-            
-            resultsDiv.classList.remove('hidden');
-        }
-
-        // Update upload status
-        function updateUploadStatus() {
-            const statusText = document.getElementById('uploadStatusText');
-            const statusBadge = document.getElementById('uploadStatusBadge');
-            
-            switch(uploadStatus) {
-                case 'idle':
-                    statusText.textContent = 'Ready';
-                    statusBadge.textContent = 'Ready';
-                    statusBadge.className = 'ml-2 px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800';
-                    break;
-                case 'uploading':
-                    statusText.textContent = 'Processing';
-                    statusBadge.textContent = 'Processing';
-                    statusBadge.className = 'ml-2 px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800';
-                    break;
-                case 'complete':
-                    statusText.textContent = 'Complete';
-                    statusBadge.textContent = 'Complete';
-                    statusBadge.className = 'ml-2 px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800';
-                    break;
-            }
-        }
-
-        // Update statistics
-        function updateStats() {
-            // Update today's uploads count
-            const todaysUploads = document.getElementById('todaysUploads');
-            if (todaysUploads) {
-                const currentCount = parseInt(todaysUploads.textContent) || 0;
-                todaysUploads.textContent = currentCount + uploadedDocuments.length;
-            }
-        }
-
-        // Cancel upload
-        function cancelUpload() {
-            uploadStatus = 'idle';
-            updateUploadStatus();
-            updateUploadButtons();
-            
-            // Hide modals and progress
-            document.getElementById('ocr-modal').classList.add('hidden');
-            document.getElementById('ai-processing').classList.add('hidden');
-            document.getElementById('upload-progress').classList.add('hidden');
-        }
-
-        // Reset upload form
-        function resetUpload() {
-            selectedFiles = [];
-            uploadedDocuments = [];
-            extractedMetadata = {};
-            uploadStatus = 'idle';
-            
-            clearAllFiles();
-            updateUploadStatus();
-            updateUploadButtons();
-            
-            // Hide modals and progress
-            document.getElementById('ocr-modal').classList.add('hidden');
-            document.getElementById('ai-processing').classList.add('hidden');
-            document.getElementById('upload-progress').classList.add('hidden');
-            document.getElementById('analysis-results').classList.add('hidden');
-        }
-
-        // Switch to uploaded files tab
-        function switchToUploadedFiles() {
-            document.querySelector('[data-tab="uploaded-files"]').click();
-        }
-
-        // Switch to upload tab
-        function switchToUpload() {
-            document.querySelector('[data-tab="upload"]').click();
-        }
-
-        // Go to page typing
-        function goToPageTyping() {
-            if (uploadedDocuments.length > 0) {
-                const fileIndexingId = uploadedDocuments[0].file_indexing_id;
-                window.location.href = `/pagetyping?file_indexing_id=${fileIndexingId}`;
-            }
-        }
-
-        // Load uploaded files
-        function loadUploadedFiles() {
-            const uploadedFilesList = document.getElementById('uploaded-files-list');
-            
-            if (uploadedDocuments.length === 0) {
-                uploadedFilesList.innerHTML = `
-                    <div class="p-8 text-center text-gray-500">
-                        <svg class="h-12 w-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                        <p class="text-lg font-medium mb-2">No files uploaded yet</p>
-                        <p class="text-sm">Upload some files to see them here.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            let tableHTML = `
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File Number</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-            `;
-
-            uploadedDocuments.forEach(doc => {
-                tableHTML += `
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0 h-8 w-8">
-                                    <div class="h-8 w-8 rounded bg-blue-100 flex items-center justify-center">
-                                        <svg class="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div class="ml-4">
-                                    <div class="text-sm font-medium text-gray-900">${doc.filename}</div>
-                                    <div class="text-sm text-gray-500">${doc.type}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${doc.file_number}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatFileSize(doc.size)}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Indexed</span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button type="button" class="text-blue-600 hover:text-blue-900 mr-3" onclick="viewDocument('${doc.id}')">View</button>
-                            <button type="button" class="text-green-600 hover:text-green-900" onclick="goToPageTyping()">Page Type</button>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            tableHTML += `
-                    </tbody>
-                </table>
-            `;
-
-            uploadedFilesList.innerHTML = tableHTML;
-            document.getElementById('uploaded-files-footer').classList.remove('hidden');
-        }
-
-        // View document
-        function viewDocument(documentId) {
-            window.open(`/scanning/${documentId}`, '_blank');
-        }
-
-        // Send all to indexing
-        function sendToIndexing() {
-            if (uploadedDocuments.length > 0) {
-                goToPageTyping();
-            } else {
-                showNotification('No files to send to indexing', 'warning');
-            }
-        }
-
-        // Format file size
+        // Utility functions
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 Bytes';
             const k = 1024;
@@ -1066,34 +1287,579 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        // Show notification
-        function showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.className = `fixed top-4 right-4 z-50 p-4 rounded-md shadow-lg max-w-sm ${
-                type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' :
-                type === 'error' ? 'bg-red-50 border border-red-200 text-red-800' :
-                type === 'warning' ? 'bg-yellow-50 border border-yellow-200 text-yellow-800' :
-                'bg-blue-50 border border-blue-200 text-blue-800'
-            }`;
-            
-            notification.innerHTML = `
-                <div class="flex">
-                    <div class="flex-1">
-                        <p class="text-sm font-medium">${message}</p>
-                    </div>
-                    <button type="button" class="ml-3 text-gray-400 hover:text-gray-600" onclick="this.parentElement.parentElement.remove()">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
+        function getFileTypeFromName(filename) {
+            const extension = filename.split('.').pop()?.toLowerCase() || '';
+            const fileTypes = {
+                pdf: 'application/pdf',
+                jpg: 'image/jpeg',
+                jpeg: 'image/jpeg',
+                png: 'image/png',
+                gif: 'image/gif',
+                bmp: 'image/bmp',
+                tiff: 'image/tiff',
+                webp: 'image/webp'
+            };
+            return fileTypes[extension] || 'application/octet-stream';
+        }
+
+        function getFileIcon(fileType) {
+            if (fileType.includes('pdf')) {
+                return '<svg class="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>';
+            }
+            if (fileType.includes('image')) {
+                return '<svg class="h-5 w-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>';
+            }
+            return '<svg class="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>';
+        }
+
+        // Unified function to open metadata edit modal with preview
+        function openMetadataEditModal(fileId) {
+            currentEditingFile = fileId;
+
+            const fileEntry = uploadedFiles.find(f => f.id === fileId);
+            if (!fileEntry || !fileEntry.file) {
+                alert('File not found or not available for editing/preview.');
+                return;
+            }
+
+            const metadataEntry = extractedMetadata[fileId] || {
+                extractedFileNumber: '',
+                plotNumber: '',
+                detectedOwner: '',
+                landUseType: '',
+                extractedText: 'Text extraction not yet performed or available.'
+            };
+
+            const form = document.getElementById('metadata-form');
+            const extractedTextPreview = document.getElementById('metadata-extracted-text-preview');
+            const modalTitle = document.getElementById('metadata-modal-title');
+
+            // Preview elements
+            const pdfPreviewWrapper = document.getElementById('pdf-preview-wrapper');
+            const imagePreviewWrapper = document.getElementById('image-preview-wrapper');
+            const unsupportedPreviewMessage = document.getElementById('unsupported-preview-message');
+            const pdfPreviewCanvas = document.getElementById('pdf-preview-canvas');
+            const pdfLoadingPlaceholder = document.getElementById('pdf-loading-placeholder');
+            const pdfNavigationControls = document.getElementById('pdf-navigation-controls');
+            const imagePreviewImg = document.getElementById('image-preview-img');
+            const imageLoadingPlaceholder = document.getElementById('image-loading-placeholder');
+
+
+            if (!form || !extractedTextPreview || !modalTitle || !pdfPreviewWrapper || !imagePreviewWrapper || !unsupportedPreviewMessage || !pdfPreviewCanvas || !pdfLoadingPlaceholder || !pdfNavigationControls || !imagePreviewImg || !imageLoadingPlaceholder) {
+                console.error("One or more modal elements not found.");
+                return;
+            }
+
+            modalTitle.textContent = `Edit Metadata - ${fileEntry.name}`;
+
+            // Populate the metadata form
+            form.innerHTML = `
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">File Number</label>
+                    <input type="text" id="edit-fileNumber" value="${metadataEntry.extractedFileNumber}" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Enter file number">
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">Plot No:</label>
+                    <input type="text" id="edit-plotNumber" value="${metadataEntry.plotNumber}" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Enter plot number">
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">File Name</label>
+                    <input type="text" id="edit-owner" value="${metadataEntry.detectedOwner}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Enter file name">
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">Land Use Type</label>
+                    <select id="edit-landUse" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Select land use</option>
+                        <option value="Commercial" ${metadataEntry.landUseType === 'Commercial' ? 'selected' : ''}>Commercial</option>
+                        <option value="Residential" ${metadataEntry.landUseType === 'Residential' ? 'selected' : ''}>Residential</option>
+                        <option value="Industrial" ${metadataEntry.landUseType === 'Industrial' ? 'selected' : ''}>Industrial</option>
+                        <option value="Agricultural" ${metadataEntry.landUseType === 'Agricultural' ? 'selected' : ''}>Agricultural</option>
+                    </select>
                 </div>
             `;
-            
-            document.body.appendChild(notification);
-            
+
+            // Populate extracted text preview
+            extractedTextPreview.textContent = metadataEntry.extractedText;
+
+            // Reset and hide all preview elements first
+            pdfPreviewWrapper.classList.add('hidden');
+            imagePreviewWrapper.classList.add('hidden');
+            unsupportedPreviewMessage.classList.add('hidden');
+
+            // Render document preview based on file type
+            if (fileEntry.file.type === 'application/pdf') {
+                pdfPreviewWrapper.classList.remove('hidden');
+                pdfPreviewCanvas.classList.add('hidden'); // Hide canvas until rendered
+                pdfLoadingPlaceholder.classList.remove('hidden'); // Show loading message
+                pdfNavigationControls.classList.add('hidden'); // Hide controls until PDF is loaded
+
+                currentPDFDocument = null; // Reset document for new file
+                currentPageNumber = 1; // Reset to first page
+                loadAndRenderPDFPreview(fileEntry.file);
+            } else if (fileEntry.file.type.startsWith('image/')) {
+                imagePreviewWrapper.classList.remove('hidden');
+                imagePreviewImg.classList.add('hidden'); // Hide img until loaded
+                imageLoadingPlaceholder.classList.remove('hidden'); // Show loading message
+                renderImagePreview(fileEntry.file);
+            } else {
+                unsupportedPreviewMessage.classList.remove('hidden');
+            }
+
+            const modal = document.getElementById('metadata-modal');
+            if (modal) modal.classList.remove('hidden');
+
+            // Focus the modal for keyboard navigation
             setTimeout(() => {
-                notification.remove();
+                modal.focus();
+            }, 100);
+        }
+
+        async function loadAndRenderPDFPreview(file) {
+            const pdfLoadingPlaceholder = document.getElementById('pdf-loading-placeholder');
+            const pdfPreviewCanvas = document.getElementById('pdf-preview-canvas');
+            const pdfNavigationControls = document.getElementById('pdf-navigation-controls');
+
+            pdfLoadingPlaceholder.classList.remove('hidden'); // Show loading message
+            pdfPreviewCanvas.classList.add('hidden');     // Hide canvas
+            pdfNavigationControls.classList.add('hidden'); // Hide controls
+
+            try {
+                if (typeof pdfjsLib === 'undefined') {
+                    throw new Error("PDF.js library is not loaded.");
+                }
+                const arrayBuffer = await file.arrayBuffer();
+                currentPDFDocument = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                currentPageNumber = 1; // Ensure it starts on page 1
+                renderSinglePDFPage(); // Render the first page
+            } catch (error) {
+                console.error('Error loading PDF document:', error);
+                pdfLoadingPlaceholder.textContent = 'Error loading PDF preview.';
+                pdfLoadingPlaceholder.classList.remove('hidden');
+            }
+        }
+
+        async function renderSinglePDFPage() {
+            const pdfPreviewCanvas = document.getElementById('pdf-preview-canvas');
+            const pdfNavigationControls = document.getElementById('pdf-navigation-controls');
+            const pageInfoSpan = document.getElementById('page-info');
+            const prevPageBtn = document.getElementById('prev-page-btn');
+            const nextPageBtn = document.getElementById('next-page-btn');
+            const pdfLoadingPlaceholder = document.getElementById('pdf-loading-placeholder');
+
+            if (!currentPDFDocument || !pdfPreviewCanvas || !pageInfoSpan || !prevPageBtn || !nextPageBtn || !pdfNavigationControls || !pdfLoadingPlaceholder) {
+                console.error("PDF preview elements not found or PDF not loaded.");
+                return;
+            }
+
+            // Hide placeholder and show canvas
+            pdfLoadingPlaceholder.classList.add('hidden');
+            pdfPreviewCanvas.classList.remove('hidden');
+            pdfNavigationControls.classList.remove('hidden');
+
+            try {
+                const page = await currentPDFDocument.getPage(currentPageNumber);
+                const viewport = page.getViewport({ scale: 1.5 }); // Slightly larger scale for better preview
+                const context = pdfPreviewCanvas.getContext('2d');
+
+                // Set canvas dimensions to fit container, maintaining aspect ratio
+                const containerWidth = pdfPreviewCanvas.parentElement.offsetWidth - (2 * 16); // Account for padding
+                const scale = containerWidth / viewport.width;
+                const scaledViewport = page.getViewport({ scale: scale });
+
+                pdfPreviewCanvas.height = scaledViewport.height;
+                pdfPreviewCanvas.width = scaledViewport.width;
+
+                await page.render({
+                    canvasContext: context,
+                    viewport: scaledViewport
+                }).promise;
+
+                pageInfoSpan.textContent = `Page ${currentPageNumber} of ${currentPDFDocument.numPages}`;
+                prevPageBtn.disabled = currentPageNumber <= 1;
+                nextPageBtn.disabled = currentPageNumber >= currentPDFDocument.numPages;
+
+            } catch (error) {
+                console.error('Error rendering PDF page:', error);
+                pdfPreviewCanvas.classList.add('hidden');
+                pdfLoadingPlaceholder.textContent = 'Error rendering page. Please try again.';
+                pdfLoadingPlaceholder.classList.remove('hidden');
+                pdfNavigationControls.classList.add('hidden'); // Hide controls on error
+            }
+        }
+
+        function goToNextPage() {
+            if (currentPDFDocument && currentPageNumber < currentPDFDocument.numPages) {
+                currentPageNumber++;
+                renderSinglePDFPage();
+            }
+        }
+
+        function goToPreviousPage() {
+            if (currentPDFDocument && currentPageNumber > 1) {
+                currentPageNumber--;
+                renderSinglePDFPage();
+            }
+        }
+
+        function renderImagePreview(file) {
+            const imagePreviewImg = document.getElementById('image-preview-img');
+            const imageLoadingPlaceholder = document.getElementById('image-loading-placeholder');
+
+            if (!imagePreviewImg || !imageLoadingPlaceholder) {
+                console.error("Image preview elements not found.");
+                return;
+            }
+
+            imagePreviewImg.classList.add('hidden'); // Hide img until loaded
+            imageLoadingPlaceholder.classList.remove('hidden'); // Show loading message
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imagePreviewImg.src = e.target.result;
+                imagePreviewImg.onload = () => {
+                    imageLoadingPlaceholder.classList.add('hidden');
+                    imagePreviewImg.classList.remove('hidden');
+                };
+                imagePreviewImg.onerror = () => {
+                    imageLoadingPlaceholder.textContent = 'Error loading image preview.';
+                    imageLoadingPlaceholder.classList.remove('hidden');
+                    imagePreviewImg.classList.add('hidden');
+                };
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // These functions now simply call the unified openMetadataEditModal
+        function showDocumentPreviewFromTable(fileId) {
+            openMetadataEditModal(fileId);
+        }
+
+        function editMetadataFromTable(fileId) {
+            openMetadataEditModal(fileId);
+        }
+
+        function editMetadata(fileId) { // For calls from analysis results section
+            openMetadataEditModal(fileId);
+        }
+
+        function closeMetadataModal() {
+            const modal = document.getElementById('metadata-modal');
+            if (modal) modal.classList.add('hidden');
+            // Reset state when closing modal
+            currentPDFDocument = null;
+            currentPageNumber = 1;
+            currentEditingFile = null;
+        }
+
+        function applyMetadataChanges() {
+            if (!currentEditingFile) return;
+
+            const fileNumber = document.getElementById('edit-fileNumber')?.value || '';
+            const plotNumber = document.getElementById('edit-plotNumber')?.value || '';
+            const owner = document.getElementById('edit-owner')?.value || '';
+            const landUse = document.getElementById('edit-landUse')?.value || '';
+
+            // Update extractedMetadata using currentEditingFile (which is the UPLOAD- ID)
+            if (extractedMetadata[currentEditingFile]) {
+                extractedMetadata[currentEditingFile] = {
+                    ...extractedMetadata[currentEditingFile],
+                    extractedFileNumber: fileNumber,
+                    plotNumber: plotNumber,
+                    detectedOwner: owner,
+                    landUseType: landUse
+                };
+            }
+
+            // Always update the status in uploadedFiles if the file exists there
+            const fileIndex = uploadedFiles.findIndex(f => f.id === currentEditingFile);
+            if (fileIndex !== -1) {
+                uploadedFiles[fileIndex].status = 'Metadata updated';
+                updateUploadedFilesDisplay(); // Re-render uploaded files table
+            }
+
+            // Re-render analysis results to reflect the changes
+            showAnalysisResults();
+
+            closeMetadataModal();
+
+            // Show success message
+            showNotification('Metadata changes applied successfully!', 'success');
+        }
+
+        function createIndexingEntries() {
+            if (uploadedFiles.length === 0) {
+                showNotification('No files uploaded to create indexing entries for.', 'error');
+                return;
+            }
+
+            // Show loading state
+            const createButton = document.querySelector('button[onclick="createIndexingEntries()"]');
+            if (createButton) {
+                createButton.disabled = true;
+                createButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating...';
+            }
+
+            // Prepare data for backend
+            const formData = new FormData();
+
+            // Add uploaded files data
+            uploadedFiles.forEach((file, index) => {
+                // Add the actual file if it exists
+                if (file.file) {
+                    formData.append(`documents[${index}]`, file.file);
+                }
+
+                // Add extracted metadata if available
+                const metadata = extractedMetadata[file.id];
+                if (metadata) {
+                    formData.append(`extracted_metadata[${index}][extractedFileNumber]`, metadata.extractedFileNumber || '');
+                    formData.append(`extracted_metadata[${index}][plotNumber]`, metadata.plotNumber || '');
+                    formData.append(`extracted_metadata[${index}][detectedOwner]`, metadata.detectedOwner || '');
+                    formData.append(`extracted_metadata[${index}][landUseType]`, metadata.landUseType || '');
+                    formData.append(`extracted_metadata[${index}][district]`, metadata.district || '');
+                    formData.append(`extracted_metadata[${index}][documentType]`, metadata.documentType || '');
+                    formData.append(`extracted_metadata[${index}][extractedText]`, metadata.extractedText || '');
+                }
+            });
+
+            // Send to backend
+            fetch('/scanning/upload-unindexed', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(`Successfully created ${data.created_indexings?.length || 0} indexing entries!`, 'success');
+
+                    // Clear uploaded files and reset interface
+                    uploadedFiles = [];
+                    extractedMetadata = {};
+                    updateUploadedFilesDisplay();
+                    showAnalysisResults();
+
+                    // Reset file input
+                    const fileInput = document.getElementById('fileInput');
+                    if (fileInput) fileInput.value = '';
+
+                    // Update statistics
+                    updateStats();
+
+                    // Redirect to page typing if we have created indexings
+                    if (data.created_indexings && data.created_indexings.length > 0) {
+                        setTimeout(() => {
+                            window.location.href = data.redirect || '/pagetyping';
+                        }, 2000);
+                    }
+                } else {
+                    showNotification('Error creating indexing entries: ' + (data.message || 'Unknown error'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Network error occurred while creating indexing entries.', 'error');
+            })
+            .finally(() => {
+                // Reset button state
+                if (createButton) {
+                    createButton.disabled = false;
+                    createButton.innerHTML = '<i class="fas fa-plus-circle mr-2"></i>Create in File Indexing Assistant';
+                }
+            });
+        }
+
+        function sendToIndexing() {
+            if (uploadedFiles.length === 0) {
+                alert('No files to send to indexing');
+                return;
+            }
+            window.location.href = '/file-digital-registry/indexing-assistant';
+        }
+
+        function updateUploadedFilesDisplay() {
+            const container = document.getElementById('uploaded-files-list');
+            const footer = document.getElementById('uploaded-files-footer');
+
+            if (!container) return;
+
+            const filesToDisplay = filteredFiles.length > 0 ? filteredFiles : uploadedFiles;
+
+            if (filesToDisplay.length === 0) {
+                container.innerHTML = `
+                    <div class="p-8 text-center">
+                        <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
+                            <svg class="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="mb-2 text-lg font-medium">No uploaded files yet</h3>
+                        <p class="mb-4 text-sm text-gray-500">Upload files to see them listed here</p>
+                        <button class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors" onclick="switchToUpload()">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            Go to Upload
+                        </button>
+                    </div>
+                `;
+                if (footer) footer.classList.add('hidden');
+            } else {
+                container.innerHTML = `
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            ${filesToDisplay.map(file => `
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0">
+                                                ${getFileIcon(file.type)}
+                                            </div>
+                                            <div class="ml-3">
+                                                <div class="text-sm font-medium text-gray-900">${file.name}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${file.type.includes('pdf') ? 'bg-red-100 text-red-800' : file.type.includes('image') ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}">
+                                            ${file.type.includes('pdf') ? 'PDF' : file.type.includes('image') ? 'Image' : 'Other'}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        ${file.size}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${file.status === 'Ready for analysis' ? 'bg-yellow-100 text-yellow-800' : file.status === 'Metadata updated' || file.status === 'Analysis Complete' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}">
+                                            ${file.status}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        ${file.date}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <div class="flex items-center space-x-2">
+                                            <button class="inline-flex items-center px-2 py-1 text-xs border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors" onclick="showDocumentPreviewFromTable('${file.id}')">
+                                                <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                                </svg>
+                                                Preview
+                                            </button>
+                                            <button class="inline-flex items-center px-2 py-1 text-xs border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors" onclick="editMetadataFromTable('${file.id}')">
+                                                <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                                </svg>
+                                                Edit
+                                            </button>
+                                            <button class="inline-flex items-center px-2 py-1 text-xs border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors" onclick="indexFile('${file.id}')">
+                                                <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                                                </svg>
+                                                Index
+                                            </button>
+                                            <button class="inline-flex items-center px-2 py-1 text-xs text-red-600 hover:text-red-800 transition-colors" onclick="deleteFile('${file.id}')">
+                                                <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                </svg>
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                if (footer) footer.classList.remove('hidden');
+            }
+        }
+
+        function deleteFile(fileId) {
+            if (confirm('Are you sure you want to delete this file?')) {
+                uploadedFiles = uploadedFiles.filter(file => file.id !== fileId);
+                filteredFiles = filteredFiles.filter(file => file.id !== fileId);
+                // Also remove from extractedMetadata
+                delete extractedMetadata[fileId];
+                updateUploadedFilesDisplay();
+                updateStats();
+            }
+        }
+
+        function indexFile(fileId) {
+            alert(`Sending file to indexing...`);
+            window.location.href = '/file-digital-registry/indexing-assistant';
+        }
+
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-[60] p-4 rounded-md shadow-lg transition-all duration-300 transform translate-x-full`;
+
+            // Set colors based on type
+            const colors = {
+                success: 'bg-green-500 text-white',
+                error: 'bg-red-500 text-white',
+                warning: 'bg-yellow-500 text-white',
+                info: 'bg-blue-500 text-white'
+            };
+
+            notification.classList.add(...colors[type].split(' '));
+
+            // Add icon based on type
+            const icons = {
+                success: '<i class="fas fa-check-circle mr-2"></i>',
+                error: '<i class="fas fa-exclamation-circle mr-2"></i>',
+                warning: '<i class="fas fa-exclamation-triangle mr-2"></i>',
+                info: '<i class="fas fa-info-circle mr-2"></i>'
+            };
+
+            notification.innerHTML = `${icons[type]}${message}`;
+
+            // Add to page
+            document.body.appendChild(notification);
+
+            // Animate in
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
             }, 5000);
         }
+
+        // Add keyboard event listener for modal
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const modal = document.getElementById('metadata-modal');
+                if (modal && !modal.classList.contains('hidden')) {
+                    closeMetadataModal();
+                }
+            }
+        });
     </script>
 @endsection

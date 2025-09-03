@@ -430,7 +430,7 @@ class ScanningController extends Controller
                 'success' => count($uploadedDocuments) > 0,
                 'message' => count($uploadedDocuments) . ' documents uploaded and indexed successfully!',
                 'uploaded_documents' => $uploadedDocuments,
-                'created_indexings' => $createdIndexings->map(function($indexing) {
+                'created_indexings' => collect($createdIndexings)->map(function($indexing) {
                     return [
                         'id' => $indexing->id,
                         'file_number' => $indexing->file_number,
@@ -457,6 +457,36 @@ class ScanningController extends Controller
                 'success' => false,
                 'message' => 'Error uploading documents: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Display the unindexed file upload interface
+     */
+    public function unindexed(Request $request)
+    {
+        try {
+            $PageTitle = 'File Upload - EDMS';
+            $PageDescription = 'Upload digital files to the registry';
+
+            // Get statistics for dashboard
+            $stats = [
+                'uploads_today' => $this->getUploadsTodayCount(),
+                'pending_indexing' => $this->getPendingIndexingCount(),
+                'total_unindexed' => $this->getTotalUnindexedCount()
+            ];
+
+            return view('scanning.unindexed', compact('PageTitle', 'PageDescription', 'stats'));
+        } catch (Exception $e) {
+            Log::error('Error loading unindexed file upload interface', [
+                'error' => $e->getMessage()
+            ]);
+
+            return view('scanning.unindexed', [
+                'PageTitle' => 'File Upload - EDMS',
+                'PageDescription' => 'Upload digital files to the registry',
+                'stats' => ['uploads_today' => 0, 'pending_indexing' => 0, 'total_unindexed' => 0]
+            ]);
         }
     }
 
@@ -798,6 +828,41 @@ class ScanningController extends Controller
             return 'Map';
         } else {
             return 'Document';
+        }
+    }
+
+    /**
+     * Get pending indexing count
+     */
+    private function getPendingIndexingCount()
+    {
+        try {
+            return FileIndexing::on('sqlsrv')
+                ->where(function($query) {
+                    $query->where('file_number', 'like', 'AUTO-%')
+                          ->orWhere('file_number', 'like', 'TEMP-%');
+                })
+                ->whereDoesntHave('scannings')
+                ->count();
+        } catch (Exception $e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Get total unindexed count
+     */
+    private function getTotalUnindexedCount()
+    {
+        try {
+            return FileIndexing::on('sqlsrv')
+                ->where(function($query) {
+                    $query->where('file_number', 'like', 'AUTO-%')
+                          ->orWhere('file_number', 'like', 'TEMP-%');
+                })
+                ->count();
+        } catch (Exception $e) {
+            return 0;
         }
     }
 

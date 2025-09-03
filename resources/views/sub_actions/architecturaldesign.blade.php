@@ -1,6 +1,5 @@
 <!-- architecturaldesign Bill Tab -->
-@if (request()->query('url') !== 'phy_planning' || request()->query('url') == 'recommendation')
-    <div id="detterment-tab" class="tab-content active">
+<div id="detterment-tab" class="tab-content active">
     <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
         <div class="p-4 border-b">
             <h3 class="text-sm font-medium"> Architectural Design</h3>
@@ -8,7 +7,7 @@
             <!-- Primary Application Reference -->
             @if(isset($application->primary_fileno))
             <p class="text-xs text-gray-500 mt-1">
-                Primary Application: {{$application->primary_applicant_title ?? ''}} {{$application->primary_first_name ?? ''}} {{$application->primary_surname ?? ''}} 
+                Primary Application: {{$application->primary_applicant_title ?? ''}} {{$application->primary_first_name ?? ''}} {{$application->primary_surname ?? ''}}
                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                     <i data-lucide="link" class="w-3 h-3 mr-1"></i>File No: {{$application->primary_fileno ?? 'N/A'}}
                 </span>
@@ -17,9 +16,7 @@
         </div>
         <input type="hidden" id="application_id" value="{{ $application->id }}">
         <input type="hidden" name="fileno" value="{{ $application->fileno ?? '' }}">
-        <div class="p-4 space-y-4">
-
-            <!-- Blade Template for displaying architecturaldesign -->
+        <div class="p-4 space-y-4">            <!-- Blade Template for displaying architecturaldesign -->
             <div class="space-y-6">
                 <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <h4 class="text-sm font-medium mb-3">Architectural Design Document</h4>
@@ -127,7 +124,6 @@
           </div>
         </div>
       </div>
-      @endif
             <!-- JavaScript for handling file upload and preview -->
             <script>
                 document.addEventListener('DOMContentLoaded', function() {

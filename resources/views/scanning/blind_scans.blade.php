@@ -46,7 +46,7 @@
           <!-- Include the reusable File Number Information component -->
           @include('components.file_number_info')
 
-          <button class="w-full mt-4 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 text-sm sm:text-base">
+          <button type="button" onclick="createBlindScanFolder()" class="w-full mt-4 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 text-sm sm:text-base">
             Create Folder
           </button>
         </div>
@@ -151,46 +151,7 @@
             </div>
           </div>
         </div>
-
-        <!-- Process Files Section -->
-        <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl shadow-md p-4 sm:p-6">
-          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-            <div class="flex items-center space-x-3">
-              <div class="bg-green-100 p-2 rounded-lg">
-                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-              </div>
-              <div>
-                <h3 class="text-base sm:text-lg font-semibold text-gray-800">Process Selected Files</h3>
-                <p class="text-sm text-gray-600">Start document processing workflow for selected files</p>
-              </div>
-            </div>
-            
-            <div class="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-4">
-              <div class="text-center sm:text-right">
-                <div class="text-sm text-gray-500">Ready to Process</div>
-                <div class="text-xl sm:text-2xl font-bold text-green-600" id="processDisplayCount">0</div>
-              </div>
-              
-              <button id="processFilesBtn" onclick="processSelectedFiles()" disabled class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 sm:px-8 rounded-lg transition duration-200 flex items-center justify-center space-x-2 shadow-lg w-full sm:w-auto">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <span>Process Files</span>
-              </button>
-            </div>
-          </div>
-          
-          <div class="mt-4">
-            <div class="bg-white bg-opacity-60 rounded-lg p-3">
-              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-600 space-y-1 sm:space-y-0">
-                <span>💡 Select files above to enable processing</span>
-                <span id="processStatusText">No files selected</span>
-              </div>
-            </div>
-          </div>
-        </div>
+ 
 
       
     </div>

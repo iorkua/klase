@@ -2524,6 +2524,37 @@
                       </div>
                     </div>
 
+                    <!-- Booklet Management Section -->
+                    <div class="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                      <h4 class="text-sm font-semibold text-purple-900 mb-3">Booklet Management</h4>
+                      <div class="flex items-center space-x-4">
+                        ${state.typingState.bookletMode ? `
+                          <div class="flex items-center space-x-2">
+                            <span class="text-sm text-purple-700">
+                              <strong>Active Booklet:</strong> Pages ${state.typingState.bookletStartPage}a, ${state.typingState.bookletStartPage}b, ${state.typingState.bookletStartPage}c...
+                            </span>
+                            <button class="btn btn-outline btn-sm end-booklet">
+                              <i data-lucide="x-circle" class="h-3 w-3 mr-1"></i>
+                              End Booklet
+                            </button>
+                          </div>
+                        ` : `
+                          <button class="btn btn-outline btn-sm start-booklet">
+                            <i data-lucide="book-open" class="h-3 w-3 mr-1"></i>
+                            Start Booklet (e.g., PoA)
+                          </button>
+                          <span class="text-xs text-gray-600">
+                            Use this when multiple pages belong to the same document (Power of Attorney, etc.)
+                          </span>
+                        `}
+                      </div>
+                      ${state.typingState.bookletMode ? `
+                        <div class="mt-2 text-xs text-purple-600">
+                          Next page will be numbered: <strong>${state.typingState.bookletStartPage}${state.typingState.bookletCounter}</strong>
+                        </div>
+                      ` : ''}
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <div class="border rounded-md p-4 h-[400px] bg-white relative" id="document-preview-container">
@@ -2579,8 +2610,14 @@
 
                           <div>
                             <label for="serial-no" class="block text-sm font-medium mb-1.5">Serial Number</label>
-                            <input id="serial-no" value="${state.typingState.serialNo}" class="input" maxlength="2" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
-                            <p class="text-xs text-muted-foreground mt-1">Auto-calculated: ${state.typingState.serialNo}</p>
+                            <input id="serial-no" value="${state.typingState.bookletMode ? state.typingState.bookletStartPage + state.typingState.bookletCounter : state.typingState.serialNo}" 
+                                   class="input" maxlength="3" ${state.typingState.bookletMode ? 'readonly' : ''}>
+                            <p class="text-xs text-muted-foreground mt-1">
+                              ${state.typingState.bookletMode 
+                                ? `Booklet mode: Serial number is auto-generated as ${state.typingState.bookletStartPage}${state.typingState.bookletCounter}`
+                                : `Auto-calculated: ${state.typingState.serialNo}`
+                              }
+                            </p>
                           </div>
                         </div>
 
@@ -2588,12 +2625,12 @@
                           <h4 class="font-medium mb-2">Page Code Preview</h4>
                           <div class="flex items-center gap-2">
                             <span class="badge bg-blue-500 text-white text-base py-1 px-3">
-                              ${getCoverTypeById(state.typingState.coverType)?.code || 'XX'}-${getPageTypeById(state.typingState.pageType)?.code || 'XX'}-${getPageSubTypeById(state.typingState.pageType, state.typingState.pageSubType)?.code || 'XX'}-${state.typingState.serialNo}
+                              ${getCoverTypeById(state.typingState.coverType)?.code || 'XX'}-${getPageTypeById(state.typingState.pageType)?.code || 'XX'}-${getPageSubTypeById(state.typingState.pageType, state.typingState.pageSubType)?.code || 'XX'}-${state.typingState.bookletMode ? state.typingState.bookletStartPage + state.typingState.bookletCounter : state.typingState.serialNo}
                             </span>
                           </div>
                           <p class="text-xs text-muted-foreground mt-2">
                             Format: CoverType-PageType-SubType-SerialNo<br>
-                            This code will be assigned to the page for easy identification and retrieval.
+                            ${state.typingState.bookletMode ? 'Booklet mode: Pages use alphabetic suffixes (a, b, c...)' : 'This code will be assigned to the page for easy identification and retrieval.'}
                           </p>
                         </div>
 
@@ -2646,7 +2683,15 @@
                 <div class="p-6">
                   <div class="space-y-6">
                     <div class="flex justify-between items-center">
-                      <h3 class="text-lg font-medium">File Pages</h3>
+                      <div>
+                        <h3 class="text-lg font-medium">File Pages</h3>
+                        ${state.typingState.bookletMode ? `
+                          <p class="text-sm text-purple-600 mt-1">
+                            <i data-lucide="book-open" class="h-4 w-4 inline mr-1"></i>
+                            Booklet Mode Active - Next: ${state.typingState.bookletStartPage}${state.typingState.bookletCounter}
+                          </p>
+                        ` : ''}
+                      </div>
                       <span class="badge bg-blue-500 text-white">${file.file_number}</span>
                     </div>
 
@@ -2923,7 +2968,13 @@
 
           // Serial number change (keep editable but seeded from backend)
           document.querySelector('#serial-no')?.addEventListener('input', (e) => {
-            // keep only digits and enforce two digits
+            // In booklet mode, the serial number input is readonly
+            if (state.typingState.bookletMode) {
+              e.target.value = state.typingState.bookletStartPage + state.typingState.bookletCounter;
+              return;
+            }
+            
+            // keep only digits and enforce two digits for normal mode
             const cleaned = (e.target.value || '').replace(/\D/g, '').slice(0, 2);
             e.target.value = cleaned;
             state.typingState.serialNo = cleaned.padStart(2, '0');
@@ -2936,6 +2987,10 @@
 
             // Save page typing to backend with CoverType
             const selected = file.scannings[state.typingState.selectedPageInFolder];
+            
+            // Get the current serial number (booklet-aware)
+            const currentSerial = getBookletSerialNumber();
+            
             const pageData = {
               file_indexing_id: file.id,
               scanning_id: selected?.id || null,
@@ -2943,9 +2998,13 @@
               cover_type_id: parseInt(state.typingState.coverType),
               page_type: state.typingState.pageType,
               page_subtype: state.typingState.pageSubType,
-              serial_number: parseInt(state.typingState.serialNo),
-              page_code: `${getCoverTypeById(state.typingState.coverType)?.code}-${getPageTypeById(state.typingState.pageType)?.code}-${getPageSubTypeById(state.typingState.pageType, state.typingState.pageSubType)?.code}-${state.typingState.serialNo}`,
-              file_path: `storage\\app\\public\\EDMS\\PAGETYPING\\${file.file_number}.pdf`
+              serial_number: state.typingState.bookletMode ? parseInt(state.typingState.bookletStartPage) : parseInt(state.typingState.serialNo),
+              page_code: `${getCoverTypeById(state.typingState.coverType)?.code}-${getPageTypeById(state.typingState.pageType)?.code}-${getPageSubTypeById(state.typingState.pageType, state.typingState.pageSubType)?.code}-${currentSerial}`,
+              file_path: `storage\\app\\public\\EDMS\\PAGETYPING\\${file.file_number}.pdf`,
+              // Booklet management fields
+              booklet_id: state.typingState.currentBooklet,
+              is_booklet_page: state.typingState.bookletMode,
+              booklet_sequence: state.typingState.bookletMode ? state.typingState.bookletCounter : null
             };
 
             try {
@@ -2966,13 +3025,24 @@
                   coverType: state.typingState.coverType,
                   pageType: state.typingState.pageType,
                   pageSubType: state.typingState.pageSubType,
-                  serialNo: state.typingState.serialNo,
+                  serialNo: currentSerial,
                   page_code: pageData.page_code
                 };
 
-                // Increment serial number
-                const nextSerialNo = parseInt(state.typingState.serialNo) + 1;
-                state.typingState.serialNo = nextSerialNo.toString().padStart(2, '0');
+                // Store booklet page information for tracking
+                if (state.typingState.bookletMode && state.typingState.currentBooklet) {
+                  if (!state.typingState.bookletPages[state.typingState.currentBooklet]) {
+                    state.typingState.bookletPages[state.typingState.currentBooklet] = [];
+                  }
+                  state.typingState.bookletPages[state.typingState.currentBooklet].push({
+                    pageIndex: state.typingState.selectedPageInFolder,
+                    serialNumber: currentSerial,
+                    pageCode: pageData.page_code
+                  });
+                }
+
+                // Increment serial number (booklet-aware)
+                incrementBookletCounter();
 
                 // Go back to folder view
                 state.typingState.selectedPageInFolder = null;
@@ -3005,6 +3075,10 @@
             }
           });
 
+          // Booklet management event listeners
+          document.querySelector('.start-booklet')?.addEventListener('click', startBooklet);
+          document.querySelector('.end-booklet')?.addEventListener('click', endBooklet);
+
           // Full screen functionality
           document.querySelector('.fullscreen-btn')?.addEventListener('click', () => {
             openFullscreenView();
@@ -3020,6 +3094,103 @@
               closeFullscreenView();
             }
           });
+        }
+
+        // Booklet Management Functions
+        function startBooklet() {
+          // Ensure we have a selected file
+          if (!state.selectedFile) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'No File Selected',
+              text: 'Please select a file first to start a booklet.',
+              confirmButtonColor: '#f59e0b'
+            });
+            return;
+          }
+          
+          // Enable booklet mode
+          state.typingState.bookletMode = true;
+          
+          // Create a unique ID for this booklet
+          state.typingState.currentBooklet = `booklet_${Date.now()}`;
+          
+          // Use the current serial number as the booklet start
+          state.typingState.bookletStartPage = state.typingState.serialNo;
+          
+          // Reset the alphabetic counter
+          state.typingState.bookletCounter = 'a';
+          
+          // Show success message
+          Swal.fire({
+            icon: 'success',
+            title: 'Booklet Started!',
+            text: `Started booklet with base serial ${state.typingState.bookletStartPage}. Pages will be numbered ${state.typingState.bookletStartPage}a, ${state.typingState.bookletStartPage}b, etc.`,
+            confirmButtonColor: '#28a745',
+            timer: 3000,
+            timerProgressBar: true
+          });
+          
+          // Update UI to reflect booklet mode
+          updateUI();
+        }
+
+        function endBooklet() {
+          // Check if we're actually in booklet mode
+          if (!state.typingState.bookletMode) {
+            return;
+          }
+          
+          // Get booklet summary for user feedback
+          const bookletPages = state.typingState.bookletPages[state.typingState.currentBooklet] || [];
+          const bookletSummary = bookletPages.length > 0 
+            ? `Booklet completed with ${bookletPages.length} pages: ${bookletPages.map(p => p.serialNumber).join(', ')}`
+            : 'Booklet ended (no pages were processed)';
+          
+          // Disable booklet mode
+          state.typingState.bookletMode = false;
+          
+          // Clear current booklet reference
+          state.typingState.currentBooklet = null;
+          state.typingState.bookletStartPage = null;
+          
+          // Reset the alphabetic counter for next time
+          state.typingState.bookletCounter = 'a';
+          
+          // Increment the main serial number for the next non-booklet page
+          const nextSerialNo = parseInt(state.typingState.serialNo) + 1;
+          state.typingState.serialNo = nextSerialNo.toString().padStart(2, '0');
+          
+          // Show completion message
+          Swal.fire({
+            icon: 'success',
+            title: 'Booklet Completed!',
+            text: `${bookletSummary}. Next page will be numbered ${state.typingState.serialNo}.`,
+            confirmButtonColor: '#28a745',
+            timer: 4000,
+            timerProgressBar: true
+          });
+          
+          // Update UI to reflect normal mode
+          updateUI();
+        }
+
+        function getBookletSerialNumber() {
+          if (state.typingState.bookletMode && state.typingState.currentBooklet) {
+            return `${state.typingState.bookletStartPage}${state.typingState.bookletCounter}`;
+          }
+          return state.typingState.serialNo;
+        }
+
+        function incrementBookletCounter() {
+          if (state.typingState.bookletMode && state.typingState.currentBooklet) {
+            // Increment booklet counter (a -> b -> c, etc.)
+            state.typingState.bookletCounter = String.fromCharCode(state.typingState.bookletCounter.charCodeAt(0) + 1);
+          } else {
+            // Normal page processing - increment serial number
+            const nextSerialNo = parseInt(state.typingState.serialNo) + 1;
+            state.typingState.serialNo = nextSerialNo.toString().padStart(2, '0');
+          }
         }
 
         // Event handlers

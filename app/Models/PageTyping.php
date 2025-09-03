@@ -29,6 +29,10 @@ class PageTyping extends Model
         'qc_override_note',
         'has_qc_issues',
         'deleted_at',
+        // Booklet management fields
+        'booklet_id',
+        'is_booklet_page',
+        'booklet_sequence',
     ];
 
     protected $casts = [
@@ -37,6 +41,7 @@ class PageTyping extends Model
         'cover_type_id' => 'integer',
         'qc_overridden' => 'boolean',
         'has_qc_issues' => 'boolean',
+        'is_booklet_page' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'qc_reviewed_at' => 'datetime',

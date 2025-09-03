@@ -23,7 +23,7 @@
     <div class="grid grid-cols-3 gap-6 mb-6">
       <!-- File Index Card -->
       <div class="card p-6">
-        <div class="card-title mb-2">File Index</div>
+        <div class="card-title mb-2">Unindexed Files</div>
         <div class="text-3xl font-bold mb-2" id="pending-files-count">3</div>
         <div class="text-sm text-gray-500">Files waiting to be indexed</div>
       </div>
@@ -49,7 +49,7 @@
     <!-- Tabs and New File Button -->
     <div class="flex justify-between items-center mb-6">
       <div class="tabs" id="main-tabs">
-        <div class="tab active" data-tab="pending">File Index</div>
+        <div class="tab active" data-tab="pending">Unindexed Files</div>
         <div class="tab disabled" data-tab="indexing">Digital Index (AI)</div>
         <div class="tab" data-tab="indexed">Indexed Files</div>
       </div>
@@ -58,9 +58,9 @@
           <i data-lucide="upload" class="h-4 w-4 mr-2"></i>
           Go to Unindexed Files
         </a> -->
-        <button class="btn btn-primary" id="new-file-index-btn">
-          <i data-lucide="folder-plus" class="h-4 w-4 mr-2"></i>
-          New File Index
+        <button class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium py-2.5 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2" id="new-file-index-btn">
+          <i data-lucide="folder-plus" class="h-4 w-4"></i>
+          Index a New File
         </button>
       </div>
     </div>
@@ -71,7 +71,7 @@
         <div class="p-6">
           <div class="flex justify-between items-center mb-4">
             <div>
-              <h2 class="text-xl font-bold">File Index</h2>
+              <h2 class="text-xl font-bold">Unindexed Files</h2>
               <p class="text-sm text-gray-500">Select files to begin the indexing process</p>
             </div>
             <div class="relative">
@@ -86,10 +86,16 @@
                 <input type="checkbox" id="select-all-checkbox" class="mr-2">
                 <label for="select-all-checkbox" class="text-sm font-medium">Select All</label>
               </div>
-              <div class="flex items-center">
-                <span class="text-sm text-gray-500" id="selected-files-count">1 of 3 selected</span>
-                <button class="btn btn-primary ml-4" id="begin-indexing-btn">Begin Indexing</button>
-              </div>
+                <div class="flex items-center gap-3">
+                <div class="flex items-center bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200">
+                  <i data-lucide="files" class="h-4 w-4 text-blue-600 mr-2"></i>
+                  <span class="text-sm font-medium text-blue-800" id="selected-files-count">1 of 3 selected</span>
+                </div>
+                <button class="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-medium py-2.5 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" id="begin-indexing-btn">
+                  <i data-lucide="play-circle" class="h-4 w-4"></i>
+                  Begin Indexing
+                </button>
+                </div>
             </div>
 
             <div id="pending-files-list">

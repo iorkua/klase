@@ -97,6 +97,68 @@ document.addEventListener('DOMContentLoaded', function() {
       folderInput.click();
     }
 
+    // Create blind scan folder
+    function createBlindScanFolder() {
+      // Get the active tab
+      const activeTab = document.getElementById('activeFileTab').value;
+      let fileNo = '';
+
+      if (activeTab === 'mlsFNo') {
+        fileNo = document.getElementById('mlsFNo').value;
+      } else if (activeTab === 'kangisFileNo') {
+        fileNo = document.getElementById('kangisFileNo').value;
+      } else if (activeTab === 'NewKANGISFileno') {
+        fileNo = document.getElementById('NewKANGISFileno').value;
+      }
+
+      if (!fileNo || fileNo === 'Enter details above to see preview' || fileNo.trim() === '') {
+        showNotification('Please select a valid file number first', 'error');
+        return;
+      }
+
+      // Show loading state
+      const createBtn = document.querySelector('button[onclick="createBlindScanFolder()"]');
+      const originalText = createBtn.textContent;
+      createBtn.textContent = 'Creating...';
+      createBtn.disabled = true;
+
+      // Make AJAX request
+      fetch('/blind-scanning/create-folder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+          file_no: fileNo.trim()
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showNotification(data.message, 'success');
+          // Enable the browse files button
+          const browseBtn = document.getElementById('browseFolderBtn');
+          if (browseBtn) {
+            browseBtn.disabled = false;
+            browseBtn.classList.remove('disabled:bg-gray-400', 'disabled:cursor-not-allowed');
+            browseBtn.classList.add('hover:bg-blue-700');
+          }
+        } else {
+          showNotification(data.message, 'error');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showNotification('Failed to create folder. Please try again.', 'error');
+      })
+      .finally(() => {
+        // Reset button state
+        createBtn.textContent = originalText;
+        createBtn.disabled = false;
+      });
+    }
+
     // Alias for browseForFiles to match HTML onclick
     function browseForFiles() {
       browseForFolder();

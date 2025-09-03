@@ -105,26 +105,21 @@
 
                         <!-- Tabs Navigation -->
                         <div class="grid grid-cols-5 gap-2 mb-4">
-                            @if (request()->query('url') !== 'phy_planning' || request()->query('url') == 'recommendation')
-                                <button class="tab-button active" data-tab="detterment">
-                                    <i data-lucide="calculator" class="w-3.5 h-3.5 mr-1.5"></i>
-                                    Architectural Design
-                                </button>
-                            @endif
+                            <button class="tab-button active" data-tab="detterment">
+                                <i data-lucide="calculator" class="w-3.5 h-3.5 mr-1.5"></i>
+                                Architectural Design
+                            </button>
 
-                            @if (request()->query('url') !== 'phy_planning')
-                                <button class="tab-button" data-tab="survey-plan">
-                                    <i data-lucide="map" class="w-3.5 h-3.5 mr-1.5"></i>
-                                    View Survey Plan
-                                </button>
-                            @endif
+                            <button class="tab-button" data-tab="survey-plan">
+                                <i data-lucide="map" class="w-3.5 h-3.5 mr-1.5"></i>
+                                View Survey Plan
+                            </button>
 
-                            @if (request()->query('url') !== 'phy_planning')
-                                <button class="tab-button" data-tab="planning-form">
-                                    <i data-lucide="edit-3" class="w-3.5 h-3.5 mr-1.5"></i>
-                                    Complete Application Data
-                                </button>
-                            @endif
+                            <button class="tab-button" data-tab="planning-form">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5 mr-1.5"></i>
+                            Complete survey data<br>
+                            for Planning Recommendation Report
+                            </button>
 
                             @if (request()->query('url') == 'phy_planning')
                                 <button class="tab-button" data-tab="initial">
@@ -133,12 +128,10 @@
                                 </button>
                             @endif
 
-                            @if (request()->query('url') !== 'phy_planning')
-                                <button class="tab-button" data-tab="final" id="planningRecommendationTab" disabled>
-                                    <i data-lucide="file-check" class="w-3.5 h-3.5 mr-1.5"></i>
-                                    Planning Recommendation Report
-                                </button>
-                            @endif
+                            <button class="tab-button" data-tab="final" id="planningRecommendationTab" disabled>
+                                <i data-lucide="file-check" class="w-3.5 h-3.5 mr-1.5"></i>
+                                Planning Recommendation Report
+                            </button>
                         </div>
 
 
@@ -286,33 +279,6 @@
                                                        value="{{ $surveyRecord->approved_plan_no ?? '' }}" 
                                                        placeholder="Enter Approved Plan Number">
                                             </div>
-                                            <div>
-                                                <label class="block text-sm font-medium text-gray-700 mb-1">
-                                                    Scheme Number <span class="text-red-500">*</span>
-                                                </label>
-                                                <input type="text" name="scheme_number" id="scheme_number" 
-                                                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                                       value="{{ $application->scheme_no ?? '' }}" 
-                                                       placeholder="Enter Scheme Number">
-                                            </div>
-                                            <div>
-                                                <label class="block text-sm font-medium text-gray-700 mb-1">
-                                                    Property House Number
-                                                </label>
-                                                <input type="text" name="property_house_no" id="property_house_no" 
-                                                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                                       value="{{ $application->property_house_no ?? '' }}" 
-                                                       placeholder="Enter House Number">
-                                            </div>
-                                            <div>
-                                                <label class="block text-sm font-medium text-gray-700 mb-1">
-                                                    Property Plot Number
-                                                </label>
-                                                <input type="text" name="property_plot_no" id="property_plot_no" 
-                                                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                                       value="{{ $application->property_plot_no ?? '' }}" 
-                                                       placeholder="Enter Plot Number">
-                                            </div>
                                         </div>
                                     </div>
 
@@ -335,10 +301,6 @@
                                                 <div class="flex items-center text-sm">
                                                     <span id="approvedStatus" class="w-4 h-4 mr-2">❌</span>
                                                     <span>Approved Plan Number</span>
-                                                </div>
-                                                <div class="flex items-center text-sm">
-                                                    <span id="schemeStatus" class="w-4 h-4 mr-2">❌</span>
-                                                    <span>Scheme Number</span>
                                                 </div>
                                             </div>
                                             <div class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg" id="completionMessage">
@@ -372,8 +334,7 @@
                             </div>
                         </div>
 
-                        <div id="initial-tab"
-                            class="tab-content {{ request()->query('url') == 'phy_planning' ? 'active' : '' }}">
+                        <div id="initial-tab" class="tab-content">
                             <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
                                 <div class="p-4 border-b">
                                     <h3 class="text-sm font-medium">Planning Recommendation Approval</h3>
@@ -695,37 +656,41 @@
 <script>
 // Application Data Form JavaScript with Validation
 document.addEventListener('DOMContentLoaded', function() {
+    // Get approval status from PHP
+    const isApproved = '{{ strtolower($application->planning_recommendation_status ?? '') }}' === 'approved' || '{{ strtolower($application->planning_recommendation_status ?? '') }}' === 'approve';
+    
     // Validation function
     function validateRequiredFields() {
         const lknNumber = document.getElementById('lkn_number').value.trim();
         const tpNumber = document.getElementById('tp_plan_number').value.trim();
         const approvedNumber = document.getElementById('approved_plan_number').value.trim();
-        const schemeNumber = document.getElementById('scheme_number').value.trim();
 
         // Update status indicators
         document.getElementById('lknStatus').textContent = lknNumber ? '✅' : '❌';
         document.getElementById('tpStatus').textContent = tpNumber ? '✅' : '❌';
         document.getElementById('approvedStatus').textContent = approvedNumber ? '✅' : '❌';
-        document.getElementById('schemeStatus').textContent = schemeNumber ? '✅' : '❌';
 
-        const allComplete = lknNumber && tpNumber && approvedNumber && schemeNumber;
+        const allComplete = lknNumber && tpNumber && approvedNumber;
+        
+        // Enable Planning Recommendation Report tab only if approved
+        const shouldEnableReportTab = isApproved;
         
         // Update completion message
         const completionMessage = document.getElementById('completionMessage');
-        if (allComplete) {
+        if (isApproved) {
             completionMessage.className = 'mt-4 p-3 bg-green-50 border border-green-200 rounded-lg';
             completionMessage.innerHTML = `
                 <p class="text-sm text-green-700">
                     <i data-lucide="check-circle" class="w-4 h-4 inline mr-1"></i>
-                    All required fields completed! You can now access the Planning Recommendation Report tab.
+                    Application is approved! You can now access the Planning Recommendation Report tab.
                 </p>
             `;
         } else {
-            completionMessage.className = 'mt-4 p-3 bg-red-50 border border-red-200 rounded-lg';
+            completionMessage.className = 'mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg';
             completionMessage.innerHTML = `
-                <p class="text-sm text-red-700">
+                <p class="text-sm text-yellow-700">
                     <i data-lucide="info" class="w-4 h-4 inline mr-1"></i>
-                    Complete all required fields above to unlock the Planning Recommendation Report tab.
+                    The Planning Recommendation Report tab will be enabled once the application is approved.
                 </p>
             `;
         }
@@ -733,7 +698,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Enable/disable Planning Recommendation Report tab
         const planningTab = document.getElementById('planningRecommendationTab');
         if (planningTab) {
-            if (allComplete) {
+            if (shouldEnableReportTab) {
                 planningTab.disabled = false;
                 planningTab.classList.remove('opacity-50', 'cursor-not-allowed');
                 planningTab.classList.add('cursor-pointer');
@@ -748,7 +713,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Add event listeners to required fields
-    const requiredFields = ['lkn_number', 'tp_plan_number', 'approved_plan_number', 'scheme_number'];
+    const requiredFields = ['lkn_number', 'tp_plan_number', 'approved_plan_number'];
     requiredFields.forEach(fieldId => {
         const field = document.getElementById(fieldId);
         if (field) {
@@ -766,8 +731,12 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             e.stopPropagation();
             
-            // Show alert
-            alert('Please complete all required fields in the "Complete Application Data" tab before accessing the Planning Recommendation Report.');
+            // Show appropriate alert message
+            if (isApproved) {
+                alert('The Planning Recommendation Report tab should be enabled for approved applications. Please refresh the page.');
+            } else {
+                alert('The Planning Recommendation Report tab is only available for approved applications.');
+            }
             
             return false;
         }
@@ -777,7 +746,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('applicationDataForm').addEventListener('submit', function(e) {
         e.preventDefault();
         
-        if (!validateRequiredFields()) {
+        // If application is approved, allow saving even with incomplete fields
+        if (!isApproved && !validateRequiredFields()) {
             alert('Please fill in all required fields before saving.');
             return;
         }

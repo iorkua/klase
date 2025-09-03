@@ -1,53 +1,52 @@
 <!-- architecturaldesign Bill Tab -->
-@if (request()->query('url') !== 'phy_planning' || request()->query('url') == 'recommendation')
-    <div id="detterment-tab" class="tab-content active">
-        <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
-            <div class="p-4 border-b">
-                <h3 class="text-sm font-medium"> Architectural Design</h3>
-                <p class="text-xs text-gray-500"> </p>
-            </div>
-            <input type="hidden" id="application_id" value="{{ $application->id }}">
-            <input type="hidden" name="fileno" value="{{ $application->fileno }}">
-            <div class="p-4 space-y-4">
+<div id="detterment-tab" class="tab-content active">
+    <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+        <div class="p-4 border-b">
+            <h3 class="text-sm font-medium"> Architectural Design</h3>
+            <p class="text-xs text-gray-500"> </p>
+        </div>
+        <input type="hidden" id="application_id" value="{{ $application->id }}">
+        <input type="hidden" name="fileno" value="{{ $application->fileno }}">
+        <div class="p-4 space-y-4">
 
-                <!-- Blade Template for displaying architecturaldesign -->
-                <div class="space-y-6">
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                        <h4 class="text-sm font-medium mb-3">Architectural Design Document</h4>
+            <!-- Blade Template for displaying architecturaldesign -->
+            <div class="space-y-6">
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <h4 class="text-sm font-medium mb-3">Architectural Design Document</h4>
 
-                        <div class="  gap-4" id="architectural-designs-container">
-                            @php
-                                // Ensure documents is decoded from JSON if needed
-                                $documents = is_string($application->documents)
-                                    ? json_decode($application->documents, true)
-                                    : $application->documents;
-                            @endphp
+                    <div class="  gap-4" id="architectural-designs-container">
+                        @php
+                            // Ensure documents is decoded from JSON if needed
+                            $documents = is_string($application->documents)
+                                ? json_decode($application->documents, true)
+                                : $application->documents;
+                        @endphp
 
-                            @if (isset($documents['architectural_design']))
-                                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                                    <div class="h-48 bg-gray-100 relative">
-                                        <img src="{{ asset('storage/app/public/' . $documents['architectural_design']['path']) }}"
-                                            alt="Architectural Design" class="w-full h-full object-cover">
-                                        <div class="absolute top-2 right-2">
-                                            <button class="p-1 bg-white rounded-full shadow-sm hover:bg-gray-100"
-                                                onclick="previewDesign('{{ asset('storage/app/public/' . $documents['architectural_design']['path']) }}')">
-                                                <i data-lucide="maximize-2" class="w-4 h-4 text-gray-700"></i>
-                                            </button>
-                                        </div>
+                        @if (isset($documents['architectural_design']))
+                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                                <div class="h-48 bg-gray-100 relative">
+                                    <img src="{{ asset('storage/app/public/' . $documents['architectural_design']['path']) }}"
+                                        alt="Architectural Design" class="w-full h-full object-cover">
+                                    <div class="absolute top-2 right-2">
+                                        <button class="p-1 bg-white rounded-full shadow-sm hover:bg-gray-100"
+                                            onclick="previewDesign('{{ asset('storage/app/public/' . $documents['architectural_design']['path']) }}')">
+                                            <i data-lucide="maximize-2" class="w-4 h-4 text-gray-700"></i>
+                                        </button>
                                     </div>
-                                    <div class="p-3">
-                                        <h5 class="text-sm font-medium">Architectural Design</h5>
-                                        <p class="text-xs text-gray-500 mt-1">Uploaded on:
-                                            {{ \Carbon\Carbon::parse($documents['architectural_design']['uploaded_at'])->format('Y-m-d') }}
-                                        </p>
-                                        <div class="flex mt-2 gap-2">
-                                            <a href="{{ asset('storage/app/public/' . $documents['architectural_design']['path']) }}"
-                                                download
-                                                class="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded-md flex items-center">
-                                                <i data-lucide="download" class="w-3 h-3 mr-1"></i> Download
-                                            </a>
-                                            <button
-                                                class="text-xs px-2 py-1 bg-gray-50 text-gray-600 rounded-md flex items-center"
+                                </div>
+                                <div class="p-3">
+                                    <h5 class="text-sm font-medium">Architectural Design</h5>
+                                    <p class="text-xs text-gray-500 mt-1">Uploaded on:
+                                        {{ \Carbon\Carbon::parse($documents['architectural_design']['uploaded_at'])->format('Y-m-d') }}
+                                    </p>
+                                    <div class="flex mt-2 gap-2">
+                                        <a href="{{ asset('storage/app/public/' . $documents['architectural_design']['path']) }}"
+                                            download
+                                            class="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded-md flex items-center">
+                                            <i data-lucide="download" class="w-3 h-3 mr-1"></i> Download
+                                        </a>
+                                        <button
+                                            class="text-xs px-2 py-1 bg-gray-50 text-gray-600 rounded-md flex items-center"
                                                 onclick="previewDesign('{{ asset('storage/app/public/' . $documents['architectural_design']['path']) }}')">
                                                 <i data-lucide="eye" class="w-3 h-3 mr-1"></i> View
                                             </button>
@@ -257,4 +256,3 @@
             }
         }
     </script>
-@endif

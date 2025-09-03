@@ -136,7 +136,7 @@
                                             <i data-lucide="folder" class="h-4 w-4 mr-2 inline"></i>
                                             Indexed
                                         </a>
-                                        <a href="/unindexed-scanning" 
+                                        <a href="http://klaes.com.ng/scanning/unindexed" 
                                            class="px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 {{ request('mode') == 'unindexed' ? 'bg-white text-blue-600 shadow-sm border border-blue-200' : 'text-gray-600 hover:text-gray-800' }}">
                                             <i data-lucide="file-plus" class="h-4 w-4 mr-2 inline"></i>
                                             Unindexed

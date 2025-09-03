@@ -365,6 +365,90 @@ class BlindScanningController extends Controller
     }
 
     /**
+     * Create folder structure for blind scanning
+     */
+    public function createFolder(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'file_no' => 'required|string|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $fileNo = $request->file_no;
+            $basePath = "EDMS/BLIND_SCAN/{$fileNo}";
+
+            // Check if folder already exists
+            if (Storage::disk('public')->exists($basePath)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Folder already exists for this File Number'
+                ], 409);
+            }
+
+            // Create directories
+            $a4Created = Storage::disk('public')->makeDirectory("{$basePath}/A4");
+            $a3Created = Storage::disk('public')->makeDirectory("{$basePath}/A3");
+
+            if ($a4Created && $a3Created) {
+                // Create a blind scanning record
+                BlindScanning::create([
+                    'temp_file_id' => 'FOLDER_' . time() . '_' . str_replace(['/', '\\', ' ', '-'], '_', $fileNo),
+                    'original_filename' => $fileNo,
+                    'document_path' => $basePath,
+                    'paper_size' => 'FOLDER',
+                    'document_type' => 'BLIND_SCAN_FOLDER',
+                    'notes' => 'Auto-created folder for blind scanning: ' . $fileNo,
+                    'status' => BlindScanning::STATUS_PENDING,
+                    'uploaded_by' => auth()->id(),
+                ]);
+
+                // Log the folder creation
+                Log::info('Blind scan folder created', [
+                    'file_no' => $fileNo,
+                    'user_id' => auth()->id(),
+                    'path' => $basePath
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => "Folder created successfully for FileNo: {$fileNo}",
+                    'data' => [
+                        'file_no' => $fileNo,
+                        'path' => $basePath,
+                        'a4_path' => "{$basePath}/A4",
+                        'a3_path' => "{$basePath}/A3"
+                    ]
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to create folders'
+                ], 500);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Error creating blind scan folder', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+                'file_no' => $request->file_no ?? null,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create folder: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get blind scan details
      */
     public function show($id)
