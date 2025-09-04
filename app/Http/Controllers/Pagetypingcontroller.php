@@ -164,7 +164,7 @@ class PageTypingController extends Controller
                     ];
             }
 
-            $formattedFiles = $result['files']->map(function ($file) {
+            $formattedFiles = $result['files']->values()->map(function ($file) {
                 $scanningsCount = $file->scannings->count();
                 $pageTypingsCount = $file->pagetypings->count();
 
@@ -318,7 +318,7 @@ class PageTypingController extends Controller
                 });
             }
 
-            // Get all potential files first
+            // Get all potential files first - increase limit to ensure we have enough to filter
             $allFiles = $query->orderBy('updated_at', 'desc')->get();
 
             // Filter to only include files where not all pages are typed
@@ -329,7 +329,10 @@ class PageTypingController extends Controller
             });
 
             $total = $filteredFiles->count();
-            $files = $filteredFiles->slice(($page - 1) * $limit, $limit);
+            
+            // Apply pagination to the filtered results
+            $offset = ($page - 1) * $limit;
+            $files = $filteredFiles->slice($offset, $limit);
 
             return [
                 'files' => $files,
@@ -381,7 +384,10 @@ class PageTypingController extends Controller
             });
 
             $total = $filteredFiles->count();
-            $files = $filteredFiles->slice(($page - 1) * $limit, $limit);
+            
+            // Apply pagination to the filtered results
+            $offset = ($page - 1) * $limit;
+            $files = $filteredFiles->slice($offset, $limit);
 
             return [
                 'files' => $files,
@@ -685,6 +691,9 @@ class PageTypingController extends Controller
     public function saveSingle(Request $request)
     {
         try {
+            // Debug logging
+            \Log::info('PageTyping saveSingle called with data:', $request->all());
+            
             $validator = Validator::make($request->all(), [
                 'file_indexing_id' => 'required|integer|exists:sqlsrv.file_indexings,id',
                 'scanning_id' => 'required|integer|exists:sqlsrv.scannings,id',
@@ -692,7 +701,7 @@ class PageTypingController extends Controller
                 'cover_type_id' => 'required|integer',
                 'page_type' => 'required|string|max:100',
                 'page_subtype' => 'nullable|string|max:100',
-                'serial_number' => 'required|integer|min:0',
+                'serial_number' => 'required', // Accept both integer and string for booklet mode
                 'page_code' => 'nullable|string|max:100',
                 'file_path' => 'required|string|max:255',
                 // Booklet management fields
@@ -702,6 +711,10 @@ class PageTypingController extends Controller
             ]);
 
             if ($validator->fails()) {
+                \Log::error('PageTyping validation failed:', [
+                    'errors' => $validator->errors(),
+                    'data' => $request->all()
+                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Validation failed',
@@ -710,6 +723,7 @@ class PageTypingController extends Controller
             }
 
             $validated = $validator->validated();
+            \Log::info('PageTyping validation passed:', $validated);
 
             // Check if page typing already exists
             $existingPageTyping = PageTyping::on('sqlsrv')

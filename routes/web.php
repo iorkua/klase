@@ -909,6 +909,7 @@ Route::get('/api/survey-plan/{applicationId}', [App\Http\Controllers\PrimaryForm
 // Blind Scanning Routes
 Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'blind-scanning'], function () {
     Route::get('/', [App\Http\Controllers\BlindScanningController::class, 'index'])->name('blind-scanning.index');
+    Route::post('/create-folder', [App\Http\Controllers\BlindScanningController::class, 'createFolder'])->name('blind-scanning.create-folder');
     Route::post('/store', [App\Http\Controllers\BlindScanningController::class, 'store'])->name('blind-scanning.store');
     Route::get('/list', [App\Http\Controllers\BlindScanningController::class, 'list'])->name('blind-scanning.list');
     Route::post('/convert-to-upload', [App\Http\Controllers\BlindScanningController::class, 'convertToUpload'])->name('blind-scanning.convert-to-upload');
@@ -969,3 +970,20 @@ Route::group(['middleware' => ['auth', 'XSS'], 'prefix' => 'pagetyping'], functi
 Route::get('/test-serial-api', function() {
     return view('pagetyping.test_serial_api');
 })->name('pagetyping.test-serial-api');
+
+// Print Label Routes
+Route::prefix('printlabel')->group(function () {
+    // Main page
+    Route::get('/', [App\Http\Controllers\PrintLabelController::class, 'index'])->name('printlabel.index');
+    
+    // API routes
+    Route::prefix('api')->group(function () {
+        Route::get('/files', [App\Http\Controllers\PrintLabelController::class, 'getAvailableFiles'])->name('printlabel.api.files');
+        Route::post('/batch', [App\Http\Controllers\PrintLabelController::class, 'createBatch'])->name('printlabel.api.create-batch');
+        Route::get('/batches', [App\Http\Controllers\PrintLabelController::class, 'getBatches'])->name('printlabel.api.batches');
+        Route::get('/batch/{id}', [App\Http\Controllers\PrintLabelController::class, 'getBatchDetails'])->name('printlabel.api.batch-details');
+        Route::patch('/batch/{id}/print', [App\Http\Controllers\PrintLabelController::class, 'markBatchAsPrinted'])->name('printlabel.api.mark-printed');
+        Route::delete('/batch/{id}', [App\Http\Controllers\PrintLabelController::class, 'deleteBatch'])->name('printlabel.api.delete-batch');
+        Route::get('/statistics', [App\Http\Controllers\PrintLabelController::class, 'getStatistics'])->name('printlabel.api.statistics');
+    });
+});

@@ -7,6 +7,7 @@ use App\Models\ApplicationMother;
 use App\Models\Scanning;
 use App\Models\PageTyping;
 use App\Models\FileTracking;
+use App\Models\PrintLabelBatchItem;
 
 class FileIndexing extends Model
 {
@@ -90,6 +91,11 @@ class FileIndexing extends Model
         return $this->hasOne(FileTracking::class, 'file_indexing_id');
     }
 
+    public function printLabelBatchItems()
+    {
+        return $this->hasMany(PrintLabelBatchItem::class, 'file_indexing_id');
+    }
+
     public function getTrackingStatusAttribute()
     {
         $tracking = $this->fileTracking;
@@ -103,6 +109,11 @@ class FileIndexing extends Model
     public function getIsTrackedAttribute()
     {
         return $this->fileTracking !== null;
+    }
+
+    public function getHasLabelPrintedAttribute()
+    {
+        return $this->printLabelBatchItems()->exists();
     }
 }
 

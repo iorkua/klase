@@ -239,7 +239,7 @@
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div>
                         <h2 class="text-lg font-semibold">PageType More Files</h2>
-                        <p class="text-sm text-muted-foreground">Files with new scans that need additional page typing (IsUpdated = 1)</p>
+                        <p class="text-sm text-muted-foreground">Files with new scans added requiring page typing</p>
                       </div>
                       <div class="flex items-center gap-4">
                         <div class="relative w-full md:w-64">
@@ -378,7 +378,7 @@
 
         // Application state
         let state = {
-          activeTab: 'pending',
+          activeTab: 'pending', // Will change to 'typing' when file is selected
           selectedFile: null,
           selectedFileData: null,
           pageTypeMoreMode: false,
@@ -387,6 +387,10 @@
           combinedPages: [],
           // Typing interface state
           typingState: null,
+          // UI preferences
+          uiPreferences: {
+            hideFilePagesSection: false, // Show File Pages section for direct access
+          },
           // Pagination state
           pagination: {
             pending: { currentPage: 1, total: 0, lastPage: 1, perPage: 10 },
@@ -610,6 +614,150 @@
           return pageSubTypes[parseInt(typeId)]?.find(subType => subType.id.toString() === subTypeId.toString());
         }
 
+        // Calculate the next serial number for a file based on the new rules
+        function calculateNextSerialNumber() {
+          if (!state.selectedFileData || !state.selectedFileData.scannings) {
+            return '01';
+          }
+
+          const currentCoverTypeId = state.typingState?.coverType;
+          const currentPageTypeId = state.typingState?.pageType;
+          const coverType = getCoverTypeById(currentCoverTypeId);
+          const pageType = getPageTypeById(currentPageTypeId);
+          const coverCode = coverType?.code;
+          const pageTypeCode = pageType?.code;
+
+          // SPECIAL CASE 1: Front Cover (FC) + File Cover (FC) = 0
+          if (coverCode === 'FC' && pageTypeCode === 'FC') {
+            return '0';
+          }
+
+          // SPECIAL CASE 2: Back Cover (BC) + File Back Page (FBP) = 0
+          // Check for multiple possible representations of "File Back Page":
+          // 1. Page Type code "FBP" 
+          // 2. Page Type "FC" (File Cover) with subtype "OFC" (Old File Cover)
+          // 3. Any page type that contains "back" or "FBP" in code/name
+          const currentPageSubTypeId = state.typingState?.pageSubType;
+          const pageSubType = getPageSubTypeById(currentPageTypeId, currentPageSubTypeId);
+          const pageSubTypeCode = pageSubType?.code;
+          
+          const isFileBackPage = (
+            pageTypeCode === 'FBP' || // Direct FBP page type
+            (pageTypeCode === 'FC' && pageSubTypeCode === 'OFC') || // File Cover + Old File Cover subtype
+            pageTypeCode?.toLowerCase().includes('back') || // Any page type with "back" in code
+            pageType?.name?.toLowerCase().includes('back') || // Any page type with "back" in name
+            pageSubType?.name?.toLowerCase().includes('back') // Any subtype with "back" in name
+          );
+          
+          if (coverCode === 'BC' && isFileBackPage) {
+            return '0';
+          }
+
+          // Get all existing page typings for this file
+          const existingTypings = [];
+          
+          // Collect all existing page typings from all scannings
+          (state.selectedFileData.scannings || []).forEach((scan, idx) => {
+            const pts = scan.page_typings || [];
+            if (Array.isArray(pts)) {
+              pts.forEach(pt => {
+                // Extract numeric part from serial (e.g., "1a" -> 1, "02" -> 2)
+                const serialValue = pt.serial_number?.toString() || '0';
+                const numericPart = parseInt(serialValue.match(/^(\d+)/)?.[1] || '0') || 0;
+                
+                existingTypings.push({
+                  serial_number: numericPart,
+                  serial_display: pt.serial_number, // Keep original for letter suffix tracking
+                  cover_type_id: pt.cover_type_id,
+                  scanning_index: idx
+                });
+              });
+            }
+          });
+
+          // Also check processedPages in state (for pages typed but not yet saved)
+          if (state.typingState && state.typingState.processedPages) {
+            Object.keys(state.typingState.processedPages).forEach(scanIdx => {
+              const processed = state.typingState.processedPages[scanIdx];
+              if (processed && processed.serialNo !== null && processed.serialNo !== undefined) {
+                // Extract numeric part from serial (e.g., "1a" -> 1, "02" -> 2)
+                const serialValue = processed.serialNo?.toString() || '0';
+                const numericPart = parseInt(serialValue.match(/^(\d+)/)?.[1] || '0') || 0;
+                
+                existingTypings.push({
+                  serial_number: numericPart,
+                  serial_display: processed.serialNo,
+                  cover_type_id: processed.coverType,
+                  scanning_index: parseInt(scanIdx) || 0
+                });
+              }
+            });
+          }
+
+          console.log('Serial number calculation:', {
+            coverCode,
+            pageTypeCode,
+            pageSubTypeCode,
+            isFileBackPage,
+            existingTypingsCount: existingTypings.length
+          });
+
+          // For all other cases (Front Cover + other page types, Back Cover + other page types, etc.)
+          // Use normal incrementing serial numbers
+          let nextSerial = 1; // Start from 1
+          
+          // Find the next available serial number or add letter suffix if duplicate
+          const usedSerials = existingTypings.map(t => t.serial_number).filter(n => !isNaN(n) && n >= 0).sort((a, b) => a - b);
+          
+          // Find gaps in the sequence or the next number after the highest
+          const maxUsedSerial = usedSerials.length > 0 ? Math.max(...usedSerials) : 0;
+          for (let i = nextSerial; i <= maxUsedSerial + 1; i++) {
+            if (!usedSerials.includes(i)) {
+              nextSerial = i;
+              break;
+            }
+          }
+
+          // Check if this serial number already exists for other pages
+          const existingWithSameSerial = existingTypings.filter(t => t.serial_number === nextSerial);
+          
+          if (existingWithSameSerial.length > 0) {
+            // Find the next available letter suffix
+            const letters = existingWithSameSerial
+              .map(t => {
+                const match = t.serial_display.toString().match(/^(\d+)([a-z]?)$/);
+                return match ? match[2] || '' : '';
+              })
+              .filter(l => l);
+            
+            if (letters.length === 0) {
+              return nextSerial.toString().padStart(2, '0') + 'a';
+            }
+            
+            const nextLetter = String.fromCharCode('a'.charCodeAt(0) + letters.length);
+            return nextSerial.toString().padStart(2, '0') + nextLetter;
+          }
+
+          return nextSerial.toString().padStart(2, '0');
+        }
+
+        // Update serial number when cover type or other factors change
+        function updateSerialNumber() {
+          if (!state.typingState) return;
+
+          const newSerial = calculateNextSerialNumber();
+          state.typingState.serialNo = newSerial;
+
+          // Update the UI
+          const serialInput = document.getElementById('serial-no');
+          if (serialInput) {
+            serialInput.value = newSerial;
+          }
+
+          // Update any preview displays
+          updateUI();
+        }
+
         // Horizontal File Browser functionality
         function initializeHorizontalFileBrowser(file) {
           if (!file || !file.scannings || file.scannings.length === 0) return;
@@ -651,10 +799,37 @@
             
             // Update active states
             document.querySelectorAll('.file-browser-item').forEach((item, index) => {
-              const isSelected = index === state.typingState.selectedPageInFolder;
-              item.classList.toggle('active', isSelected);
+              const isCurrentPage = index === state.typingState.selectedPageInFolder;
+              const isSelected = state.typingState.selectedPages.has(index);
               
-              if (isSelected) {
+              // Clear all selection classes
+              item.classList.remove('ring-2', 'ring-blue-500', 'ring-purple-500', 'shadow-md', 'bg-purple-50');
+              
+              // Apply appropriate selection styling
+              if (state.typingState.isMultiSelectMode && isSelected) {
+                item.classList.add('ring-2', 'ring-purple-500', 'bg-purple-50');
+              } else if (isCurrentPage) {
+                item.classList.add('ring-2', 'ring-blue-500', 'shadow-md');
+              }
+              
+              // Update border on inner container
+              const innerContainer = item.querySelector('.relative.h-20');
+              if (innerContainer) {
+                innerContainer.className = innerContainer.className
+                  .replace(/border-\w+-\d+/g, '')
+                  .replace(/\s+/g, ' ');
+                
+                if (isSelected) {
+                  innerContainer.classList.add('border-purple-500');
+                } else if (isCurrentPage) {
+                  innerContainer.classList.add('border-blue-500');
+                } else {
+                  innerContainer.classList.add('border-gray-200');
+                }
+              }
+              
+              // Legacy transform and shadow handling
+              if (isCurrentPage && !state.typingState.isMultiSelectMode) {
                 item.style.transform = 'translateY(-2px)';
                 item.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.2)';
               } else {
@@ -1502,8 +1677,16 @@
               // Use server-calculated serial number directly from the API response
               @php
                 // Global serial number calculation - increment across all files
-                $maxSerial = \App\Models\PageTyping::on('sqlsrv')->max('serial_number');
-                $nextSerial = ($maxSerial ? $maxSerial : 0) + 1;
+                // Get all serial numbers and extract numeric parts to find the true maximum
+                $serialNumbers = \App\Models\PageTyping::on('sqlsrv')->pluck('serial_number')->toArray();
+                $numericSerials = [];
+                foreach ($serialNumbers as $serial) {
+                    if (preg_match('/^(\d+)/', (string)$serial, $matches)) {
+                        $numericSerials[] = (int)$matches[1];
+                    }
+                }
+                $maxSerial = !empty($numericSerials) ? max($numericSerials) : 0;
+                $nextSerial = $maxSerial + 1;
                 @endphp
                 serialNo: '{{ str_pad($nextSerial, 2, "0", STR_PAD_LEFT) }}',
               
@@ -1515,11 +1698,14 @@
                 zoomLevel: 100,
                 rotation: 0,
                 showFolderView: true,
-                selectedPageInFolder: null,
+                selectedPageInFolder: null, // Don't auto-select, show grid instead
+                // Multi-select support for Quick File Browser
+                selectedPages: new Set(),
+                isMultiSelectMode: false,
                 coverType: (coverTypes[0]?.id || '1').toString(),
                 pageType: (pageTypes[0]?.id || '1').toString(),
                 pageSubType: '1',
-                serialNo: '{{ str_pad($nextSerial, 2, "0", STR_PAD_LEFT) }}',
+                serialNo: '01', // Will be calculated properly below
                 isExistingFile: {{ isset($selectedFileIndexing) && $selectedFileIndexing->pagetypings->count() > 0 ? 'true' : 'false' }},
                 batchMode: false,
                 batchTypedPages: {},
@@ -1533,7 +1719,6 @@
                 bookletPages: {},
                 bookletCounter: 'a'
               };
-              
               // Set initial page subtype based on page type
               if (pageSubTypes[parseInt(state.typingState.pageType)]) {
                 state.typingState.pageSubType = pageSubTypes[parseInt(state.typingState.pageType)][0]?.id.toString() || '1';
@@ -1559,6 +1744,9 @@
               } catch (e) {
                 console.warn('Could not initialize processed pages from backend', e);
               }
+
+              // Calculate the proper serial number based on the new rules
+              state.typingState.serialNo = calculateNextSerialNumber();
               
               updateUI();
             } else {
@@ -2452,10 +2640,26 @@
                       <span class="badge bg-blue-500 text-white">${file.file_number}</span>
                     </div>
 
-                    <!-- Horizontal File Browser -->
+                    <!-- Enhanced Quick File Browser with Multi-Select -->
                     <div class="border rounded-lg p-4 bg-gray-50">
                       <div class="flex items-center justify-between mb-4">
-                        <h4 class="text-sm font-medium text-gray-700">Quick File Browser</h4>
+                        <div class="flex items-center gap-3">
+                          <h4 class="text-sm font-medium text-gray-700">Quick File Browser</h4>
+                          <div class="flex items-center gap-2">
+                            <button class="btn btn-outline btn-xs toggle-multi-select" title="Toggle Multi-Select Mode">
+                              <i data-lucide="check-square" class="h-3 w-3 mr-1"></i>
+                              ${state.typingState.isMultiSelectMode ? 'Single Select' : 'Multi-Select'}
+                            </button>
+                            ${state.typingState.isMultiSelectMode && state.typingState.selectedPages.size > 0 ? `
+                              <span class="text-xs text-purple-600 font-medium">
+                                ${state.typingState.selectedPages.size} selected
+                              </span>
+                              <button class="btn btn-outline btn-xs clear-selection" title="Clear Selection">
+                                <i data-lucide="x" class="h-3 w-3"></i>
+                              </button>
+                            ` : ''}
+                          </div>
+                        </div>
                         <div class="flex items-center gap-2">
                           <button class="btn btn-ghost btn-icon file-browser-prev" title="Previous Files">
                             <i data-lucide="chevron-left" class="h-4 w-4"></i>
@@ -2467,11 +2671,20 @@
                         </div>
                       </div>
                       
+                      <!-- Instruction for multi-select -->
+                      ${state.typingState.isMultiSelectMode ? `
+                        <div class="mb-3 p-2 bg-blue-50 rounded text-xs text-blue-700">
+                          <i data-lucide="info" class="h-3 w-3 inline mr-1"></i>
+                          <strong>Multi-Select Mode:</strong> Click pages to select/deselect. Hold Ctrl+Click for individual selection, or Shift+Click for range selection.
+                        </div>
+                      ` : ''}
+                      
                       <div class="horizontal-file-browser relative">
-                        <div class="file-browser-container overflow-hidden">
-                          <div class="file-browser-strip flex gap-2 transition-transform duration-300" id="file-browser-strip">
+                        <div class="file-browser-container overflow-x-auto" style="scrollbar-width: thin;">
+                          <div class="file-browser-strip flex gap-2 transition-transform duration-300" id="file-browser-strip" style="min-width: max-content;">
                             ${file.scannings.map((scanning, index) => {
                               const isCurrentPage = index === state.typingState.selectedPageInFolder;
+                              const isSelected = state.typingState.selectedPages.has(index);
                               const isProcessed = state.typingState.processedPages[index];
                               const url = getDocumentUrl(scanning.document_path);
                               const img = isImageFile(scanning.original_filename);
@@ -2479,16 +2692,25 @@
                               const canvasId = 'file-browser-thumb-' + index;
                               const imgId = 'file-browser-img-' + index;
                               
-                              return '<div class="file-browser-item flex-shrink-0 cursor-pointer transition-all duration-200 ' + (isCurrentPage ? 'ring-2 ring-blue-500 shadow-md' : 'hover:shadow-sm') + '" ' +
+                              // Multi-select styling
+                              let selectionClass = '';
+                              if (state.typingState.isMultiSelectMode && isSelected) {
+                                selectionClass = 'ring-2 ring-purple-500 bg-purple-50';
+                              } else if (isCurrentPage) {
+                                selectionClass = 'ring-2 ring-blue-500 shadow-md';
+                              }
+                              
+                              return '<div class="file-browser-item flex-shrink-0 cursor-pointer transition-all duration-200 ' + selectionClass + ' hover:shadow-sm" ' +
                                      'data-file-index="' + index + '" ' +
                                      'style="width: 80px;" ' +
                                      'tabindex="0" ' +
                                      'role="button" ' +
                                      'aria-label="Page ' + (index + 1) + ' - ' + scanning.original_filename + '" ' +
-                                     'title="Click to select page ' + (index + 1) + '">' +
-                                  '<div class="relative h-20 w-20 bg-gray-100 rounded-md overflow-hidden border ' + (isCurrentPage ? 'border-blue-500' : 'border-gray-200') + '">' +
+                                     'title="' + (state.typingState.isMultiSelectMode ? 'Click to select/deselect page ' + (index + 1) : 'Click to select page ' + (index + 1)) + '">' +
+                                  '<div class="relative h-20 w-20 bg-gray-100 rounded-md overflow-hidden border ' + (isSelected ? 'border-purple-500' : isCurrentPage ? 'border-blue-500' : 'border-gray-200') + '">' +
+                                    (isSelected ? '<div class="absolute top-1 left-1 z-10"><span class="badge bg-purple-500 text-white text-xs px-1 py-0.5"><i data-lucide="check" class="h-2 w-2"></i></span></div>' : '') +
                                     (isProcessed ? '<div class="absolute top-1 right-1 z-10"><span class="badge bg-green-500 text-white text-xs px-1 py-0.5"><i data-lucide="check" class="h-2 w-2"></i></span></div>' : '') +
-                                    (isCurrentPage ? '<div class="absolute top-1 left-1 z-10"><span class="badge bg-blue-500 text-white text-xs px-1 py-0.5"><i data-lucide="eye" class="h-2 w-2"></i></span></div>' : '') +
+                                    (isCurrentPage && !isSelected ? '<div class="absolute top-1 left-1 z-10"><span class="badge bg-blue-500 text-white text-xs px-1 py-0.5"><i data-lucide="eye" class="h-2 w-2"></i></span></div>' : '') +
                                     '<div class="loading absolute inset-0 flex items-center justify-center" id="loading-' + index + '">' +
                                       '<div class="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>' +
                                     '</div>' +
@@ -2635,7 +2857,9 @@
                         </div>
 
                         <button class="btn btn-primary w-full process-page">
-                          Process Page
+                          ${state.typingState.isMultiSelectMode && state.typingState.selectedPages.size > 0 
+                            ? `Process ${state.typingState.selectedPages.size} Pages (Booklet: ${state.typingState.serialNo}a, ${state.typingState.serialNo}b, ...)` 
+                            : 'Process Page'}
                         </button>
                       </div>
                     </div>
@@ -2682,21 +2906,24 @@
                 ${headerContent}
                 <div class="p-6">
                   <div class="space-y-6">
-                    <div class="flex justify-between items-center">
-                      <div>
-                        <h3 class="text-lg font-medium">File Pages</h3>
-                        ${state.typingState.bookletMode ? `
-                          <p class="text-sm text-purple-600 mt-1">
-                            <i data-lucide="book-open" class="h-4 w-4 inline mr-1"></i>
-                            Booklet Mode Active - Next: ${state.typingState.bookletStartPage}${state.typingState.bookletCounter}
-                          </p>
-                        ` : ''}
+                    <!-- File Pages Grid - Always Visible -->
+                    <div id="file-pages-section">
+                      <div class="flex justify-between items-center">
+                        <div>
+                          <h3 class="text-lg font-medium">File Pages</h3>
+                          ${state.typingState.bookletMode ? `
+                            <p class="text-sm text-purple-600 mt-1">
+                              <i data-lucide="book-open" class="h-4 w-4 inline mr-1"></i>
+                              Booklet Mode Active - Next: ${state.typingState.bookletStartPage}${state.typingState.bookletCounter}
+                            </p>
+                          ` : ''}
+                        </div>
+                        <span class="badge bg-blue-500 text-white">${file.file_number}</span>
                       </div>
-                      <span class="badge bg-blue-500 text-white">${file.file_number}</span>
-                    </div>
 
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="folder-pages">
-                      ${pagesHtml}
+                      <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="folder-pages">
+                        ${pagesHtml}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2868,8 +3095,41 @@
 
           // Folder page selection
           document.querySelectorAll('.folder-page').forEach(page => {
-            page.addEventListener('click', () => {
+            page.addEventListener('click', (e) => {
               const index = parseInt(page.getAttribute('data-index'));
+              
+              // Handle multi-select mode
+              if (state.typingState.isMultiSelectMode) {
+                e.preventDefault();
+                
+                if (e.ctrlKey || e.metaKey) {
+                  // Ctrl+Click: Toggle individual selection
+                  if (state.typingState.selectedPages.has(index)) {
+                    state.typingState.selectedPages.delete(index);
+                  } else {
+                    state.typingState.selectedPages.add(index);
+                  }
+                } else if (e.shiftKey && state.typingState.selectedPages.size > 0) {
+                  // Shift+Click: Range selection
+                  const selectedArray = Array.from(state.typingState.selectedPages);
+                  const lastSelected = Math.max(...selectedArray);
+                  const start = Math.min(lastSelected, index);
+                  const end = Math.max(lastSelected, index);
+                  
+                  for (let i = start; i <= end; i++) {
+                    state.typingState.selectedPages.add(i);
+                  }
+                } else {
+                  // Normal click: Clear selection and select only this item
+                  state.typingState.selectedPages.clear();
+                  state.typingState.selectedPages.add(index);
+                }
+                
+                updateUI();
+                return;
+              }
+              
+              // Single select mode (original behavior)
               state.typingState.selectedPageInFolder = index;
 
               // Check if this page is already processed
@@ -2887,6 +3147,9 @@
                 }, 100);
               } else {
                 // Enable form fields and process button for new pages
+                // Calculate appropriate serial number for this page
+                state.typingState.serialNo = calculateNextSerialNumber();
+                
                 setTimeout(() => {
                   setFormElementsState(true, 'Process Page');
                 }, 100);
@@ -2901,8 +3164,41 @@
 
           // File browser item click handlers
           document.querySelectorAll('.file-browser-item').forEach(item => {
-            item.addEventListener('click', () => {
+            item.addEventListener('click', (e) => {
               const index = parseInt(item.getAttribute('data-file-index'));
+              
+              // Handle multi-select mode
+              if (state.typingState.isMultiSelectMode) {
+                e.preventDefault();
+                
+                if (e.ctrlKey || e.metaKey) {
+                  // Ctrl+Click: Toggle individual selection
+                  if (state.typingState.selectedPages.has(index)) {
+                    state.typingState.selectedPages.delete(index);
+                  } else {
+                    state.typingState.selectedPages.add(index);
+                  }
+                } else if (e.shiftKey && state.typingState.selectedPages.size > 0) {
+                  // Shift+Click: Range selection
+                  const selectedArray = Array.from(state.typingState.selectedPages);
+                  const lastSelected = Math.max(...selectedArray);
+                  const start = Math.min(lastSelected, index);
+                  const end = Math.max(lastSelected, index);
+                  
+                  for (let i = start; i <= end; i++) {
+                    state.typingState.selectedPages.add(i);
+                  }
+                } else {
+                  // Normal click: Clear selection and select only this item
+                  state.typingState.selectedPages.clear();
+                  state.typingState.selectedPages.add(index);
+                }
+                
+                updateUI();
+                return;
+              }
+              
+              // Single select mode (original behavior)
               state.typingState.selectedPageInFolder = index;
 
               // Check if this page is already processed
@@ -2920,6 +3216,9 @@
                 }, 100);
               } else {
                 // Enable form fields and process button for new pages
+                // Calculate appropriate serial number for this page
+                state.typingState.serialNo = calculateNextSerialNumber();
+                
                 setTimeout(() => {
                   setFormElementsState(true, 'Process Page');
                 }, 100);
@@ -2928,35 +3227,38 @@
               updateUI();
             });
           });
+          
+          // Multi-select toggle button
+          document.querySelector('.toggle-multi-select')?.addEventListener('click', () => {
+            state.typingState.isMultiSelectMode = !state.typingState.isMultiSelectMode;
+            
+            // Clear selection when switching modes
+            state.typingState.selectedPages.clear();
+            
+            updateUI();
+          });
+          
+          // Clear selection button
+          document.querySelector('.clear-selection')?.addEventListener('click', () => {
+            state.typingState.selectedPages.clear();
+            updateUI();
+          });
 
           // Cover type change
           document.querySelector('#cover-type')?.addEventListener('change', (e) => {
             state.typingState.coverType = e.target.value;
+            // Recalculate serial number based on new cover type
+            updateSerialNumber();
             updateUI();
           });
 
           // Page type change
-          document.querySelector('#page-type')?.addEventListener('change', async (e) => {
+          document.querySelector('#page-type')?.addEventListener('change', (e) => {
             state.typingState.pageType = e.target.value;
             state.typingState.pageSubType = pageSubTypes[parseInt(e.target.value)]?.[0]?.id.toString() || '1';
             
-            // If this is an existing file, update serial number based on page type
-            if (state.typingState.isExistingFile && e.target.value) {
-              try {
-                const response = await fetch(`{{ route("pagetyping.api.next-serial-for-page-type") }}?file_indexing_id=${file.id}&page_type_id=${e.target.value}`);
-                const data = await response.json();
-                
-                if (data.success) {
-                  state.typingState.serialNo = data.next_serial_formatted;
-                  console.log('Updated serial for existing file page type:', data.next_serial, 'logic:', data.logic_used);
-                } else {
-                  console.warn('Could not get serial for page type:', data.message);
-                }
-              } catch (error) {
-                console.error('Error fetching serial for page type:', error);
-              }
-            }
-            
+            // Recalculate serial number based on new page type
+            updateSerialNumber();
             updateUI();
           });
 
@@ -2983,13 +3285,283 @@
 
           // Process page
           document.querySelector('.process-page')?.addEventListener('click', async () => {
-            if (state.typingState.selectedPageInFolder === null) return;
+            // Check if we're in multi-select mode with multiple pages selected
+            if (state.typingState.isMultiSelectMode && state.typingState.selectedPages.size > 0) {
+              const pageCount = state.typingState.selectedPages.size;
+              
+              // Show confirmation for large batches
+              if (pageCount > 4) {
+                const result = await Swal.fire({
+                  title: 'Large Batch Processing',
+                  html: `
+                    <div class="text-left">
+                      <p class="mb-3">You are about to process <strong>${pageCount} pages</strong> as a booklet.</p>
+                      <div class="bg-yellow-50 border border-yellow-200 rounded p-3 mb-3">
+                        <p class="text-sm"><strong>⚠️ Important:</strong></p>
+                        <ul class="text-sm mt-1 ml-4 list-disc">
+                          <li>This may take a few minutes</li>
+                          <li>Please don't close your browser</li>
+                          <li>Pages will be processed in batches to prevent crashes</li>
+                        </ul>
+                      </div>
+                      <p class="text-sm text-gray-600">Serial numbers will be: ${state.typingState.serialNo}a through ${state.typingState.serialNo}${String.fromCharCode('a'.charCodeAt(0) + pageCount - 1)}</p>
+                    </div>
+                  `,
+                  icon: 'warning',
+                  showCancelButton: true,
+                  confirmButtonText: 'Continue Processing',
+                  cancelButtonText: 'Cancel',
+                  confirmButtonColor: '#3085d6',
+                  cancelButtonColor: '#d33'
+                });
+                
+                if (!result.isConfirmed) {
+                  return; // User cancelled
+                }
+              }
+              
+              // Process multiple pages in booklet mode with sequential letters
+              await processMultiplePages();
+            } else if (state.typingState.selectedPageInFolder !== null) {
+              // Process single page
+              await processSinglePage();
+            }
+          });
+
+          // Process multiple pages for booklet mode - Optimized for large batches
+          async function processMultiplePages() {
+            const selectedPagesArray = Array.from(state.typingState.selectedPages).sort((a, b) => a - b);
+            const baseSerial = state.typingState.serialNo;
+            
+            // Extract numeric part from serial (e.g., "1a" -> "1", "02" -> "2")
+            const numericSerial = parseInt(baseSerial?.toString().match(/^(\d+)/)?.[1] || baseSerial || '1') || 1;
+            
+            let processedCount = 0;
+            let failedCount = 0;
+            const totalPages = selectedPagesArray.length;
+            
+            // Show progress modal
+            Swal.fire({
+              title: 'Processing Booklet Pages',
+              html: `
+                <div class="progress-container">
+                  <div class="mb-3">Processing page <span id="current-page">1</span> of ${totalPages}</div>
+                  <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                  </div>
+                  <div class="mt-2 text-sm text-gray-600">
+                    <span id="progress-text">Preparing...</span>
+                  </div>
+                </div>
+              `,
+              allowOutsideClick: false,
+              allowEscapeKey: false,
+              showConfirmButton: false,
+              didOpen: () => {
+                Swal.getPopup().querySelector('.swal2-html-container').style.textAlign = 'left';
+              }
+            });
+            
+            // Helper function to update progress
+            function updateProgress(current, total, status = '') {
+              const progressBar = document.getElementById('progress-bar');
+              const currentPageEl = document.getElementById('current-page');
+              const progressText = document.getElementById('progress-text');
+              
+              const percentage = Math.round((current / total) * 100);
+              
+              if (progressBar) progressBar.style.width = `${percentage}%`;
+              if (currentPageEl) currentPageEl.textContent = current + 1;
+              if (progressText) progressText.textContent = status || `Processing page ${current + 1}...`;
+            }
+            
+            // Helper function to add delay between requests (prevents browser freeze)
+            function delay(ms) {
+              return new Promise(resolve => setTimeout(resolve, ms));
+            }
+            
+            // Process pages in batches to prevent browser crashes
+            // Adjust batch size based on total number of pages
+            let BATCH_SIZE, DELAY_BETWEEN_BATCHES, DELAY_BETWEEN_PAGES;
+            
+            if (totalPages <= 3) {
+              BATCH_SIZE = 3;
+              DELAY_BETWEEN_BATCHES = 50;
+              DELAY_BETWEEN_PAGES = 25;
+            } else if (totalPages <= 6) {
+              BATCH_SIZE = 2;
+              DELAY_BETWEEN_BATCHES = 100;
+              DELAY_BETWEEN_PAGES = 50;
+            } else {
+              BATCH_SIZE = 1; // Process one at a time for very large batches
+              DELAY_BETWEEN_BATCHES = 150;
+              DELAY_BETWEEN_PAGES = 75;
+            }
+            
+            try {
+              for (let batchStart = 0; batchStart < selectedPagesArray.length; batchStart += BATCH_SIZE) {
+                const batchEnd = Math.min(batchStart + BATCH_SIZE, selectedPagesArray.length);
+                const batch = selectedPagesArray.slice(batchStart, batchEnd);
+                
+                // Process current batch
+                for (let i = 0; i < batch.length; i++) {
+                  const pageIndex = batch[i];
+                  const overallIndex = batchStart + i;
+                  const selected = state.selectedFileData.scannings[pageIndex];
+                  
+                  updateProgress(overallIndex, totalPages, `Processing page ${overallIndex + 1}: ${state.selectedFileData.file_number}`);
+                  
+                  // Skip if scanning doesn't exist
+                  if (!selected || !selected.id) {
+                    console.error('Scanning not found for page index:', pageIndex);
+                    failedCount++;
+                    continue;
+                  }
+                  
+                  // Generate letter suffix: a, b, c, etc.
+                  const letterSuffix = String.fromCharCode('a'.charCodeAt(0) + overallIndex);
+                  const serialWithLetter = numericSerial + letterSuffix;
+                  
+                  const pageData = {
+                    file_indexing_id: state.selectedFileData.id,
+                    scanning_id: selected.id,
+                    page_number: pageIndex + 1,
+                    cover_type_id: parseInt(state.typingState.coverType),
+                    page_type: state.typingState.pageType,
+                    page_subtype: state.typingState.pageSubType,
+                    serial_number: serialWithLetter,
+                    page_code: `${getCoverTypeById(state.typingState.coverType)?.code}-${getPageTypeById(state.typingState.pageType)?.code}-${getPageSubTypeById(state.typingState.pageType, state.typingState.pageSubType)?.code}-${serialWithLetter}`,
+                    file_path: `storage\\app\\public\\EDMS\\PAGETYPING\\${state.selectedFileData.file_number}.pdf`,
+                    booklet_id: state.typingState.currentBooklet,
+                    is_booklet_page: true,
+                    booklet_sequence: letterSuffix
+                  };
+
+                  console.log('Sending pageData for page', pageIndex, ':', pageData);
+
+                  try {
+                    const response = await fetch('{{ route("pagetyping.save-single") }}', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                      },
+                      body: JSON.stringify(pageData)
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                      // Mark page as processed
+                      state.typingState.processedPages[pageIndex] = {
+                        coverType: state.typingState.coverType,
+                        pageType: state.typingState.pageType,
+                        pageSubType: state.typingState.pageSubType,
+                        serialNo: serialWithLetter,
+                        page_code: pageData.page_code
+                      };
+                      
+                      processedCount++;
+                      updateProgress(overallIndex, totalPages, `✓ Completed page ${overallIndex + 1}`);
+                    } else {
+                      console.error('Failed to process page:', pageIndex, result.message);
+                      if (result.errors) {
+                        console.error('Validation errors:', result.errors);
+                      }
+                      failedCount++;
+                      updateProgress(overallIndex, totalPages, `✗ Failed page ${overallIndex + 1}: ${result.message}`);
+                    }
+                  } catch (error) {
+                    console.error('Error processing page:', pageIndex, error);
+                    failedCount++;
+                    updateProgress(overallIndex, totalPages, `✗ Error on page ${overallIndex + 1}: ${error.message}`);
+                  }
+                  
+                  // Small delay between individual page requests
+                  if (i < batch.length - 1) {
+                    await delay(DELAY_BETWEEN_PAGES);
+                  }
+                }
+                
+                // Delay between batches to prevent overwhelming the browser
+                if (batchEnd < selectedPagesArray.length) {
+                  await delay(DELAY_BETWEEN_BATCHES);
+                }
+              }
+              
+              // Close progress modal
+              Swal.close();
+              
+              // Memory cleanup
+              setTimeout(() => {
+                if (window.gc) {
+                  window.gc(); // Trigger garbage collection if available
+                }
+              }, 100);
+              
+              // Show result message
+              if (processedCount > 0) {
+                Swal.fire({
+                  icon: 'success',
+                  title: 'Booklet Pages Processed',
+                  html: `
+                    <div class="text-left">
+                      <p class="mb-2">✅ Successfully processed: <strong>${processedCount}</strong> pages</p>
+                      ${failedCount > 0 ? `<p class="mb-2 text-red-600">❌ Failed: <strong>${failedCount}</strong> pages</p>` : ''}
+                      <p class="text-sm text-gray-600 mt-2">Serial numbers: ${numericSerial}a through ${numericSerial}${String.fromCharCode('a'.charCodeAt(0) + processedCount - 1)}</p>
+                      ${failedCount > 0 ? '<p class="text-sm text-red-600 mt-2">Check browser console for detailed error information.</p>' : ''}
+                    </div>
+                  `,
+                  confirmButtonColor: '#28a745'
+                });
+                
+                // Clear selection and update UI
+                state.typingState.selectedPages.clear();
+                state.typingState.isMultiSelectMode = false;
+                state.typingState.selectedPageInFolder = null;
+                updateUI();
+              } else {
+                Swal.fire({
+                  icon: 'error',
+                  title: 'Processing Failed',
+                  html: `
+                    <div class="text-left">
+                      <p class="mb-2">Failed to process any pages. <strong>${failedCount}</strong> errors occurred.</p>
+                      <p class="text-sm text-gray-600">Suggestions:</p>
+                      <ul class="text-sm mt-1 ml-4 list-disc">
+                        <li>Try processing fewer pages at a time</li>
+                        <li>Check your internet connection</li>
+                        <li>Refresh the page and try again</li>
+                        <li>Check browser console for detailed errors</li>
+                      </ul>
+                    </div>
+                  `,
+                  confirmButtonColor: '#dc3545'
+                });
+              }
+              
+            } catch (error) {
+              // Close progress modal
+              Swal.close();
+              
+              console.error('Critical error in processMultiplePages:', error);
+              Swal.fire({
+                icon: 'error',
+                title: 'Critical Error',
+                text: 'A critical error occurred during processing. Please try again with fewer pages.',
+                confirmButtonColor: '#dc3545'
+              });
+            }
+          }
+
+          // Process single page (original logic)
+          async function processSinglePage() {
 
             // Save page typing to backend with CoverType
             const selected = file.scannings[state.typingState.selectedPageInFolder];
             
-            // Get the current serial number (booklet-aware)
-            const currentSerial = getBookletSerialNumber();
+            // Use the current serial number from state (already calculated)
+            const currentSerial = state.typingState.serialNo;
             
             const pageData = {
               file_indexing_id: file.id,
@@ -2998,7 +3570,7 @@
               cover_type_id: parseInt(state.typingState.coverType),
               page_type: state.typingState.pageType,
               page_subtype: state.typingState.pageSubType,
-              serial_number: state.typingState.bookletMode ? parseInt(state.typingState.bookletStartPage) : parseInt(state.typingState.serialNo),
+              serial_number: currentSerial, // Keep as string to preserve letter suffixes
               page_code: `${getCoverTypeById(state.typingState.coverType)?.code}-${getPageTypeById(state.typingState.pageType)?.code}-${getPageSubTypeById(state.typingState.pageType, state.typingState.pageSubType)?.code}-${currentSerial}`,
               file_path: `storage\\app\\public\\EDMS\\PAGETYPING\\${file.file_number}.pdf`,
               // Booklet management fields
@@ -3073,7 +3645,7 @@
                 confirmButtonColor: '#dc3545'
               });
             }
-          });
+          } // End of processSinglePage function
 
           // Booklet management event listeners
           document.querySelector('.start-booklet')?.addEventListener('click', startBooklet);
@@ -3158,7 +3730,9 @@
           state.typingState.bookletCounter = 'a';
           
           // Increment the main serial number for the next non-booklet page
-          const nextSerialNo = parseInt(state.typingState.serialNo) + 1;
+          const currentSerial = state.typingState.serialNo?.toString() || '1';
+          const numericPart = parseInt(currentSerial.match(/^(\d+)/)?.[1] || '1') || 1;
+          const nextSerialNo = numericPart + 1;
           state.typingState.serialNo = nextSerialNo.toString().padStart(2, '0');
           
           // Show completion message
@@ -3176,21 +3750,13 @@
         }
 
         function getBookletSerialNumber() {
-          if (state.typingState.bookletMode && state.typingState.currentBooklet) {
-            return `${state.typingState.bookletStartPage}${state.typingState.bookletCounter}`;
-          }
+          // This function is deprecated - use calculateNextSerialNumber() instead
           return state.typingState.serialNo;
         }
 
         function incrementBookletCounter() {
-          if (state.typingState.bookletMode && state.typingState.currentBooklet) {
-            // Increment booklet counter (a -> b -> c, etc.)
-            state.typingState.bookletCounter = String.fromCharCode(state.typingState.bookletCounter.charCodeAt(0) + 1);
-          } else {
-            // Normal page processing - increment serial number
-            const nextSerialNo = parseInt(state.typingState.serialNo) + 1;
-            state.typingState.serialNo = nextSerialNo.toString().padStart(2, '0');
-          }
+          // After processing a page, calculate the next serial number
+          state.typingState.serialNo = calculateNextSerialNumber();
         }
 
         // Event handlers

@@ -88,7 +88,14 @@ document.addEventListener('DOMContentLoaded', function() {
       const selectedType = folderSelect.value;
       
       if (!selectedType) {
-        alert('Please select a folder type first (A4, A3, or All Documents)');
+        alert('Please select a folder type first (A4 or A3)');
+        return;
+      }
+
+      // Check if folders have been created
+      const localRootPath = document.getElementById('localRootPath');
+      if (!localRootPath || localRootPath.textContent === '-' || localRootPath.textContent === 'Not created') {
+        alert('Please create a folder first by selecting a File Number and clicking "Create Folder"');
         return;
       }
       
@@ -136,7 +143,55 @@ document.addEventListener('DOMContentLoaded', function() {
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          showNotification(data.message, 'success');
+          // Function to clean storage paths
+          const cleanStoragePath = (path) => {
+            if (!path) return '-';
+            return path.replace(/^.*\\storage\\app\\public\\/, '').replace(/^.*\/storage\/app\/public\//, '');
+          };
+
+          // Show detailed success notification with folder paths
+          let detailedMessage = `
+            <div class="space-y-3">
+              <div class="flex items-center space-x-2">
+                <span class="text-green-600 text-lg">✅</span>
+                <strong class="text-green-800">Folder Creation Successful!</strong>
+              </div>
+              <div class="bg-green-50 p-3 rounded-lg border border-green-200">
+                <div class="text-sm font-medium text-green-800 mb-2">📁 Server Storage Created:</div>
+                <div class="text-xs text-gray-600">• Root: ${cleanStoragePath(data.data.storage_path)}</div>
+                <div class="text-xs text-gray-600">• A4 Documents: ${cleanStoragePath(data.data.storage_a4_path)}</div>
+                <div class="text-xs text-gray-600">• A3 Documents: ${cleanStoragePath(data.data.storage_a3_path)}</div>
+              </div>`;
+          
+          // Show local folder creation instructions
+          if (data.data.create_local_instructions) {
+            detailedMessage += `
+              <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                <div class="text-sm font-medium text-blue-800 mb-2">💻 Create Local Folder (Your PC):</div>
+                <div class="text-xs text-gray-700 mb-2">Please manually create this folder structure on your local computer:</div>
+                <div class="bg-white p-2 rounded border text-xs font-mono text-gray-800">
+                  ${data.data.local_path}/<br>
+                  ├── A4/<br>
+                  └── A3/
+                </div>
+                <div class="text-xs text-blue-600 mt-2">
+                  💡 This is where you'll scan and save documents locally before uploading to the server
+                </div>
+              </div>`;
+          }
+          
+          detailedMessage += `
+              <div class="text-xs text-green-600 bg-green-50 p-2 rounded">
+                ✅ You can now browse and upload files using the button below
+              </div>
+            </div>
+          `;
+          
+          showDetailedNotification(detailedMessage, 'success', 8000);
+          
+          // Show folder paths panel
+          displayFolderPaths(data.data);
+          
           // Enable the browse files button
           const browseBtn = document.getElementById('browseFolderBtn');
           if (browseBtn) {
@@ -157,6 +212,106 @@ document.addEventListener('DOMContentLoaded', function() {
         createBtn.textContent = originalText;
         createBtn.disabled = false;
       });
+    }
+
+    // Display folder paths in the UI panel
+    function displayFolderPaths(folderData) {
+        const panel = document.getElementById('folderPathsPanel');
+        const fileNumberSpan = document.getElementById('displayedFileNumber');
+        const localRootPath = document.getElementById('localRootPath');
+        const localA4Path = document.getElementById('localA4Path');
+        const localA3Path = document.getElementById('localA3Path');
+        const storageRootPath = document.getElementById('storageRootPath');
+        const storageA4Path = document.getElementById('storageA4Path');
+        const storageA3Path = document.getElementById('storageA3Path');
+
+        // Function to clean storage paths by removing the server-specific part
+        function cleanStoragePath(path) {
+            if (!path) return '-';
+            // Remove the server path prefix to show only the relative path
+            return path.replace(/^.*\\storage\\app\\public\\/, '').replace(/^.*\/storage\/app\/public\//, '');
+        }
+
+        // Populate the data
+        if (fileNumberSpan) fileNumberSpan.textContent = folderData.file_no;
+        
+        // Local paths (for client-side creation)
+        if (localRootPath) localRootPath.textContent = folderData.local_path || 'Not created';
+        if (localA4Path) localA4Path.textContent = folderData.local_a4_path || folderData.local_path + '\\A4';
+        if (localA3Path) localA3Path.textContent = folderData.local_a3_path || folderData.local_path + '\\A3';
+        
+        // Server storage paths (cleaned)
+        if (storageRootPath) storageRootPath.textContent = cleanStoragePath(folderData.storage_path);
+        if (storageA4Path) storageA4Path.textContent = cleanStoragePath(folderData.storage_a4_path);
+        if (storageA3Path) storageA3Path.textContent = cleanStoragePath(folderData.storage_a3_path);
+
+        // Show the panel
+        if (panel) {
+            panel.classList.remove('hidden');
+            // Smooth scroll to the panel
+            setTimeout(() => {
+                panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 300);
+        }
+    }
+
+    // Hide folder paths panel
+    function hideFolderPaths() {
+        const panel = document.getElementById('folderPathsPanel');
+        if (panel) {
+            panel.classList.add('hidden');
+        }
+    }
+
+    // Open local folder (provide instructions)
+    function openLocalFolder() {
+        const localPath = document.getElementById('localRootPath').textContent;
+        if (localPath && localPath !== '-' && localPath !== 'Not created') {
+            // Show instructions instead of trying to open directly
+            const instructionMessage = `
+                <div class="space-y-3">
+                    <div class="text-lg font-semibold text-blue-800">📁 Local Folder Instructions</div>
+                    <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                        <div class="text-sm font-medium text-blue-800 mb-2">Create this folder structure on your PC:</div>
+                        <div class="bg-white p-2 rounded border text-sm font-mono text-gray-800">
+                            ${localPath}/<br>
+                            ├── A4/<br>
+                            └── A3/
+                        </div>
+                        <div class="text-xs text-blue-600 mt-2">
+                            💡 Use Windows Explorer to create these folders manually
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-600">
+                        Once created, you can scan documents directly to these folders and then upload them to the server.
+                    </div>
+                </div>
+            `;
+            showDetailedNotification(instructionMessage, 'info', 8000);
+        } else {
+            showNotification('No local folder path available', 'warning');
+        }
+    }
+
+    // Copy local path to clipboard
+    function copyLocalPath() {
+        const localPath = document.getElementById('localRootPath').textContent;
+        if (localPath && localPath !== '-' && localPath !== 'Not created') {
+            navigator.clipboard.writeText(localPath).then(() => {
+                showNotification('Path copied to clipboard: ' + localPath, 'success');
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = localPath;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showNotification('Path copied to clipboard: ' + localPath, 'success');
+            });
+        } else {
+            showNotification('No local folder path available to copy', 'warning');
+        }
     }
 
     // Alias for browseForFiles to match HTML onclick
@@ -294,7 +449,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Show notification function
-    function showNotification(message, type = 'info') {
+    function showNotification(message, type = 'info', duration = 3000) {
       const notification = document.createElement('div');
       notification.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full`;
       
@@ -324,7 +479,7 @@ document.addEventListener('DOMContentLoaded', function() {
         notification.classList.remove('translate-x-full');
       }, 100);
       
-      // Auto remove after 3 seconds
+      // Auto remove after specified duration
       setTimeout(() => {
         notification.classList.add('translate-x-full');
         setTimeout(() => {
@@ -332,7 +487,49 @@ document.addEventListener('DOMContentLoaded', function() {
             notification.remove();
           }
         }, 300);
-      }, 3000);
+      }, duration);
+    }
+
+    // Show detailed notification with HTML content
+    function showDetailedNotification(htmlContent, type = 'info', duration = 5000) {
+      const notification = document.createElement('div');
+      notification.className = `fixed top-4 right-4 z-50 max-w-md p-4 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full`;
+      
+      const colors = {
+        'success': 'bg-green-500 text-white',
+        'error': 'bg-red-500 text-white',
+        'info': 'bg-blue-500 text-white',
+        'warning': 'bg-yellow-500 text-black'
+      };
+      
+      notification.className += ` ${colors[type] || colors['info']}`;
+      notification.innerHTML = `
+        <div class="flex justify-between items-start">
+          <div class="flex-1 pr-2">${htmlContent}</div>
+          <button onclick="this.parentElement.parentElement.remove()" class="opacity-75 hover:opacity-100 flex-shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      `;
+      
+      document.body.appendChild(notification);
+      
+      // Animate in
+      setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+      }, 100);
+      
+      // Auto remove after specified duration
+      setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+          if (notification.parentElement) {
+            notification.remove();
+          }
+        }, 300);
+      }, duration);
     }
     
     // Create file card element
@@ -470,13 +667,44 @@ document.addEventListener('DOMContentLoaded', function() {
       const selectedType = folderSelect.value;
       
       if (!selectedType) {
-        alert('Please select a document type first:\n\n📄 A4 Documents - For standard letter-size documents\n📋 A3 Documents - For larger format documents\n📁 All Documents - For mixed document sizes');
+        alert('Please select a document type first:\n\n📄 A4 Documents - For standard letter-size documents\n📋 A3 Documents - For larger format documents');
         return;
       }
+
+      // Check if folders have been created
+      const localRootPath = document.getElementById('localRootPath');
+      if (!localRootPath || localRootPath.textContent === '-' || localRootPath.textContent === 'Not created') {
+        alert('Please create a folder first by:\n\n1. Select a File Number\n2. Click "Create Folder"\n3. Create the local folder structure on your PC\n4. Then return here to browse files');
+        return;
+      }
+
+      // Show instructions for browsing the created folder
+      const localPath = localRootPath.textContent;
+      const folderPath = selectedType === 'A4' ? `${localPath}\\A4` : `${localPath}\\A3`;
       
-      // Trigger file input for file selection
-      const folderInput = document.getElementById('folderInput');
-      folderInput.click();
+      showDetailedNotification(`
+        <div class="space-y-3">
+          <div class="text-lg font-semibold text-blue-800">📁 Browse Local Folder</div>
+          <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
+            <div class="text-sm font-medium text-blue-800 mb-2">Navigate to your local ${selectedType} folder:</div>
+            <div class="bg-white p-2 rounded border text-sm font-mono text-gray-800">
+              ${folderPath}
+            </div>
+            <div class="text-xs text-blue-600 mt-2">
+              💡 Select files from this folder that you've scanned locally
+            </div>
+          </div>
+          <div class="text-xs text-gray-600">
+            The file picker will open. Navigate to the above path and select your scanned documents.
+          </div>
+        </div>
+      `, 'info', 6000);
+
+      // Trigger file input for file selection after a brief delay
+      setTimeout(() => {
+        const folderInput = document.getElementById('folderInput');
+        folderInput.click();
+      }, 1000);
     }
     
     // Clear selection functionality

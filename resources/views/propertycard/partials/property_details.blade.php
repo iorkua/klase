@@ -14,12 +14,58 @@
                     Reset View
                 </button>
                 <!-- Improved Add New Property Card Button -->
-                <button id="add-property-btn" class="btn btn-primary flex items-center whitespace-nowrap shadow-lg border-2 border-blue-400 bg-gradient-to-r from-blue-500 to-blue-700 text-white hover:from-blue-600 hover:to-blue-800 transition-all scale-105">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 mr-2">
-                        <path d="M12 5v14M5 12h14"></path>
-                    </svg>
-                    Add New Property Record
-                </button>
+                <div class="relative inline-block text-left">
+                    <button type="button" class="btn btn-primary flex items-center whitespace-nowrap shadow-lg border-2 border-blue-400 bg-gradient-to-r from-blue-500 to-blue-700 text-white hover:from-blue-600 hover:to-blue-800 transition-all" id="dropdown-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 mr-2">
+                            <path d="M12 5v14M5 12h14"></path>
+                        </svg>
+                        Add New
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 ml-2">
+                            <path d="m6 9 6 6 6-6"></path>
+                        </svg>
+                    </button>
+                    
+                    <div class="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none hidden" id="dropdown-menu" role="menu">
+                        <div class="py-1" role="none">
+                            <button class="text-gray-700 block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 hover:text-gray-900" role="menuitem" id="add-property-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mr-2 inline">
+                                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                    <polyline points="9,22 9,12 15,12 15,22"></polyline>
+                                </svg>
+                                Add New Property Record
+                            </button>
+                            <button class="text-gray-700 block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 hover:text-gray-900" role="menuitem">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mr-2 inline">
+                                    <rect width="18" height="18" x="3" y="3" rx="2"></rect>
+                                    <path d="M9 8h6m-6 4h6m-6 4h6"></path>
+                                </svg>
+                                Index Card
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const dropdownToggle = document.getElementById('dropdown-toggle');
+                    const dropdownMenu = document.getElementById('dropdown-menu');
+                    
+                    dropdownToggle.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        dropdownMenu.classList.toggle('hidden');
+                    });
+                    
+                    // Close dropdown when clicking outside
+                    document.addEventListener('click', function() {
+                        dropdownMenu.classList.add('hidden');
+                    });
+                    
+                    // Prevent dropdown from closing when clicking inside
+                    dropdownMenu.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                    });
+                });
+                </script>
             </div>
         </div>
         <div class="card-body">
@@ -79,9 +125,10 @@
                                             <strong>Layout:</strong> {{ $property->layout ?? 'N/A' }}
                                         </div>
                                         <div>
-                                            <strong>Location:</strong> {{ $property->location ?? 'N/A' }}
+                                            <strong>Location:</strong> {{ $property->property_description ?? 'N/A' }}
                                         </div>
-                                    </div>
+                                    </div> 
+ 
                                     <div class="border-t pt-3">
                                         <div class="grid grid-cols-2 gap-4 text-sm">
                                             <div>
@@ -259,8 +306,8 @@
                     }
                 },
                 {
-                    data: 'location',
-                    name: 'location',
+                    data: 'property_description',
+                    name: 'property_description',
                     render: function(data, type, row) {
                         return data || 'N/A';
                     }

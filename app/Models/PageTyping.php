@@ -36,7 +36,6 @@ class PageTyping extends Model
     ];
 
     protected $casts = [
-        'serial_number' => 'integer',
         'page_number' => 'integer',
         'cover_type_id' => 'integer',
         'qc_overridden' => 'boolean',

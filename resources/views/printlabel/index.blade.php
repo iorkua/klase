@@ -2,7 +2,9 @@
 @section('page-title')
 {{ __('Document Upload') }}
 @endsection
+
 @section('content')
+<meta name="csrf-token" content="{{ csrf_token() }}">
  
  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
       
@@ -276,6 +278,12 @@
                     </button>
                     <button
                         class="tab-btn border-b-2 border-transparent py-2 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                        data-tab="generated"
+                    >
+                        Generated Batches
+                    </button>
+                    <button
+                        class="tab-btn border-b-2 border-transparent py-2 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300"
                         data-tab="settings"
                     >
                         Label Settings
@@ -397,7 +405,7 @@
                                 </div>
                             </div>
                             <div class="divide-y max-h-96 overflow-y-auto" id="fileListContent">
-                                 Files will be populated by JavaScript 
+                               
                             </div>
                         </div>
                     </div>
@@ -422,6 +430,90 @@
                                 <i data-lucide="settings" class="h-4 w-4"></i>
                                 Continue to Label Settings
                             </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Generated Batches Tab -->
+            <div id="generated-tab" class="tab-content mt-6">
+                <div class="bg-white rounded-lg border">
+                    <div class="p-6 border-b">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <h3 class="text-lg font-semibold">Generated Label Batches</h3>
+                                <p class="text-sm text-gray-600">
+                                    View and manage generated label batches
+                                </p>
+                            </div>
+                            <div class="flex gap-2">
+                                <select id="statusFilter" class="border border-gray-300 rounded-md px-3 py-2 text-sm">
+                                    <option value="">All Status</option>
+                                    <option value="generated">Generated</option>
+                                    <option value="printed">Printed</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+                                <button
+                                    id="refreshBatchesBtn"
+                                    class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                >
+                                    <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <!-- Batch Statistics -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                            <div class="bg-blue-50 rounded-lg p-4">
+                                <div class="text-sm font-medium text-blue-700">Total Batches</div>
+                                <div class="text-2xl font-bold text-blue-900" id="totalBatchesCount">0</div>
+                            </div>
+                            <div class="bg-green-50 rounded-lg p-4">
+                                <div class="text-sm font-medium text-green-700">Generated</div>
+                                <div class="text-2xl font-bold text-green-900" id="generatedBatchesCount">0</div>
+                            </div>
+                            <div class="bg-yellow-50 rounded-lg p-4">
+                                <div class="text-sm font-medium text-yellow-700">Printed</div>
+                                <div class="text-2xl font-bold text-yellow-900" id="printedBatchesCount">0</div>
+                            </div>
+                            <div class="bg-purple-50 rounded-lg p-4">
+                                <div class="text-sm font-medium text-purple-700">Completed</div>
+                                <div class="text-2xl font-bold text-purple-900" id="completedBatchesCount">0</div>
+                            </div>
+                        </div>
+
+                        <!-- Batch List -->
+                        <div id="batchList" class="rounded-md border">
+                            <div class="p-3 bg-gray-50">
+                                <div class="grid grid-cols-7 gap-4 text-sm font-medium">
+                                    <div>Batch Number</div>
+                                    <div>Created Date</div>
+                                    <div>Files Count</div>
+                                    <div>Format</div>
+                                    <div>Status</div>
+                                    <div>Created By</div>
+                                    <div>Actions</div>
+                                </div>
+                            </div>
+                            <div class="divide-y max-h-96 overflow-y-auto" id="batchListContent">
+                                <div class="p-8 text-center text-gray-500">
+                                    <div class="mb-2">
+                                        <i data-lucide="package" class="h-8 w-8 mx-auto text-gray-400"></i>
+                                    </div>
+                                    <p>Loading batches...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pagination -->
+                        <div id="batchPagination" class="mt-4 flex items-center justify-between">
+                            <div class="text-sm text-gray-500" id="batchPaginationInfo">
+                                Showing 0 to 0 of 0 results
+                            </div>
+                            <div class="flex items-center gap-2" id="batchPaginationControls">
+                                <!-- Pagination controls will be inserted here -->
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -710,11 +802,15 @@
     <div id="printSection" style="display: none"></div>
 
     <script>
-        // Initialize Lucide icons
-        lucide.createIcons();
+        // Wait for DOM and libraries to load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Lucide icons
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
 
-        // Application state
-        let state = {
+            // Application state
+            var state = {
             selectedFiles: [],
             labelSize: "30-in-1",
             labelFormat: "barcode",
@@ -730,9 +826,401 @@
             batchCount: 30,
             batchPrefix: "RES",
             batchYear: new Date().getFullYear(),
+            availableFiles: [],
+            generatedBatches: [],
+            currentPage: 1,
+            totalPages: 1,
+            loading: false,
         };
-        // Sample data
-        const indexedFiles = [
+
+        // API endpoints
+        var API = {
+            files: '/printlabel/api/files',
+            createBatch: '/printlabel/api/batch',
+            batches: '/printlabel/api/batches',
+            batchDetails: '/printlabel/api/batch/',
+            markPrinted: '/printlabel/api/batch/',
+            deleteBatch: '/printlabel/api/batch/',
+            statistics: '/printlabel/api/statistics'
+        };
+
+        // Utility functions
+        function showLoading(message = 'Loading...') {
+            state.loading = true;
+            // Show loading spinner or message
+        }
+
+        function hideLoading() {
+            state.loading = false;
+        }
+
+        function showError(message) {
+            alert('Error: ' + message);
+            console.error(message);
+        }
+
+        function showSuccess(message) {
+            alert('Success: ' + message);
+            console.log(message);
+        }
+
+        // API functions
+        function fetchAvailableFiles(search, page) {
+            search = search || '';
+            page = page || 1;
+            
+            showLoading('Loading files...');
+            var params = new URLSearchParams({
+                search: search,
+                page: page,
+                per_page: 50
+            });
+            
+            fetch(API.files + '?' + params)
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.success) {
+                        state.availableFiles = data.data;
+                        state.currentPage = data.pagination.current_page;
+                        state.totalPages = data.pagination.last_page;
+                        renderFileList();
+                        updateCounts();
+                    } else {
+                        showError(data.message);
+                    }
+                    hideLoading();
+                })
+                .catch(function(error) {
+                    showError('Failed to fetch files: ' + error.message);
+                    hideLoading();
+                });
+        }
+
+        function createLabelBatch() {
+            if (state.selectedFiles.length === 0) {
+                showError('Please select at least one file');
+                return;
+            }
+
+            if (state.selectedFiles.length > 30) {
+                showError('Cannot select more than 30 files per batch');
+                return;
+            }
+
+            showLoading('Creating batch...');
+            
+            fetch(API.createBatch, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    file_ids: state.selectedFiles,
+                    label_format: state.selectedTemplate,
+                    orientation: state.orientation,
+                    batch_size: state.batchCount
+                })
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success) {
+                    showSuccess('Batch ' + data.data.batch_number + ' created successfully with ' + data.data.file_count + ' files');
+                    state.selectedFiles = [];
+                    updateCounts();
+                    renderFileList();
+                    fetchAvailableFiles(); // Refresh the file list
+                    fetchGeneratedBatches(); // Refresh batches
+                    switchTab('generated'); // Switch to generated tab
+                } else {
+                    showError(data.message);
+                }
+                hideLoading();
+            })
+            .catch(function(error) {
+                showError('Failed to create batch: ' + error.message);
+                hideLoading();
+            });
+        }
+
+        function fetchGeneratedBatches(status, page) {
+            status = status || '';
+            page = page || 1;
+            
+            showLoading('Loading batches...');
+            var params = new URLSearchParams({
+                status: status,
+                page: page,
+                per_page: 20
+            });
+            
+            fetch(API.batches + '?' + params)
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.success) {
+                        state.generatedBatches = data.data;
+                        renderBatchList();
+                    } else {
+                        showError(data.message);
+                    }
+                    hideLoading();
+                })
+                .catch(function(error) {
+                    showError('Failed to fetch batches: ' + error.message);
+                    hideLoading();
+                });
+        }
+
+        function markBatchAsPrinted(batchId) {
+            showLoading('Marking batch as printed...');
+            
+            fetch(API.markPrinted + batchId + '/print', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success) {
+                    showSuccess('Batch marked as printed successfully');
+                    fetchGeneratedBatches(); // Refresh batches
+                    fetchStatistics(); // Refresh statistics
+                } else {
+                    showError(data.message);
+                }
+                hideLoading();
+            })
+            .catch(function(error) {
+                showError('Failed to mark batch as printed: ' + error.message);
+                hideLoading();
+            });
+        }
+
+        function deleteBatch(batchId) {
+            if (!confirm('Are you sure you want to delete this batch?')) {
+                return;
+            }
+
+            showLoading('Deleting batch...');
+            
+            fetch(API.deleteBatch + batchId, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success) {
+                    showSuccess('Batch deleted successfully');
+                    fetchGeneratedBatches(); // Refresh batches
+                    fetchStatistics(); // Refresh statistics
+                } else {
+                    showError(data.message);
+                }
+                hideLoading();
+            })
+            .catch(function(error) {
+                showError('Failed to delete batch: ' + error.message);
+                hideLoading();
+            });
+        }
+
+        function fetchStatistics() {
+            fetch(API.statistics)
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.success) {
+                        updateStatistics(data.data);
+                    } else {
+                        console.error('Failed to fetch statistics:', data.message);
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Failed to fetch statistics:', error.message);
+                });
+        }
+
+        function updateStatistics(stats) {
+            document.getElementById('availableFilesCount').textContent = stats.available_files;
+            document.getElementById('totalBatchesCount').textContent = stats.total_batches;
+            document.getElementById('generatedBatchesCount').textContent = stats.generated_batches;
+            document.getElementById('printedBatchesCount').textContent = stats.printed_batches;
+            document.getElementById('completedBatchesCount').textContent = stats.completed_batches;
+        }
+
+        // Rendering functions
+        function renderFileList() {
+            var fileListContent = document.getElementById('fileListContent');
+            
+            if (state.availableFiles.length === 0) {
+                fileListContent.innerHTML = `
+                    <div class="p-8 text-center text-gray-500">
+                        <div class="mb-2">
+                            <i data-lucide="file-text" class="h-8 w-8 mx-auto text-gray-400"></i>
+                        </div>
+                        <p>No files available for label printing</p>
+                        <p class="text-sm">Files need to have a batch number and not already have labels printed</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            var filteredFiles = state.availableFiles.filter(function(file) {
+                if (!state.searchTerm) return true;
+                var searchLower = state.searchTerm.toLowerCase();
+                return file.file_number.toLowerCase().includes(searchLower) ||
+                       (file.file_title && file.file_title.toLowerCase().includes(searchLower)) ||
+                       (file.plot_number && file.plot_number.toLowerCase().includes(searchLower)) ||
+                       (file.district && file.district.toLowerCase().includes(searchLower)) ||
+                       (file.lga && file.lga.toLowerCase().includes(searchLower));
+            });
+
+            var html = '';
+            for (var i = 0; i < filteredFiles.length; i++) {
+                var file = filteredFiles[i];
+                var isChecked = state.selectedFiles.includes(file.id) ? 'checked' : '';
+                html += '<div class="p-3 flex items-center justify-between hover:bg-gray-50">' +
+                    '<div class="flex items-center gap-3">' +
+                        '<input type="checkbox" id="file-' + file.id + '" ' +
+                            'class="file-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" ' +
+                            'data-file-id="' + file.id + '" ' + isChecked + ' />' +
+                        '<div>' +
+                            '<p class="font-medium">' + file.file_number + '</p>' +
+                            '<p class="text-sm text-gray-600">' + (file.file_title || 'No title') + '</p>' +
+                            '<div class="flex gap-4 text-xs text-gray-500 mt-1">' +
+                                '<span>Plot: ' + (file.plot_number || 'N/A') + '</span>' +
+                                '<span>District: ' + (file.district || 'N/A') + '</span>' +
+                                '<span>LGA: ' + (file.lga || 'N/A') + '</span>' +
+                                '<span>Land Use: ' + (file.land_use_type || 'N/A') + '</span>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="text-right">' +
+                        '<span class="text-sm text-gray-500">Batch: ' + (file.batch_no || 'N/A') + '</span>' +
+                        '<div class="text-xs text-gray-400">Shelf: ' + (file.shelf_location || 'N/A') + '</div>' +
+                    '</div>' +
+                '</div>';
+            }
+            fileListContent.innerHTML = html;
+
+            // Attach event listeners to checkboxes
+            var checkboxes = document.querySelectorAll('.file-checkbox');
+            for (var j = 0; j < checkboxes.length; j++) {
+                checkboxes[j].addEventListener('change', function() {
+                    var fileId = parseInt(this.dataset.fileId);
+                    if (this.checked) {
+                        if (state.selectedFiles.length >= 30) {
+                            this.checked = false;
+                            showError('Cannot select more than 30 files per batch');
+                            return;
+                        }
+                        if (!state.selectedFiles.includes(fileId)) {
+                            state.selectedFiles.push(fileId);
+                        }
+                    } else {
+                        state.selectedFiles = state.selectedFiles.filter(function(id) { return id !== fileId; });
+                    }
+                    updateCounts();
+                    updateSelectAllCheckbox();
+                });
+            }
+
+            updateSelectAllCheckbox();
+            lucide.createIcons();
+        }
+
+        function renderBatchList() {
+            var batchListContent = document.getElementById('batchListContent');
+            
+            if (state.generatedBatches.length === 0) {
+                batchListContent.innerHTML = `
+                    <div class="p-8 text-center text-gray-500">
+                        <div class="mb-2">
+                            <i data-lucide="package" class="h-8 w-8 mx-auto text-gray-400"></i>
+                        </div>
+                        <p>No batches generated yet</p>
+                        <p class="text-sm">Create your first batch in the "Select Files" tab</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            var html = '';
+            var statusColors = {
+                'pending': 'bg-yellow-100 text-yellow-800',
+                'generated': 'bg-blue-100 text-blue-800',
+                'printed': 'bg-green-100 text-green-800',
+                'completed': 'bg-gray-100 text-gray-800'
+            };
+            
+            for (var i = 0; i < state.generatedBatches.length; i++) {
+                var batch = state.generatedBatches[i];
+                var statusClass = statusColors[batch.status] || 'bg-gray-100 text-gray-800';
+                var createdDate = new Date(batch.created_at).toLocaleDateString();
+                var creatorName = batch.creator ? batch.creator.name : 'Unknown';
+                var statusCapitalized = batch.status.charAt(0).toUpperCase() + batch.status.slice(1);
+                
+                html += '<div class="p-3 grid grid-cols-7 gap-4 hover:bg-gray-50">' +
+                    '<div class="font-medium">' + batch.batch_number + '</div>' +
+                    '<div class="text-sm">' + createdDate + '</div>' +
+                    '<div class="text-sm">' + batch.generated_count + '/' + batch.batch_size + '</div>' +
+                    '<div class="text-sm">' + batch.label_format + '</div>' +
+                    '<div>' +
+                        '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ' + statusClass + '">' +
+                            statusCapitalized +
+                        '</span>' +
+                    '</div>' +
+                    '<div class="text-sm">' + creatorName + '</div>' +
+                    '<div class="flex gap-1">' +
+                        '<button onclick="viewBatchDetails(' + batch.id + ')" class="p-1 text-blue-600 hover:text-blue-800" title="View Details">' +
+                            '<i data-lucide="eye" class="h-4 w-4"></i>' +
+                        '</button>';
+                
+                if (batch.status === 'generated') {
+                    html += '<button onclick="markBatchAsPrinted(' + batch.id + ')" class="p-1 text-green-600 hover:text-green-800" title="Mark as Printed">' +
+                                '<i data-lucide="printer" class="h-4 w-4"></i>' +
+                            '</button>';
+                }
+                
+                if (batch.status !== 'printed' && batch.status !== 'completed') {
+                    html += '<button onclick="deleteBatch(' + batch.id + ')" class="p-1 text-red-600 hover:text-red-800" title="Delete Batch">' +
+                                '<i data-lucide="trash-2" class="h-4 w-4"></i>' +
+                            '</button>';
+                }
+                
+                html += '</div>' +
+                    '</div>';
+            }
+            
+            batchListContent.innerHTML = html;
+
+            lucide.createIcons();
+        }
+
+        function viewBatchDetails(batchId) {
+            // This could open a modal or navigate to a details page
+            console.log('Viewing batch details for:', batchId);
+            // For now, just show an alert
+            alert('Viewing details for batch ID: ' + batchId);
+        }
             {
             id: "FILE-2023-001",
             name: "Certificate of Occupancy - Alhaji Ibrahim Dantata",
@@ -1070,10 +1558,10 @@
 
         // Utility functions
         function generateBatchFileNumber(index) {
-            const fileNumber = (state.batchStartNumber + index)
+            var fileNumber = (state.batchStartNumber + index)
                 .toString()
                 .padStart(4, "0");
-            return `${state.batchPrefix}-${state.batchYear}-${fileNumber}`;
+            return state.batchPrefix + '-' + state.batchYear + '-' + fileNumber;
         }
 
         function updateCounts() {
@@ -1081,101 +1569,82 @@
             document.getElementById("selectedFilesCount").textContent = state.selectedFiles.length;
             document.getElementById(
                 "selectionStatus"
-            ).textContent = `${state.selectedFiles.length} of ${indexedFiles.length} selected`;
+            ).textContent = state.selectedFiles.length + ' of ' + indexedFiles.length + ' selected';
         }
 
         function filterFiles() {
-            return indexedFiles.filter(
-                (file) =>
-                    file.name.toLowerCase().includes(state.searchTerm.toLowerCase()) ||
-                    file.fileNumber
-                        .toLowerCase()
-                        .includes(state.searchTerm.toLowerCase()) ||
+            return indexedFiles.filter(function(file) {
+                return file.name.toLowerCase().includes(state.searchTerm.toLowerCase()) ||
+                    file.fileNumber.toLowerCase().includes(state.searchTerm.toLowerCase()) ||
                     file.type.toLowerCase().includes(state.searchTerm.toLowerCase()) ||
-                    file.location.toLowerCase().includes(state.searchTerm.toLowerCase())
-            );
+                    file.location.toLowerCase().includes(state.searchTerm.toLowerCase());
+            });
         }
 
         function renderFileList() {
-            const filteredFiles = filterFiles();
-            const fileListContent = document.getElementById("fileListContent");
-            fileListContent.innerHTML = filteredFiles
-                .map(
-                    (file) => `
-                <div class="flex items-center p-4">
-                    <input type="checkbox" id="${
-                        file.id
-                    }" class="file-checkbox mr-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" ${
-                        state.selectedFiles.includes(file.id) ? "checked" : ""
-                    }>
-                    <div class="flex flex-1 items-center gap-3">
-                        <i data-lucide="file-text" class="h-8 w-8 text-blue-500"></i>
-                        <div class="flex-1">
-                            <div class="flex items-center gap-2">
-                                <p class="font-medium text-blue-600">${
-                                    file.fileNumber
-                                }</p>
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">${
-                                    file.type
-                                }</span>
-                            </div>
-                            <p class="text-sm text-gray-600 mt-1">${
-                                file.name
-                            }</p>
-                            <div class="flex flex-wrap items-center gap-2 mt-1">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">${
-                                    file.location
-                                }</span>
-                                <span class="text-xs text-gray-500">${
-                                    file.date
-                                }</span>
-                                ${
-                                    file.kangisFileNo
-                                        ? `<span class="text-xs text-gray-500">KANGIS: ${file.kangisFileNo}</span>`
-                                        : ""
-                                }
-                                ${
-                                    file.newKangisFileNo
-                                        ? `<span class="text-xs text-gray-500">New KANGIS: ${file.newKangisFileNo}</span>`
-                                        : ""
-                                }
-                            </div>
-                        </div>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <i data-lucide="check-circle" class="h-3 w-3 mr-1"></i>
-                            Indexed
-                        </span>
-                    </div>
-                </div>
-            `
-                )
-                .join("");
+            var filteredFiles = filterFiles();
+            var fileListContent = document.getElementById("fileListContent");
+            var html = '';
+            for (var i = 0; i < filteredFiles.length; i++) {
+                var file = filteredFiles[i];
+                var isChecked = state.selectedFiles.includes(file.id) ? 'checked' : '';
+                var kangisSpan = file.kangisFileNo ? '<span class="text-xs text-gray-500">KANGIS: ' + file.kangisFileNo + '</span>' : '';
+                var newKangisSpan = file.newKangisFileNo ? '<span class="text-xs text-gray-500">New KANGIS: ' + file.newKangisFileNo + '</span>' : '';
+                
+                html += '<div class="flex items-center p-4">' +
+                    '<input type="checkbox" id="' + file.id + '" class="file-checkbox mr-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" ' + isChecked + '>' +
+                    '<div class="flex flex-1 items-center gap-3">' +
+                        '<i data-lucide="file-text" class="h-8 w-8 text-blue-500"></i>' +
+                        '<div class="flex-1">' +
+                            '<div class="flex items-center gap-2">' +
+                                '<p class="font-medium text-blue-600">' + file.fileNumber + '</p>' +
+                                '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">' + file.type + '</span>' +
+                            '</div>' +
+                            '<p class="text-sm text-gray-600 mt-1">' + file.name + '</p>' +
+                            '<div class="flex flex-wrap items-center gap-2 mt-1">' +
+                                '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">' + file.location + '</span>' +
+                                '<span class="text-xs text-gray-500">' + file.date + '</span>' +
+                                kangisSpan +
+                                newKangisSpan +
+                            '</div>' +
+                        '</div>' +
+                        '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">' +
+                            '<i data-lucide="check-circle" class="h-3 w-3 mr-1"></i>' +
+                            'Indexed' +
+                        '</span>' +
+                    '</div>' +
+                '</div>';
+            }
+            
+            fileListContent.innerHTML = html;
 
             // Re-initialize icons
             lucide.createIcons();
 
             // Add event listeners to checkboxes
-            document.querySelectorAll(".file-checkbox").forEach((checkbox) => {
-                checkbox.addEventListener("change", function () {
-                    const fileId = this.id;
+            var checkboxes2 = document.querySelectorAll(".file-checkbox");
+            for (var x = 0; x < checkboxes2.length; x++) {
+                checkboxes2[x].addEventListener("change", function () {
+                    var fileId = this.id;
                     if (this.checked) {
                         if (!state.selectedFiles.includes(fileId)) {
                             state.selectedFiles.push(fileId);
                         }
                     } else {
-                        state.selectedFiles = state.selectedFiles.filter(
-                            (id) => id !== fileId
-                        );
+                        state.selectedFiles = state.selectedFiles.filter(function(id) {
+                            return id !== fileId;
+                        });
                     }
                     updateCounts();
                     updateSelectAllCheckbox();
                 });
+            }
             });
         }
 
         function updateSelectAllCheckbox() {
-            const selectAllCheckbox = document.getElementById("selectAll");
-            const filteredFiles = filterFiles();
+            var selectAllCheckbox = document.getElementById("selectAll");
+            var filteredFiles = filterFiles();
             selectAllCheckbox.checked =
                 state.selectedFiles.length === filteredFiles.length &&
                 filteredFiles.length > 0;
@@ -1183,22 +1652,24 @@
 
         function switchTab(tabName) {
             // Update tab buttons
-            document.querySelectorAll(".tab-btn").forEach((btn) => {
-                btn.classList.remove("active", "border-blue-500", "text-blue-600");
-                btn.classList.add("border-transparent", "text-gray-500");
-            });
+            var tabBtns = document.querySelectorAll(".tab-btn");
+            for (var i = 0; i < tabBtns.length; i++) {
+                tabBtns[i].classList.remove("active", "border-blue-500", "text-blue-600");
+                tabBtns[i].classList.add("border-transparent", "text-gray-500");
+            }
             document
-                .querySelector(`[data-tab="${tabName}"]`)
+                .querySelector('[data-tab="' + tabName + '"]')
                 .classList.add("active", "border-blue-500", "text-blue-600");
             document
-                .querySelector(`[data-tab="${tabName}"]`)
+                .querySelector('[data-tab="' + tabName + '"]')
                 .classList.remove("border-transparent", "text-gray-500");
 
             // Update tab content
-            document.querySelectorAll(".tab-content").forEach((content) => {
-                content.classList.remove("active");
-            });
-            document.getElementById(`${tabName}-tab`).classList.add("active");
+            var tabContents = document.querySelectorAll(".tab-content");
+            for (var j = 0; j < tabContents.length; j++) {
+                tabContents[j].classList.remove("active");
+            }
+            document.getElementById(tabName + '-tab').classList.add("active");
 
             state.activeTab = tabName;
             if (tabName === "preview") {
@@ -1758,22 +2229,22 @@
             printContainer.appendChild(summaryDiv);
 
             // Trigger print dialog
-            setTimeout(() => {
+            setTimeout(function() {
                 window.print();
             }, 500);
         }
 
         // Event listeners
-        document.addEventListener("DOMContentLoaded", function () {
-            // Initialize year input
-            document.getElementById("batchYear").value = state.batchYear;
+        // Initialize year input
+        document.getElementById("batchYear").value = state.batchYear;
 
-            // Tab switching
-            document.querySelectorAll(".tab-btn").forEach((btn) => {
-                btn.addEventListener("click", function () {
-                    switchTab(this.dataset.tab);
-                });
+        // Tab switching
+        var tabButtons = document.querySelectorAll(".tab-btn");
+        for (var k = 0; k < tabButtons.length; k++) {
+            tabButtons[k].addEventListener("click", function () {
+                switchTab(this.dataset.tab);
             });
+        }
 
             // History toggle
             document
@@ -1898,22 +2369,26 @@
                 });
 
             // Label format selection
-            document.querySelectorAll(".label-format-option").forEach((option) => {
-                option.addEventListener("click", function () {
-                    document
-                        .querySelectorAll(".label-format-option")
-                        .forEach((opt) => opt.classList.remove("selected"));
+            var labelFormatOptions = document.querySelectorAll(".label-format-option");
+            for (var m = 0; m < labelFormatOptions.length; m++) {
+                labelFormatOptions[m].addEventListener("click", function () {
+                    var allFormatOptions = document.querySelectorAll(".label-format-option");
+                    for (var n = 0; n < allFormatOptions.length; n++) {
+                        allFormatOptions[n].classList.remove("selected");
+                    }
                     this.classList.add("selected");
                     state.labelFormat = this.dataset.format;
                 });
-            });
+            }
 
             // Orientation selection
-            document.querySelectorAll(".orientation-option").forEach((option) => {
-                option.addEventListener("click", function () {
-                    document
-                        .querySelectorAll(".orientation-option")
-                        .forEach((opt) => opt.classList.remove("selected"));
+            var orientationOptions = document.querySelectorAll(".orientation-option");
+            for (var o = 0; o < orientationOptions.length; o++) {
+                orientationOptions[o].addEventListener("click", function () {
+                    var allOrientationOptions = document.querySelectorAll(".orientation-option");
+                    for (var p = 0; p < allOrientationOptions.length; p++) {
+                        allOrientationOptions[p].classList.remove("selected");
+                    }
                     this.classList.add("selected");
                     state.orientation = this.dataset.orientation;
                     document.querySelector(
@@ -2017,26 +2492,59 @@
                     );
                 });
 
-            // Print buttons
+            // Print buttons - now calls backend to create batch
             document
                 .getElementById("printBtn")
                 .addEventListener("click", function () {
-                    if (state.selectedFiles.length === 0 && !state.batchMode) {
-                        alert("Please select files to print labels for");
+                    if (state.selectedFiles.length === 0) {
+                        showError('Please select files to print labels for');
                         return;
                     }
-                    if (state.batchMode) {
-                        alert(
-                            `Printing ${
-                                state.batchCount
-                            } batch labels starting from ${generateBatchFileNumber(0)}`
-                        );
-                    } else {
-                        alert(
-                            `Printing ${state.selectedFiles.length} labels with size: ${state.labelSize}, format: ${state.labelFormat}, and ${state.copies} copies`
-                        );
+                    createLabelBatch();
+                });
+
+            // Search functionality for files
+            document
+                .getElementById("searchInput")
+                .addEventListener("input", function () {
+                    state.searchTerm = this.value;
+                    // Debounce the search
+                    clearTimeout(this.searchTimeout);
+                    this.searchTimeout = setTimeout(() => {
+                        fetchAvailableFiles(state.searchTerm);
+                    }, 500);
+                });
+
+            // Status filter for batches
+            document
+                .getElementById("statusFilter")
+                .addEventListener("change", function () {
+                    fetchGeneratedBatches(this.value);
+                });
+
+            // Refresh batches button
+            document
+                .getElementById("refreshBatchesBtn")
+                .addEventListener("click", function () {
+                    fetchGeneratedBatches();
+                    fetchStatistics();
+                });
+
+            // Tab switching with data loading
+            document.querySelectorAll(".tab-btn").forEach((btn) => {
+                btn.addEventListener("click", function () {
+                    const tabName = this.dataset.tab;
+                    switchTab(tabName);
+                    
+                    // Load data when switching to specific tabs
+                    if (tabName === 'files') {
+                        fetchAvailableFiles();
+                    } else if (tabName === 'generated') {
+                        fetchGeneratedBatches();
+                        fetchStatistics();
                     }
                 });
+            });
 
             // Final print button - now calls the printLabels function
             document
@@ -2044,9 +2552,11 @@
                 .addEventListener("click", printLabels);
 
             // Initialize the page
-            renderFileList();
+            fetchAvailableFiles();
+            fetchStatistics();
             updateCounts();
-        });
+        
+        }); // End DOMContentLoaded
     </script>
     </div>
         <!-- Footer -->

@@ -351,4 +351,15 @@ document.addEventListener('DOMContentLoaded', function() {
         loadRealPageTypeMoreFiles();
     }, 30000);
 });
+
+//  $if {
+
+//     $backCover = $pageTypeCode === 'BC';
+//     else if ($pageTypeCode === 'FC') {
+//         $frontCover = true;
+//     }
+//  } 
+
+
+
 </script>

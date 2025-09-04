@@ -384,8 +384,11 @@ class BlindScanningController extends Controller
         try {
             $fileNo = $request->file_no;
             $basePath = "EDMS/BLIND_SCAN/{$fileNo}";
+            
+            // Define local path for client-side creation
+            $localPath = "EDMS/BLIND_SCAN/{$fileNo}";
 
-            // Check if folder already exists
+            // Check if folder already exists in storage
             if (Storage::disk('public')->exists($basePath)) {
                 return response()->json([
                     'success' => false,
@@ -393,9 +396,13 @@ class BlindScanningController extends Controller
                 ], 409);
             }
 
-            // Create directories
+            // Create directories in server storage only
             $a4Created = Storage::disk('public')->makeDirectory("{$basePath}/A4");
             $a3Created = Storage::disk('public')->makeDirectory("{$basePath}/A3");
+            
+            // Define local paths for client instructions
+            $localA4Path = "{$localPath}\\A4";
+            $localA3Path = "{$localPath}\\A3";
 
             if ($a4Created && $a3Created) {
                 // Create a blind scanning record
@@ -405,32 +412,37 @@ class BlindScanningController extends Controller
                     'document_path' => $basePath,
                     'paper_size' => 'FOLDER',
                     'document_type' => 'BLIND_SCAN_FOLDER',
-                    'notes' => 'Auto-created folder for blind scanning: ' . $fileNo,
+                    'notes' => 'Auto-created folders for blind scanning: Storage=' . $basePath . ', LocalInstructions=' . $localPath,
                     'status' => BlindScanning::STATUS_PENDING,
                     'uploaded_by' => auth()->id(),
                 ]);
 
                 // Log the folder creation
-                Log::info('Blind scan folder created', [
+                Log::info('Blind scan server folders created', [
                     'file_no' => $fileNo,
                     'user_id' => auth()->id(),
-                    'path' => $basePath
+                    'storage_path' => $basePath,
+                    'local_instructions' => $localPath
                 ]);
 
                 return response()->json([
                     'success' => true,
-                    'message' => "Folder created successfully for FileNo: {$fileNo}",
+                    'message' => "Server folders created successfully for FileNo: {$fileNo}. Please create local folder structure manually.",
                     'data' => [
                         'file_no' => $fileNo,
-                        'path' => $basePath,
-                        'a4_path' => "{$basePath}/A4",
-                        'a3_path' => "{$basePath}/A3"
+                        'storage_path' => storage_path("app/public/{$basePath}"),
+                        'storage_a4_path' => storage_path("app/public/{$basePath}/A4"),
+                        'storage_a3_path' => storage_path("app/public/{$basePath}/A3"),
+                        'local_path' => $localPath,
+                        'local_a4_path' => $localA4Path,
+                        'local_a3_path' => $localA3Path,
+                        'create_local_instructions' => true
                     ]
                 ]);
             } else {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to create folders'
+                    'message' => 'Failed to create server folders'
                 ], 500);
             }
 

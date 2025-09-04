@@ -266,6 +266,15 @@ Route::middleware(['auth'])->group(function () {
 
     Route::prefix('printlabel')->group(function () {
         Route::get('/', [PrintLabelController::class, 'index'])->name('printlabel.index');
+        
+        // API endpoints
+        Route::get('/api/files', [PrintLabelController::class, 'getAvailableFiles'])->name('printlabel.api.files');
+        Route::post('/api/batch', [PrintLabelController::class, 'createBatch'])->name('printlabel.api.create-batch');
+        Route::get('/api/batches', [PrintLabelController::class, 'getGeneratedBatches'])->name('printlabel.api.batches');
+        Route::get('/api/batch/{id}', [PrintLabelController::class, 'getBatchDetails'])->name('printlabel.api.batch-details');
+        Route::patch('/api/batch/{id}/print', [PrintLabelController::class, 'markBatchAsPrinted'])->name('printlabel.api.mark-printed');
+        Route::delete('/api/batch/{id}', [PrintLabelController::class, 'deleteBatch'])->name('printlabel.api.delete-batch');
+        Route::get('/api/statistics', [PrintLabelController::class, 'getStatistics'])->name('printlabel.api.statistics');
     });
 
 
